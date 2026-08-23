@@ -1,0 +1,22 @@
+class_name FirePlate
+extends Area2D
+
+## 바닥에 깔리는 화상 장판 — 겹쳐있는 상대에게 주기적으로 데미지를 준다. 자기 자신은 무시한다 (예수천국 불신지옥 악마 스킬2)
+@export var damage_per_tick: int = 4
+@export var tick_interval: float = 1.0
+@export var lifetime: float = 6.0
+
+var source_fighter: Fighter
+var _tick_timer: float = 0.0
+
+func _ready() -> void:
+	get_tree().create_timer(lifetime).timeout.connect(queue_free)
+
+func _process(delta: float) -> void:
+	_tick_timer -= delta
+	if _tick_timer > 0.0:
+		return
+	_tick_timer = tick_interval
+	for area in get_overlapping_areas():
+		if area is Hurtbox:
+			area.take_hit(damage_per_tick, Vector2.ZERO, source_fighter)
