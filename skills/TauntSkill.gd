@@ -8,9 +8,22 @@ extends Skill
 @export var duration: float = 3.0
 
 func _execute(fighter: Fighter) -> void:
+	# 도발 동작 자체는 항상 보이도록 캐릭터 위에서 잠깐 반짝인다
+	_spawn_taunt_mark(fighter)
 	var opponent := fighter.find_opponent()
 	if opponent == null:
 		return
 	var dx: float = opponent.global_position.x - fighter.global_position.x
 	if absf(dx) <= range and signf(dx) == fighter.facing:
 		opponent.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, duration)
+		# 도발당해서 느려진 상대는 노랗게 물든다
+		opponent.set_tint("taunted", Color(1.0, 0.95, 0.4), duration)
+
+func _spawn_taunt_mark(fighter: Fighter) -> void:
+	var scene_root: Node = fighter.get_tree().current_scene
+	if scene_root == null:
+		return
+	var mark: Node2D = load("res://combat/HitSpark.tscn").instantiate()
+	scene_root.add_child(mark)
+	mark.global_position = fighter.global_position + Vector2(0, -50)
+	mark.scale = Vector2(0.7, 0.7)

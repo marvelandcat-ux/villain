@@ -14,3 +14,5 @@ func _execute(fighter: Fighter) -> void:
 	var dx: float = opponent.global_position.x - fighter.global_position.x
 	if absf(dx) <= range and signf(dx) == fighter.facing:
 		opponent.apply_dot(fighter.compute_damage(damage_per_tick), tick_interval, ticks)
+		# 화상이 지속되는 동안 주황빛으로 물듦
+		opponent.set_tint("burning", Color(1.0, 0.55, 0.25), tick_interval * ticks)

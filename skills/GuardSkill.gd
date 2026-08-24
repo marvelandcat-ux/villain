@@ -9,4 +9,17 @@ extends Skill
 func _execute(fighter: Fighter) -> void:
 	fighter.custom_data["guard_absorbed"] = 0
 	fighter.damage_reduction = damage_reduction
-	get_tree().create_timer(duration).timeout.connect(func(): fighter.damage_reduction = 0.0)
+	fighter.set_tint("guard", Color(0.55, 0.7, 1.0))
+	# 이 스킬 노드 자신의 자식 Timer로 만들어서, fighter가 그 전에 사라지면(씬 정리 등)
+	# 이 스킬 노드도 같이 사라져 콜백이 실행되지 않는다 — get_tree().create_timer()는 이미 사라진
+	# fighter를 건드리려다 에러가 났었음
+	var timer := Timer.new()
+	timer.wait_time = duration
+	timer.one_shot = true
+	add_child(timer)
+	timer.timeout.connect(func():
+		fighter.damage_reduction = 0.0
+		fighter.clear_tint("guard")
+		timer.queue_free()
+	)
+	timer.start()

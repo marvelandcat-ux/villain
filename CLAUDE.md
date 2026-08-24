@@ -15,18 +15,37 @@
 
 기획 문서의 "캐릭터 시스템 프레임워크" 절에서 정한 방향을 실제로 구현한 결과입니다. **캐릭터 전용 `.gd` 스크립트는 만들지 않습니다** — 모든 캐릭터 씬은 `characters/Fighter.gd`를 루트 스크립트로 쓰고, 스탯 리소스(`.tres`)와 스킬 노드 조합만으로 차이를 만듭니다.
 
-- `characters/Fighter.gd`: 모든 캐릭터의 공용 베이스(`CharacterBody2D`). 이동/점프/중력, HP(`take_damage`/`heal`/`health_changed` 시그널), 스킬 슬롯(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack` — 자식 노드 이름 `Skill1`/`Skill2`/`SkillUltimate`/`BasicAttack`으로 자동 연결됨), 임시 버프·디버프(`move_speed_multiplier` 등 배수 필드 + `apply_temp_multiplier()`), 자유 형식 데이터 저장소 `custom_data`(예: 주정뱅이 술 스택)를 담당
+- `characters/Fighter.gd`: 모든 캐릭터의 공용 베이스(`CharacterBody2D`). 이동/점프/중력, HP(`take_damage`/`heal`/`health_changed` 시그널), 스킬 슬롯(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack` — 자식 노드 이름 `Skill1`/`Skill2`/`SkillUltimate`/`BasicAttack`으로 자동 연결됨), 자유 형식 데이터 저장소 `custom_data`(예: 주정뱅이 술 스택)를 담당
+- 버프·디버프(`move_speed_multiplier` 등)는 직접 대입하지 않고 **`fighter.set_modifier(property, id, value)`/`clear_modifier(property, id)`**로 건다. 같은 property에 여러 효과가 동시에 걸려도 서로 안 지우고 곱해져서 적용된다(id별로 따로 저장했다가 곱함). 일정 시간만 유지되는 임시 효과는 `apply_temp_multiplier(property, value, duration)`가 자동으로 id를 발급해서 만료 처리까지 해줌. 술 스택처럼 켰다 껐다 하는 지속 효과는 `"drink_stacks"` 같은 고정 문자열 id로 직접 `set_modifier`/`clear_modifier` 호출 (`DrinkSkill.gd`/`VomitSkill.gd` 참고). **예전에는 `set(property, value)`로 직접 덮어써서 디버프 두 개가 겹치면 나중 게 먼저 걸린 걸 지워버리는 버그가 있었음 — 지금은 해결됨**
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
 - `skills/MeleeAttack.gd`: 기본공격 공용 스킬 — 캐릭터 앞에 히트박스를 잠깐 켰다 끈다. `damage`/`range`만 캐릭터마다 다르게 지정해서 재사용 (사탕찌르기, 키보드 휘두르기, 술병깨기, 팻말 때리기 전부 이걸 씀)
+- **주의(실제로 겪은 버그):** `get_tree().create_timer(t).timeout.connect(func(): 어떤노드.뭔가 = 값)`처럼 다른 노드를 건드리는 콜백을 예약할 때, 그 노드가 타이머가 끝나기 전에 사라지면(대전 도중 나가기·다시하기 등으로 씬이 통째로 정리되는 경우) `ERROR: Lambda capture ... was freed`가 나면서 사라진 노드를 건드리려다 에러가 난다. `get_tree().create_timer()`는 SceneTree에 속해서 관련 노드보다 오래 살아남기 때문. 해결책은 `is_instance_valid()` 체크가 아니라 **그 노드(또는 관련 스킬 노드)의 자식으로 `Timer` 노드를 만들어서 씀** — 부모가 사라지면 자식 Timer도 같이 사라져서 콜백 자체가 아예 실행되지 않는다(`Fighter._after()`, `GuardSkill.gd`, `FirePlate.gd`, `Projectile.gd` 참고). `await get_tree().create_timer(t).timeout`처럼 하나만 기다리고 끝내는 짧은 대기(`MeleeAttack`의 히트박스 on/off 등)는 이 문제가 잘 안 생겨서 그대로 둬도 됨
+- **주의(실제로 겪은 버그):** `Skill`은 `Node`를 상속해서 `Node2D`가 아니다. 그래서 `Hitbox`(Area2D)를 Skill 노드의 자식으로 둔 경우 `hitbox.position = ...`(부모 상대 좌표)을 쓰면 부모 트랜스폼 체인이 끊겨서 항상 `(0,0)` 기준으로 배치된다 — 겉으로는 에러 없이 조용히 공격이 안 맞는 버그가 된다. 이런 히트박스는 반드시 `hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0)`처럼 **global_position으로 직접 배치**할 것 (`MeleeAttack.gd`, `CounterSlamSkill.gd` 참고). 반대로 `Projectile`/`FirePlate`처럼 맵(Node2D)에 직접 `add_child`하는 경우는 이 문제가 없음
 - 이동을 잠깐 가로채는 스킬(돌진 등)은 `Fighter.movement_override`에 자기 자신을 등록하고 `get_move_velocity_x()`/`after_physics(fighter, delta)`를 구현 (`skills/DashSkill.gd` 참고)
-- 궁극기가 없는 캐릭터(예수천국 불신지옥)는 `SkillUltimate` 자리에 `skills/StanceSwitcher.gd`를 넣어서 숫자키 3으로 스탠스(천사/악마)를 전환하고, `skill_1`/`skill_2`가 가리키는 실제 스킬을 바꿔치기하는 방식으로 구현
+- 궁극기가 없는 캐릭터(예수천국 불신지옥)는 `SkillUltimate` 자리에 `skills/StanceSwitcher.gd`를 넣어서 숫자키 3으로 스탠스(천사/악마)를 전환하고, `skill_1`/`skill_2`가 가리키는 실제 스킬을 바꿔치기하는 방식으로 구현. 전환할 때마다 `Visual.modulate`를 흰색/붉은색으로 바꿔서 지금 어느 스탠스인지 눈으로 구분되게 함
 
 ## 조작 / AI
 
 - `controllers/PlayerController.gd`: 방향키 이동/점프, 스킬 입력을 읽어서 부모 Fighter를 조작
-- `controllers/AIController.gd`: 목표 Fighter와의 거리를 보고 접근/기본공격/스킬 사용을 스스로 결정하는 단순 AI. Fighter 입장에서 플레이어가 조작하는지 AI가 조작하는지 구분이 없음(둘 다 `fighter.move()`, `fighter.use_skill_1()` 등 같은 공용 메서드만 호출) — 새 대전 씬을 만들 때 캐릭터 인스턴스 밑에 둘 중 하나를 자식으로 붙이면 됨
-- 기본공격은 **Z키**(`basic_attack` 액션), 스킬1/스킬2/궁극기는 숫자키 **1/2/3**(`skill_1`/`skill_2`/`skill_3`) — `project.godot`의 InputMap에 등록되어 있음. 이동/점프 키와 2P 입력 방식은 아직 미정 — 현재는 Godot 기본 UI 액션(방향키 이동, ui_up 점프)으로 임시 대응 중
+- `controllers/AIController.gd`: 목표 Fighter와의 거리를 보고 접근/거리유지/후퇴/기본공격/스킬 사용을 스스로 결정하는 단순 AI. Fighter 입장에서 플레이어가 조작하는지 AI가 조작하는지 구분이 없음(둘 다 `fighter.move()`, `fighter.use_skill_1()` 등 같은 공용 메서드만 호출)
+  - `skill_2`가 투사체 스킬(`projectile_scene` 프로퍼티를 가짐 — BBGunSkill/VomitSkill)이면 원거리 캐릭터로 판단해서 `ranged_distance`(기본 180px)를 유지하며 견제. 캐릭터마다 분기하지 않고 스킬 구성만 보고 판단하는 방식이라 새 캐릭터가 원거리 스킬을 skill_2에 넣기만 하면 자동으로 이 행동을 함
+  - 쓸 수 있는 스킬이 하나도 없을 때(`_all_skills_on_cooldown`) 가끔 확률적으로 한 발짝 물러나서 쿨타임을 버는 "후퇴" 상태가 있음. 바닥에 있을 때 낮은 확률로 그냥 점프도 함(움직임이 자연스러워 보이도록)
+  - **주의(실제로 겪은 버그):** 뒤로 빠지거나 거리를 벌릴 때 `fighter.move(-dir)`을 쓰는데, `Fighter.move()`는 이동 방향으로 `facing`도 같이 바꾼다 — 그래서 후퇴 중엔 상대를 등지게 되고, 그 상태에서 투사체 스킬을 쓰면 반대 방향으로 나가버려 절대 안 맞는 버그가 있었다. 후퇴 이동을 시킨 직후 `fighter.facing`을 상대 쪽으로 다시 강제해서 고침
+- 기본공격은 **Z키**(`basic_attack` 액션), 스킬1/스킬2/궁극기는 숫자키 **1/2/3**(`skill_1`/`skill_2`/`skill_3`) — `project.godot`의 InputMap에 등록되어 있음. 이동은 Godot 기본 UI 액션(방향키, ui_up 점프)을 임시로 씀. **P2는 항상 AI가 조작**하기로 게임 플로우 상 확정돼서(캐릭터 선택 화면에서 P1만 플레이어) 2P 전용 키 입력은 필요 없어짐
+
+## 게임 플로우 / 씬 전환
+
+`GameState.gd`(프로젝트 루트, 오토로드 싱글턴)가 화면 사이에서 선택값을 들고 다닙니다. 흐름: `ui/MainMenu.tscn`(시작) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+
+- 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
+- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 캐릭터 선택→메인 메뉴, 맵 선택→캐릭터 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
+- `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성하고 P1에는 `PlayerController`, P2에는 `AIController`를 자동으로 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
+- 승패: `Stage._process()`가 매 프레임 양쪽 Fighter의 `current_hp`를 직접 확인해서 판정한다(HP 0 또는 `ring_out()`). **`died` 시그널에 바로 반응하지 않는 이유:** 시그널에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 쪽이 임의로 승자가 되는 버그가 있었음 — 지금은 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정해서 양쪽 다 0이면 무승부(`MatchResult.show_draw()`)로 처리. 링아웃은 `Stage.ring_out_y`보다 아래로 떨어지면 발동 — 벽이 있는 맵(편의점 앞/PC방/아파트 단지 놀이터)은 사실상 발동 안 되고, 벽이 없는 학교 옥상·지하철 승강장에서만 의미가 있음
+- 히트 이펙트: 맞으면 `Fighter._flash_hit()`가 캐릭터를 잠깐 빨갛게 물들이고, `combat/Hitbox.gd`가 실제로 맞았을 때 `combat/HitSpark.tscn`을 스폰
+- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(가드+화상+스탠스 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 13종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 잼민이 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 보라 디버프(`JumpDebuffUltimate`), 예수천국 화상 주황빛(`IgniteSkill`)·불판 펄스(`FirePlate`)·가드 파란빛(`GuardSkill`)·스탠스 흰/빨강(`StanceSwitcher`)
+- 넉백: `MeleeAttack`/`CounterSlamSkill`/`Projectile`이 각자 `Hitbox.knockback`을 설정해서 맞은 캐릭터의 `velocity`에 즉시 더한다(`Fighter.take_damage`). 바운스어택류 콤보의 기반 — 아직 스킬 하나하나에 맞는 세밀한 값 조정은 안 되어 있음(전부 임시값)
+- 대전 시작 시 `ui/RoundStart.tscn`이 "3, 2, 1, FIGHT!" 카운트다운을 보여주는 동안 양쪽 컨트롤러가 멈춘다(`PlayerController`/`AIController`의 `is_active`). **주의:** 그냥 멈추기만 하면(`set_physics_process(false)`) 멈추기 직전 프레임의 관성(velocity.x)이 남아서 계속 미끄러지는 버그가 났었음 — `is_active=false`일 때도 물리 처리(`apply_physics`)는 계속하되 `fighter.move(0.0)`으로 수평 속도를 매 프레임 0으로 고정해야 함
 
 ## GDScript 코드 스타일
 
@@ -55,15 +74,20 @@
 
 ```
 res://
+  GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵 선택값 전달
   characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (akpeulleo/, jujeongbaengi/, jaemini/, yesucheonguk/)
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
-  combat/         # Hitbox/Hurtbox (전투 판정)
+  combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
   controllers/    # PlayerController / AIController
   stats/          # CharacterStats 리소스(.tres)
-  maps/           # 스테이지 씬
-  ui/             # HP바·쿨타임 등 UI
+  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 5종
+  ui/             # MainMenu/CharacterSelect/MapSelect/MatchResult, HP바·쿨타임 HUD
 ```
 
 ## 참고
 
 - 기획 오픈 이슈(히트스턴 예외, 승리 조건 HP vs 링아웃 등)는 아티팩트 문서의 "다음에 정할 것" 표를 확인. 확정 전까지는 구현 시 임시값으로 처리하고 주석/TODO로 표시
+- Godot 실행 파일: `C:\Users\kint4\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe`. 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있음 — 예: `<위 경로> --headless --path "C:/workspace/villain" "res://maps/ConvenienceStore.tscn" --quit-after 120`. 코드를 수정한 뒤에는 이렇게 실행해서 에러 콘솔이 깨끗한지 확인하고 보고할 것
+- **주의:** 새 `class_name` 스크립트를 추가한 직후에는 먼저 `<위 경로> --headless --path "C:/workspace/villain" --editor --quit-after 5`로 한 번 실행해서 전역 클래스 캐시를 갱신해야 함. 안 그러면 방금 만든 클래스를 참조하는 다른 스크립트가 "Could not find type" 에러로 로드 실패함
+- 자동 입력 시뮬레이션이 필요한 테스트는 `extends SceneTree` + `--script` 방식이 아니라, `extends Node` 스크립트를 임시 `.tscn`으로 감싸서 `--headless --path ... <임시 씬> --quit-after N`로 실행할 것 — `--script` 모드는 오토로드(`GameState` 등)가 초기화되지 않아 컴파일 에러가 남
+- **주의:** 헤드리스 모드는 프레임 제한이 없어서 60fps보다 훨씬 빠르게 돈다(실측 약 145fps). 쿨타임·버프 지속시간처럼 시간 기반 로직을 테스트할 때 `--quit-after N`의 N을 "60fps 기준 초"로 계산하면 실제로는 그보다 훨씬 짧은 시간만 흐른다 — 프레임 수 대신 `Time.get_ticks_msec()`로 실제 경과 시간을 재면서 대기하거나, `--fixed-fps 60`을 같이 붙여서 프레임당 델타를 고정시킬 것

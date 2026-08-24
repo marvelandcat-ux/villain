@@ -17,7 +17,8 @@ func _execute(fighter: Fighter) -> void:
 	var speed: float = base_speed + speed_per_stack * stacks
 	var lifetime: float = base_lifetime + lifetime_per_stack * stacks
 	fighter.custom_data["drink_stacks"] = 0
-	fighter.move_speed_multiplier = 1.0
+	fighter.clear_modifier("move_speed_multiplier", "drink_stacks")
+	fighter.clear_tint("drunk")
 
 	if projectile_scene == null:
 		return
@@ -26,3 +27,6 @@ func _execute(fighter: Fighter) -> void:
 	projectile.global_position = fighter.global_position + Vector2(fighter.facing * 30.0, 0.0)
 	projectile.lifetime = lifetime
 	projectile.setup(fighter.facing, speed, fighter.compute_damage(damage), fighter)
+	# BB탄과 구분되도록 토사물은 초록색, 스택이 많을수록 덩어리가 커 보이게
+	projectile.modulate = Color(0.6, 0.9, 0.3)
+	projectile.scale = Vector2.ONE * (1.0 + stacks * 0.15)

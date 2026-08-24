@@ -12,3 +12,5 @@ func _execute(fighter: Fighter) -> void:
 		return
 	opponent.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, duration)
 	opponent.apply_temp_multiplier("attack_debuff_multiplier", attack_debuff_multiplier, duration)
+	# "나락 가는" 느낌으로 상대를 어둡게 물들인다
+	opponent.set_tint("weakened", Color(0.45, 0.4, 0.55), duration)

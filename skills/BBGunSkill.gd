@@ -38,5 +38,17 @@ func _fire_one() -> void:
 	var projectile: Projectile = projectile_scene.instantiate()
 	_fighter_ref.get_parent().add_child(projectile)
 	# 자기 자신과 겹쳐서 즉시 사라지지 않도록 캐릭터 앞쪽으로 살짝 띄워서 스폰
-	projectile.global_position = _fighter_ref.global_position + Vector2(_direction * 30.0, 0.0)
+	var muzzle_pos: Vector2 = _fighter_ref.global_position + Vector2(_direction * 30.0, 0.0)
+	projectile.global_position = muzzle_pos
 	projectile.setup(_direction, projectile_speed, _fighter_ref.compute_damage(damage), _fighter_ref)
+	_spawn_muzzle_flash(muzzle_pos)
+
+## 발사 순간 총구에 잠깐 반짝이는 이펙트
+func _spawn_muzzle_flash(pos: Vector2) -> void:
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	var flash: Node2D = load("res://combat/HitSpark.tscn").instantiate()
+	scene_root.add_child(flash)
+	flash.global_position = pos
+	flash.scale = Vector2(0.6, 0.6)

@@ -10,7 +10,23 @@ var source_fighter: Fighter
 var _tick_timer: float = 0.0
 
 func _ready() -> void:
-	get_tree().create_timer(lifetime).timeout.connect(queue_free)
+	var timer := Timer.new()
+	timer.wait_time = lifetime
+	timer.one_shot = true
+	timer.timeout.connect(queue_free)
+	add_child(timer)
+	timer.start()
+	_start_pulse()
+
+## 이글이글 타오르는 느낌을 주는 반복 펄스
+func _start_pulse() -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		return
+	var tween := create_tween()
+	tween.set_loops()
+	tween.tween_property(visual, "scale", Vector2(1.1, 1.1), 0.4)
+	tween.tween_property(visual, "scale", Vector2(0.95, 0.95), 0.4)
 
 func _process(delta: float) -> void:
 	_tick_timer -= delta

@@ -6,7 +6,7 @@ extends CharacterBody2D
 
 ## HP가 바뀔 때마다 UI 등에 알린다
 signal health_changed(current: int, max: int)
-## HP가 0이 되면 알린다 (아직 라운드 종료 처리는 없음 — TODO)
+## HP가 0이 되면 알린다 — Stage.gd가 이 시그널을 듣고 승패를 판정한다
 signal died
 
 ## 캐릭터 고정 수치
@@ -37,9 +37,16 @@ var attack_debuff_multiplier: float = 1.0
 var cooldown_rate_multiplier: float = 1.0
 ## 받는 데미지 감소율 (0.0=없음, 1.0=완전 무효) — 가드 스킬 등이 사용
 var damage_reduction: float = 0.0
+## true인 동안은 어떤 데미지도 받지 않는다 (예: 잼민이 궁극기 사용 중)
+var is_invincible: bool = false
 
 ## 캐릭터별 스킬이 자유롭게 쓰는 임시 데이터 저장소 (예: 주정뱅이 술 스택, 예수천국 흡수 데미지)
 var custom_data: Dictionary = {}
+
+## move_speed_multiplier 등을 여러 효과가 동시에 걸어도 서로 안 지우도록 관리하는 내부 저장소.
+## {property: {id: value}} — 최종 배수는 같은 property에 걸린 값들을 전부 곱한 것
+var _modifiers: Dictionary = {}
+var _next_modifier_id: int = 0
 
 func _ready() -> void:
 	current_hp = stats.max_hp
@@ -53,21 +60,87 @@ func _ready() -> void:
 	if basic_attack == null:
 		basic_attack = get_node_or_null("BasicAttack")
 
-## 데미지를 받는다. damage_reduction이 있으면 경감하고, 경감분은 custom_data["guard_absorbed"]에 누적된다
+## 데미지를 받는다. damage_reduction이 있으면 경감하고, 경감분은 custom_data["guard_absorbed"]에 누적된다.
+## is_invincible이 true면 아예 무시한다
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
+	if is_invincible:
+		return
 	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction)))
 	if damage_reduction > 0.0:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + (amount - reduced_amount)
 	current_hp = max(current_hp - reduced_amount, 0)
 	velocity += knockback
+	_flash_hit()
 	health_changed.emit(current_hp, stats.max_hp)
 	if current_hp <= 0:
 		died.emit()
+
+## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
+func _flash_hit() -> void:
+	var visual: CanvasItem = get_node_or_null("Visual")
+	if visual == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(visual, "modulate", Color(1, 0.3, 0.3), 0.05)
+	tween.tween_property(visual, "modulate", Color(1, 1, 1), 0.15)
 
 ## HP를 회복시킨다 (최대 HP를 넘지 않음)
 func heal(amount: int) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
+
+## 여러 상태이상 색조가 겹쳐도 서로 안 지우도록 관리하는 저장소. {id: Color} — 화면에는 가장 최근 것이 보이고,
+## 그게 풀리면 그 전에 걸려있던 것으로 되돌아간다 (전부 사라지면 원래 색)
+var _tints: Dictionary = {}
+var _tint_order: Array = []
+
+## id로 구분되는 색조 효과를 캐릭터 그림에 씌운다. duration을 주면 그 시간 후 자동으로 걷힌다(0이면 clear_tint로 직접 해제)
+func set_tint(id, color: Color, duration: float = 0.0) -> void:
+	_tint_order.erase(id)
+	_tint_order.append(id)
+	_tints[id] = color
+	_apply_top_tint()
+	if duration > 0.0:
+		_after(duration, func(): clear_tint(id))
+
+## id로 건 색조 효과를 해제한다
+func clear_tint(id) -> void:
+	_tints.erase(id)
+	_tint_order.erase(id)
+	_apply_top_tint()
+
+func _apply_top_tint() -> void:
+	var visual: CanvasItem = get_node_or_null("Visual")
+	if visual == null:
+		return
+	visual.modulate = _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
+
+## duration초 후 callback을 실행한다. get_tree().create_timer()와 달리 이 Fighter의 자식 Timer로 만들어서,
+## Fighter가 그 전에 사라지면(대전 도중 나가기, 다시하기 등으로 씬이 정리되는 경우) 콜백이 아예 실행되지 않고
+## 같이 정리된다 — 그렇지 않으면 이미 사라진 Fighter를 건드리려다 에러가 난다
+func _after(duration: float, callback: Callable) -> void:
+	var timer := Timer.new()
+	timer.wait_time = duration
+	timer.one_shot = true
+	add_child(timer)
+	timer.timeout.connect(func():
+		callback.call()
+		timer.queue_free()
+	)
+	timer.start()
+
+## duration초 동안 무적 상태로 만든다
+func grant_invincibility(duration: float) -> void:
+	is_invincible = true
+	_after(duration, func(): is_invincible = false)
+
+## 링아웃(낙사)으로 즉시 패배 처리한다
+func ring_out() -> void:
+	if current_hp <= 0:
+		return
+	current_hp = 0
+	health_changed.emit(current_hp, stats.max_hp)
+	died.emit()
 
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
 func compute_damage(base_damage: int) -> int:
@@ -105,16 +178,38 @@ func find_opponent() -> Fighter:
 			return f
 	return null
 
-## property(예: "move_speed_multiplier")를 value로 바꿨다가 duration초 후 1.0으로 되돌린다.
-## 여러 디버프가 겹치면 나중 것이 이전 것을 덮어쓰는 단순한 방식이다 (임시 구현)
+## property(예: "move_speed_multiplier")에 id로 구분되는 배수 효과를 하나 건다.
+## 같은 property에 걸린 다른 id의 효과와는 서로 지우지 않고 곱해져서 함께 적용된다.
+## id는 임시 버프면 자동 발급된 정수, 스택형(주정뱅이 술 등)처럼 켰다 껐다 하는 효과면 "drink_stacks" 같은 고정 문자열을 쓴다
+func set_modifier(property: String, id, value: float) -> void:
+	if not _modifiers.has(property):
+		_modifiers[property] = {}
+	_modifiers[property][id] = value
+	_recompute_modifier(property)
+
+## id로 건 효과를 해제한다
+func clear_modifier(property: String, id) -> void:
+	if _modifiers.has(property):
+		_modifiers[property].erase(id)
+		_recompute_modifier(property)
+
+func _recompute_modifier(property: String) -> void:
+	var result := 1.0
+	for value in _modifiers.get(property, {}).values():
+		result *= value
+	set(property, result)
+
+## property에 duration초 동안만 유지되는 임시 배수 효과를 건다 (자동으로 id를 발급하고 만료 처리)
 func apply_temp_multiplier(property: String, value: float, duration: float) -> void:
-	set(property, value)
-	get_tree().create_timer(duration).timeout.connect(func(): set(property, 1.0))
+	var id := _next_modifier_id
+	_next_modifier_id += 1
+	set_modifier(property, id, value)
+	_after(duration, func(): clear_modifier(property, id))
 
 ## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지)
 func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
 	for i in range(ticks):
-		get_tree().create_timer(tick_interval * (i + 1)).timeout.connect(func(): take_damage(damage_per_tick))
+		_after(tick_interval * (i + 1), func(): take_damage(damage_per_tick))
 
 ## 이동/점프 입력 처리 후 컨트롤러가 매 물리 프레임 마지막에 호출한다.
 ## Fighter 스스로는 _physics_process를 갖지 않고, 이 함수로만 물리 갱신이 일어난다

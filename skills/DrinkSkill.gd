@@ -9,4 +9,7 @@ func _execute(fighter: Fighter) -> void:
 	var stacks: int = fighter.custom_data.get("drink_stacks", 0)
 	stacks = mini(stacks + 1, max_stacks)
 	fighter.custom_data["drink_stacks"] = stacks
-	fighter.move_speed_multiplier = 1.0 - stacks * move_speed_penalty_per_stack
+	fighter.set_modifier("move_speed_multiplier", "drink_stacks", 1.0 - stacks * move_speed_penalty_per_stack)
+	# 마실수록 점점 빨개진다 (기획 문서 그대로 구현)
+	var redness: float = float(stacks) / float(max_stacks)
+	fighter.set_tint("drunk", Color(1.0, 1.0 - redness * 0.6, 1.0 - redness * 0.6))

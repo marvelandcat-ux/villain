@@ -6,5 +6,5 @@ extends CanvasLayer
 @onready var p2_panel: FighterPanel = $P2Panel
 
 func setup(p1: Fighter, p2: Fighter) -> void:
-	p1_panel.bind(p1)
-	p2_panel.bind(p2)
+	p1_panel.bind(p1, "P1")
+	p2_panel.bind(p2, "P2(AI)")

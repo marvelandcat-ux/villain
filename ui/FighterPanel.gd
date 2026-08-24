@@ -9,9 +9,10 @@ extends VBoxContainer
 
 var fighter: Fighter
 
-func bind(target_fighter: Fighter) -> void:
+## label_prefix가 있으면 캐릭터 이름 앞에 붙인다 (예: "P1", "P2 (AI)")
+func bind(target_fighter: Fighter, label_prefix: String = "") -> void:
 	fighter = target_fighter
-	name_label.text = fighter.stats.character_name
+	name_label.text = (label_prefix + " " + fighter.stats.character_name) if label_prefix != "" else fighter.stats.character_name
 	hp_bar.max_value = fighter.stats.max_hp
 	hp_bar.value = fighter.current_hp
 	fighter.health_changed.connect(_on_health_changed)

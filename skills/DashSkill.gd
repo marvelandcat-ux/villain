@@ -5,14 +5,24 @@ extends Skill
 @export var dash_speed: float = 600.0
 @export var dash_duration: float = 0.3
 @export var self_damage_on_wall: int = 10  ## 오픈 이슈 임시값
+## 벽에 부딪혔을 때 튕겨 나오는 넉백 (돌진 방향의 반대 + 살짝 위로)
+@export var wall_bounce: Vector2 = Vector2(150, -80)
+## 잔상을 몇 초마다 남길지
+@export var trail_interval: float = 0.04
 
 var _time_left: float = 0.0
 var _direction: float = 1.0
+var _trail_timer: float = 0.0
 
 func _execute(fighter: Fighter) -> void:
 	_time_left = dash_duration
 	_direction = fighter.facing
+	_trail_timer = 0.0
 	fighter.movement_override = self
+	var visual: Node2D = fighter.get_node_or_null("Visual")
+	if visual:
+		visual.scale = Vector2(1.35, 0.8)
+	_spawn_afterimage(fighter)
 
 ## 돌진 중 매 물리 프레임 적용할 수평 속도 (Fighter.apply_physics에서 호출)
 func get_move_velocity_x() -> float:
@@ -21,8 +31,35 @@ func get_move_velocity_x() -> float:
 ## Fighter.apply_physics가 move_and_slide 직후 매 프레임 호출한다
 func after_physics(fighter: Fighter, delta: float) -> void:
 	_time_left -= delta
+	_trail_timer -= delta
+	if _trail_timer <= 0.0:
+		_trail_timer = trail_interval
+		_spawn_afterimage(fighter)
 	if fighter.is_on_wall():
-		fighter.take_damage(self_damage_on_wall)
-		fighter.movement_override = null
+		fighter.take_damage(self_damage_on_wall, Vector2(-_direction * wall_bounce.x, wall_bounce.y))
+		_end_dash(fighter)
 	elif _time_left <= 0.0:
-		fighter.movement_override = null
+		_end_dash(fighter)
+
+func _end_dash(fighter: Fighter) -> void:
+	fighter.movement_override = null
+	var visual: Node2D = fighter.get_node_or_null("Visual")
+	if visual:
+		visual.scale = Vector2(1, 1)
+
+## 돌진하는 잔상(반투명 복제)을 하나 남기고 서서히 지운다
+func _spawn_afterimage(fighter: Fighter) -> void:
+	var visual: Polygon2D = fighter.get_node_or_null("Visual")
+	var parent: Node = fighter.get_parent()
+	if visual == null or parent == null:
+		return
+	var ghost := Polygon2D.new()
+	ghost.polygon = visual.polygon
+	ghost.color = visual.color
+	ghost.global_position = visual.global_position
+	ghost.scale = visual.scale
+	ghost.modulate.a = 0.45
+	parent.add_child(ghost)
+	var tween := ghost.create_tween()
+	tween.tween_property(ghost, "modulate:a", 0.0, 0.25)
+	tween.tween_callback(ghost.queue_free)

@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://0s1twbhkoyrh"]
+
+[ext_resource type="Script" uid="uid://dot451lndensg" path="res://ui/MainMenu.gd" id="1"]
+
+[node name="MainMenu" type="Control" unique_id=786627499]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1354606853]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.09, 0.09, 0.11, 1)
+
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1694547429]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -70.0
+offset_right = 160.0
+offset_bottom = 70.0
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="VBox" unique_id=1341277949]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "빌런 파이터즈"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="VBox" unique_id=1062873645]
+layout_mode = 2
+text = "일상 속 빌런들의 밉상 배틀"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="VBox" unique_id=1708744386]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "시작"
+
+[connection signal="pressed" from="VBox/StartButton" to="." method="_on_start_pressed"]

@@ -6,13 +6,18 @@ extends Skill
 @export var damage: int = 8
 @export var range: float = 40.0
 @export var active_duration: float = 0.15
+## 넉백 세기 — x는 밀려나는 방향(공격자 기준으로 자동 반전), y는 살짝 띄우는 높이 (바운스어택류 콤보용)
+@export var knockback: Vector2 = Vector2(220, -90)
 
 @onready var hitbox: Hitbox = $Hitbox
 
 func _execute(fighter: Fighter) -> void:
 	hitbox.damage = fighter.compute_damage(damage)
+	hitbox.knockback = Vector2(knockback.x * fighter.facing, knockback.y)
 	hitbox.source_fighter = fighter
-	hitbox.position.x = range * fighter.facing
+	# Hitbox의 부모(BasicAttack)가 Node2D가 아닌 Node라서 position(부모 상대 좌표)이 아니라
+	# global_position(절대 좌표)으로 직접 배치해야 한다
+	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0)
 	hitbox.monitoring = true
 	hitbox.monitorable = true
 	await get_tree().create_timer(active_duration).timeout

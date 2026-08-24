@@ -10,12 +10,18 @@ extends Skill
 
 var is_angel: bool = true
 
+## 천사/악마 스탠스를 눈으로 구분할 수 있도록 캐릭터 그림에 씌우는 색조
+@export var angel_tint: Color = Color(1, 1, 1)
+@export var demon_tint: Color = Color(1, 0.55, 0.55)
+
 func _ready() -> void:
 	var fighter := get_parent() as Fighter
 	fighter.skill_1 = _angel_skill_1
 	fighter.skill_2 = _angel_skill_2
+	fighter.set_tint("stance", angel_tint)
 
 func _execute(fighter: Fighter) -> void:
 	is_angel = not is_angel
 	fighter.skill_1 = _angel_skill_1 if is_angel else _demon_skill_1
 	fighter.skill_2 = _angel_skill_2 if is_angel else _demon_skill_2
+	fighter.set_tint("stance", angel_tint if is_angel else demon_tint)
