@@ -68,7 +68,7 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
 		fighter.global_position = spawn.global_position
-	fighter.add_child(AIController.new() if is_ai else PlayerController.new())
+	fighter.add_child(ClaudeAIController.new() if is_ai else PlayerController.new())
 	return fighter
 
 func _freeze_controllers() -> void:
