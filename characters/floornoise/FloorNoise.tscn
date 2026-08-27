@@ -1,0 +1,94 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
+[ext_resource type="Resource" path="res://stats/FloorNoiseStats.tres" id="2"]
+[ext_resource type="Script" path="res://skills/MeleeAttack.gd" id="3"]
+[ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
+[ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
+[ext_resource type="Script" path="res://skills/AoeAttack.gd" id="6"]
+[ext_resource type="Script" path="res://skills/VacuumSkill.gd" id="7"]
+[ext_resource type="Script" path="res://skills/DunkUltimate.gd" id="8"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
+radius = 20.0
+height = 60.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
+size = Vector2(30, 30)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_aoe"]
+radius = 70.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vacuum"]
+size = Vector2(90, 36)
+
+[node name="FloorNoise" type="CharacterBody2D"]
+script = ExtResource("1")
+stats = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.45, 0.55, 0.35, 1)
+polygon = PackedVector2Array(-18, -30, 18, -30, 18, 30, -18, 30)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+script = ExtResource("5")
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="BasicAttack" type="Node" parent="."]
+script = ExtResource("3")
+damage = 4
+range = 45.0
+active_duration = 0.4
+
+[node name="Hitbox" type="Area2D" parent="BasicAttack"]
+monitoring = false
+monitorable = false
+script = ExtResource("4")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox"]
+shape = SubResource("RectangleShape2D_hitbox")
+
+[node name="Skill1" type="Node" parent="."]
+script = ExtResource("6")
+cooldown = 8.0
+damage = 8
+radius = 70.0
+slow_multiplier = 0.7
+slow_duration = 2.0
+
+[node name="Hitbox" type="Area2D" parent="Skill1"]
+monitoring = false
+monitorable = false
+script = ExtResource("4")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="Skill1/Hitbox"]
+shape = SubResource("CircleShape2D_aoe")
+
+[node name="Skill2" type="Node" parent="."]
+script = ExtResource("7")
+cooldown = 6.0
+
+[node name="Hitbox" type="Area2D" parent="Skill2"]
+monitoring = false
+monitorable = false
+script = ExtResource("4")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="Skill2/Hitbox"]
+shape = SubResource("RectangleShape2D_vacuum")
+
+[node name="SkillUltimate" type="Node" parent="."]
+script = ExtResource("8")
+cooldown = 24.0
+
+[node name="Hitbox" type="Area2D" parent="SkillUltimate"]
+monitoring = false
+monitorable = false
+script = ExtResource("4")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="SkillUltimate/Hitbox"]
+shape = SubResource("CircleShape2D_aoe")

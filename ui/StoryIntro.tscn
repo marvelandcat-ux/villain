@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://ui/CharacterSelect.gd" id="1"]
+[ext_resource type="Script" path="res://ui/StoryIntro.gd" id="1"]
 
-[node name="CharacterSelect" type="Control"]
+[node name="StoryIntro" type="Control"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1")
@@ -18,13 +18,13 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -90.0
+offset_top = -110.0
 offset_right = 200.0
-offset_bottom = 90.0
+offset_bottom = 110.0
 alignment = 1
 
 [node name="StatusLabel" type="Label" parent="VBox"]
-text = "캐릭터를 선택하세요"
+text = "당신의 캐릭터를 선택하세요"
 horizontal_alignment = 1
 
 [node name="Grid" type="GridContainer" parent="VBox"]
@@ -33,6 +33,6 @@ theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 
 [node name="BackButton" type="Button" parent="VBox"]
-text = "방 설정으로 (ESC)"
+text = "모드 선택으로 (ESC)"
 
 [connection signal="pressed" from="VBox/BackButton" to="." method="_on_back_pressed"]

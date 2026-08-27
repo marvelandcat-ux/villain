@@ -1,0 +1,74 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://maps/Stage.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
+[ext_resource type="Script" path="res://maps/CameraRig.gd" id="3"]
+[ext_resource type="Script" path="res://maps/StompZone.gd" id="4"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(700, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(40, 400)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+size = Vector2(200, 20)
+
+[node name="NoisyApartment" type="Node2D"]
+script = ExtResource("1")
+stage_width = 700.0
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(0, 300)
+
+[node name="GroundCollision" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.55, 0.5, 0.45, 1)
+polygon = PackedVector2Array(-350, -20, 350, -20, 350, 20, -350, 20)
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(-350, 100)
+
+[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall"]
+color = Color(0.6, 0.55, 0.5, 1)
+polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(350, 100)
+
+[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="RightWallVisual" type="Polygon2D" parent="RightWall"]
+color = Color(0.6, 0.55, 0.5, 1)
+polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
+
+[node name="UpperPlatform" type="StaticBody2D" parent="."]
+position = Vector2(0, 235)
+
+[node name="UpperPlatformCollision" type="CollisionShape2D" parent="UpperPlatform"]
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="UpperPlatformVisual" type="Polygon2D" parent="UpperPlatform"]
+color = Color(0.5, 0.45, 0.4, 1)
+polygon = PackedVector2Array(-100, -10, 100, -10, 100, 10, -100, 10)
+
+[node name="StompZone" type="Node2D" parent="."]
+script = ExtResource("4")
+
+[node name="PlayerSpawn1" type="Marker2D" parent="."]
+position = Vector2(-250, 260)
+
+[node name="PlayerSpawn2" type="Marker2D" parent="."]
+position = Vector2(250, 260)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(0, 150)
+script = ExtResource("3")
+
+[node name="CombatHUD" parent="." instance=ExtResource("2")]

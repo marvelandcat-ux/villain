@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CharacterStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://stats/CharacterStats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_name = "캣맘"
+max_hp = 100
+move_speed = 185.0
+attack_multiplier = 1.0

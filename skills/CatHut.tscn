@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://skills/CatHut.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hut"]
+size = Vector2(50, 45)
+
+[node name="CatHut" type="Area2D"]
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_hut")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.65, 0.45, 0.3, 1)
+polygon = PackedVector2Array(-25, -22.5, 25, -22.5, 25, 22.5, -25, 22.5)

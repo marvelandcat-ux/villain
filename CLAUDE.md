@@ -24,6 +24,11 @@
 - **주의(실제로 겪은 버그):** `Skill`은 `Node`를 상속해서 `Node2D`가 아니다. 그래서 `Hitbox`(Area2D)를 Skill 노드의 자식으로 둔 경우 `hitbox.position = ...`(부모 상대 좌표)을 쓰면 부모 트랜스폼 체인이 끊겨서 항상 `(0,0)` 기준으로 배치된다 — 겉으로는 에러 없이 조용히 공격이 안 맞는 버그가 된다. 이런 히트박스는 반드시 `hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0)`처럼 **global_position으로 직접 배치**할 것 (`MeleeAttack.gd`, `CounterSlamSkill.gd` 참고). 반대로 `Projectile`/`FirePlate`처럼 맵(Node2D)에 직접 `add_child`하는 경우는 이 문제가 없음
 - 이동을 잠깐 가로채는 스킬(돌진 등)은 `Fighter.movement_override`에 자기 자신을 등록하고 `get_move_velocity_x()`/`after_physics(fighter, delta)`를 구현 (`skills/DashSkill.gd` 참고)
 - 궁극기가 없는 캐릭터(예수천국 불신지옥)는 `SkillUltimate` 자리에 `skills/StanceSwitcher.gd`를 넣어서 숫자키 3으로 스탠스(천사/악마)를 전환하고, `skill_1`/`skill_2`가 가리키는 실제 스킬을 바꿔치기하는 방식으로 구현. 전환할 때마다 `Visual.modulate`를 흰색/붉은색으로 바꿔서 지금 어느 스탠스인지 눈으로 구분되게 함
+- `Fighter.is_feared`/`apply_fear(duration)`: 공포 상태(지하철빌런 `skills/FearSkill.gd`)면 이동은 되지만 `use_skill_1/2/ultimate/basic_attack`이 전부 무시된다("무서워서 반격을 못 하는" 느낌). `set_tint`로 색조도 같이 걸어서 눈으로 구분됨
+- `combat/Hitbox.gd`의 `pull_to_source`/`pull_strength`: true면 고정된 `knockback` 대신, 맞는 순간 공격자 쪽 방향을 계산해서 끌어당긴다(청소기 흡입 — `skills/VacuumSkill.gd`)
+- `skills/AoeAttack.gd`: `MeleeAttack`(전방 사각형)과 별개로, 캐릭터 자신을 중심으로 한 원형 범위 공격 공용 스킬. `damage`/`radius`에 더해 `slow_multiplier`/`slow_duration`을 주면 맞은 상대에게 `apply_temp_multiplier`로 둔화 디버프도 건다(층간피해빌런 기타연주, 재사용 가능)
+- `Fighter.vault_jump: bool`: true인 캐릭터(지하철빌런)는 기본공격이 없는 대신, 점프할 때 `_play_vault_effect()`가 회전 트윈으로 "개찰구를 뛰어넘는" 연출을 보여준다
+- **주의(실제로 겪은 버그):** `add_child(node)`로 노드를 트리에 붙이면 `_ready()`가 **그 자리에서 동기적으로** 실행된다 — `add_child()` 호출 다음 줄에서 그 노드의 export 변수를 세팅해도, `_ready()`는 이미 그 전에(즉 기본값으로) 끝나버린 뒤다. `_ready()` 안에서 `wait_time = lifetime` 처럼 export 값을 캐싱하면 호출자가 나중에 설정한 값이 아니라 기본값이 캐싱되는 버그가 생김(캣맘 `skills/CatPet.gd`에서 실제로 겪음). 해결책: 그런 캐싱은 `_ready()`가 아니라 **첫 `_physics_process`/`_process` 호출 시점**(`_initialized` 플래그로 한 번만 실행)으로 미룰 것 — 그때는 호출자의 프로퍼티 설정이 이미 끝나 있음이 보장됨
 
 ## 조작 / AI
 
@@ -36,10 +41,16 @@
 
 ## 게임 플로우 / 씬 전환
 
-`GameState.gd`(프로젝트 루트, 오토로드 싱글턴)가 화면 사이에서 선택값을 들고 다닙니다. 흐름: `ui/MainMenu.tscn`(시작) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+`GameState.gd`(프로젝트 루트, 오토로드 싱글턴)가 화면 사이에서 선택값을 들고 다닙니다.
+
+**로컬 대전(PvP) 흐름:** `ui/MainMenu.tscn`(시작) → `ui/ModeSelect.tscn`("로컬 대전" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+
+**스토리 모드 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAP_PATH`로 고정) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
-- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 캐릭터 선택→메인 메뉴, 맵 선택→캐릭터 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
+- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
+- **라운드제:** `Stage._process()`가 KO(HP 0) 또는 시간 초과(`GameState.time_limit_seconds`>0이고 다 됐을 때 — 그 순간 HP 높은 쪽이 라운드 승, 동률이면 무승부)를 감지하면 `_end_round(p1_won, is_draw)`를 부른다. 라운드 승수는 `GameState.p1_round_wins`/`p2_round_wins`에 누적되고, 둘 중 하나가 `rounds_to_win`에 도달하지 못했으면 `MatchResult.show_round_result()`로 점수 배너만 잠깐 보여준 뒤 `get_tree().reload_current_scene()`으로 같은 맵에서 다음 라운드를 새로 시작한다(HP/위치는 씬 리로드로 초기화되고, 라운드 승수는 `GameState`가 오토로드라 그대로 유지됨). 도달했으면 최종 결과(`MatchResult.show_result()`/`show_draw()`) 또는 스토리 모드 승리 시 `ReformCutscene`으로 분기
+- `CombatHUD`의 `RoundLabel`이 화면 중앙 상단에 라운드 점수(`P1승 : P2승`)와(시간제한이 있으면) 남은 초를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성하고 P1에는 `PlayerController`, P2에는 `AIController`를 자동으로 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
 - 승패: `Stage._process()`가 매 프레임 양쪽 Fighter의 `current_hp`를 직접 확인해서 판정한다(HP 0 또는 `ring_out()`). **`died` 시그널에 바로 반응하지 않는 이유:** 시그널에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 쪽이 임의로 승자가 되는 버그가 있었음 — 지금은 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정해서 양쪽 다 0이면 무승부(`MatchResult.show_draw()`)로 처리. 링아웃은 `Stage.ring_out_y`보다 아래로 떨어지면 발동 — 벽이 있는 맵(편의점 앞/PC방/아파트 단지 놀이터)은 사실상 발동 안 되고, 벽이 없는 학교 옥상·지하철 승강장에서만 의미가 있음
 - 히트 이펙트: 맞으면 `Fighter._flash_hit()`가 캐릭터를 잠깐 빨갛게 물들이고, `combat/Hitbox.gd`가 실제로 맞았을 때 `combat/HitSpark.tscn`을 스폰
@@ -74,14 +85,14 @@
 
 ```
 res://
-  GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵 선택값 전달
-  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (akpeulleo/, jujeongbaengi/, jaemini/, yesucheonguk/)
+  GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
+  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (jaemini/, akpeulleo/, jujeongbaengi/, yesucheonguk/, catmom/, subwayvillain/, floornoise/ — 7종)
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
   combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
   controllers/    # PlayerController / AIController
   stats/          # CharacterStats 리소스(.tres)
-  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 5종
-  ui/             # MainMenu/CharacterSelect/MapSelect/MatchResult, HP바·쿨타임 HUD
+  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
+  ui/             # MainMenu/ModeSelect/RoomSettings/CharacterSelect/MapSelect/StoryIntro/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
 ```
 
 ## 참고

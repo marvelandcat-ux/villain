@@ -1,0 +1,46 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
+[ext_resource type="Resource" path="res://stats/SubwayVillainStats.tres" id="2"]
+[ext_resource type="Script" path="res://combat/Hurtbox.gd" id="3"]
+[ext_resource type="Script" path="res://skills/TurnstileSkill.gd" id="4"]
+[ext_resource type="PackedScene" path="res://skills/Turnstile.tscn" id="5"]
+[ext_resource type="Script" path="res://skills/FearSkill.gd" id="6"]
+[ext_resource type="Script" path="res://skills/TteokbokkiUltimate.gd" id="7"]
+[ext_resource type="PackedScene" path="res://skills/FirePlate.tscn" id="8"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
+radius = 20.0
+height = 60.0
+
+[node name="SubwayVillain" type="CharacterBody2D"]
+script = ExtResource("1")
+stats = ExtResource("2")
+vault_jump = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.3, 0.4, 0.45, 1)
+polygon = PackedVector2Array(-18, -30, 18, -30, 18, 30, -18, 30)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+script = ExtResource("3")
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Skill1" type="Node" parent="."]
+script = ExtResource("4")
+cooldown = 8.0
+turnstile_scene = ExtResource("5")
+
+[node name="Skill2" type="Node" parent="."]
+script = ExtResource("6")
+cooldown = 9.0
+
+[node name="SkillUltimate" type="Node" parent="."]
+script = ExtResource("7")
+cooldown = 24.0
+plate_scene = ExtResource("8")

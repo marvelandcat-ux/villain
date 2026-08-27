@@ -39,6 +39,10 @@ var cooldown_rate_multiplier: float = 1.0
 var damage_reduction: float = 0.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 잼민이 궁극기 사용 중)
 var is_invincible: bool = false
+## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철빌런 공포 단소 등
+var is_feared: bool = false
+## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철빌런 전용, 캐릭터 씬에서 켬)
+@export var vault_jump: bool = false
 
 ## 캐릭터별 스킬이 자유롭게 쓰는 임시 데이터 저장소 (예: 주정뱅이 술 스택, 예수천국 흡수 데미지)
 var custom_data: Dictionary = {}
@@ -134,6 +138,12 @@ func grant_invincibility(duration: float) -> void:
 	is_invincible = true
 	_after(duration, func(): is_invincible = false)
 
+## duration초 동안 공포 상태로 만든다 (기본공격/스킬 사용 불가, 이동은 가능)
+func apply_fear(duration: float) -> void:
+	is_feared = true
+	set_tint("fear", Color(0.75, 0.75, 1.0), duration)
+	_after(duration, func(): is_feared = false)
+
 ## 링아웃(낙사)으로 즉시 패배 처리한다
 func ring_out() -> void:
 	if current_hp <= 0:
@@ -152,23 +162,35 @@ func move(direction: float) -> void:
 	velocity.x = direction * stats.move_speed * move_speed_multiplier
 
 func jump() -> void:
-	if is_on_floor():
-		velocity.y = JUMP_VELOCITY * jump_multiplier
+	if not is_on_floor():
+		return
+	velocity.y = JUMP_VELOCITY * jump_multiplier
+	if vault_jump:
+		_play_vault_effect()
+
+## 개찰구를 훌쩍 뛰어넘는 듯한 점프 연출 (지하철빌런 전용)
+func _play_vault_effect() -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(visual, "rotation", facing * -0.5, 0.15)
+	tween.tween_property(visual, "rotation", 0.0, 0.15)
 
 func use_skill_1() -> void:
-	if skill_1:
+	if skill_1 and not is_feared:
 		skill_1.use(self)
 
 func use_skill_2() -> void:
-	if skill_2:
+	if skill_2 and not is_feared:
 		skill_2.use(self)
 
 func use_ultimate() -> void:
-	if skill_ultimate:
+	if skill_ultimate and not is_feared:
 		skill_ultimate.use(self)
 
 func use_basic_attack() -> void:
-	if basic_attack:
+	if basic_attack and not is_feared:
 		basic_attack.use(self)
 
 ## 1대1 전제로 자기 자신이 아닌 다른 Fighter를 찾는다

@@ -19,3 +19,13 @@ offset_left = -240.0
 offset_top = 16.0
 offset_right = -20.0
 offset_bottom = 76.0
+
+[node name="RoundLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -80.0
+offset_top = 16.0
+offset_right = 80.0
+offset_bottom = 44.0
+horizontal_alignment = 1
+text = "0 : 0"

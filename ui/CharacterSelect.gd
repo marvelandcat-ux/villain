@@ -27,7 +27,7 @@ func _on_character_picked(character_name: String) -> void:
 		get_tree().change_scene_to_file("res://ui/MapSelect.tscn")
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
