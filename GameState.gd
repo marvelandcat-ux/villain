@@ -54,7 +54,32 @@ var p2_round_wins: int = 0
 ## 스토리 모드에서 지금 몇 번째 상대인지 (STORY_OPPONENTS 인덱스)
 var story_index: int = 0
 
+## .env 파일에서 불러온 Claude API 키. ClaudeAIController가 P2 AI 판단에 사용한다.
+## .env는 git에 커밋하지 않는 로컬 파일이라(.env.example 참고) 파일이 없으면 빈 문자열로 남는다
+var anthropic_api_key: String = ""
+
+func _ready() -> void:
+	_load_env()
+
 ## 새 대전을 시작하기 전에 라운드 스코어를 초기화한다
 func reset_round_wins() -> void:
 	p1_round_wins = 0
 	p2_round_wins = 0
+
+## res://.env 파일을 한 줄씩 읽어서 KEY=VALUE 형식을 파싱한다 (# 시작 줄은 주석으로 무시)
+func _load_env() -> void:
+	var path := "res://.env"
+	if not FileAccess.file_exists(path):
+		return
+	var file := FileAccess.open(path, FileAccess.READ)
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges()
+		if line.is_empty() or line.begins_with("#"):
+			continue
+		var parts := line.split("=", true, 1)
+		if parts.size() != 2:
+			continue
+		var key := parts[0].strip_edges()
+		var value := parts[1].strip_edges()
+		if key == "ANTHROPIC_API_KEY":
+			anthropic_api_key = value
