@@ -1,13 +1,14 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
-[ext_resource type="Texture2D" path="res://sprite/body/Yeegy.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://c4cmtov8tofjh" path="res://sprite/body/Yeegy.png" id="2_head"]
 
 [node name="BodyRig" instance=ExtResource("1_rig")]
 
+[node name="Body" parent="." index="2"]
+visible = false
+
 [node name="Head" parent="." index="5"]
-position = Vector2(0, -28)
-scale = Vector2(0.085, 0.085)
+position = Vector2(0, 3)
+scale = Vector2(0.09, 0.09)
 texture = ExtResource("2_head")
-region_enabled = true
-region_rect = Rect2(420, 30, 530, 510)
