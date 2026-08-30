@@ -1,14 +1,20 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://cumpliexnsb7r"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://c4cmtov8tofjh" path="res://sprite/body/Yeegy.png" id="2_head"]
 
-[node name="BodyRig" instance=ExtResource("1_rig")]
+[node name="BodyRig" unique_id=306643037 instance=ExtResource("1_rig")]
 
-[node name="Body" parent="." index="2"]
+[node name="Body" parent="." index="2" unique_id=1277525598]
 visible = false
 
-[node name="Head" parent="." index="5"]
-position = Vector2(0, 3)
-scale = Vector2(0.09, 0.09)
+[node name="HandL" parent="." index="3" unique_id=927525538]
+position = Vector2(-24, -1)
+
+[node name="HandR" parent="." index="4" unique_id=1459708461]
+position = Vector2(26, -3)
+
+[node name="Head" parent="." index="5" unique_id=1394957076]
+position = Vector2(3.0000005, -13.000002)
+scale = Vector2(0.081682615, 0.0697209)
 texture = ExtResource("2_head")
