@@ -159,9 +159,15 @@ func ring_out() -> void:
 	health_changed.emit(current_hp, stats.max_hp)
 	died.emit()
 
-## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
+## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다.
+## custom_data["rage_bonus_damage"]가 있으면(주정뱅이 스킬1 등 "다음 공격 강화" 버프) 한 번만 더해주고 소모한다
 func compute_damage(base_damage: int) -> int:
-	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
+	var total: int = int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
+	var bonus: int = custom_data.get("rage_bonus_damage", 0)
+	if bonus > 0:
+		total += bonus
+		custom_data["rage_bonus_damage"] = 0
+	return total
 
 func move(direction: float) -> void:
 	if direction != 0.0:
@@ -197,8 +203,15 @@ func use_ultimate() -> void:
 		skill_ultimate.use(self)
 
 func use_basic_attack() -> void:
-	if basic_attack and not is_feared:
+	if basic_attack and not is_feared and basic_attack.can_use():
 		basic_attack.use(self)
+		_play_punch_effect()
+
+## 기본공격 시 손이 앞으로 뻗는 연출 — BodyRig를 쓰는 캐릭터(Visual에 play_punch가 있는 경우)만 재생된다
+func _play_punch_effect() -> void:
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("play_punch"):
+		visual.play_punch()
 
 ## 1대1 전제로 자기 자신이 아닌 다른 Fighter를 찾는다
 func find_opponent() -> Fighter:

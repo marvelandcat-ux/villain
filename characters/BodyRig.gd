@@ -23,6 +23,12 @@ extends Node2D
 @export var jump_foot_deg: float = 60.0
 ## 점프 자세로 바뀌고 착지해서 풀리는 빠르기
 @export var jump_blend_speed: float = 12.0
+## 기본공격 시 앞쪽 손이 뻗는 최대 거리(px)
+@export var punch_distance: float = 20.0
+## 주먹이 뻗어나가는 데 걸리는 시간(초) — 짧을수록 빠르고 강하게 나간다
+@export var punch_out_time: float = 0.06
+## 주먹이 제자리로 돌아오는 데 걸리는 시간(초)
+@export var punch_back_time: float = 0.12
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -40,6 +46,8 @@ var _blend: float = 0.0
 var _air_blend: float = 0.0
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
+## 주먹 뻗기 진행도 (0=제자리, 1=최대로 뻗은 상태) — play_punch()의 트윈이 값을 바꾼다
+var _punch_amount: float = 0.0
 
 func _ready() -> void:
 	# Visual로 붙는 자리가 Fighter의 자식이라 부모가 곧 조종 대상이다.
@@ -97,6 +105,10 @@ func _apply_pose(speed_ratio: float) -> void:
 		if part:
 			part.position.y = _rest_positions[part].y + bob
 
+	# 앞쪽 손(HandR)은 scale.x 반전 덕분에 항상 바라보는 방향 쪽에 위치한다 — 그 손만 앞으로 뻗는다
+	if _hand_r:
+		_hand_r.position.x = _rest_positions[_hand_r].x + punch_distance * _punch_amount
+
 ## 발 하나의 자세를 잡는다. step은 0(제자리)~1(한 걸음 최대) 값
 func _pose_foot(foot: Sprite2D, step: float) -> void:
 	if foot == null:
@@ -105,6 +117,14 @@ func _pose_foot(foot: Sprite2D, step: float) -> void:
 	# 점프는 반대로 발끝이 아래로 뻗게 해서 서로 반대 방향으로 돈다
 	foot.rotation = deg_to_rad(-foot_swing_deg * step + jump_foot_deg * _air_blend)
 	foot.position.x = _rest_positions[foot].x + foot_stride * step
+
+## 기본공격 시 Fighter가 호출한다 — 앞쪽 손이 앞으로 뻗었다가 돌아오는 주먹 연출을 재생한다
+func play_punch() -> void:
+	if _hand_r == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(self, "_punch_amount", 1.0, punch_out_time)
+	tween.tween_property(self, "_punch_amount", 0.0, punch_back_time)
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,

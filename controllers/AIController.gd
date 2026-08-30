@@ -25,7 +25,7 @@ var _retreat_timer: float = 0.0
 func _ready() -> void:
 	if target == null:
 		target = fighter.find_opponent()
-	# skill_2가 투사체를 쏘는 스킬(BBGunSkill/VomitSkill처럼 projectile_scene을 가진 스킬)이면
+	# skill_2가 투사체를 쏘는 스킬(BBGunSkill처럼 projectile_scene을 가진 스킬)이면
 	# 원거리 캐릭터로 보고 거리를 두고 싸우게 한다. 캐릭터별로 따로 분기하지 않고 스킬 구성만으로 판단
 	_is_ranged = fighter.skill_2 != null and fighter.skill_2.get("projectile_scene") != null
 

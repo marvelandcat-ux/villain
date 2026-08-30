@@ -15,8 +15,8 @@
 
 기획 문서의 "캐릭터 시스템 프레임워크" 절에서 정한 방향을 실제로 구현한 결과입니다. **캐릭터 전용 `.gd` 스크립트는 만들지 않습니다** — 모든 캐릭터 씬은 `characters/Fighter.gd`를 루트 스크립트로 쓰고, 스탯 리소스(`.tres`)와 스킬 노드 조합만으로 차이를 만듭니다.
 
-- `characters/Fighter.gd`: 모든 캐릭터의 공용 베이스(`CharacterBody2D`). 이동/점프/중력, HP(`take_damage`/`heal`/`health_changed` 시그널), 스킬 슬롯(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack` — 자식 노드 이름 `Skill1`/`Skill2`/`SkillUltimate`/`BasicAttack`으로 자동 연결됨), 자유 형식 데이터 저장소 `custom_data`(예: 주정뱅이 술 스택)를 담당
-- 버프·디버프(`move_speed_multiplier` 등)는 직접 대입하지 않고 **`fighter.set_modifier(property, id, value)`/`clear_modifier(property, id)`**로 건다. 같은 property에 여러 효과가 동시에 걸려도 서로 안 지우고 곱해져서 적용된다(id별로 따로 저장했다가 곱함). 일정 시간만 유지되는 임시 효과는 `apply_temp_multiplier(property, value, duration)`가 자동으로 id를 발급해서 만료 처리까지 해줌. 술 스택처럼 켰다 껐다 하는 지속 효과는 `"drink_stacks"` 같은 고정 문자열 id로 직접 `set_modifier`/`clear_modifier` 호출 (`DrinkSkill.gd`/`VomitSkill.gd` 참고). **예전에는 `set(property, value)`로 직접 덮어써서 디버프 두 개가 겹치면 나중 게 먼저 걸린 걸 지워버리는 버그가 있었음 — 지금은 해결됨**
+- `characters/Fighter.gd`: 모든 캐릭터의 공용 베이스(`CharacterBody2D`). 이동/점프/중력, HP(`take_damage`/`heal`/`health_changed` 시그널), 스킬 슬롯(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack` — 자식 노드 이름 `Skill1`/`Skill2`/`SkillUltimate`/`BasicAttack`으로 자동 연결됨), 자유 형식 데이터 저장소 `custom_data`(예: 주정뱅이 다음 공격 강화 `rage_bonus_damage`, 예수천국 흡수 데미지 `guard_absorbed`)를 담당
+- 버프·디버프(`move_speed_multiplier` 등)는 직접 대입하지 않고 **`fighter.set_modifier(property, id, value)`/`clear_modifier(property, id)`**로 건다. 같은 property에 여러 효과가 동시에 걸려도 서로 안 지우고 곱해져서 적용된다(id별로 따로 저장했다가 곱함). 일정 시간만 유지되는 임시 효과는 `apply_temp_multiplier(property, value, duration)`가 자동으로 id를 발급해서 만료 처리까지 해줌. 스택처럼 켰다 껐다 하는 지속 효과는 고정 문자열 id로 직접 `set_modifier`/`clear_modifier` 호출. **예전에는 `set(property, value)`로 직접 덮어써서 디버프 두 개가 겹치면 나중 게 먼저 걸린 걸 지워버리는 버그가 있었음 — 지금은 해결됨**
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
 - `skills/MeleeAttack.gd`: 기본공격 공용 스킬 — 캐릭터 앞에 히트박스를 잠깐 켰다 끈다. `damage`/`range`만 캐릭터마다 다르게 지정해서 재사용 (사탕찌르기, 키보드 휘두르기, 술병깨기, 팻말 때리기 전부 이걸 씀)
@@ -34,9 +34,10 @@
 
 - `controllers/PlayerController.gd`: 이동/점프/공격/스킬 입력을 읽어서 부모 Fighter를 조작. `player_index`(1 또는 2)에 따라 `p1_*`/`p2_*` 액션을 읽으므로 P1/P2 모두 사람이 조작할 수 있다
 - `controllers/AIController.gd`: 목표 Fighter와의 거리를 보고 접근/거리유지/후퇴/기본공격/스킬 사용을 스스로 결정하는 단순 AI. Fighter 입장에서 플레이어가 조작하는지 AI가 조작하는지 구분이 없음(둘 다 `fighter.move()`, `fighter.use_skill_1()` 등 같은 공용 메서드만 호출)
-  - `skill_2`가 투사체 스킬(`projectile_scene` 프로퍼티를 가짐 — BBGunSkill/VomitSkill)이면 원거리 캐릭터로 판단해서 `ranged_distance`(기본 180px)를 유지하며 견제. 캐릭터마다 분기하지 않고 스킬 구성만 보고 판단하는 방식이라 새 캐릭터가 원거리 스킬을 skill_2에 넣기만 하면 자동으로 이 행동을 함
+  - `skill_2`가 투사체 스킬(`projectile_scene` 프로퍼티를 가짐 — 예: BBGunSkill)이면 원거리 캐릭터로 판단해서 `ranged_distance`(기본 180px)를 유지하며 견제. 캐릭터마다 분기하지 않고 스킬 구성만 보고 판단하는 방식이라 새 캐릭터가 원거리 스킬을 skill_2에 넣기만 하면 자동으로 이 행동을 함
   - 쓸 수 있는 스킬이 하나도 없을 때(`_all_skills_on_cooldown`) 가끔 확률적으로 한 발짝 물러나서 쿨타임을 버는 "후퇴" 상태가 있음. 바닥에 있을 때 낮은 확률로 그냥 점프도 함(움직임이 자연스러워 보이도록)
   - **주의(실제로 겪은 버그):** 뒤로 빠지거나 거리를 벌릴 때 `fighter.move(-dir)`을 쓰는데, `Fighter.move()`는 이동 방향으로 `facing`도 같이 바꾼다 — 그래서 후퇴 중엔 상대를 등지게 되고, 그 상태에서 투사체 스킬을 쓰면 반대 방향으로 나가버려 절대 안 맞는 버그가 있었다. 후퇴 이동을 시킨 직후 `fighter.facing`을 상대 쪽으로 다시 강제해서 고침
+  - **알려진 한계(TODO):** 주정뱅이 스킬2(`BloodCannonSkill`, 혈사포)는 `projectile_scene`이 없는 판정형 스킬이라 위 `_is_ranged` 판정에 안 걸려서 AI가 근접 캐릭터처럼 바짝 붙어서 싸운다 — 판정 범위 자체가 넓어서(480px) 웬만하면 맞긴 하지만, 원거리 캐릭터처럼 거리를 벌리며 쓰는 견제 플레이는 안 함
 - **조작키 확정(2026-08-30)** — `project.godot`의 InputMap에 `p1_*`/`p2_*` 액션으로 등록되어 있음. 같은 키보드를 둘이 나눠 쓰는 로컬 대전 기준:
 
 | 조작 | P1 | P2 | 액션 이름 |
@@ -92,7 +93,7 @@
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성하고 P1에는 `PlayerController`, P2에는 `AIController`를 자동으로 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
 - 승패: `Stage._process()`가 매 프레임 양쪽 Fighter의 `current_hp`를 직접 확인해서 판정한다(HP 0 또는 `ring_out()`). **`died` 시그널에 바로 반응하지 않는 이유:** 시그널에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 쪽이 임의로 승자가 되는 버그가 있었음 — 지금은 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정해서 양쪽 다 0이면 무승부(`MatchResult.show_draw()`)로 처리. 링아웃은 `Stage.ring_out_y`보다 아래로 떨어지면 발동 — 벽이 있는 맵(편의점 앞/PC방/아파트 단지 놀이터)은 사실상 발동 안 되고, 벽이 없는 학교 옥상·지하철 승강장에서만 의미가 있음
 - 히트 이펙트: 맞으면 `Fighter._flash_hit()`가 캐릭터를 잠깐 빨갛게 물들이고, `combat/Hitbox.gd`가 실제로 맞았을 때 `combat/HitSpark.tscn`을 스폰
-- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(가드+화상+스탠스 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 13종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 잼민이 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 보라 디버프(`JumpDebuffUltimate`), 예수천국 화상 주황빛(`IgniteSkill`)·불판 펄스(`FirePlate`)·가드 파란빛(`GuardSkill`)·스탠스 흰/빨강(`StanceSwitcher`)
+- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(가드+화상+스탠스 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 13종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 잼민이 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 취기 버프 붉은빛(`DrunkenRageSkill`)·혈사포 차지 경고빛과 빔(`BloodCannonSkill`, 초록색 — 스킬1 사용 횟수만큼 길어지고 최대 900px에서 클램프, 쏘면 스택 초기화)·궁극기 보라 디버프(`JumpDebuffUltimate`), 예수천국 화상 주황빛(`IgniteSkill`)·불판 펄스(`FirePlate`)·가드 파란빛(`GuardSkill`)·스탠스 흰/빨강(`StanceSwitcher`)
 - 넉백: `MeleeAttack`/`CounterSlamSkill`/`Projectile`이 각자 `Hitbox.knockback`을 설정해서 맞은 캐릭터의 `velocity`에 즉시 더한다(`Fighter.take_damage`). 바운스어택류 콤보의 기반 — 아직 스킬 하나하나에 맞는 세밀한 값 조정은 안 되어 있음(전부 임시값)
 - 대전 시작 시 `ui/RoundStart.tscn`이 "3, 2, 1, FIGHT!" 카운트다운을 보여주는 동안 양쪽 컨트롤러가 멈춘다(`PlayerController`/`AIController`의 `is_active`). **주의:** 그냥 멈추기만 하면(`set_physics_process(false)`) 멈추기 직전 프레임의 관성(velocity.x)이 남아서 계속 미끄러지는 버그가 났었음 — `is_active=false`일 때도 물리 처리(`apply_physics`)는 계속하되 `fighter.move(0.0)`으로 수평 속도를 매 프레임 0으로 고정해야 함
 
