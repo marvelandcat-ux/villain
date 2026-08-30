@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/YesucheongukStats.tres" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://skills/FirePlateSkill.gd" id="9"]
 [ext_resource type="PackedScene" path="res://skills/FirePlate.tscn" id="10"]
 [ext_resource type="Script" path="res://skills/StanceSwitcher.gd" id="11"]
+[ext_resource type="PackedScene" path="res://characters/yesucheonguk/YesucheongukRig.tscn" id="12"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -26,9 +27,7 @@ stats = ExtResource("2")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.55, 0.45, 0.65, 1)
-polygon = PackedVector2Array(-18, -30, 18, -30, 18, 30, -18, 30)
+[node name="Visual" parent="." instance=ExtResource("12")]
 
 [node name="Hurtbox" type="Area2D" parent="."]
 script = ExtResource("5")

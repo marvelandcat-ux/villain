@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://b4d01k58qbjx2"]
+
+[ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" uid="uid://geyrw4kw4lq1" path="res://sprite/body/악플러대가리.png" id="2_head"]
+
+[node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
+
+[node name="Head" parent="." index="5" unique_id=1394957076]
+position = Vector2(-6.000002, -33)
+scale = Vector2(0.05860626, 0.06282751)
+texture = ExtResource("2_head")

@@ -12,8 +12,15 @@ signal died
 ## 캐릭터 고정 수치
 @export var stats: CharacterStats
 
-const GRAVITY: float = 900.0
-const JUMP_VELOCITY: float = -350.0
+## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
+const DEFAULT_GRAVITY: float = 900.0
+const DEFAULT_JUMP_VELOCITY: float = -350.0
+
+## 모든 Fighter가 함께 쓰는 중력/점프력. 아직 값을 정하는 중이라 훈련장(maps/TrainingGround.gd)에서
+## 실시간으로 바꿔볼 수 있게 static var로 두었다 — 값이 확정되면 위 DEFAULT_ 상수에 옮겨 적으면 된다.
+## 점프력은 위쪽이 음수라서 -350처럼 음수 값이다
+static var gravity: float = DEFAULT_GRAVITY
+static var jump_velocity: float = DEFAULT_JUMP_VELOCITY
 
 var current_hp: int = 0
 var facing: float = 1.0
@@ -164,7 +171,7 @@ func move(direction: float) -> void:
 func jump() -> void:
 	if not is_on_floor():
 		return
-	velocity.y = JUMP_VELOCITY * jump_multiplier
+	velocity.y = jump_velocity * jump_multiplier
 	if vault_jump:
 		_play_vault_effect()
 
@@ -237,7 +244,7 @@ func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
 ## Fighter 스스로는 _physics_process를 갖지 않고, 이 함수로만 물리 갱신이 일어난다
 func apply_physics(delta: float) -> void:
 	if not is_on_floor():
-		velocity.y += GRAVITY * delta
+		velocity.y += gravity * delta
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
 	move_and_slide()

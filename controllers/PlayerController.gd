@@ -1,31 +1,58 @@
 class_name PlayerController
 extends Node
 
-## 방향키 이동/점프, Z 기본공격, 숫자키 1/2/3 스킬을 읽어서 부모 Fighter를 조작한다.
-## 이동/기본공격 키는 조작 체계(오픈 이슈)가 확정되기 전까지의 임시 배정
+## 키보드 입력을 읽어서 부모 Fighter를 조작한다.
+## P1/P2가 같은 키보드를 나눠 쓰기 때문에, 액션 이름을 "p1_"/"p2_" 접두사로 구분해서 읽는다.
+##
+## | 조작 | P1 | P2 |
+## |---|---|---|
+## | 이동 | A / D | ← / → |
+## | 점프 | W | ↑ |
+## | 기본공격 | F | L |
+## | 스킬1 | G | K |
+## | 스킬2 | H | J |
+## | 궁극기 | R | P |
+## | 플랫폼 아래로 | S + W | ↓ + ↑ |
 @onready var fighter: Fighter = get_parent()
+
+## 1이면 P1 키(A/D/W/S, F/G/H/R), 2면 P2 키(방향키, L/K/J/P)를 읽는다.
+## Stage.gd가 Fighter에 붙일 때 지정한다 (기본값은 1P)
+var player_index: int = 1
 
 ## false면 입력을 무시한다(대전 시작 카운트다운, 승패 판정 후 등) — 그래도 중력·바닥 착지는 계속 처리한다
 var is_active: bool = true
 
+## "left" → "p1_left" 처럼 이 컨트롤러가 담당하는 플레이어의 액션 이름을 만든다
+func _action(name: String) -> String:
+	return "p%d_%s" % [player_index, name]
+
 func _physics_process(delta: float) -> void:
 	if is_active:
 		if fighter.movement_override == null:
-			var direction := Input.get_axis("ui_left", "ui_right")
+			var direction := Input.get_axis(_action("left"), _action("right"))
 			fighter.move(direction)
-			if Input.is_action_just_pressed("ui_up"):
-				fighter.jump()
+			if Input.is_action_just_pressed(_action("jump")):
+				if Input.is_action_pressed(_action("down")):
+					_drop_through_platform()
+				else:
+					fighter.jump()
 
-		if Input.is_action_just_pressed("basic_attack"):
+		if Input.is_action_just_pressed(_action("basic_attack")):
 			fighter.use_basic_attack()
-		if Input.is_action_just_pressed("skill_1"):
+		if Input.is_action_just_pressed(_action("skill_1")):
 			fighter.use_skill_1()
-		if Input.is_action_just_pressed("skill_2"):
+		if Input.is_action_just_pressed(_action("skill_2")):
 			fighter.use_skill_2()
-		if Input.is_action_just_pressed("skill_3"):
+		if Input.is_action_just_pressed(_action("ultimate")):
 			fighter.use_ultimate()
 	else:
 		# 멈춘 순간의 관성으로 계속 미끄러지지 않도록 수평 속도를 0으로 고정
 		fighter.move(0.0)
 
 	fighter.apply_physics(delta)
+
+## 아래 방향 키를 누른 채 점프를 눌렀을 때 — 발밑 발판을 통과해서 아래층으로 내려간다.
+## TODO: 현재 맵에는 통과 가능한 발판(one_way_collision)이 아직 없어서 동작하지 않는다.
+## 발판을 원웨이로 만든 뒤 여기서 통과 처리를 구현할 것
+func _drop_through_platform() -> void:
+	pass

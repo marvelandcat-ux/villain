@@ -23,7 +23,7 @@
 - **주의(실제로 겪은 버그):** `get_tree().create_timer(t).timeout.connect(func(): 어떤노드.뭔가 = 값)`처럼 다른 노드를 건드리는 콜백을 예약할 때, 그 노드가 타이머가 끝나기 전에 사라지면(대전 도중 나가기·다시하기 등으로 씬이 통째로 정리되는 경우) `ERROR: Lambda capture ... was freed`가 나면서 사라진 노드를 건드리려다 에러가 난다. `get_tree().create_timer()`는 SceneTree에 속해서 관련 노드보다 오래 살아남기 때문. 해결책은 `is_instance_valid()` 체크가 아니라 **그 노드(또는 관련 스킬 노드)의 자식으로 `Timer` 노드를 만들어서 씀** — 부모가 사라지면 자식 Timer도 같이 사라져서 콜백 자체가 아예 실행되지 않는다(`Fighter._after()`, `GuardSkill.gd`, `FirePlate.gd`, `Projectile.gd` 참고). `await get_tree().create_timer(t).timeout`처럼 하나만 기다리고 끝내는 짧은 대기(`MeleeAttack`의 히트박스 on/off 등)는 이 문제가 잘 안 생겨서 그대로 둬도 됨
 - **주의(실제로 겪은 버그):** `Skill`은 `Node`를 상속해서 `Node2D`가 아니다. 그래서 `Hitbox`(Area2D)를 Skill 노드의 자식으로 둔 경우 `hitbox.position = ...`(부모 상대 좌표)을 쓰면 부모 트랜스폼 체인이 끊겨서 항상 `(0,0)` 기준으로 배치된다 — 겉으로는 에러 없이 조용히 공격이 안 맞는 버그가 된다. 이런 히트박스는 반드시 `hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0)`처럼 **global_position으로 직접 배치**할 것 (`MeleeAttack.gd`, `CounterSlamSkill.gd` 참고). 반대로 `Projectile`/`FirePlate`처럼 맵(Node2D)에 직접 `add_child`하는 경우는 이 문제가 없음
 - 이동을 잠깐 가로채는 스킬(돌진 등)은 `Fighter.movement_override`에 자기 자신을 등록하고 `get_move_velocity_x()`/`after_physics(fighter, delta)`를 구현 (`skills/DashSkill.gd` 참고)
-- 궁극기가 없는 캐릭터(예수천국 불신지옥)는 `SkillUltimate` 자리에 `skills/StanceSwitcher.gd`를 넣어서 숫자키 3으로 스탠스(천사/악마)를 전환하고, `skill_1`/`skill_2`가 가리키는 실제 스킬을 바꿔치기하는 방식으로 구현. 전환할 때마다 `Visual.modulate`를 흰색/붉은색으로 바꿔서 지금 어느 스탠스인지 눈으로 구분되게 함
+- 궁극기가 없는 캐릭터(예수천국 불신지옥)는 `SkillUltimate` 자리에 `skills/StanceSwitcher.gd`를 넣어서 궁극기 키(P1 R / P2 P)로 스탠스(천사/악마)를 전환하고, `skill_1`/`skill_2`가 가리키는 실제 스킬을 바꿔치기하는 방식으로 구현. 전환할 때마다 `Visual.modulate`를 흰색/붉은색으로 바꿔서 지금 어느 스탠스인지 눈으로 구분되게 함
 - `Fighter.is_feared`/`apply_fear(duration)`: 공포 상태(지하철빌런 `skills/FearSkill.gd`)면 이동은 되지만 `use_skill_1/2/ultimate/basic_attack`이 전부 무시된다("무서워서 반격을 못 하는" 느낌). `set_tint`로 색조도 같이 걸어서 눈으로 구분됨
 - `combat/Hitbox.gd`의 `pull_to_source`/`pull_strength`: true면 고정된 `knockback` 대신, 맞는 순간 공격자 쪽 방향을 계산해서 끌어당긴다(청소기 흡입 — `skills/VacuumSkill.gd`)
 - `skills/AoeAttack.gd`: `MeleeAttack`(전방 사각형)과 별개로, 캐릭터 자신을 중심으로 한 원형 범위 공격 공용 스킬. `damage`/`radius`에 더해 `slow_multiplier`/`slow_duration`을 주면 맞은 상대에게 `apply_temp_multiplier`로 둔화 디버프도 건다(층간피해빌런 기타연주, 재사용 가능)
@@ -32,12 +32,48 @@
 
 ## 조작 / AI
 
-- `controllers/PlayerController.gd`: 방향키 이동/점프, 스킬 입력을 읽어서 부모 Fighter를 조작
+- `controllers/PlayerController.gd`: 이동/점프/공격/스킬 입력을 읽어서 부모 Fighter를 조작. `player_index`(1 또는 2)에 따라 `p1_*`/`p2_*` 액션을 읽으므로 P1/P2 모두 사람이 조작할 수 있다
 - `controllers/AIController.gd`: 목표 Fighter와의 거리를 보고 접근/거리유지/후퇴/기본공격/스킬 사용을 스스로 결정하는 단순 AI. Fighter 입장에서 플레이어가 조작하는지 AI가 조작하는지 구분이 없음(둘 다 `fighter.move()`, `fighter.use_skill_1()` 등 같은 공용 메서드만 호출)
   - `skill_2`가 투사체 스킬(`projectile_scene` 프로퍼티를 가짐 — BBGunSkill/VomitSkill)이면 원거리 캐릭터로 판단해서 `ranged_distance`(기본 180px)를 유지하며 견제. 캐릭터마다 분기하지 않고 스킬 구성만 보고 판단하는 방식이라 새 캐릭터가 원거리 스킬을 skill_2에 넣기만 하면 자동으로 이 행동을 함
   - 쓸 수 있는 스킬이 하나도 없을 때(`_all_skills_on_cooldown`) 가끔 확률적으로 한 발짝 물러나서 쿨타임을 버는 "후퇴" 상태가 있음. 바닥에 있을 때 낮은 확률로 그냥 점프도 함(움직임이 자연스러워 보이도록)
   - **주의(실제로 겪은 버그):** 뒤로 빠지거나 거리를 벌릴 때 `fighter.move(-dir)`을 쓰는데, `Fighter.move()`는 이동 방향으로 `facing`도 같이 바꾼다 — 그래서 후퇴 중엔 상대를 등지게 되고, 그 상태에서 투사체 스킬을 쓰면 반대 방향으로 나가버려 절대 안 맞는 버그가 있었다. 후퇴 이동을 시킨 직후 `fighter.facing`을 상대 쪽으로 다시 강제해서 고침
-- 기본공격은 **Z키**(`basic_attack` 액션), 스킬1/스킬2/궁극기는 숫자키 **1/2/3**(`skill_1`/`skill_2`/`skill_3`) — `project.godot`의 InputMap에 등록되어 있음. 이동은 Godot 기본 UI 액션(방향키, ui_up 점프)을 임시로 씀. **P2는 항상 AI가 조작**하기로 게임 플로우 상 확정돼서(캐릭터 선택 화면에서 P1만 플레이어) 2P 전용 키 입력은 필요 없어짐
+- **조작키 확정(2026-08-30)** — `project.godot`의 InputMap에 `p1_*`/`p2_*` 액션으로 등록되어 있음. 같은 키보드를 둘이 나눠 쓰는 로컬 대전 기준:
+
+| 조작 | P1 | P2 | 액션 이름 |
+|---|---|---|---|
+| 이동 | A / D | ← / → | `p1_left`·`p1_right` / `p2_left`·`p2_right` |
+| 점프 | W | ↑ | `p1_jump` / `p2_jump` |
+| 기본공격 | F | L | `p1_basic_attack` / `p2_basic_attack` |
+| 스킬1 | G | K | `p1_skill_1` / `p2_skill_1` |
+| 스킬2 | H | J | `p1_skill_2` / `p2_skill_2` |
+| 궁극기 | R | P | `p1_ultimate` / `p2_ultimate` |
+| 플랫폼 아래로 내려가기 | S 누른 채 W | ↓ 누른 채 ↑ | `p1_down`+`p1_jump` / `p2_down`+`p2_jump` |
+
+  - 이전의 임시 배정(방향키 이동 + Z 기본공격 + 숫자키 1/2/3)은 폐기됨. 액션 이름도 `basic_attack`/`skill_3` → `p1_basic_attack`/`p1_ultimate` 식으로 바뀜
+  - "P2는 항상 AI라 2P 키가 필요 없다"던 이전 결론도 이 결정으로 뒤집힘 — 키는 다 등록해뒀지만, `Stage.gd`는 아직 P2에 `ClaudeAIController`를 붙이므로 **실제 2P 사람 조작을 켜려면 `_spawn_fighter(..., is_ai)` 인자를 false로 넘기는 분기(모드 선택)가 추가로 필요**하다
+  - **TODO(미구현):** 플랫폼 아래로 내려가기는 키만 잡아두고 동작은 비어 있다(`PlayerController._drop_through_platform()`). 현재 맵 발판에 원웨이 충돌(one_way_collision)이 하나도 없어서, 발판을 원웨이로 바꾼 뒤에 통과 처리를 구현해야 함
+
+## 캐릭터 몸(스프라이트 조립)
+
+`characters/BodyRig.tscn` — 러프 스프라이트 조각(머리/몸/손/발)을 Sprite2D로 조립해둔 공용 몸. 캐릭터 씬의 `Visual` 자리에 인스턴스로 넣는다(현재 주정뱅이만 적용). 이름이 `Visual`이라 피격 시 빨개지는 연출(`Fighter._flash_hit`)이나 궁극기 연출이 그대로 동작한다.
+
+- 몸/손/발 스프라이트는 캐릭터 공용이고, `Head`의 텍스처만 갈아끼우면 다른 캐릭터를 만들 수 있다
+- **캐릭터별 머리는 씬 상속으로 만든다.** `BodyRig.tscn`을 상속한 씬을 캐릭터 폴더에 두고 `Head`의 텍스처/위치/크기만 덮어쓴다(예: `characters/akpeulleo/AkpeulleoRig.tscn`). 이러면 몸/손/발 위치를 `BodyRig.tscn`에서 한 번만 고쳐도 전 캐릭터에 반영되고, 에디터에서 미리보기도 제대로 된다. 현재 주정뱅이(BodyRig 자체가 주정뱅이 머리를 들고 있음)·악플러·예수천국 세 명 적용됨. 예수천국의 `Yeegy.png`는 흉상(머리+상체) 그림이라 그대로 쓰면 몸을 다 가려서, Sprite2D의 `region_rect`로 머리 부분만 잘라 쓴다
+- 조각 위치는 **에디터에서 `BodyRig.tscn`을 직접 열어** 옮긴다. 캐릭터 씬 쪽에서 `Visual`을 펼쳐 만지면 그 캐릭터만의 덮어쓰기가 생기니 주의
+- `characters/BodyRig.gd`: 애니메이션 파일 없이 **코드로 걷기 동작**을 만든다. 부모 Fighter의 속도를 보고 **왼발 한 걸음 → 오른발 한 걸음**을 번갈아 재생하고(걷는 쪽 발만 `foot_swing_deg`만큼 기울었다 돌아오고, 반대쪽 발은 제자리에 붙어 있는다), 한 걸음마다 몸/머리/손을 위로 살짝 들썩이게 한다(`body_bob`). 두 발을 서로 반대로 회전시키는 방식은 어색하다는 피드백을 받아 폐기함. 왼쪽으로 갈 때는 리그 전체의 `scale.x` 부호를 뒤집어 좌우 반전한다(크기는 안 건드리고 부호만 — 궁극기 연출이 `Visual.scale`을 만지기 때문). 각 조각의 제자리 값은 `_ready()`에서 씬에 저장된 위치를 그대로 기억하므로, **에디터에서 위치를 옮겨도 애니메이션 코드는 고칠 필요가 없다**
+- 공중에 떠 있는 동안(`is_on_floor()`가 false) 두 발이 함께 `jump_foot_deg`(60도)만큼 들리고, 착지하면 원래 각도로 돌아온다
+- 흔들림 세기·걸음 빠르기는 전부 `@export`라 인스펙터에서 조절 가능: `foot_swing_deg`(22도) / `foot_stride`(3px) / `body_bob`(2px) / `step_speed`(9) / `blend_speed`(8) / `jump_foot_deg`(60도) / `jump_blend_speed`(12)
+- **아직 안 된 것:** 공격 모션
+
+## 훈련장 (값 조정용)
+
+`maps/TrainingGround.tscn` — 평평한 바닥 하나에 캐릭터 하나만 세워두고 **중력·점프력·이동속도를 슬라이더로 실시간으로 바꿔보는 방**. 아직 이 수치들이 확정되지 않아서 만든 개발용 화면이다.
+
+- 배경에 가로 100px / 세로 50px 눈금선을 그려서 이동 거리와 점프 높이를 눈으로 잴 수 있다(500px마다 진한 선)
+- 점프할 때마다 **최고 높이 / 체공 시간 / 수평 이동 거리**를 자동으로 재서 패널에 표시한다 (기본값 중력 900·점프력 -350 기준: 약 65px, 0.78초)
+- 조절 패널은 게임 UI가 아니라 개발 도구라서 `.tscn`에 배치하지 않고 `TrainingGround.gd`에서 코드로 만든다
+- **중요:** 이 화면에서 값을 바꾸려고 `Fighter.GRAVITY`/`JUMP_VELOCITY` 상수를 `static var Fighter.gravity`/`Fighter.jump_velocity`로 바꿨다. 모든 Fighter가 공유하는 값이고, 훈련장에서 바꾼 값은 **게임을 끌 때까지 유지**돼서 그대로 로컬 대전에 들어가 시험해볼 수 있다. 값이 마음에 들면 `Fighter.gd`의 `DEFAULT_GRAVITY`/`DEFAULT_JUMP_VELOCITY`에 옮겨 적어야 영구 반영된다
+- 이동속도는 캐릭터별 스탯(`stats/*.tres`의 `move_speed`)이라 훈련장에서는 배수(`move_speed_multiplier`)로만 조절한다 — 확정되면 각 `.tres`를 고칠 것
 
 ## 게임 플로우 / 씬 전환
 
@@ -46,6 +82,8 @@
 **로컬 대전(PvP) 흐름:** `ui/MainMenu.tscn`(시작) → `ui/ModeSelect.tscn`("로컬 대전" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
 
 **스토리 모드 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAP_PATH`로 고정) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+
+**훈련장 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("훈련장" 선택) → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
 - 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음

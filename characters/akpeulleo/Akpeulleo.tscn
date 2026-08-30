@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/AkpeulleoStats.tres" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://skills/TauntSkill.gd" id="6"]
 [ext_resource type="Script" path="res://skills/RageBuffSkill.gd" id="7"]
 [ext_resource type="Script" path="res://skills/WeakenAuraUltimate.gd" id="8"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/AkpeulleoRig.tscn" id="9"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -23,9 +24,7 @@ stats = ExtResource("2")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.15, 0.15, 0.18, 1)
-polygon = PackedVector2Array(-18, -30, 18, -30, 18, 30, -18, 30)
+[node name="Visual" parent="." instance=ExtResource("9")]
 
 [node name="Hurtbox" type="Area2D" parent="."]
 script = ExtResource("5")

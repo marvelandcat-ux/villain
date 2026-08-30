@@ -18,9 +18,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -140.0
-offset_top = -110.0
+offset_top = -135.0
 offset_right = 140.0
-offset_bottom = 110.0
+offset_bottom = 135.0
 alignment = 1
 
 [node name="StatusLabel" type="Label" parent="VBox"]
@@ -35,9 +35,14 @@ text = "스토리 모드"
 custom_minimum_size = Vector2(0, 44)
 text = "로컬 대전"
 
+[node name="TrainingButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 44)
+text = "훈련장"
+
 [node name="BackButton" type="Button" parent="VBox"]
 text = "메인 메뉴로 (ESC)"
 
 [connection signal="pressed" from="VBox/StoryButton" to="." method="_on_story_pressed"]
 [connection signal="pressed" from="VBox/LocalPvpButton" to="." method="_on_local_pvp_pressed"]
+[connection signal="pressed" from="VBox/TrainingButton" to="." method="_on_training_pressed"]
 [connection signal="pressed" from="VBox/BackButton" to="." method="_on_back_pressed"]

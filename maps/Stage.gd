@@ -19,8 +19,8 @@ var _combat_hud: CombatHUD
 
 func _ready() -> void:
 	_round_time_left = GameState.time_limit_seconds
-	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false)
-	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", true)
+	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false, 1)
+	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", true, 2)
 
 	# 스폰된 Fighter들의 _ready()가 끝날 때까지 한 프레임 기다렸다가 연결한다
 	await get_tree().process_frame
@@ -104,14 +104,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
-func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool) -> Fighter:
+## player_index는 사람이 조작할 때 어느 쪽 키(1P: A/D/W/F/G/H/R, 2P: 방향키/L/K/J/P)를 읽을지 정한다
+func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool, player_index: int) -> Fighter:
 	var scene: PackedScene = load(character_path)
 	var fighter: Fighter = scene.instantiate()
 	add_child(fighter)
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
 		fighter.global_position = spawn.global_position
-	fighter.add_child(ClaudeAIController.new() if is_ai else PlayerController.new())
+	if is_ai:
+		fighter.add_child(ClaudeAIController.new())
+	else:
+		var controller := PlayerController.new()
+		controller.player_index = player_index
+		fighter.add_child(controller)
 	return fighter
 
 func _freeze_controllers() -> void:
