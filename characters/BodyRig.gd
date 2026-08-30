@@ -3,7 +3,8 @@ extends Node2D
 
 ## 스프라이트 조각(머리/몸/손/발)을 붙여 만든 몸에 걷기 동작을 입히는 스크립트.
 ## 애니메이션 파일 없이, 부모 Fighter의 속도를 보고 매 프레임 각 조각의 위치/회전을 직접 계산한다.
-##  - 발: 왼발 한 걸음, 오른발 한 걸음씩 번갈아 움직인다 (한쪽이 움직이는 동안 다른 쪽은 바닥에 붙어 있다)
+##  - 발: 두 발이 반 바퀴 어긋난 채로 계속 앞뒤를 오간다 (앞발/뒷발이 번갈아 바뀌는 교차 걸음)
+##  - 손: 발과 반대로 앞뒤로 흔들린다 (왼발이 나갈 때 오른손이 앞으로)
 ##  - 몸/머리/손: 한 걸음마다 위로 살짝 들썩 (bob)
 ##  - 공중에 뜨면: 두 발이 함께 크게 들렸다가, 착지하면 제자리로 돌아온다
 ## 각 조각의 "제자리" 값은 씬에 저장된 위치를 _ready에서 그대로 기억해두고 거기서부터 흔든다.
@@ -11,10 +12,12 @@ extends Node2D
 
 ## 걸을 때 발끝이 위로 들리는 최대 각도(도)
 @export var foot_swing_deg: float = 22.0
-## 발이 앞뒤로 움직이는 거리(px) — 회전만으로는 제자리걸음처럼 보여서 아주 살짝 곁들인다
-@export var foot_stride: float = 3.0
+## 발이 제자리에서 앞뒤로 움직이는 거리(px) — 클수록 보폭이 커지고 앞발/뒷발이 뚜렷하게 바뀐다
+@export var foot_stride: float = 8.0
 ## 몸이 들썩이는 높이(px)
 @export var body_bob: float = 2.0
+## 손이 앞뒤로 흔들리는 거리(px)
+@export var hand_swing: float = 5.0
 ## 걸음 빠르기 — 캐릭터가 최고 속도로 달릴 때 1초에 이 값(라디안)만큼 걸음 위상이 진행된다
 @export var step_speed: float = 9.0
 ## 걷기 시작/멈출 때 동작이 켜지고 꺼지는 빠르기 (클수록 뚝뚝 끊긴다)
@@ -80,31 +83,38 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	var amount: float = _blend * maxf(speed_ratio, 0.4)
 
-	# 한 바퀴(_phase가 0~2파이)를 반씩 나눠서 앞쪽 절반은 왼발, 뒤쪽 절반은 오른발이 한 걸음씩 움직인다.
-	# step은 0 → 1 → 0 으로 올라갔다 내려오는 반쪽 사인 곡선 — 발을 들었다가 다시 내려놓는 한 걸음이다
-	var cycle: float = fmod(_phase, TAU)
-	var left_stepping: bool = cycle < PI
-	var step: float = sin(cycle if left_stepping else cycle - PI) * amount
+	# 두 발은 반 바퀴 어긋난 채로 계속 앞뒤를 오간다 — 한쪽이 앞으로 나가면 다른 쪽은 뒤로 밀리고,
+	# 반 바퀴 뒤에 앞발과 뒷발이 뒤바뀐다
+	var swing: float = sin(_phase)
 
-	# 걷는 쪽 발만 움직이고, 반대쪽 발은 제자리(0)에 붙어 있는다.
-	# 공중에서는 걷기(step)가 0으로 잦아들고 대신 두 발이 함께 점프 각도로 들린다
-	_pose_foot(_foot_l, step if left_stepping else 0.0)
-	_pose_foot(_foot_r, 0.0 if left_stepping else step)
+	# 앞으로 나가는 동안(swing이 양수)에만 발끝을 들고, 뒤로 밀리는 동안엔 바닥을 딛는 것처럼 눕힌다.
+	# 공중에서는 걷기 쪽이 0으로 잦아들고 대신 두 발이 함께 점프 각도로 뻗는다
+	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount)
+	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount)
 
-	# 발을 들어올리는 순간 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
-	var bob: float = -step * body_bob
+	# 발이 가장 높이 들렸을 때 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
+	var bob: float = -absf(swing) * body_bob * amount
 	for part in [_body, _head, _hand_l, _hand_r]:
 		if part:
 			part.position.y = _rest_positions[part].y + bob
 
-## 발 하나의 자세를 잡는다. step은 0(제자리)~1(한 걸음 최대) 값
-func _pose_foot(foot: Sprite2D, step: float) -> void:
+	# 손은 발과 반대로 흔들린다. sin은 앞쪽 절반(왼발이 나가는 동안)에 양수라
+	# 그때 오른손이 앞으로 나가고 왼손이 뒤로 빠진다
+	var arm: float = sin(_phase) * amount * hand_swing
+	if _hand_l:
+		_hand_l.position.x = _rest_positions[_hand_l].x - arm
+	if _hand_r:
+		_hand_r.position.x = _rest_positions[_hand_r].x + arm
+
+## 발 하나의 자세를 잡는다.
+## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
+func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	if foot == null:
 		return
 	# 걷기는 발끝이 위로 들리게(각도 양수 = 시계 방향이라 부호를 뒤집는다),
 	# 점프는 반대로 발끝이 아래로 뻗게 해서 서로 반대 방향으로 돈다
-	foot.rotation = deg_to_rad(-foot_swing_deg * step + jump_foot_deg * _air_blend)
-	foot.position.x = _rest_positions[foot].x + foot_stride * step
+	foot.rotation = deg_to_rad(-foot_swing_deg * lift + jump_foot_deg * _air_blend)
+	foot.position.x = _rest_positions[foot].x + foot_stride * slide
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,
