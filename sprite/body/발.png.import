@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cg4ksrlvccxht"
-path="res://.godot/imported/스크린샷 2026-08-30 175331-Photoroom.png-2233a431e71ec7ef0124429e2ce30345.ctex"
+uid="uid://1mwlfronfesm"
+path="res://.godot/imported/발.png-728fb079faeb5bf812fabb2ca6000f22.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/body/스크린샷 2026-08-30 175331-Photoroom.png"
-dest_files=["res://.godot/imported/스크린샷 2026-08-30 175331-Photoroom.png-2233a431e71ec7ef0124429e2ce30345.ctex"]
+source_file="res://sprite/body/발.png"
+dest_files=["res://.godot/imported/발.png-728fb079faeb5bf812fabb2ca6000f22.ctex"]
 
 [params]
 

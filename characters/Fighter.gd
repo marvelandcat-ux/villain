@@ -197,8 +197,17 @@ func use_ultimate() -> void:
 		skill_ultimate.use(self)
 
 func use_basic_attack() -> void:
-	if basic_attack and not is_feared:
+	# 쿨타임 중이면 use()가 아무것도 안 하므로, 실제로 나가는 경우에만 공격 모션을 재생한다
+	if basic_attack and not is_feared and basic_attack.can_use():
 		basic_attack.use(self)
+		_play_visual_attack()
+
+## 공격 모션을 가진 비주얼(BodyRig 등)에 휘두르라고 알린다.
+## 아직 임시 사각형(Polygon2D)을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다
+func _play_visual_attack() -> void:
+	var visual := get_node_or_null("Visual")
+	if visual and visual.has_method("play_attack_swing"):
+		visual.play_attack_swing()
 
 ## 1대1 전제로 자기 자신이 아닌 다른 Fighter를 찾는다
 func find_opponent() -> Fighter:

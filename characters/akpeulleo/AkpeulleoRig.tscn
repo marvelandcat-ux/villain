@@ -5,7 +5,7 @@
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
 
-[node name="Head" parent="." index="5" unique_id=1394957076]
+[node name="Head" parent="." index="6" unique_id=1394957076]
 position = Vector2(-6.000002, -33)
 scale = Vector2(0.05860626, 0.06282751)
 texture = ExtResource("2_head")

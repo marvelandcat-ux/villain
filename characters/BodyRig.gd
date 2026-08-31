@@ -7,6 +7,11 @@ extends Node2D
 ##  - 손: 발과 반대로 앞뒤로 흔들린다 (왼발이 나갈 때 오른손이 앞으로)
 ##  - 몸/머리/손: 한 걸음마다 위로 살짝 들썩 (bob)
 ##  - 공중에 뜨면: 두 발이 함께 크게 들렸다가, 착지하면 제자리로 돌아온다
+##  - 기본공격을 쓰면 오른손이 머리 뒤까지 크게 넘어갔다가 앞으로 내려찍는다
+##
+## 무기(소주병 등)는 "HandRHold" 노드의 자식으로 달면 오른손의 움직임/스윙을 그대로 따라간다.
+## HandR 자체의 자식으로 달면 손 스프라이트의 축소 배율(0.11)까지 물려받아 좌표 잡기가 번거로워서,
+## 배율 1인 빈 Node2D를 따로 두고 코드로 손 위치·회전만 복사해준다
 ## 각 조각의 "제자리" 값은 씬에 저장된 위치를 _ready에서 그대로 기억해두고 거기서부터 흔든다.
 ## 그래서 에디터에서 조각 위치를 옮겨도 애니메이션 코드는 손댈 필요가 없다.
 
@@ -26,6 +31,16 @@ extends Node2D
 @export var jump_foot_deg: float = 60.0
 ## 점프 자세로 바뀌고 착지해서 풀리는 빠르기
 @export var jump_blend_speed: float = 12.0
+## 기본공격 예비동작에서 손이 돌아가는 각도(도) — 반시계 방향(무기가 뒤로 넘어간다)
+@export var attack_raise_deg: float = 100.0
+## 기본공격에서 손이 내려찍히는 각도(도) — 시계 방향
+@export var attack_swing_deg: float = 130.0
+## 예비동작에서 손이 제자리로부터 이동하는 거리(px) — 머리 뒤쪽 위로 크게 넘긴다
+@export var attack_raise_offset: Vector2 = Vector2(-32, -34)
+## 내려찍었을 때 손이 제자리로부터 이동하는 거리(px) — 앞쪽 아래로
+@export var attack_slam_offset: Vector2 = Vector2(10, 16)
+## 들어올리기 → 내리치기 → 복귀까지 걸리는 전체 시간(초)
+@export var attack_duration: float = 0.4
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -33,6 +48,8 @@ extends Node2D
 @onready var _head: Sprite2D = get_node_or_null("Head")
 @onready var _hand_l: Sprite2D = get_node_or_null("HandL")
 @onready var _hand_r: Sprite2D = get_node_or_null("HandR")
+## 오른손이 든 물건(소주병 등)을 매다는 빈 노드 — 손의 위치·회전을 그대로 따라간다
+@onready var _hand_r_hold: Node2D = get_node_or_null("HandRHold")
 
 var _fighter: Fighter
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
@@ -41,6 +58,8 @@ var _phase: float = 0.0
 var _blend: float = 0.0
 ## 점프 자세 세기 (0=바닥, 1=완전히 공중 자세). 뜨고 내릴 때 각도가 툭 튀지 않게 서서히 오간다
 var _air_blend: float = 0.0
+## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
+var _attack_time: float = 0.0
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
 
@@ -62,6 +81,9 @@ func _process(delta: float) -> void:
 		var max_speed: float = _fighter.stats.move_speed * _fighter.move_speed_multiplier
 		if max_speed > 0.0:
 			speed_ratio = clampf(absf(_fighter.velocity.x) / max_speed, 0.0, 1.0)
+
+	if _attack_time > 0.0:
+		_attack_time = maxf(_attack_time - delta, 0.0)
 
 	# 공중이면 점프 자세로, 바닥이면 원래 자세로 서서히 옮겨간다
 	var air_target: float = 0.0 if on_floor else 1.0
@@ -105,6 +127,16 @@ func _apply_pose(speed_ratio: float) -> void:
 		_hand_l.position.x = _rest_positions[_hand_l].x - arm
 	if _hand_r:
 		_hand_r.position.x = _rest_positions[_hand_r].x + arm
+		_hand_r.rotation = 0.0
+
+	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
+	if _attack_time > 0.0:
+		_pose_attack_hand()
+
+	# 손에 든 물건이 손을 그대로 따라가게 한다
+	if _hand_r_hold and _hand_r:
+		_hand_r_hold.position = _hand_r.position
+		_hand_r_hold.rotation = _hand_r.rotation
 
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
@@ -115,6 +147,40 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	# 점프는 반대로 발끝이 아래로 뻗게 해서 서로 반대 방향으로 돈다
 	foot.rotation = deg_to_rad(-foot_swing_deg * lift + jump_foot_deg * _air_blend)
 	foot.position.x = _rest_positions[foot].x + foot_stride * slide
+
+## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
+## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
+func play_attack_swing() -> void:
+	_attack_time = attack_duration
+
+## 예비동작이 끝나고 실제로 내리치기 시작하는 시점 (전체 시간 대비 비율)
+const ATTACK_STRIKE_START: float = 0.4
+## 내리치기가 끝나는 시점 — 이 뒤로는 원래 자세로 돌아온다
+const ATTACK_STRIKE_END: float = 0.62
+
+## 스윙 진행도에 따라 오른손의 각도와 위치를 잡는다 (걷기 동작보다 우선한다).
+## 각도는 음수가 반시계 방향(무기가 위로 올라감), 양수가 시계 방향(아래로 내리침)이다
+func _pose_attack_hand() -> void:
+	var progress: float = 1.0 - _attack_time / attack_duration
+	var angle: float
+	var offset: Vector2
+	if progress < ATTACK_STRIKE_START:
+		# ① 손을 머리 뒤쪽 위까지 크게 넘긴다 (끝으로 갈수록 느려지게)
+		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
+		angle = lerpf(0.0, -attack_raise_deg, p)
+		offset = Vector2.ZERO.lerp(attack_raise_offset, p)
+	elif progress < ATTACK_STRIKE_END:
+		# ② 앞쪽 아래로 빠르게 내려찍는다 (실제로 때리는 구간)
+		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
+		angle = lerpf(-attack_raise_deg, attack_swing_deg, p * p)
+		offset = attack_raise_offset.lerp(attack_slam_offset, p * p)
+	else:
+		# ③ 원래 자세로 복귀
+		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		angle = lerpf(attack_swing_deg, 0.0, p)
+		offset = attack_slam_offset.lerp(Vector2.ZERO, p)
+	_hand_r.rotation = deg_to_rad(angle)
+	_hand_r.position = _rest_positions[_hand_r] + offset
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,

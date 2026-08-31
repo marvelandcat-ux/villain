@@ -9,7 +9,7 @@
 [ext_resource type="Script" path="res://skills/VomitSkill.gd" id="7"]
 [ext_resource type="PackedScene" path="res://skills/Projectile.tscn" id="8"]
 [ext_resource type="Script" path="res://skills/JumpDebuffUltimate.gd" id="9"]
-[ext_resource type="PackedScene" path="res://characters/BodyRig.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="10"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -37,6 +37,7 @@ shape = SubResource("CapsuleShape2D_body")
 script = ExtResource("3")
 damage = 6
 range = 40.0
+windup = 0.16
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false

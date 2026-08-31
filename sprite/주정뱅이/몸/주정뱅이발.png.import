@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cibypwd342nhr"
-path="res://.godot/imported/주정뱅이 머리 (1).png-3ce5cf3fd796f4940f72b1aae45da3ab.ctex"
+uid="uid://by8oyj14il3o2"
+path="res://.godot/imported/주정뱅이발.png-0a52b93fddbc24906b2b6ecb62ba1140.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/body/주정뱅이 머리 (1).png"
-dest_files=["res://.godot/imported/주정뱅이 머리 (1).png-3ce5cf3fd796f4940f72b1aae45da3ab.ctex"]
+source_file="res://sprite/주정뱅이/몸/주정뱅이발.png"
+dest_files=["res://.godot/imported/주정뱅이발.png-0a52b93fddbc24906b2b6ecb62ba1140.ctex"]
 
 [params]
 
