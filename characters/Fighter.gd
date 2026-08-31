@@ -192,8 +192,20 @@ func use_skill_2() -> void:
 	if skill_2 and not is_feared:
 		skill_2.use(self)
 
+## 궁극기는 바로 나가지 않고, 씬에 컷인 연출이 있으면 연출을 먼저 재생한다.
+## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다
 func use_ultimate() -> void:
-	if skill_ultimate and not is_feared:
+	if skill_ultimate == null or is_feared or not skill_ultimate.can_use():
+		return
+	var cutin: Node = get_tree().get_first_node_in_group("ultimate_cutin")
+	if cutin and cutin.has_method("play"):
+		cutin.play(self)
+	else:
+		skill_ultimate.use(self)
+
+## 컷인 연출이 끝난 뒤 실제로 궁극기를 발동시킨다 (연출이 없는 씬에서는 쓰이지 않는다)
+func fire_ultimate_now() -> void:
+	if skill_ultimate:
 		skill_ultimate.use(self)
 
 func use_basic_attack() -> void:

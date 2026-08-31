@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://cyost0r03b8qy"]
+
+[ext_resource type="Script" uid="uid://bod3nvnvt2pvk" path="res://ui/cutin/CutInAnimation.gd" id="1_anim"]
+[ext_resource type="Texture2D" uid="uid://b7b7wtl07ydjq" path="res://sprite/주정뱅이/몸/주정뱅이몸.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
+[ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="4_head"]
+[ext_resource type="Texture2D" uid="uid://cyqomoep3m8wl" path="res://sprite/주정뱅이/주정뱅이궁배경.png" id="5_bg"]
+
+[node name="JujeongbaengiCutIn" type="Node2D" unique_id=447903154]
+script = ExtResource("1_anim")
+
+[node name="Background" type="Polygon2D" parent="." unique_id=1104681010]
+color = Color(0.05, 0.23, 0.48, 1)
+polygon = PackedVector2Array(-700, -400, 700, -400, 700, 400, -700, 400)
+
+[node name="BackgroundImage" type="Sprite2D" parent="." unique_id=1387168575]
+position = Vector2(-2.5000458, 0)
+scale = Vector2(0.9147135, 0.78)
+texture = ExtResource("5_bg")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1782779015]
+position = Vector2(15.000001, 280.00003)
+scale = Vector2(1.0494187, 1.0898148)
+texture = ExtResource("2_body")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1953425981]
+position = Vector2(-217, 234)
+scale = Vector2(0.87647074, 0.95862067)
+texture = ExtResource("3_hand")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=751231748]
+position = Vector2(221, 233.99998)
+scale = Vector2(0.78235286, 0.91724133)
+texture = ExtResource("3_hand")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1014242464]
+position = Vector2(0, 30)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("4_head")

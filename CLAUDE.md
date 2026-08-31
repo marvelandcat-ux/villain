@@ -79,6 +79,20 @@
 - **중요:** 이 화면에서 값을 바꾸려고 `Fighter.GRAVITY`/`JUMP_VELOCITY` 상수를 `static var Fighter.gravity`/`Fighter.jump_velocity`로 바꿨다. 모든 Fighter가 공유하는 값이고, 훈련장에서 바꾼 값은 **게임을 끌 때까지 유지**돼서 그대로 로컬 대전에 들어가 시험해볼 수 있다. 값이 마음에 들면 `Fighter.gd`의 `DEFAULT_GRAVITY`/`DEFAULT_JUMP_VELOCITY`에 옮겨 적어야 영구 반영된다
 - 이동속도는 캐릭터별 스탯(`stats/*.tres`의 `move_speed`)이라 훈련장에서는 배수(`move_speed_multiplier`)로만 조절한다 — 확정되면 각 `.tres`를 고칠 것
 
+## 궁극기 컷인 연출
+
+`ui/UltimateCutIn.tscn` — 궁을 쓰면 카메라가 시전자에게 빨려들어갔다가 컷인을 보여주고 돌아온 뒤 실제 궁이 나간다. `Stage.gd`와 `maps/TrainingGround.gd`가 `_ready()`에서 자동으로 심고, `Fighter`는 `ultimate_cutin` 그룹으로 찾아 쓴다(연출 노드가 없는 씬이면 궁이 그냥 즉시 발동).
+
+**기획 확정 사항** (임의로 바꾸지 말 것):
+- **전체 1.5초** — 줌인 0.25 / 컷인 1.0 / 복귀 0.25. 전부 `@export`라 인스펙터에서 조절 가능
+- **연출 중 시간 정지** (`get_tree().paused`). 컷인 노드만 `process_mode = ALWAYS`라 계속 돈다
+- **스킵 없음**
+- **확정타 아님** — 궁은 "연출이 시작될 때 시전자가 있던 자리에서, 그때 바라보던 방향"으로 나간다. 상대도 멈춰 있지만 자동 조준이 아니라서 빗나갈 수 있다
+- 흐름: `Fighter.use_ultimate()`이 쿨타임을 확인하고 연출을 재생 → 연출이 끝나면 `Fighter.fire_ultimate_now()`가 실제 스킬을 발동(쿨타임도 이때 시작)
+- 컷인 장면은 `CharacterStats.ultimate_cutin_scene`(PackedScene)에 지정한다. 비어 있으면 캐릭터 이름만 뜨는 임시 화면
+- **컷인은 그림을 여러 장 그리지 않고 파츠(머리/몸/손)를 코드로 흔들어서 만든다** — `ui/cutin/CutInAnimation.gd`. 자식 중 `Head`/`Body`/`HandL`/`HandR` 이름의 Sprite2D를 찾아 떨림을 점점 키우고(`shake_max`/`shake_speed`), 화면을 서서히 당기고(`zoom_in`), 얼굴을 붉게 물들인다(`red_tint`). 주정뱅이 컷인은 `ui/cutin/JujeongbaengiCutIn.tscn`
+- **괴성은 컷인에서 지르지 않는다.** 컷인은 참는 구간(예비동작)이고, 실제로 지르는 건 화면 복귀 후 인게임 궁극기 — 그래야 판정이 나가는 순간이 살아난다
+
 ## 게임 플로우 / 씬 전환
 
 `GameState.gd`(프로젝트 루트, 오토로드 싱글턴)가 화면 사이에서 선택값을 들고 다닙니다.

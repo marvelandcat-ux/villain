@@ -40,6 +40,8 @@ var _jump_slider: HSlider
 var _speed_slider: HSlider
 
 func _ready() -> void:
+	# 훈련장에서도 궁극기 컷인을 확인할 수 있게 같이 심는다
+	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
 	_build_ui()
 	_spawn_character(GameState.p1_character_path)
 
