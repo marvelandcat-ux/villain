@@ -5,7 +5,8 @@ extends Node2D
 ## 자식으로 Head / Body / HandL / HandR 이름의 Sprite2D가 있으면 자동으로 찾아 쓴다(없는 건 그냥 건너뜀).
 ## Background(단색 판) / BackgroundImage(배경 그림)는 흔들지 않고 화면 확대만 같이 받는다.
 ##
-## 흐름: 시작하면 떨림이 0에서 시작해 `ramp_time`에 걸쳐 최대치까지 점점 심해진다.
+## 흐름: 시작하면 떨림이 0에서 시작해 `ramp_time`에 걸쳐 최대치까지 점점 심해지고,
+## 그와 함께 두 손이 몸 쪽으로 모인다(힘을 주며 움츠리는 느낌).
 ## 괴성은 여기서 지르지 않는다 — 컷인은 "참는 구간"이고, 실제로 지르는 건 화면 복귀 후 인게임 궁극기다.
 ##
 ## 파츠 위치는 씬에 저장된 값을 그대로 기억해뒀다가 거기서부터 흔들기 때문에,
@@ -23,6 +24,8 @@ extends Node2D
 @export var red_tint: float = 0.45
 ## 손은 얼굴보다 더 심하게 떨리게 하는 배수
 @export var hand_shake_scale: float = 1.6
+## 끝까지 갔을 때 두 손이 몸 쪽으로 모이는 거리(px). x는 안쪽으로, y는 위로(음수가 위)
+@export var hand_pull_in: Vector2 = Vector2(55, -25)
 
 @onready var _head: Sprite2D = get_node_or_null("Head")
 @onready var _body: Sprite2D = get_node_or_null("Body")
@@ -56,8 +59,10 @@ func _process(delta: float) -> void:
 	# 파츠마다 위상을 다르게 줘서 따로따로 덜덜 떨리게 한다
 	_shake(_body, intensity, 0.0, 1.0)
 	_shake(_head, intensity, 1.3, 1.0)
-	_shake(_hand_l, intensity, 2.6, hand_shake_scale)
-	_shake(_hand_r, intensity, 4.1, hand_shake_scale)
+	# 손은 떨면서 동시에 몸 쪽으로 모인다 (왼손은 오른쪽으로, 오른손은 왼쪽으로)
+	var pull: Vector2 = hand_pull_in * intensity
+	_shake(_hand_l, intensity, 2.6, hand_shake_scale, Vector2(pull.x, pull.y))
+	_shake(_hand_r, intensity, 4.1, hand_shake_scale, Vector2(-pull.x, pull.y))
 
 	# 화면 전체가 서서히 다가온다
 	scale = _rest_scale * (1.0 + zoom_in * intensity)
@@ -67,11 +72,13 @@ func _process(delta: float) -> void:
 		var red: float = red_tint * intensity
 		_head.modulate = Color(1.0, 1.0 - red, 1.0 - red)
 
-func _shake(part: Sprite2D, intensity: float, phase: float, scale_multiplier: float) -> void:
+## base_offset은 떨림과 별개로 제자리에서 옮겨놓을 거리 (손이 몸 쪽으로 모이는 데 쓴다)
+func _shake(part: Sprite2D, intensity: float, phase: float, scale_multiplier: float,
+		base_offset: Vector2 = Vector2.ZERO) -> void:
 	if part == null:
 		return
 	var amount: float = shake_max * intensity * scale_multiplier
 	var angle: float = _time * shake_speed * TAU
 	# x와 y의 주기를 다르게 해서 같은 방향으로만 흔들리지 않게 한다
 	var offset := Vector2(sin(angle + phase), sin(angle * 1.37 + phase * 2.0)) * amount
-	part.position = _rest_positions[part] + offset
+	part.position = _rest_positions[part] + base_offset + offset
