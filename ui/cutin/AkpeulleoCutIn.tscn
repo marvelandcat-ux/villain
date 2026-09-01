@@ -1,0 +1,233 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://ui/cutin/AkpeulleoCutIn.gd" id="1_cutin"]
+[ext_resource type="Shader" path="res://ui/cutin/blur.gdshader" id="2_blur"]
+[ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="7_front"]
+[ext_resource type="Texture2D" uid="uid://daj7hrn5nnjrj" path="res://sprite/악플러/몸/악플러몸통.png" id="4_body"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="5_hand"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_light"]
+blend_mode = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blur"]
+shader = ExtResource("2_blur")
+shader_parameter/blur_amount = 0.0
+
+[node name="AkpeulleoCutIn" type="Node2D"]
+script = ExtResource("1_cutin")
+
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.05, 0.04, 0.08, 1)
+polygon = PackedVector2Array(-700, -400, 700, -400, 700, 400, -700, 400)
+
+[node name="PortraitBody" type="Sprite2D" parent="."]
+modulate = Color(0.72, 0.7, 0.78, 1)
+position = Vector2(-285, 300)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("4_body")
+
+[node name="BlurHead" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_blur")
+modulate = Color(0.95, 0.92, 0.97, 1)
+position = Vector2(-285, -66)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("7_front")
+
+[node name="MonitorLight" type="Node2D" parent="."]
+material = SubResource("CanvasItemMaterial_light")
+
+[node name="Bounce" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.86, 0.45, 0.1)
+polygon = PackedVector2Array(0.0, 190.0, -7.5, 236.7, -29.7, 281.1, -65.5, 320.9, -113.0, 354.2, -169.8, 379.2, -233.2, 394.7, -300.0, 400.0, -366.8, 394.7, -430.2, 379.2, -487.0, 354.2, -534.5, 320.9, -570.3, 281.1, -592.5, 236.7, -600.0, 190.0, -592.5, 143.3, -570.3, 98.9, -534.5, 59.1, -487.0, 25.8, -430.2, 0.8, -366.8, -14.7, -300.0, -20.0, -233.2, -14.7, -169.8, 0.8, -113.0, 25.8, -65.5, 59.1, -29.7, 98.9, -7.5, 143.3)
+
+[node name="Streak0Layer0" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.09)
+polygon = PackedVector2Array(-512.2, -70.8, -380.8, 176.4, -407.8, 190.8, -539.2, -56.4)
+
+[node name="Streak0Layer1" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.16)
+polygon = PackedVector2Array(-518.2, -67.6, -386.7, 179.6, -401.8, 187.6, -533.3, -59.6)
+
+[node name="Streak0Layer2" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.4)
+polygon = PackedVector2Array(-521.8, -65.7, -390.3, 181.5, -398.2, 185.7, -529.7, -61.5)
+
+[node name="Streak1Layer0" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.09)
+polygon = PackedVector2Array(-374.3, 27.7, -261.7, 239.6, -285.7, 252.3, -398.3, 40.4)
+
+[node name="Streak1Layer1" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.16)
+polygon = PackedVector2Array(-379.6, 30.5, -267.0, 242.4, -280.4, 249.5, -393.0, 37.6)
+
+[node name="Streak1Layer2" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.4)
+polygon = PackedVector2Array(-382.8, 32.2, -270.1, 244.1, -277.2, 247.8, -389.9, 35.9)
+
+[node name="Streak2Layer0" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.09)
+polygon = PackedVector2Array(-238.7, -54.2, -114.3, 179.8, -141.3, 194.2, -265.7, -39.8)
+
+[node name="Streak2Layer1" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.16)
+polygon = PackedVector2Array(-244.7, -51.0, -120.2, 183.0, -135.3, 191.0, -259.8, -43.0)
+
+[node name="Streak2Layer2" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.93, 0.55, 0.4)
+polygon = PackedVector2Array(-248.2, -49.1, -123.8, 184.9, -131.8, 189.1, -256.2, -44.9)
+
+[node name="TypeHandL" type="Sprite2D" parent="."]
+position = Vector2(-498, 208)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("5_hand")
+flip_h = true
+
+[node name="TypeHandR" type="Sprite2D" parent="."]
+position = Vector2(-72, 208)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("5_hand")
+
+[node name="TapMarkL" type="Node2D" parent="."]
+position = Vector2(-498, 208)
+
+[node name="Bar0" type="Polygon2D" parent="TapMarkL"]
+color = Color(0.12, 0.12, 0.16, 1)
+polygon = PackedVector2Array(8.0, -41.8, 0.8, -16.8, -4.0, -18.2, 3.2, -43.2)
+
+[node name="Bar1" type="Polygon2D" parent="TapMarkL"]
+color = Color(0.12, 0.12, 0.16, 1)
+polygon = PackedVector2Array(-4.7, -29.4, -19.2, -7.8, -23.3, -10.6, -8.8, -32.2)
+
+[node name="TapMarkR" type="Node2D" parent="."]
+position = Vector2(-72, 208)
+
+[node name="Bar0" type="Polygon2D" parent="TapMarkR"]
+color = Color(0.12, 0.12, 0.16, 1)
+polygon = PackedVector2Array(-3.2, -43.2, 4.0, -18.2, -0.8, -16.8, -8.0, -41.8)
+
+[node name="Bar1" type="Polygon2D" parent="TapMarkR"]
+color = Color(0.12, 0.12, 0.16, 1)
+polygon = PackedVector2Array(8.8, -32.2, 23.3, -10.6, 19.2, -7.8, 4.7, -29.4)
+
+[node name="PanelHeader" type="Polygon2D" parent="."]
+position = Vector2(275, -252)
+color = Color(0.16, 0.15, 0.2, 1)
+polygon = PackedVector2Array(264.0, -32.0, 267.1, -31.4, 269.7, -29.7, 271.4, -27.1, 272.0, -24.0, 272.0, 24.0, 271.4, 27.1, 269.7, 29.7, 267.1, 31.4, 264.0, 32.0, -264.0, 32.0, -267.1, 31.4, -269.7, 29.7, -271.4, 27.1, -272.0, 24.0, -272.0, -24.0, -271.4, -27.1, -269.7, -29.7, -267.1, -31.4, -264.0, -32.0)
+
+[node name="HeaderText" type="Label" parent="PanelHeader"]
+offset_left = -272.0
+offset_top = -28.0
+offset_right = 272.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(0.95, 0.95, 0.98, 1)
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "댓글창"
+
+[node name="Comments" type="Node2D" parent="."]
+
+[node name="Comment0" type="Node2D" parent="Comments"]
+position = Vector2(275, -158)
+
+[node name="Box" type="Polygon2D" parent="Comments/Comment0"]
+color = Color(0.96, 0.96, 0.97, 1)
+polygon = PackedVector2Array(258.0, -33.0, 263.4, -31.9, 267.9, -28.9, 270.9, -24.4, 272.0, -19.0, 272.0, 19.0, 270.9, 24.4, 267.9, 28.9, 263.4, 31.9, 258.0, 33.0, -258.0, 33.0, -263.4, 31.9, -267.9, 28.9, -270.9, 24.4, -272.0, 19.0, -272.0, -19.0, -270.9, -24.4, -267.9, -28.9, -263.4, -31.9, -258.0, -33.0)
+
+[node name="Avatar" type="Polygon2D" parent="Comments/Comment0"]
+color = Color(0.95, 0.55, 0.15, 1)
+polygon = PackedVector2Array(-208.0, 0.0, -210.4, 10.4, -217.0, 18.8, -226.7, 23.4, -237.3, 23.4, -247.0, 18.8, -253.6, 10.4, -256.0, 0.0, -253.6, -10.4, -247.0, -18.8, -237.3, -23.4, -226.7, -23.4, -217.0, -18.8, -210.4, -10.4)
+
+[node name="Text" type="Label" parent="Comments/Comment0"]
+offset_left = -196.0
+offset_top = -24.0
+offset_right = 268.0
+offset_bottom = 24.0
+theme_override_colors/font_color = Color(0.11, 0.11, 0.14, 1)
+theme_override_font_sizes/font_size = 30
+vertical_alignment = 1
+text = "XX 못생겼다 ㅋㅋ"
+
+[node name="Comment1" type="Node2D" parent="Comments"]
+position = Vector2(275, -79)
+
+[node name="Box" type="Polygon2D" parent="Comments/Comment1"]
+color = Color(0.96, 0.96, 0.97, 1)
+polygon = PackedVector2Array(258.0, -33.0, 263.4, -31.9, 267.9, -28.9, 270.9, -24.4, 272.0, -19.0, 272.0, 19.0, 270.9, 24.4, 267.9, 28.9, 263.4, 31.9, 258.0, 33.0, -258.0, 33.0, -263.4, 31.9, -267.9, 28.9, -270.9, 24.4, -272.0, 19.0, -272.0, -19.0, -270.9, -24.4, -267.9, -28.9, -263.4, -31.9, -258.0, -33.0)
+
+[node name="Avatar" type="Polygon2D" parent="Comments/Comment1"]
+color = Color(0.85, 0.2, 0.2, 1)
+polygon = PackedVector2Array(-208.0, 0.0, -210.4, 10.4, -217.0, 18.8, -226.7, 23.4, -237.3, 23.4, -247.0, 18.8, -253.6, 10.4, -256.0, 0.0, -253.6, -10.4, -247.0, -18.8, -237.3, -23.4, -226.7, -23.4, -217.0, -18.8, -210.4, -10.4)
+
+[node name="Text" type="Label" parent="Comments/Comment1"]
+offset_left = -196.0
+offset_top = -24.0
+offset_right = 268.0
+offset_bottom = 24.0
+theme_override_colors/font_color = Color(0.11, 0.11, 0.14, 1)
+theme_override_font_sizes/font_size = 30
+vertical_alignment = 1
+text = "XX 굿바이~"
+
+[node name="Comment2" type="Node2D" parent="Comments"]
+position = Vector2(275, 0)
+
+[node name="Box" type="Polygon2D" parent="Comments/Comment2"]
+color = Color(0.96, 0.96, 0.97, 1)
+polygon = PackedVector2Array(258.0, -33.0, 263.4, -31.9, 267.9, -28.9, 270.9, -24.4, 272.0, -19.0, 272.0, 19.0, 270.9, 24.4, 267.9, 28.9, 263.4, 31.9, 258.0, 33.0, -258.0, 33.0, -263.4, 31.9, -267.9, 28.9, -270.9, 24.4, -272.0, 19.0, -272.0, -19.0, -270.9, -24.4, -267.9, -28.9, -263.4, -31.9, -258.0, -33.0)
+
+[node name="Avatar" type="Polygon2D" parent="Comments/Comment2"]
+color = Color(0.25, 0.35, 0.85, 1)
+polygon = PackedVector2Array(-208.0, 0.0, -210.4, 10.4, -217.0, 18.8, -226.7, 23.4, -237.3, 23.4, -247.0, 18.8, -253.6, 10.4, -256.0, 0.0, -253.6, -10.4, -247.0, -18.8, -237.3, -23.4, -226.7, -23.4, -217.0, -18.8, -210.4, -10.4)
+
+[node name="Text" type="Label" parent="Comments/Comment2"]
+offset_left = -196.0
+offset_top = -24.0
+offset_right = 268.0
+offset_bottom = 24.0
+theme_override_colors/font_color = Color(0.11, 0.11, 0.14, 1)
+theme_override_font_sizes/font_size = 30
+vertical_alignment = 1
+text = "XX 이제 은퇴각ㅋ"
+
+[node name="Comment3" type="Node2D" parent="Comments"]
+position = Vector2(275, 79)
+
+[node name="Box" type="Polygon2D" parent="Comments/Comment3"]
+color = Color(0.96, 0.96, 0.97, 1)
+polygon = PackedVector2Array(258.0, -33.0, 263.4, -31.9, 267.9, -28.9, 270.9, -24.4, 272.0, -19.0, 272.0, 19.0, 270.9, 24.4, 267.9, 28.9, 263.4, 31.9, 258.0, 33.0, -258.0, 33.0, -263.4, 31.9, -267.9, 28.9, -270.9, 24.4, -272.0, 19.0, -272.0, -19.0, -270.9, -24.4, -267.9, -28.9, -263.4, -31.9, -258.0, -33.0)
+
+[node name="Avatar" type="Polygon2D" parent="Comments/Comment3"]
+color = Color(0.95, 0.85, 0.15, 1)
+polygon = PackedVector2Array(-208.0, 0.0, -210.4, 10.4, -217.0, 18.8, -226.7, 23.4, -237.3, 23.4, -247.0, 18.8, -253.6, 10.4, -256.0, 0.0, -253.6, -10.4, -247.0, -18.8, -237.3, -23.4, -226.7, -23.4, -217.0, -18.8, -210.4, -10.4)
+
+[node name="Text" type="Label" parent="Comments/Comment3"]
+offset_left = -196.0
+offset_top = -24.0
+offset_right = 268.0
+offset_bottom = 24.0
+theme_override_colors/font_color = Color(0.11, 0.11, 0.14, 1)
+theme_override_font_sizes/font_size = 30
+vertical_alignment = 1
+text = "XX 문제 많더라."
+
+[node name="Comment4" type="Node2D" parent="Comments"]
+position = Vector2(275, 158)
+
+[node name="Box" type="Polygon2D" parent="Comments/Comment4"]
+color = Color(0.96, 0.96, 0.97, 1)
+polygon = PackedVector2Array(258.0, -33.0, 263.4, -31.9, 267.9, -28.9, 270.9, -24.4, 272.0, -19.0, 272.0, 19.0, 270.9, 24.4, 267.9, 28.9, 263.4, 31.9, 258.0, 33.0, -258.0, 33.0, -263.4, 31.9, -267.9, 28.9, -270.9, 24.4, -272.0, 19.0, -272.0, -19.0, -270.9, -24.4, -267.9, -28.9, -263.4, -31.9, -258.0, -33.0)
+
+[node name="Avatar" type="Polygon2D" parent="Comments/Comment4"]
+color = Color(0.2, 0.7, 0.3, 1)
+polygon = PackedVector2Array(-208.0, 0.0, -210.4, 10.4, -217.0, 18.8, -226.7, 23.4, -237.3, 23.4, -247.0, 18.8, -253.6, 10.4, -256.0, 0.0, -253.6, -10.4, -247.0, -18.8, -237.3, -23.4, -226.7, -23.4, -217.0, -18.8, -210.4, -10.4)
+
+[node name="Text" type="Label" parent="Comments/Comment4"]
+offset_left = -196.0
+offset_top = -24.0
+offset_right = 268.0
+offset_bottom = 24.0
+theme_override_colors/font_color = Color(0.11, 0.11, 0.14, 1)
+theme_override_font_sizes/font_size = 30
+vertical_alignment = 1
+text = "심심했는데 잘됐다ㅋ"
