@@ -13,6 +13,19 @@ const CHARACTERS := {
 	"층간피해빌런": "res://characters/floornoise/FloorNoise.tscn",
 }
 
+## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
+## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
+const CHARACTER_COLORS := {
+	"잼민이": Color(0.95, 0.85, 0.2),
+	"악플러": Color(0.85, 0.25, 0.25),
+	"주정뱅이": Color(0.8, 0.5, 0.2),
+	"예수천국 불신지옥": Color(0.55, 0.35, 0.75),
+	"캣맘": Color(0.9, 0.55, 0.7),
+	"지하철빌런": Color(0.3, 0.65, 0.55),
+	"층간피해빌런": Color(0.3, 0.5, 0.85),
+}
+const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
+
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
 const MAPS := {
 	"편의점 앞": "res://maps/ConvenienceStore.tscn",

@@ -1,30 +1,57 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://ui/FighterPanel.gd" id="1"]
 
-[node name="FighterPanel" type="VBoxContainer"]
-custom_minimum_size = Vector2(220, 60)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp"]
+bg_color = Color(0.2, 0.85, 0.35, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ultimate"]
+bg_color = Color(0.95, 0.85, 0.2, 1)
+
+[node name="FighterPanel" type="HBoxContainer"]
+custom_minimum_size = Vector2(310, 54)
+theme_override_constants/separation = 8
 script = ExtResource("1")
 
-[node name="NameLabel" type="Label" parent="."]
-text = "Fighter"
+[node name="CharacterBox" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(70, 54)
+color = Color(0.35, 0.35, 0.4, 1)
 
-[node name="HPBar" type="ProgressBar" parent="."]
-custom_minimum_size = Vector2(220, 18)
+[node name="NameLabel" type="Label" parent="CharacterBox"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_font_sizes/font_size = 13
+text = "캐릭터"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="BarsVBox" type="VBoxContainer" parent="."]
+theme_override_constants/separation = 4
+
+[node name="HPRow" type="HBoxContainer" parent="BarsVBox"]
+
+[node name="HPBar" type="ProgressBar" parent="BarsVBox/HPRow"]
+custom_minimum_size = Vector2(232, 20)
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp")
 max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="SkillRow" type="HBoxContainer" parent="."]
+[node name="UltimateRow" type="HBoxContainer" parent="BarsVBox"]
 
-[node name="Skill1Bar" type="ProgressBar" parent="SkillRow"]
-custom_minimum_size = Vector2(70, 10)
+[node name="UltimateBar" type="ProgressBar" parent="BarsVBox/UltimateRow"]
+custom_minimum_size = Vector2(184, 14)
+theme_override_styles/fill = SubResource("StyleBoxFlat_ultimate")
 show_percentage = false
 
-[node name="Skill2Bar" type="ProgressBar" parent="SkillRow"]
-custom_minimum_size = Vector2(70, 10)
+[node name="SkillRow" type="HBoxContainer" parent="BarsVBox"]
+theme_override_constants/separation = 4
+
+[node name="Skill1Bar" type="ProgressBar" parent="BarsVBox/SkillRow"]
+custom_minimum_size = Vector2(90, 12)
 show_percentage = false
 
-[node name="UltimateBar" type="ProgressBar" parent="SkillRow"]
-custom_minimum_size = Vector2(70, 10)
+[node name="Skill2Bar" type="ProgressBar" parent="BarsVBox/SkillRow"]
+custom_minimum_size = Vector2(90, 12)
 show_percentage = false

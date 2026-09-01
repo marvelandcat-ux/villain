@@ -8,7 +8,7 @@ extends CanvasLayer
 
 func setup(p1: Fighter, p2: Fighter) -> void:
 	p1_panel.bind(p1, "P1")
-	p2_panel.bind(p2, "P2(AI)")
+	p2_panel.bind(p2, "P2(AI)", true)
 
 ## 라운드 스코어와(있다면) 남은 시간을 화면 중앙 상단에 표시한다
 func update_round_info(p1_wins: int, p2_wins: int, time_left: float) -> void:

@@ -4,21 +4,8 @@ extends Control
 ## 로컬 대전(pvp)과 스토리 모드 둘 다 이 화면 하나를 같이 쓴다.
 ## - pvp: P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2(AI) 캐릭터를 고르면 맵 선택 화면으로 넘어간다
 ## - story: P2는 GameState.STORY_OPPONENTS[story_index]로 이미 정해져 있어서 P2 칸에 미리 공개해두고,
-##   P1만 고르면 바로 확정되어 맵 선택 화면(MapSelect)으로 넘어간다 — 맵은 pvp와 마찬가지로 직접 고른다
+##   P1만 고르면 바로 확정되어 GameState.STORY_MAP_PATH로 넘어간다 (맵은 고정이라 맵 선택 화면 생략)
 ## 아래쪽 캐릭터 목록에서 하나를 누르면 위쪽 P1/P2 미리보기 칸에 이름과 색이 채워지는 방식
-
-## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
-## 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
-const CHARACTER_COLORS := {
-	"잼민이": Color(0.95, 0.85, 0.2),
-	"악플러": Color(0.85, 0.25, 0.25),
-	"주정뱅이": Color(0.8, 0.5, 0.2),
-	"예수천국 불신지옥": Color(0.55, 0.35, 0.75),
-	"캣맘": Color(0.9, 0.55, 0.7),
-	"지하철빌런": Color(0.3, 0.65, 0.55),
-	"층간피해빌런": Color(0.3, 0.5, 0.85),
-}
-const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
 @onready var status_label: Label = $Center/VBox/StatusLabel
 @onready var thumb_row: HBoxContainer = $Center/VBox/ThumbRow
@@ -41,19 +28,19 @@ var _is_spinning: bool = false
 func _ready() -> void:
 	_is_story_mode = GameState.game_mode == "story"
 	for character_name in GameState.CHARACTERS.keys():
-		var color: Color = CHARACTER_COLORS.get(character_name, DEFAULT_COLOR)
+		var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
 		var button := _make_tile(character_name, color, 14, _on_character_picked.bind(character_name))
 		thumb_row.add_child(button)
 		_thumb_buttons[character_name] = button
 	## 격자 맨 끝에 놓이는 "?" 칸 — 누를 때마다 캐릭터 하나를 무작위로 골라 미리보기에 반영한다(다른 칸처럼 확정은 별도)
-	thumb_row.add_child(_make_tile("?", DEFAULT_COLOR, 28, _on_random_pressed))
+	thumb_row.add_child(_make_tile("?", GameState.DEFAULT_COLOR, 28, _on_random_pressed))
 
 	if _is_story_mode:
 		status_label.text = "당신의 캐릭터를 선택하세요"
 		back_button.text = "모드 선택으로 (ESC)"
 		var opponent_name := _find_character_name(GameState.STORY_OPPONENTS[GameState.story_index])
 		p2_name_label.text = "상대"
-		p2_preview_box.color = CHARACTER_COLORS.get(opponent_name, DEFAULT_COLOR)
+		p2_preview_box.color = GameState.CHARACTER_COLORS.get(opponent_name, GameState.DEFAULT_COLOR)
 		p2_preview_label.text = opponent_name
 	else:
 		status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
@@ -96,7 +83,7 @@ func _on_character_picked(character_name: String) -> void:
 
 ## 미리보기 칸에 캐릭터 이름과 색만 반영한다(선택 확정 여부와는 무관 — 룰렛 연출 중에도 이걸로 화면을 갱신함)
 func _show_preview(character_name: String) -> void:
-	var color: Color = CHARACTER_COLORS.get(character_name, DEFAULT_COLOR)
+	var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
 	if _picking_p1:
 		p1_preview_box.color = color
 		p1_preview_label.text = character_name
