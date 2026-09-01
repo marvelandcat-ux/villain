@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://ui/cutin/AkpeulleoCutIn.gd" id="1_cutin"]
 [ext_resource type="Shader" path="res://ui/cutin/blur.gdshader" id="2_blur"]
 [ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="7_front"]
 [ext_resource type="Texture2D" uid="uid://daj7hrn5nnjrj" path="res://sprite/악플러/몸/악플러몸통.png" id="4_body"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="5_hand"]
+[ext_resource type="Texture2D" uid="uid://btx50km8m0yla" path="res://sprite/악플러/몸/악플러키보드.png" id="6_keyboard"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_light"]
 blend_mode = 1
@@ -33,62 +34,48 @@ position = Vector2(-285, -66)
 scale = Vector2(0.45, 0.45)
 texture = ExtResource("7_front")
 
+[node name="Keyboard" type="Sprite2D" parent="."]
+modulate = Color(0.15, 0.15, 0.19, 1)
+position = Vector2(-285, 296)
+scale = Vector2(0.192, 0.192)
+texture = ExtResource("6_keyboard")
+
 [node name="MonitorLight" type="Node2D" parent="."]
 material = SubResource("CanvasItemMaterial_light")
 
-[node name="Bounce" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.86, 0.45, 0.1)
-polygon = PackedVector2Array(0.0, 190.0, -7.5, 236.7, -29.7, 281.1, -65.5, 320.9, -113.0, 354.2, -169.8, 379.2, -233.2, 394.7, -300.0, 400.0, -366.8, 394.7, -430.2, 379.2, -487.0, 354.2, -534.5, 320.9, -570.3, 281.1, -592.5, 236.7, -600.0, 190.0, -592.5, 143.3, -570.3, 98.9, -534.5, 59.1, -487.0, 25.8, -430.2, 0.8, -366.8, -14.7, -300.0, -20.0, -233.2, -14.7, -169.8, 0.8, -113.0, 25.8, -65.5, 59.1, -29.7, 98.9, -7.5, 143.3)
+[node name="Fan0" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.89, 0.48, 0.045)
+polygon = PackedVector2Array(-285.0, 560.0, -884.5, -265.2, -836.5, -298.1, -786.6, -328.2, -735.0, -355.3, -682.1, -379.5, -627.8, -400.7, -572.4, -418.7, -516.0, -433.5, -458.9, -445.1, -401.3, -453.4, -343.2, -458.3, -285.0, -460.0, -226.8, -458.3, -168.7, -453.4, -111.1, -445.1, -54.0, -433.5, 2.4, -418.7, 57.8, -400.7, 112.1, -379.5, 165.0, -355.3, 216.6, -328.2, 266.5, -298.1, 314.5, -265.2)
 
-[node name="Streak0Layer0" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.09)
-polygon = PackedVector2Array(-512.2, -70.8, -380.8, 176.4, -407.8, 190.8, -539.2, -56.4)
+[node name="Fan1" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.89, 0.48, 0.05)
+polygon = PackedVector2Array(-285.0, 560.0, -717.6, -160.0, -681.7, -180.4, -644.8, -199.0, -607.1, -215.8, -568.5, -230.7, -529.3, -243.7, -489.5, -254.7, -449.2, -263.8, -408.5, -270.9, -367.5, -275.9, -326.3, -279.0, -285.0, -280.0, -243.7, -279.0, -202.5, -275.9, -161.5, -270.9, -120.8, -263.8, -80.5, -254.7, -40.7, -243.7, -1.5, -230.7, 37.1, -215.8, 74.8, -199.0, 111.7, -180.4, 147.6, -160.0)
 
-[node name="Streak0Layer1" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.16)
-polygon = PackedVector2Array(-518.2, -67.6, -386.7, 179.6, -401.8, 187.6, -533.3, -59.6)
+[node name="Fan2" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.89, 0.48, 0.055)
+polygon = PackedVector2Array(-285.0, 560.0, -578.7, -42.2, -553.6, -53.8, -528.1, -64.3, -502.1, -73.8, -475.8, -82.3, -449.1, -89.6, -422.2, -95.8, -395.1, -100.9, -367.7, -104.9, -340.2, -107.7, -312.6, -109.4, -285.0, -110.0, -257.4, -109.4, -229.8, -107.7, -202.3, -104.9, -174.9, -100.9, -147.8, -95.8, -120.9, -89.6, -94.2, -82.3, -67.9, -73.8, -41.9, -64.3, -16.4, -53.8, 8.7, -42.2)
 
-[node name="Streak0Layer2" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.4)
-polygon = PackedVector2Array(-521.8, -65.7, -390.3, 181.5, -398.2, 185.7, -529.7, -61.5)
+[node name="Fan3" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.89, 0.48, 0.062)
+polygon = PackedVector2Array(-285.0, 560.0, -467.8, 83.9, -451.8, 78.0, -435.7, 72.8, -419.3, 68.0, -402.9, 63.8, -386.3, 60.2, -369.6, 57.1, -352.8, 54.5, -335.9, 52.5, -319.0, 51.1, -302.0, 50.3, -285.0, 50.0, -268.0, 50.3, -251.0, 51.1, -234.1, 52.5, -217.2, 54.5, -200.4, 57.1, -183.7, 60.2, -167.1, 63.8, -150.7, 68.0, -134.3, 72.8, -118.2, 78.0, -102.2, 83.9)
 
-[node name="Streak1Layer0" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.09)
-polygon = PackedVector2Array(-374.3, 27.7, -261.7, 239.6, -285.7, 252.3, -398.3, 40.4)
-
-[node name="Streak1Layer1" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.16)
-polygon = PackedVector2Array(-379.6, 30.5, -267.0, 242.4, -280.4, 249.5, -393.0, 37.6)
-
-[node name="Streak1Layer2" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.4)
-polygon = PackedVector2Array(-382.8, 32.2, -270.1, 244.1, -277.2, 247.8, -389.9, 35.9)
-
-[node name="Streak2Layer0" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.09)
-polygon = PackedVector2Array(-238.7, -54.2, -114.3, 179.8, -141.3, 194.2, -265.7, -39.8)
-
-[node name="Streak2Layer1" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.16)
-polygon = PackedVector2Array(-244.7, -51.0, -120.2, 183.0, -135.3, 191.0, -259.8, -43.0)
-
-[node name="Streak2Layer2" type="Polygon2D" parent="MonitorLight"]
-color = Color(1, 0.93, 0.55, 0.4)
-polygon = PackedVector2Array(-248.2, -49.1, -123.8, 184.9, -131.8, 189.1, -256.2, -44.9)
+[node name="Fan4" type="Polygon2D" parent="MonitorLight"]
+color = Color(1, 0.89, 0.48, 0.075)
+polygon = PackedVector2Array(-285.0, 560.0, -387.0, 204.3, -377.9, 201.9, -368.8, 199.6, -359.6, 197.6, -350.4, 195.8, -341.1, 194.3, -331.8, 193.0, -322.5, 191.9, -313.2, 191.1, -303.8, 190.5, -294.4, 190.1, -285.0, 190.0, -275.6, 190.1, -266.2, 190.5, -256.8, 191.1, -247.5, 191.9, -238.2, 193.0, -228.9, 194.3, -219.6, 195.8, -210.4, 197.6, -201.2, 199.6, -192.1, 201.9, -183.0, 204.3)
 
 [node name="TypeHandL" type="Sprite2D" parent="."]
-position = Vector2(-498, 208)
+position = Vector2(-430, 208)
 scale = Vector2(0.85, 0.85)
 texture = ExtResource("5_hand")
 flip_h = true
 
 [node name="TypeHandR" type="Sprite2D" parent="."]
-position = Vector2(-72, 208)
+position = Vector2(-140, 208)
 scale = Vector2(0.85, 0.85)
 texture = ExtResource("5_hand")
 
 [node name="TapMarkL" type="Node2D" parent="."]
-position = Vector2(-498, 208)
+position = Vector2(-430, 208)
 
 [node name="Bar0" type="Polygon2D" parent="TapMarkL"]
 color = Color(0.12, 0.12, 0.16, 1)
@@ -99,7 +86,7 @@ color = Color(0.12, 0.12, 0.16, 1)
 polygon = PackedVector2Array(-4.7, -29.4, -19.2, -7.8, -23.3, -10.6, -8.8, -32.2)
 
 [node name="TapMarkR" type="Node2D" parent="."]
-position = Vector2(-72, 208)
+position = Vector2(-140, 208)
 
 [node name="Bar0" type="Polygon2D" parent="TapMarkR"]
 color = Color(0.12, 0.12, 0.16, 1)

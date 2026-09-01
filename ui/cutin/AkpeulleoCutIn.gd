@@ -28,7 +28,7 @@ extends Node2D
 
 @export_group("타자 치는 손")
 ## 손이 위아래로 움직이는 폭(px)
-@export var type_stroke: float = 9.0
+@export var type_stroke: float = 22.0
 ## 1초에 몇 번 두드릴지
 @export var type_speed: float = 11.0
 
