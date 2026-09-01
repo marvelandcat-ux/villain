@@ -23,7 +23,7 @@ alignment = 1
 
 [node name="PreviewRow" type="HBoxContainer" parent="Center/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 0
 alignment = 1
 
 [node name="P1Side" type="VBoxContainer" parent="Center/VBox/PreviewRow"]
@@ -32,25 +32,26 @@ theme_override_constants/separation = 6
 
 [node name="P1NameLabel" type="Label" parent="Center/VBox/PreviewRow/P1Side"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "P1 SELECT"
 horizontal_alignment = 1
 
 [node name="P1PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P1Side"]
-custom_minimum_size = Vector2(200, 220)
+custom_minimum_size = Vector2(300, 330)
 layout_mode = 2
 color = Color(0.35, 0.35, 0.4, 1)
 
 [node name="P1PreviewLabel" type="Label" parent="Center/VBox/PreviewRow/P1Side/P1PreviewBox"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="VsLabel" type="Label" parent="Center/VBox/PreviewRow"]
-custom_minimum_size = Vector2(50, 220)
+custom_minimum_size = Vector2(300, 330)
 layout_mode = 2
 theme_override_font_sizes/font_size = 36
 text = "VS"
@@ -63,19 +64,20 @@ theme_override_constants/separation = 6
 
 [node name="P2NameLabel" type="Label" parent="Center/VBox/PreviewRow/P2Side"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "P2"
 horizontal_alignment = 1
 
 [node name="P2PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P2Side"]
-custom_minimum_size = Vector2(200, 220)
+custom_minimum_size = Vector2(300, 330)
 layout_mode = 2
 color = Color(0.35, 0.35, 0.4, 1)
 
 [node name="P2PreviewLabel" type="Label" parent="Center/VBox/PreviewRow/P2Side/P2PreviewBox"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -85,12 +87,10 @@ layout_mode = 2
 text = "P1(플레이어) 캐릭터를 선택하세요"
 horizontal_alignment = 1
 
-[node name="ThumbRow" type="GridContainer" parent="Center/VBox"]
+[node name="ThumbRow" type="HBoxContainer" parent="Center/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-columns = 6
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 10
+theme_override_constants/separation = 10
 
 [node name="ConfirmButton" type="Button" parent="Center/VBox"]
 layout_mode = 2

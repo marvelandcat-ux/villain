@@ -1,7 +1,10 @@
 class_name CharacterSelect
 extends Control
 
-## P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2(AI) 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
+## 로컬 대전(pvp)과 스토리 모드 둘 다 이 화면 하나를 같이 쓴다.
+## - pvp: P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2(AI) 캐릭터를 고르면 맵 선택 화면으로 넘어간다
+## - story: P2는 GameState.STORY_OPPONENTS[story_index]로 이미 정해져 있어서 P2 칸에 미리 공개해두고,
+##   P1만 고르면 바로 확정되어 맵 선택 화면(MapSelect)으로 넘어간다 — 맵은 pvp와 마찬가지로 직접 고른다
 ## 아래쪽 캐릭터 목록에서 하나를 누르면 위쪽 P1/P2 미리보기 칸에 이름과 색이 채워지는 방식
 
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
@@ -18,13 +21,17 @@ const CHARACTER_COLORS := {
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
 @onready var status_label: Label = $Center/VBox/StatusLabel
-@onready var thumb_row: GridContainer = $Center/VBox/ThumbRow
+@onready var thumb_row: HBoxContainer = $Center/VBox/ThumbRow
 @onready var confirm_button: Button = $Center/VBox/ConfirmButton
+@onready var back_button: Button = $Center/VBox/BackButton
+@onready var p2_name_label: Label = $Center/VBox/PreviewRow/P2Side/P2NameLabel
 @onready var p1_preview_box: ColorRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
 @onready var p1_preview_label: Label = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewLabel
 @onready var p2_preview_box: ColorRect = $Center/VBox/PreviewRow/P2Side/P2PreviewBox
 @onready var p2_preview_label: Label = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewLabel
 
+## 스토리 모드에서는 P2가 GameState.STORY_OPPONENTS로 이미 정해져 있어서 P1만 고르면 된다
+var _is_story_mode: bool = false
 var _picking_p1: bool = true
 ## 아직 "확정" 버튼을 안 누른, 미리보기 칸에만 반영된 임시 선택. 빈 문자열이면 아무것도 안 고른 상태
 var _pending_character: String = ""
@@ -32,7 +39,7 @@ var _thumb_buttons: Dictionary = {}  # {character_name: Button} — 선택 강�
 var _is_spinning: bool = false
 
 func _ready() -> void:
-	status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
+	_is_story_mode = GameState.game_mode == "story"
 	for character_name in GameState.CHARACTERS.keys():
 		var color: Color = CHARACTER_COLORS.get(character_name, DEFAULT_COLOR)
 		var button := _make_tile(character_name, color, 14, _on_character_picked.bind(character_name))
@@ -40,6 +47,23 @@ func _ready() -> void:
 		_thumb_buttons[character_name] = button
 	## 격자 맨 끝에 놓이는 "?" 칸 — 누를 때마다 캐릭터 하나를 무작위로 골라 미리보기에 반영한다(다른 칸처럼 확정은 별도)
 	thumb_row.add_child(_make_tile("?", DEFAULT_COLOR, 28, _on_random_pressed))
+
+	if _is_story_mode:
+		status_label.text = "당신의 캐릭터를 선택하세요"
+		back_button.text = "모드 선택으로 (ESC)"
+		var opponent_name := _find_character_name(GameState.STORY_OPPONENTS[GameState.story_index])
+		p2_name_label.text = "상대"
+		p2_preview_box.color = CHARACTER_COLORS.get(opponent_name, DEFAULT_COLOR)
+		p2_preview_label.text = opponent_name
+	else:
+		status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
+
+## 캐릭터 씬 경로로 GameState.CHARACTERS에 등록된 표시 이름을 역으로 찾는다 (스토리 상대 공개용)
+func _find_character_name(path: String) -> String:
+	for character_name in GameState.CHARACTERS.keys():
+		if GameState.CHARACTERS[character_name] == path:
+			return character_name
+	return "?"
 
 func _make_tile(label: String, color: Color, font_size: int, callback: Callable) -> Button:
 	var button := Button.new()
@@ -120,6 +144,11 @@ func _on_confirm_pressed() -> void:
 	var path: String = GameState.CHARACTERS[_pending_character]
 	if _picking_p1:
 		GameState.p1_character_path = path
+		if _is_story_mode:
+			GameState.p2_character_path = GameState.STORY_OPPONENTS[GameState.story_index]
+			GameState.selected_map_path = GameState.STORY_MAP_PATH
+			get_tree().change_scene_to_file(GameState.selected_map_path)
+			return
 		_picking_p1 = false
 		status_label.text = "P1: %s 확정! P2(AI) 캐릭터를 선택하세요" % _pending_character
 		_pending_character = ""
@@ -137,7 +166,10 @@ func _update_highlight() -> void:
 		button.modulate = Color(1, 1, 1) if (is_selected or _pending_character == "") else Color(0.55, 0.55, 0.55)
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
+	if _is_story_mode:
+		get_tree().change_scene_to_file("res://ui/ModeSelect.tscn")
+	else:
+		get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

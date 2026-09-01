@@ -82,7 +82,7 @@
 
 **로컬 대전(PvP) 흐름:** `ui/MainMenu.tscn`(시작) → `ui/ModeSelect.tscn`("로컬 대전" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
 
-**스토리 모드 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAP_PATH`로 고정) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+**스토리 모드 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/CharacterSelect.tscn`(로컬 대전과 같은 화면을 공유 — `GameState.game_mode == "story"`면 P2 미리보기 칸에 `GameState.STORY_OPPONENTS[story_index]` 상대가 미리 공개되어 있고, P1만 고르면 바로 확정되어 맵 선택 화면 없이 `GameState.STORY_MAP_PATH`로 직행) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
 
 **훈련장 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("훈련장" 선택) → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
@@ -131,7 +131,7 @@ res://
   controllers/    # PlayerController / AIController
   stats/          # CharacterStats 리소스(.tres)
   maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
-  ui/             # MainMenu/ModeSelect/RoomSettings/CharacterSelect/MapSelect/StoryIntro/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
+  ui/             # MainMenu/ModeSelect/RoomSettings/CharacterSelect/MapSelect/Settings/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
 ```
 
 ## 참고
