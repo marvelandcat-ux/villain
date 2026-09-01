@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cg4ksrlvccxht"
-path="res://.godot/imported/스크린샷 2026-08-30 175331-Photoroom.png-2233a431e71ec7ef0124429e2ce30345.ctex"
+uid="uid://by8oyj14il3o2"
+path="res://.godot/imported/주정뱅이발.png-0a52b93fddbc24906b2b6ecb62ba1140.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/body/스크린샷 2026-08-30 175331-Photoroom.png"
-dest_files=["res://.godot/imported/스크린샷 2026-08-30 175331-Photoroom.png-2233a431e71ec7ef0124429e2ce30345.ctex"]
+source_file="res://sprite/주정뱅이/몸/주정뱅이발.png"
+dest_files=["res://.godot/imported/주정뱅이발.png-0a52b93fddbc24906b2b6ecb62ba1140.ctex"]
 
 [params]
 

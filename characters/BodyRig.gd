@@ -3,18 +3,28 @@ extends Node2D
 
 ## 스프라이트 조각(머리/몸/손/발)을 붙여 만든 몸에 걷기 동작을 입히는 스크립트.
 ## 애니메이션 파일 없이, 부모 Fighter의 속도를 보고 매 프레임 각 조각의 위치/회전을 직접 계산한다.
-##  - 발: 왼발 한 걸음, 오른발 한 걸음씩 번갈아 움직인다 (한쪽이 움직이는 동안 다른 쪽은 바닥에 붙어 있다)
+##  - 발: 두 발이 반 바퀴 어긋난 채로 계속 앞뒤를 오간다 (앞발/뒷발이 번갈아 바뀌는 교차 걸음)
+##  - 손: 발과 반대로 앞뒤로 흔들린다 (왼발이 나갈 때 오른손이 앞으로)
 ##  - 몸/머리/손: 한 걸음마다 위로 살짝 들썩 (bob)
 ##  - 공중에 뜨면: 두 발이 함께 크게 들렸다가, 착지하면 제자리로 돌아온다
+##  - 기본공격을 쓰면 오른손이 머리 뒤까지 크게 넘어갔다가 앞으로 내려찍는다
+##  - 술을 마시면 고개가 뒤로 젖혀지고, 술병을 입으로 가져가 꿀꺽거리며 위아래로 들썩인다
+##  - attack_two_handed를 켜면 기본공격할 때 왼손이 오른손 쪽으로 모여 무기를 같이 잡는다 (악플러 키보드)
+##
+## 무기(소주병 등)는 "HandRHold" 노드의 자식으로 달면 오른손의 움직임/스윙을 그대로 따라간다.
+## HandR 자체의 자식으로 달면 손 스프라이트의 축소 배율(0.11)까지 물려받아 좌표 잡기가 번거로워서,
+## 배율 1인 빈 Node2D를 따로 두고 코드로 손 위치·회전만 복사해준다
 ## 각 조각의 "제자리" 값은 씬에 저장된 위치를 _ready에서 그대로 기억해두고 거기서부터 흔든다.
 ## 그래서 에디터에서 조각 위치를 옮겨도 애니메이션 코드는 손댈 필요가 없다.
 
 ## 걸을 때 발끝이 위로 들리는 최대 각도(도)
 @export var foot_swing_deg: float = 22.0
-## 발이 앞뒤로 움직이는 거리(px) — 회전만으로는 제자리걸음처럼 보여서 아주 살짝 곁들인다
-@export var foot_stride: float = 3.0
+## 발이 제자리에서 앞뒤로 움직이는 거리(px) — 클수록 보폭이 커지고 앞발/뒷발이 뚜렷하게 바뀐다
+@export var foot_stride: float = 8.0
 ## 몸이 들썩이는 높이(px)
 @export var body_bob: float = 2.0
+## 손이 앞뒤로 흔들리는 거리(px)
+@export var hand_swing: float = 5.0
 ## 걸음 빠르기 — 캐릭터가 최고 속도로 달릴 때 1초에 이 값(라디안)만큼 걸음 위상이 진행된다
 @export var step_speed: float = 9.0
 ## 걷기 시작/멈출 때 동작이 켜지고 꺼지는 빠르기 (클수록 뚝뚝 끊긴다)
@@ -23,12 +33,41 @@ extends Node2D
 @export var jump_foot_deg: float = 60.0
 ## 점프 자세로 바뀌고 착지해서 풀리는 빠르기
 @export var jump_blend_speed: float = 12.0
-## 기본공격 시 앞쪽 손이 뻗는 최대 거리(px)
-@export var punch_distance: float = 20.0
-## 주먹이 뻗어나가는 데 걸리는 시간(초) — 짧을수록 빠르고 강하게 나간다
-@export var punch_out_time: float = 0.06
-## 주먹이 제자리로 돌아오는 데 걸리는 시간(초)
-@export var punch_back_time: float = 0.12
+## 기본공격 예비동작에서 손이 돌아가는 각도(도) — 반시계 방향(무기가 뒤로 넘어간다)
+@export var attack_raise_deg: float = 100.0
+## 기본공격에서 손이 내려찍히는 각도(도) — 시계 방향
+@export var attack_swing_deg: float = 130.0
+## 예비동작에서 손이 제자리로부터 이동하는 거리(px) — 머리 뒤쪽 위로 크게 넘긴다
+@export var attack_raise_offset: Vector2 = Vector2(-32, -34)
+## 내려찍었을 때 손이 제자리로부터 이동하는 거리(px) — 앞쪽 아래로
+@export var attack_slam_offset: Vector2 = Vector2(10, 16)
+## 들어올리기 → 내리치기 → 복귀까지 걸리는 전체 시간(초)
+@export var attack_duration: float = 0.4
+## 기본공격할 때 왼손도 오른손 쪽으로 모아서 두 손으로 무기를 잡을지.
+## 평소에는 한 손으로 들고 다니다가 때릴 때만 두 손으로 잡는 캐릭터(악플러 키보드)에서 켠다
+@export var attack_two_handed: bool = false
+## 두 손으로 잡을 때 왼손이 오른손에서 떨어져 있는 거리(px). 오른손보다 살짝 뒤·아래를 잡는다
+@export var attack_grip_offset: Vector2 = Vector2(-10, 4)
+## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
+## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
+@export var attack_swing_arc: float = 0.0
+
+## 술 마시기 동작 전체 길이(초). 올리기 → 마시기 → 내리기가 이 안에서 다 일어난다
+@export var drink_duration: float = 1.1
+## 마실 때 고개가 뒤로 젖혀지는 각도(도). 음수가 뒤로(얼굴이 위를 보게) 젖히는 방향
+@export var drink_head_tilt_deg: float = -22.0
+## 젖히면서 머리가 제자리에서 옮겨가는 거리(px)
+@export var drink_head_offset: Vector2 = Vector2(-2, 0)
+## 꿀꺽거릴 때 머리와 술병이 위아래로 움직이는 폭(px)
+@export var drink_head_bob: float = 2.5
+## 마시는 동안 꿀꺽거리는 횟수
+@export var drink_gulp_count: float = 3.0
+## 술병을 입으로 가져갈 때 오른손이 제자리에서 옮겨가는 거리(px). 얼굴 쪽이라 위(-y)·뒤(-x)로 간다
+@export var drink_hand_offset: Vector2 = Vector2(-10, -25)
+## 곧장 직선으로 올라가지 않고 바깥으로 부풀며 호를 그리는 정도(px). 0이면 직선
+@export var drink_hand_arc: float = 12.0
+## 술병을 추가로 기울이는 각도(도). 씬에 잡아둔 제자리 각도(-155도)가 이미 붓는 자세라 기본은 0이다
+@export var drink_hand_deg: float = 0.0
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -36,6 +75,8 @@ extends Node2D
 @onready var _head: Sprite2D = get_node_or_null("Head")
 @onready var _hand_l: Sprite2D = get_node_or_null("HandL")
 @onready var _hand_r: Sprite2D = get_node_or_null("HandR")
+## 오른손이 든 물건(소주병 등)을 매다는 빈 노드 — 손의 위치·회전을 그대로 따라간다
+@onready var _hand_r_hold: Node2D = get_node_or_null("HandRHold")
 
 var _fighter: Fighter
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
@@ -44,10 +85,12 @@ var _phase: float = 0.0
 var _blend: float = 0.0
 ## 점프 자세 세기 (0=바닥, 1=완전히 공중 자세). 뜨고 내릴 때 각도가 툭 튀지 않게 서서히 오간다
 var _air_blend: float = 0.0
+## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
+var _attack_time: float = 0.0
+## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
+var _drink_time: float = 0.0
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
-## 주먹 뻗기 진행도 (0=제자리, 1=최대로 뻗은 상태) — play_punch()의 트윈이 값을 바꾼다
-var _punch_amount: float = 0.0
 
 func _ready() -> void:
 	# Visual로 붙는 자리가 Fighter의 자식이라 부모가 곧 조종 대상이다.
@@ -67,6 +110,11 @@ func _process(delta: float) -> void:
 		var max_speed: float = _fighter.stats.move_speed * _fighter.move_speed_multiplier
 		if max_speed > 0.0:
 			speed_ratio = clampf(absf(_fighter.velocity.x) / max_speed, 0.0, 1.0)
+
+	if _attack_time > 0.0:
+		_attack_time = maxf(_attack_time - delta, 0.0)
+	if _drink_time > 0.0:
+		_drink_time = maxf(_drink_time - delta, 0.0)
 
 	# 공중이면 점프 자세로, 바닥이면 원래 자세로 서서히 옮겨간다
 	var air_target: float = 0.0 if on_floor else 1.0
@@ -88,43 +136,157 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	var amount: float = _blend * maxf(speed_ratio, 0.4)
 
-	# 한 바퀴(_phase가 0~2파이)를 반씩 나눠서 앞쪽 절반은 왼발, 뒤쪽 절반은 오른발이 한 걸음씩 움직인다.
-	# step은 0 → 1 → 0 으로 올라갔다 내려오는 반쪽 사인 곡선 — 발을 들었다가 다시 내려놓는 한 걸음이다
-	var cycle: float = fmod(_phase, TAU)
-	var left_stepping: bool = cycle < PI
-	var step: float = sin(cycle if left_stepping else cycle - PI) * amount
+	# 두 발은 반 바퀴 어긋난 채로 계속 앞뒤를 오간다 — 한쪽이 앞으로 나가면 다른 쪽은 뒤로 밀리고,
+	# 반 바퀴 뒤에 앞발과 뒷발이 뒤바뀐다
+	var swing: float = sin(_phase)
 
-	# 걷는 쪽 발만 움직이고, 반대쪽 발은 제자리(0)에 붙어 있는다.
-	# 공중에서는 걷기(step)가 0으로 잦아들고 대신 두 발이 함께 점프 각도로 들린다
-	_pose_foot(_foot_l, step if left_stepping else 0.0)
-	_pose_foot(_foot_r, 0.0 if left_stepping else step)
+	# 앞으로 나가는 동안(swing이 양수)에만 발끝을 들고, 뒤로 밀리는 동안엔 바닥을 딛는 것처럼 눕힌다.
+	# 공중에서는 걷기 쪽이 0으로 잦아들고 대신 두 발이 함께 점프 각도로 뻗는다
+	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount)
+	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount)
 
-	# 발을 들어올리는 순간 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
-	var bob: float = -step * body_bob
+	# 발이 가장 높이 들렸을 때 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
+	var bob: float = -absf(swing) * body_bob * amount
 	for part in [_body, _head, _hand_l, _hand_r]:
 		if part:
 			part.position.y = _rest_positions[part].y + bob
+	# 술 마시기·두 손 잡기가 매 프레임 덮어쓰므로, 오른손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
+	if _head:
+		_head.rotation = 0.0
+	if _hand_l:
+		_hand_l.rotation = 0.0
 
-	# 앞쪽 손(HandR)은 scale.x 반전 덕분에 항상 바라보는 방향 쪽에 위치한다 — 그 손만 앞으로 뻗는다
+	# 손은 발과 반대로 흔들린다. sin은 앞쪽 절반(왼발이 나가는 동안)에 양수라
+	# 그때 오른손이 앞으로 나가고 왼손이 뒤로 빠진다
+	var arm: float = sin(_phase) * amount * hand_swing
+	if _hand_l:
+		_hand_l.position.x = _rest_positions[_hand_l].x - arm
 	if _hand_r:
-		_hand_r.position.x = _rest_positions[_hand_r].x + punch_distance * _punch_amount
+		_hand_r.position.x = _rest_positions[_hand_r].x + arm
+		_hand_r.rotation = 0.0
 
-## 발 하나의 자세를 잡는다. step은 0(제자리)~1(한 걸음 최대) 값
-func _pose_foot(foot: Sprite2D, step: float) -> void:
+	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
+	if _attack_time > 0.0:
+		_pose_attack_hand()
+
+	# 마시는 중이면 머리와 오른손을 술 마시는 자세로 덮어쓴다 (공격보다 나중이라 우선한다)
+	if _drink_time > 0.0:
+		_pose_drink()
+
+	# 손에 든 물건이 손을 그대로 따라가게 한다
+	if _hand_r_hold and _hand_r:
+		_hand_r_hold.position = _hand_r.position
+		_hand_r_hold.rotation = _hand_r.rotation
+
+## 발 하나의 자세를 잡는다.
+## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
+func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	if foot == null:
 		return
 	# 걷기는 발끝이 위로 들리게(각도 양수 = 시계 방향이라 부호를 뒤집는다),
 	# 점프는 반대로 발끝이 아래로 뻗게 해서 서로 반대 방향으로 돈다
-	foot.rotation = deg_to_rad(-foot_swing_deg * step + jump_foot_deg * _air_blend)
-	foot.position.x = _rest_positions[foot].x + foot_stride * step
+	foot.rotation = deg_to_rad(-foot_swing_deg * lift + jump_foot_deg * _air_blend)
+	foot.position.x = _rest_positions[foot].x + foot_stride * slide
 
-## 기본공격 시 Fighter가 호출한다 — 앞쪽 손이 앞으로 뻗었다가 돌아오는 주먹 연출을 재생한다
-func play_punch() -> void:
-	if _hand_r == null:
+## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
+## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
+func play_attack_swing() -> void:
+	_attack_time = attack_duration
+
+## 예비동작이 끝나고 실제로 내리치기 시작하는 시점 (전체 시간 대비 비율)
+const ATTACK_STRIKE_START: float = 0.4
+## 내리치기가 끝나는 시점 — 이 뒤로는 원래 자세로 돌아온다
+const ATTACK_STRIKE_END: float = 0.62
+
+## 스윙 진행도에 따라 오른손의 각도와 위치를 잡는다 (걷기 동작보다 우선한다).
+## 각도는 음수가 반시계 방향(무기가 위로 올라감), 양수가 시계 방향(아래로 내리침)이다
+func _pose_attack_hand() -> void:
+	var progress: float = 1.0 - _attack_time / attack_duration
+	var angle: float
+	var offset: Vector2
+	if progress < ATTACK_STRIKE_START:
+		# ① 손을 머리 뒤쪽 위까지 크게 넘긴다 (끝으로 갈수록 느려지게)
+		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
+		angle = lerpf(0.0, -attack_raise_deg, p)
+		offset = Vector2.ZERO.lerp(attack_raise_offset, p)
+	elif progress < ATTACK_STRIKE_END:
+		# ② 앞쪽 아래로 빠르게 내려찍는다 (실제로 때리는 구간)
+		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
+		angle = lerpf(-attack_raise_deg, attack_swing_deg, p * p)
+		offset = attack_raise_offset.lerp(attack_slam_offset, p * p) + _swing_arc(p * p)
+	else:
+		# ③ 원래 자세로 복귀
+		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		angle = lerpf(attack_swing_deg, 0.0, p)
+		offset = attack_slam_offset.lerp(Vector2.ZERO, p)
+	_hand_r.rotation = deg_to_rad(angle)
+	_hand_r.position = _rest_positions[_hand_r] + offset
+	_pose_grip_hand(progress)
+
+## 후려치는 동안 손이 지나가는 길을 아래로 부풀린다. 예비동작 위치에서 내려찍는 위치로 가는
+## 직선의 수직(아래쪽) 방향으로 밀어내며, sin이라 출발·도착에서는 0이라 튀지 않는다
+func _swing_arc(t: float) -> Vector2:
+	if is_zero_approx(attack_swing_arc):
+		return Vector2.ZERO
+	var travel: Vector2 = attack_slam_offset - attack_raise_offset
+	if travel.length() < 0.001:
+		return Vector2.ZERO
+	return Vector2(-travel.y, travel.x).normalized() * attack_swing_arc * sin(t * PI)
+
+## 두 손으로 잡는 캐릭터는 왼손이 오른손 옆으로 붙었다가, 내려찍고 나면 다시 풀린다.
+## 무기는 오른손(HandRHold)에 매달려 있으므로 왼손은 위치·회전만 따라가면 같이 잡은 것처럼 보인다
+func _pose_grip_hand(progress: float) -> void:
+	if not attack_two_handed or _hand_l == null:
 		return
-	var tween := create_tween()
-	tween.tween_property(self, "_punch_amount", 1.0, punch_out_time)
-	tween.tween_property(self, "_punch_amount", 0.0, punch_back_time)
+	var grip: float
+	if progress < ATTACK_STRIKE_START:
+		# 예비동작 앞부분에서 왼손이 빠르게 붙는다 (때리기 전에 이미 두 손으로 잡고 있어야 한다)
+		grip = minf(progress / (ATTACK_STRIKE_START * 0.6), 1.0)
+	elif progress < ATTACK_STRIKE_END:
+		grip = 1.0
+	else:
+		grip = 1.0 - (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, grip)
+	_hand_l.rotation = _hand_r.rotation * grip
+
+## 술 마시기 동작 — 고개를 뒤로 젖히고 술병을 입으로 가져가 꿀꺽거린다.
+## DrinkSkill이 술을 실제로 마신 순간 호출한다
+func play_drink_motion() -> void:
+	_drink_time = drink_duration
+
+## 술병을 입까지 다 올리는 시점 (전체 시간 대비 비율)
+const DRINK_RAISE_END: float = 0.25
+## 다시 내리기 시작하는 시점
+const DRINK_LOWER_START: float = 0.75
+
+## 마시기 진행도에 따라 머리와 오른손 자세를 잡는다 (걷기·공격 동작보다 우선한다).
+## reach는 "얼마나 다 마시는 자세인지"(0=제자리, 1=병이 입에 닿아 있음)
+func _pose_drink() -> void:
+	var progress: float = 1.0 - _drink_time / drink_duration
+	var reach: float
+	if progress < DRINK_RAISE_END:
+		# ① 병을 입으로 올리며 고개를 젖힌다 (끝으로 갈수록 느리게)
+		var p: float = progress / DRINK_RAISE_END
+		reach = 1.0 - (1.0 - p) * (1.0 - p)
+	elif progress < DRINK_LOWER_START:
+		# ② 입에 댄 채로 마신다
+		reach = 1.0
+	else:
+		# ③ 병을 내리고 고개를 제자리로
+		var p: float = (progress - DRINK_LOWER_START) / (1.0 - DRINK_LOWER_START)
+		reach = 1.0 - p * p
+
+	# 꿀꺽거리는 들썩임. 머리와 병이 같이 움직여야 병이 입에서 안 떨어져 보인다
+	var gulp: float = sin(progress * TAU * drink_gulp_count) * reach * drink_head_bob
+
+	if _head:
+		_head.rotation = deg_to_rad(drink_head_tilt_deg * reach)
+		_head.position = _rest_positions[_head] + drink_head_offset * reach + Vector2(0.0, gulp)
+	if _hand_r:
+		# 이동 방향의 수직으로 부풀려서 호를 그리며 올라간다. sin이라 출발/도착에선 0이고 중간에 가장 크다
+		var arc: Vector2 = Vector2(-drink_hand_offset.y, drink_hand_offset.x).normalized() 			* drink_hand_arc * sin(reach * PI)
+		_hand_r.rotation = deg_to_rad(drink_hand_deg * reach)
+		_hand_r.position = _rest_positions[_hand_r] + drink_hand_offset * reach + arc + Vector2(0.0, gulp)
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,

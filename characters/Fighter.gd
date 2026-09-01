@@ -159,15 +159,9 @@ func ring_out() -> void:
 	health_changed.emit(current_hp, stats.max_hp)
 	died.emit()
 
-## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다.
-## custom_data["rage_bonus_damage"]가 있으면(주정뱅이 스킬1 등 "다음 공격 강화" 버프) 한 번만 더해주고 소모한다
+## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
 func compute_damage(base_damage: int) -> int:
-	var total: int = int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
-	var bonus: int = custom_data.get("rage_bonus_damage", 0)
-	if bonus > 0:
-		total += bonus
-		custom_data["rage_bonus_damage"] = 0
-	return total
+	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
 func move(direction: float) -> void:
 	if direction != 0.0:
@@ -198,20 +192,34 @@ func use_skill_2() -> void:
 	if skill_2 and not is_feared:
 		skill_2.use(self)
 
+## 궁극기는 바로 나가지 않고, 씬에 컷인 연출이 있으면 연출을 먼저 재생한다.
+## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다
 func use_ultimate() -> void:
-	if skill_ultimate and not is_feared:
+	if skill_ultimate == null or is_feared or not skill_ultimate.can_use():
+		return
+	var cutin: Node = get_tree().get_first_node_in_group("ultimate_cutin")
+	if cutin and cutin.has_method("play"):
+		cutin.play(self)
+	else:
+		skill_ultimate.use(self)
+
+## 컷인 연출이 끝난 뒤 실제로 궁극기를 발동시킨다 (연출이 없는 씬에서는 쓰이지 않는다)
+func fire_ultimate_now() -> void:
+	if skill_ultimate:
 		skill_ultimate.use(self)
 
 func use_basic_attack() -> void:
+	# 쿨타임 중이면 use()가 아무것도 안 하므로, 실제로 나가는 경우에만 공격 모션을 재생한다
 	if basic_attack and not is_feared and basic_attack.can_use():
 		basic_attack.use(self)
-		_play_punch_effect()
+		_play_visual_attack()
 
-## 기본공격 시 손이 앞으로 뻗는 연출 — BodyRig를 쓰는 캐릭터(Visual에 play_punch가 있는 경우)만 재생된다
-func _play_punch_effect() -> void:
-	var visual: Node = get_node_or_null("Visual")
-	if visual and visual.has_method("play_punch"):
-		visual.play_punch()
+## 공격 모션을 가진 비주얼(BodyRig 등)에 휘두르라고 알린다.
+## 아직 임시 사각형(Polygon2D)을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다
+func _play_visual_attack() -> void:
+	var visual := get_node_or_null("Visual")
+	if visual and visual.has_method("play_attack_swing"):
+		visual.play_attack_swing()
 
 ## 1대1 전제로 자기 자신이 아닌 다른 Fighter를 찾는다
 func find_opponent() -> Fighter:

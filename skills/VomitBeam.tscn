@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://skills/VomitBeam.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c6j8nyu4wqg0b" path="res://sprite/주정뱅이/토프로토.png" id="2"]
+
+[node name="VomitBeam" type="Area2D"]
+monitoring = false
+monitorable = false
+script = ExtResource("1")
+
+[node name="Collision" type="CollisionShape2D" parent="."]
+
+[node name="Visual" type="Sprite2D" parent="."]
+centered = false
+region_enabled = true
+region_rect = Rect2(15, 42, 783, 159)
+texture = ExtResource("2")

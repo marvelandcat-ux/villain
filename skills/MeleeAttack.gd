@@ -6,12 +6,18 @@ extends Skill
 @export var damage: int = 8
 @export var range: float = 40.0
 @export var active_duration: float = 0.15
+## 예비동작 시간 — 공격 모션에서 실제로 때리는 순간까지 기다렸다가 히트박스를 켠다(0이면 바로 켬)
+@export var windup: float = 0.0
 ## 넉백 세기 — x는 밀려나는 방향(공격자 기준으로 자동 반전), y는 살짝 띄우는 높이 (바운스어택류 콤보용)
 @export var knockback: Vector2 = Vector2(220, -90)
 
 @onready var hitbox: Hitbox = $Hitbox
 
 func _execute(fighter: Fighter) -> void:
+	if windup > 0.0:
+		await get_tree().create_timer(windup).timeout
+		if not is_instance_valid(fighter):
+			return
 	hitbox.damage = fighter.compute_damage(damage)
 	hitbox.knockback = Vector2(knockback.x * fighter.facing, knockback.y)
 	hitbox.source_fighter = fighter
