@@ -9,6 +9,7 @@ extends Node2D
 ##  - 공중에 뜨면: 두 발이 함께 크게 들렸다가, 착지하면 제자리로 돌아온다
 ##  - 기본공격을 쓰면 오른손이 머리 뒤까지 크게 넘어갔다가 앞으로 내려찍는다
 ##  - 술을 마시면 고개가 뒤로 젖혀지고, 술병을 입으로 가져가 꿀꺽거리며 위아래로 들썩인다
+##  - attack_two_handed를 켜면 기본공격할 때 왼손이 오른손 쪽으로 모여 무기를 같이 잡는다 (악플러 키보드)
 ##
 ## 무기(소주병 등)는 "HandRHold" 노드의 자식으로 달면 오른손의 움직임/스윙을 그대로 따라간다.
 ## HandR 자체의 자식으로 달면 손 스프라이트의 축소 배율(0.11)까지 물려받아 좌표 잡기가 번거로워서,
@@ -42,6 +43,14 @@ extends Node2D
 @export var attack_slam_offset: Vector2 = Vector2(10, 16)
 ## 들어올리기 → 내리치기 → 복귀까지 걸리는 전체 시간(초)
 @export var attack_duration: float = 0.4
+## 기본공격할 때 왼손도 오른손 쪽으로 모아서 두 손으로 무기를 잡을지.
+## 평소에는 한 손으로 들고 다니다가 때릴 때만 두 손으로 잡는 캐릭터(악플러 키보드)에서 켠다
+@export var attack_two_handed: bool = false
+## 두 손으로 잡을 때 왼손이 오른손에서 떨어져 있는 거리(px). 오른손보다 살짝 뒤·아래를 잡는다
+@export var attack_grip_offset: Vector2 = Vector2(-10, 4)
+## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
+## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
+@export var attack_swing_arc: float = 0.0
 
 ## 술 마시기 동작 전체 길이(초). 올리기 → 마시기 → 내리기가 이 안에서 다 일어난다
 @export var drink_duration: float = 1.1
@@ -141,9 +150,11 @@ func _apply_pose(speed_ratio: float) -> void:
 	for part in [_body, _head, _hand_l, _hand_r]:
 		if part:
 			part.position.y = _rest_positions[part].y + bob
-	# 술 마시기 동작이 매 프레임 덮어쓰므로, 손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
+	# 술 마시기·두 손 잡기가 매 프레임 덮어쓰므로, 오른손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
 	if _head:
 		_head.rotation = 0.0
+	if _hand_l:
+		_hand_l.rotation = 0.0
 
 	# 손은 발과 반대로 흔들린다. sin은 앞쪽 절반(왼발이 나가는 동안)에 양수라
 	# 그때 오른손이 앞으로 나가고 왼손이 뒤로 빠진다
@@ -202,7 +213,7 @@ func _pose_attack_hand() -> void:
 		# ② 앞쪽 아래로 빠르게 내려찍는다 (실제로 때리는 구간)
 		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
 		angle = lerpf(-attack_raise_deg, attack_swing_deg, p * p)
-		offset = attack_raise_offset.lerp(attack_slam_offset, p * p)
+		offset = attack_raise_offset.lerp(attack_slam_offset, p * p) + _swing_arc(p * p)
 	else:
 		# ③ 원래 자세로 복귀
 		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
@@ -210,6 +221,33 @@ func _pose_attack_hand() -> void:
 		offset = attack_slam_offset.lerp(Vector2.ZERO, p)
 	_hand_r.rotation = deg_to_rad(angle)
 	_hand_r.position = _rest_positions[_hand_r] + offset
+	_pose_grip_hand(progress)
+
+## 후려치는 동안 손이 지나가는 길을 아래로 부풀린다. 예비동작 위치에서 내려찍는 위치로 가는
+## 직선의 수직(아래쪽) 방향으로 밀어내며, sin이라 출발·도착에서는 0이라 튀지 않는다
+func _swing_arc(t: float) -> Vector2:
+	if is_zero_approx(attack_swing_arc):
+		return Vector2.ZERO
+	var travel: Vector2 = attack_slam_offset - attack_raise_offset
+	if travel.length() < 0.001:
+		return Vector2.ZERO
+	return Vector2(-travel.y, travel.x).normalized() * attack_swing_arc * sin(t * PI)
+
+## 두 손으로 잡는 캐릭터는 왼손이 오른손 옆으로 붙었다가, 내려찍고 나면 다시 풀린다.
+## 무기는 오른손(HandRHold)에 매달려 있으므로 왼손은 위치·회전만 따라가면 같이 잡은 것처럼 보인다
+func _pose_grip_hand(progress: float) -> void:
+	if not attack_two_handed or _hand_l == null:
+		return
+	var grip: float
+	if progress < ATTACK_STRIKE_START:
+		# 예비동작 앞부분에서 왼손이 빠르게 붙는다 (때리기 전에 이미 두 손으로 잡고 있어야 한다)
+		grip = minf(progress / (ATTACK_STRIKE_START * 0.6), 1.0)
+	elif progress < ATTACK_STRIKE_END:
+		grip = 1.0
+	else:
+		grip = 1.0 - (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, grip)
+	_hand_l.rotation = _hand_r.rotation * grip
 
 ## 술 마시기 동작 — 고개를 뒤로 젖히고 술병을 입으로 가져가 꿀꺽거린다.
 ## DrinkSkill이 술을 실제로 마신 순간 호출한다

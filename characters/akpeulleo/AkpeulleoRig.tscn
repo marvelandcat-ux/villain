@@ -4,8 +4,16 @@
 [ext_resource type="Texture2D" uid="uid://geyrw4kw4lq1" path="res://sprite/body/악플러대가리.png" id="2_head"]
 [ext_resource type="Texture2D" uid="uid://daj7hrn5nnjrj" path="res://sprite/악플러/몸/악플러몸통.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://d1y4eapyhiekr" path="res://sprite/악플러/몸/악플러발.png" id="4_foot"]
+[ext_resource type="Texture2D" uid="uid://btx50km8m0yla" path="res://sprite/악플러/몸/악플러키보드.png" id="5_keyboard"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
+attack_raise_deg = 25.0
+attack_swing_deg = 70.0
+attack_raise_offset = Vector2(-24, 4)
+attack_slam_offset = Vector2(26, -12)
+attack_duration = 0.45
+attack_swing_arc = 26.0
+attack_two_handed = true
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")
@@ -18,6 +26,12 @@ texture = ExtResource("3_body")
 
 [node name="HandL" parent="." index="3" unique_id=927525538]
 position = Vector2(-27, 4)
+
+[node name="Keyboard" type="Sprite2D" parent="HandRHold" index="0" unique_id=378244792]
+position = Vector2(-14, -14)
+rotation = 0.7853982
+scale = Vector2(0.0221, 0.0221)
+texture = ExtResource("5_keyboard")
 
 [node name="Head" parent="." index="6" unique_id=1394957076]
 position = Vector2(-3.7158074, -32.2691)

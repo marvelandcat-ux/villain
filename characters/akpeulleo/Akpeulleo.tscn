@@ -36,6 +36,7 @@ shape = SubResource("CapsuleShape2D_body")
 script = ExtResource("3")
 damage = 6
 range = 40.0
+windup = 0.18
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
