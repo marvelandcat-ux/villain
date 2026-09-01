@@ -26,6 +26,14 @@ const CHARACTER_COLORS := {
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
+## 정면 초상화 그림이 있는 캐릭터만 등록 — CharacterSelect가 이 목록에 있으면 이미지로,
+## 없으면(아직 그림이 없는 캐릭터) 위 CHARACTER_COLORS 색상 타일로 대신 보여준다
+const PORTRAITS := {
+	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
+	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
+	"예수천국 불신지옥": "res://sprite/body/Yeegy.png",
+}
+
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
 const MAPS := {
 	"편의점 앞": "res://maps/ConvenienceStore.tscn",

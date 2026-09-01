@@ -13,8 +13,10 @@ extends Control
 @onready var back_button: Button = $Center/VBox/BackButton
 @onready var p2_name_label: Label = $Center/VBox/PreviewRow/P2Side/P2NameLabel
 @onready var p1_preview_box: ColorRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
+@onready var p1_preview_image: TextureRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewImage
 @onready var p1_preview_label: Label = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewLabel
 @onready var p2_preview_box: ColorRect = $Center/VBox/PreviewRow/P2Side/P2PreviewBox
+@onready var p2_preview_image: TextureRect = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewImage
 @onready var p2_preview_label: Label = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewLabel
 
 ## 스토리 모드에서는 P2가 GameState.STORY_OPPONENTS로 이미 정해져 있어서 P1만 고르면 된다
@@ -42,6 +44,7 @@ func _ready() -> void:
 		p2_name_label.text = "상대"
 		p2_preview_box.color = GameState.CHARACTER_COLORS.get(opponent_name, GameState.DEFAULT_COLOR)
 		p2_preview_label.text = opponent_name
+		_apply_portrait(p2_preview_image, opponent_name)
 	else:
 		status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
 
@@ -54,12 +57,40 @@ func _find_character_name(path: String) -> String:
 
 func _make_tile(label: String, color: Color, font_size: int, callback: Callable) -> Button:
 	var button := Button.new()
-	button.text = label
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.clip_text = false
 	_apply_tile_style(button, color)
-	button.add_theme_font_size_override("font_size", font_size)
 	button.pressed.connect(callback)
+
+	var portrait_path: String = GameState.PORTRAITS.get(label, "")
+	if portrait_path != "":
+		# 초상화가 있는 캐릭터는 글자 대신 그림으로 채우고, 이름은 하단에 작게 걸친다
+		var image := TextureRect.new()
+		image.texture = load(portrait_path)
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		image.anchor_right = 1.0
+		image.anchor_bottom = 1.0
+		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(image)
+
+		var name_label := Label.new()
+		name_label.text = label
+		name_label.anchor_right = 1.0
+		name_label.anchor_top = 1.0
+		name_label.anchor_bottom = 1.0
+		name_label.offset_top = -20
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_label.add_theme_font_size_override("font_size", 12)
+		name_label.add_theme_constant_override("outline_size", 4)
+		name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+		button.add_child(name_label)
+	else:
+		button.text = label
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.add_theme_font_size_override("font_size", font_size)
+
 	return button
 
 func _apply_tile_style(button: Button, color: Color) -> void:
@@ -81,15 +112,22 @@ func _on_character_picked(character_name: String) -> void:
 	confirm_button.disabled = false
 	_update_highlight()
 
-## 미리보기 칸에 캐릭터 이름과 색만 반영한다(선택 확정 여부와는 무관 — 룰렛 연출 중에도 이걸로 화면을 갱신함)
+## 미리보기 칸에 캐릭터 이름·색·초상화를 반영한다(선택 확정 여부와는 무관 — 룰렛 연출 중에도 이걸로 화면을 갱신함)
 func _show_preview(character_name: String) -> void:
 	var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
 	if _picking_p1:
 		p1_preview_box.color = color
 		p1_preview_label.text = character_name
+		_apply_portrait(p1_preview_image, character_name)
 	else:
 		p2_preview_box.color = color
 		p2_preview_label.text = character_name
+		_apply_portrait(p2_preview_image, character_name)
+
+## 초상화 그림이 있는 캐릭터면 TextureRect에 채워 보여주고, 없으면 비워서 뒤의 색상 배경(P#PreviewBox)이 그대로 보이게 한다
+func _apply_portrait(image: TextureRect, character_name: String) -> void:
+	var portrait_path: String = GameState.PORTRAITS.get(character_name, "")
+	image.texture = load(portrait_path) if portrait_path != "" else null
 
 ## 슬롯머신처럼 캐릭터가 빠르게 바뀌다가 점점 느려지며 멈추는 연출. 멈춘 결과가 그대로 임시 선택(pending)이 된다.
 ## 대기는 이 노드(CharacterSelect)의 자식 Timer로 만들어서, 연출 도중 뒤로 나가 씬이 정리되면
