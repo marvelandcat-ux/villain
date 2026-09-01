@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://skills/ScreamCone.gd" id="1"]
+
+[node name="ScreamCone" type="Area2D"]
+monitoring = false
+monitorable = false
+script = ExtResource("1")
+cone_range = 320.0
+half_angle_deg = 26.0
+
+[node name="Collision" type="CollisionPolygon2D" parent="."]
+
+[node name="RangeFill" type="Polygon2D" parent="."]
+color = Color(1, 0.15, 0.15, 0.22)
+visible = false
+
+[node name="RangeOutline" type="Line2D" parent="."]
+width = 4.0
+default_color = Color(1, 0.1, 0.1, 0.85)
+
+[node name="Waves" type="Node2D" parent="."]

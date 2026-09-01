@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/JujeongbaengiStats.tres" id="2"]
@@ -7,9 +7,10 @@
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
 [ext_resource type="Script" path="res://skills/DrinkSkill.gd" id="6"]
 [ext_resource type="Script" path="res://skills/VomitSkill.gd" id="7"]
-[ext_resource type="PackedScene" path="res://skills/Projectile.tscn" id="8"]
-[ext_resource type="Script" path="res://skills/JumpDebuffUltimate.gd" id="9"]
+[ext_resource type="PackedScene" path="res://skills/VomitBeam.tscn" id="8"]
+[ext_resource type="Script" path="res://skills/ScreamConeUltimate.gd" id="9"]
 [ext_resource type="PackedScene" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://skills/ScreamCone.tscn" id="11"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -54,8 +55,9 @@ cooldown = 3.0
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("7")
 cooldown = 4.0
-projectile_scene = ExtResource("8")
+beam_scene = ExtResource("8")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("9")
 cooldown = 20.0
+cone_scene = ExtResource("11")

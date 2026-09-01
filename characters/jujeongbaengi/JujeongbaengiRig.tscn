@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://5whlo20oxk51"]
+[gd_scene format=3 uid="uid://5whlo20oxk51"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://d4bm8ck4awusj" path="res://sprite/주정뱅이/소주병.png" id="2_bottle"]
@@ -6,22 +6,22 @@
 [ext_resource type="Texture2D" uid="uid://by8oyj14il3o2" path="res://sprite/주정뱅이/몸/주정뱅이발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://hkpwwfwymm6i" path="res://sprite/주정뱅이/몸/주정뱅이 머리 (1).png" id="5_head"]
 
-[node name="BodyRig" instance=ExtResource("1_rig")]
+[node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
 
-[node name="FootL" parent="." index="0"]
+[node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")
 
-[node name="FootR" parent="." index="1"]
+[node name="FootR" parent="." index="1" unique_id=1509249644]
 texture = ExtResource("4_foot")
 
-[node name="Body" parent="." index="2"]
+[node name="Body" parent="." index="2" unique_id=1277525598]
 texture = ExtResource("3_body")
 
-[node name="Bottle" type="Sprite2D" parent="HandRHold" index="0"]
-position = Vector2(6.868347, -10.263336)
-rotation = -2.708751
-scale = Vector2(0.03271075, 0.033369895)
+[node name="Bottle" type="Sprite2D" parent="HandRHold" index="0" unique_id=408931255]
+position = Vector2(4.926144, 11.890504)
+rotation = -0.5934119
+scale = Vector2(0.03271075, 0.03315925)
 texture = ExtResource("2_bottle")
 
-[node name="Head" parent="." index="6"]
+[node name="Head" parent="." index="6" unique_id=1394957076]
 texture = ExtResource("5_head")
