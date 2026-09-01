@@ -48,7 +48,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "시작"
 
-[node name="SettingsButton" type="Button" parent="VBox"]
+[node name="SettingsButton" type="Button" parent="VBox" unique_id=1156763019]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "설정"
