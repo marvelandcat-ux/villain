@@ -18,8 +18,8 @@ texture = ExtResource("4_foot")
 texture = ExtResource("3_body")
 
 [node name="Bottle" type="Sprite2D" parent="HandRHold" index="0" unique_id=408931255]
-position = Vector2(4.926144, 11.890504)
-rotation = -0.5934119
+position = Vector2(6.868347, -10.263336)
+rotation = -2.708751
 scale = Vector2(0.03271075, 0.03315925)
 texture = ExtResource("2_bottle")
 

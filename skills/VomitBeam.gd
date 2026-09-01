@@ -1,3 +1,4 @@
+@tool
 class_name VomitBeam
 extends Hitbox
 
@@ -39,6 +40,7 @@ func setup(direction: float, length: float, height: float, beam_damage: int, spi
 	knockback = Vector2(knockback_force.x * _facing, knockback_force.y)
 
 	_build_beam(_clip_to_wall(length), height)
+	_play_burst()
 	_run_lifetime()
 
 ## 벽에 막히면 그 지점까지로 길이를 줄인다. 캐릭터는 뚫고 지나가야 하므로 레이캐스트에서 전부 제외한다
@@ -70,13 +72,20 @@ func _build_beam(length: float, height: float) -> void:
 	_visual.region_enabled = true
 	_visual.region_rect = TEXTURE_REGION
 	_visual.position = Vector2(0.0, -height * 0.5)
-	var full_scale := Vector2(
+	_visual.scale = Vector2(
 		_facing * length / TEXTURE_REGION.size.x,
 		height / TEXTURE_REGION.size.y)
 
-	# 판정은 처음부터 제 크기지만, 그림만 얇은 선에서 제 두께로 벌어지게 해서 "확 뻗는" 느낌을 준다
+## 판정은 처음부터 제 크기지만, 그림만 얇은 선에서 제 두께로 벌어지게 해서 "확 뻗는" 느낌을 준다
+func _play_burst() -> void:
+	var full_scale: Vector2 = _visual.scale
 	_visual.scale = Vector2(full_scale.x, full_scale.y * 0.15)
 	create_tween().tween_property(_visual, "scale", full_scale, burst_time).set_ease(Tween.EASE_OUT)
+
+## 에디터 미리보기용 — 판정도 타이머도 없이 기둥 모양만 만든다 (characters/SkillRangePreview.gd가 호출)
+func build_preview(direction: float, length: float, height: float) -> void:
+	_facing = signf(direction) if direction != 0.0 else 1.0
+	_build_beam(length, height)
 
 func _run_lifetime() -> void:
 	monitoring = true

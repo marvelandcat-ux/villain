@@ -1,3 +1,4 @@
+@tool
 class_name ScreamCone
 extends Hitbox
 
@@ -55,6 +56,11 @@ func setup(direction: float, cone_damage: int, screamer: Fighter) -> void:
 	_build_cone()
 	_spawn_waves()
 	_run_lifetime()
+
+## 에디터 미리보기용 — 판정도 타이머도 없이 부채꼴 모양만 만든다 (characters/SkillRangePreview.gd가 호출)
+func build_preview(direction: float) -> void:
+	_facing = signf(direction) if direction != 0.0 else 1.0
+	_build_cone()
 
 ## 판정용 폴리곤과 빨간 범위 표시를 같은 좌표로 만든다
 func _build_cone() -> void:

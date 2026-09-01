@@ -1,16 +1,17 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene format=3 uid="uid://q21wn1lwgdlj"]
 
-[ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
+[ext_resource type="Script" uid="uid://co7j0mkhanpwb" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/JujeongbaengiStats.tres" id="2"]
-[ext_resource type="Script" path="res://skills/MeleeAttack.gd" id="3"]
-[ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
-[ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
-[ext_resource type="Script" path="res://skills/DrinkSkill.gd" id="6"]
-[ext_resource type="Script" path="res://skills/VomitSkill.gd" id="7"]
+[ext_resource type="Script" uid="uid://3xium7rvk8b5" path="res://skills/MeleeAttack.gd" id="3"]
+[ext_resource type="Script" uid="uid://e5ogygpslhbn" path="res://combat/Hitbox.gd" id="4"]
+[ext_resource type="Script" uid="uid://dxpabj3yhils" path="res://combat/Hurtbox.gd" id="5"]
+[ext_resource type="Script" uid="uid://cky2qdirbbk6y" path="res://skills/DrinkSkill.gd" id="6"]
+[ext_resource type="Script" uid="uid://bx30dg5kos2jw" path="res://skills/VomitSkill.gd" id="7"]
 [ext_resource type="PackedScene" path="res://skills/VomitBeam.tscn" id="8"]
-[ext_resource type="Script" path="res://skills/ScreamConeUltimate.gd" id="9"]
-[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="10"]
+[ext_resource type="Script" uid="uid://bobv36heqjoap" path="res://skills/ScreamConeUltimate.gd" id="9"]
+[ext_resource type="PackedScene" uid="uid://5whlo20oxk51" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://skills/ScreamCone.tscn" id="11"]
+[ext_resource type="Script" uid="uid://cpik24gbnnkkt" path="res://characters/SkillRangePreview.gd" id="12"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -19,45 +20,49 @@ height = 60.0
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
 
-[node name="Jujeongbaengi" type="CharacterBody2D"]
+[node name="Jujeongbaengi" type="CharacterBody2D" unique_id=259436765]
 script = ExtResource("1")
 stats = ExtResource("2")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1251103966]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="Visual" parent="." instance=ExtResource("10")]
+[node name="Visual" parent="." unique_id=616763307 instance=ExtResource("10")]
 
-[node name="Hurtbox" type="Area2D" parent="."]
+[node name="Hurtbox" type="Area2D" parent="." unique_id=357524194]
 script = ExtResource("5")
 
-[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox" unique_id=939120977]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="BasicAttack" type="Node" parent="."]
+[node name="BasicAttack" type="Node" parent="." unique_id=1370111561]
 script = ExtResource("3")
 damage = 6
-range = 40.0
 windup = 0.16
 
-[node name="Hitbox" type="Area2D" parent="BasicAttack"]
+[node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]
 monitoring = false
 monitorable = false
 script = ExtResource("4")
 
-[node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox"]
+[node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox" unique_id=488706040]
 shape = SubResource("RectangleShape2D_hitbox")
 
-[node name="Skill1" type="Node" parent="."]
+[node name="Skill1" type="Node" parent="." unique_id=837593308]
 script = ExtResource("6")
 cooldown = 3.0
 
-[node name="Skill2" type="Node" parent="."]
+[node name="Skill2" type="Node" parent="." unique_id=556174220]
 script = ExtResource("7")
-cooldown = 4.0
 beam_scene = ExtResource("8")
+mouth_offset = Vector2(18, -15)
+cooldown = 4.0
 
-[node name="SkillUltimate" type="Node" parent="."]
+[node name="SkillUltimate" type="Node" parent="." unique_id=2025535014]
 script = ExtResource("9")
-cooldown = 20.0
 cone_scene = ExtResource("11")
+mouth_offset = Vector2(18, -17)
+cooldown = 20.0
+
+[node name="SkillRangePreview" type="Node2D" parent="." unique_id=1400754697]
+script = ExtResource("12")

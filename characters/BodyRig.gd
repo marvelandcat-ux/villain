@@ -42,9 +42,6 @@ extends Node2D
 @export var attack_slam_offset: Vector2 = Vector2(10, 16)
 ## 들어올리기 → 내리치기 → 복귀까지 걸리는 전체 시간(초)
 @export var attack_duration: float = 0.4
-## 기본공격 중 손에 든 물건(HandRHold)이 고정되는 각도(도). 0이면 씬에 잡아둔 제자리 각도 그대로 유지된다.
-## 손 회전을 그대로 따라가면 휘두르는 동안 술병이 뒤집혀 아래를 보게 되므로, 각도는 안 따라가고 위치만 따라가게 한다
-@export var attack_hold_deg: float = 0.0
 
 ## 술 마시기 동작 전체 길이(초). 올리기 → 마시기 → 내리기가 이 안에서 다 일어난다
 @export var drink_duration: float = 1.1
@@ -57,9 +54,11 @@ extends Node2D
 ## 마시는 동안 꿀꺽거리는 횟수
 @export var drink_gulp_count: float = 3.0
 ## 술병을 입으로 가져갈 때 오른손이 제자리에서 옮겨가는 거리(px). 얼굴 쪽이라 위(-y)·뒤(-x)로 간다
-@export var drink_hand_offset: Vector2 = Vector2(-16, -34)
-## 술병을 기울여 붓는 각도(도). 병목이 입을 향하도록 크게 돌린다
-@export var drink_hand_deg: float = -116.0
+@export var drink_hand_offset: Vector2 = Vector2(-10, -25)
+## 곧장 직선으로 올라가지 않고 바깥으로 부풀며 호를 그리는 정도(px). 0이면 직선
+@export var drink_hand_arc: float = 12.0
+## 술병을 추가로 기울이는 각도(도). 씬에 잡아둔 제자리 각도(-155도)가 이미 붓는 자세라 기본은 0이다
+@export var drink_hand_deg: float = 0.0
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -163,16 +162,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _drink_time > 0.0:
 		_pose_drink()
 
-	# 손에 든 물건이 손을 그대로 따라가게 한다.
-	# 단 기본공격 중에는 각도를 따라가지 않는다 — 손이 -100도까지 넘어갔다 +130도로 내려찍는 동안
-	# 그대로 따라가면 술병이 뒤집혀서 병목이 아래를 본다. 위치만 따라가고 각도는 attack_hold_deg로 고정한다.
-	# 술 마시기는 반대로 각도가 따라가야 병이 입으로 기울어지므로 그대로 둔다
+	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
-		if _attack_time > 0.0 and _drink_time <= 0.0:
-			_hand_r_hold.rotation = deg_to_rad(attack_hold_deg)
-		else:
-			_hand_r_hold.rotation = _hand_r.rotation
+		_hand_r_hold.rotation = _hand_r.rotation
 
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
@@ -252,8 +245,10 @@ func _pose_drink() -> void:
 		_head.rotation = deg_to_rad(drink_head_tilt_deg * reach)
 		_head.position = _rest_positions[_head] + drink_head_offset * reach + Vector2(0.0, gulp)
 	if _hand_r:
+		# 이동 방향의 수직으로 부풀려서 호를 그리며 올라간다. sin이라 출발/도착에선 0이고 중간에 가장 크다
+		var arc: Vector2 = Vector2(-drink_hand_offset.y, drink_hand_offset.x).normalized() 			* drink_hand_arc * sin(reach * PI)
 		_hand_r.rotation = deg_to_rad(drink_hand_deg * reach)
-		_hand_r.position = _rest_positions[_hand_r] + drink_hand_offset * reach + Vector2(0.0, gulp)
+		_hand_r.position = _rest_positions[_hand_r] + drink_hand_offset * reach + arc + Vector2(0.0, gulp)
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,
