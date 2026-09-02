@@ -9,7 +9,9 @@ var _polygons: Array = []  # [{points: PackedVector2Array(global), color: Color}
 var _bbox_min := Vector2.ZERO
 var _bbox_max := Vector2.ZERO
 
-## Camera2D/CombatHUD처럼 판정·연출용이라 스테이지 모양과 무관한 가지는 건너뛴다
+## Camera2D/CombatHUD처럼 판정·연출용이라 스테이지 모양과 무관한 가지는 건너뛴다.
+## 이름이 "Deco"로 시작하는 노드도 통째로 건너뛴다 — 배경 벽·선로 그림처럼 화면 밖까지 크게 깔아둔
+## 장식은 실제 스테이지(바닥·발판)보다 훨씬 커서, 같이 재면 미리보기 안에서 스테이지가 점처럼 작아진다
 func set_map(map_path: String) -> void:
 	var scene: PackedScene = load(map_path)
 	var root: Node = scene.instantiate()
@@ -33,7 +35,7 @@ func set_map(map_path: String) -> void:
 	queue_redraw()
 
 func _collect_polygons(node: Node, parent_offset: Vector2) -> void:
-	if node is Camera2D or node is CanvasLayer:
+	if node is Camera2D or node is CanvasLayer or node.name.begins_with("Deco"):
 		return
 	var offset := parent_offset
 	if node is Node2D:

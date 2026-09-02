@@ -61,7 +61,7 @@
 
   - 이전의 임시 배정(방향키 이동 + Z 기본공격 + 숫자키 1/2/3)은 폐기됨. 액션 이름도 `basic_attack`/`skill_3` → `p1_basic_attack`/`p1_ultimate` 식으로 바뀜
   - "P2는 항상 AI라 2P 키가 필요 없다"던 이전 결론도 이 결정으로 뒤집힘 — 키는 다 등록해뒀지만, `Stage.gd`는 아직 P2에 `ClaudeAIController`를 붙이므로 **실제 2P 사람 조작을 켜려면 `_spawn_fighter(..., is_ai)` 인자를 false로 넘기는 분기(모드 선택)가 추가로 필요**하다
-  - **TODO(미구현):** 플랫폼 아래로 내려가기는 키만 잡아두고 동작은 비어 있다(`PlayerController._drop_through_platform()`). 현재 맵 발판에 원웨이 충돌(one_way_collision)이 하나도 없어서, 발판을 원웨이로 바꾼 뒤에 통과 처리를 구현해야 함
+  - **TODO(미구현):** 플랫폼 아래로 내려가기는 키만 잡아두고 동작은 비어 있다(`PlayerController._drop_through_platform()`). `maps/SubwayPlatform.tscn`의 벤치 발판 2개가 원웨이(`one_way_collision`)로 바뀌었으므로 이제 통과 처리를 구현할 수 있다 — 지금은 발판에 올라가면 옆으로 걸어 내려오는 수밖에 없다
 
 ## 캐릭터 몸(스프라이트 조립)
 
@@ -150,13 +150,26 @@
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
 - 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
 - **라운드제:** `Stage._process()`가 KO(HP 0) 또는 시간 초과(`GameState.time_limit_seconds`>0이고 다 됐을 때 — 그 순간 HP 높은 쪽이 라운드 승, 동률이면 무승부)를 감지하면 `_end_round(p1_won, is_draw)`를 부른다. 라운드 승수는 `GameState.p1_round_wins`/`p2_round_wins`에 누적되고, 둘 중 하나가 `rounds_to_win`에 도달하지 못했으면 `MatchResult.show_round_result()`로 점수 배너만 잠깐 보여준 뒤 `get_tree().reload_current_scene()`으로 같은 맵에서 다음 라운드를 새로 시작한다(HP/위치는 씬 리로드로 초기화되고, 라운드 승수는 `GameState`가 오토로드라 그대로 유지됨). 도달했으면 최종 결과(`MatchResult.show_result()`/`show_draw()`) 또는 스토리 모드 승리 시 `ReformCutscene`으로 분기
-- `CombatHUD`의 `RoundLabel`이 화면 중앙 상단에 라운드 점수(`P1승 : P2승`)와(시간제한이 있으면) 남은 초를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신
+- `CombatHUD`는 화면 중앙 상단에 **남은 시간 박스**(`TimerFrame` > `TimerBox` > `TimerLabel`)와 그 아래 라운드 점수(`RoundLabel`, `P1승 : P2승`)를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신한다. 시간 값은 방 설정에서 고른 `GameState.time_limit_seconds`를 `Stage`가 깎아 내려주는 것이라 HUD는 표시만 한다 — **시간 제한 없음(0)이면 `TimerFrame` 자체가 숨겨지고**, 10초 이하로 남으면 숫자가 빨개진다
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성한다. P1에는 항상 `PlayerController`를 붙이고, P2는 `GameState.game_mode`를 봐서 스토리 모드면 `ClaudeAIController`(정해진 상대를 AI가 조작), 로컬 대전(pvp)이면 `PlayerController`(사람이 직접 조작)를 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
 - 승패: `Stage._process()`가 매 프레임 양쪽 Fighter의 `current_hp`를 직접 확인해서 판정한다(HP 0 또는 `ring_out()`). **`died` 시그널에 바로 반응하지 않는 이유:** 시그널에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 쪽이 임의로 승자가 되는 버그가 있었음 — 지금은 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정해서 양쪽 다 0이면 무승부(`MatchResult.show_draw()`)로 처리. 링아웃은 `Stage.ring_out_y`보다 아래로 떨어지면 발동 — 벽이 있는 맵(편의점 앞/PC방/아파트 단지 놀이터)은 사실상 발동 안 되고, 벽이 없는 학교 옥상·지하철 승강장에서만 의미가 있음
 - 히트 이펙트: 맞으면 `Fighter._flash_hit()`가 캐릭터를 잠깐 빨갛게 물들이고, `combat/Hitbox.gd`가 실제로 맞았을 때 `combat/HitSpark.tscn`을 스폰
 - 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(도발+열등감 오라 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 9종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 잼민이 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 빨간 부채꼴+보라 디버프(`ScreamConeUltimate`)
 - 넉백: `MeleeAttack`/`Projectile`이 각자 `Hitbox.knockback`을 설정해서 맞은 캐릭터의 `velocity`에 즉시 더한다(`Fighter.take_damage`). 바운스어택류 콤보의 기반 — 아직 스킬 하나하나에 맞는 세밀한 값 조정은 안 되어 있음(전부 임시값)
 - 대전 시작 시 `ui/RoundStart.tscn`이 "3, 2, 1, FIGHT!" 카운트다운을 보여주는 동안 양쪽 컨트롤러가 멈춘다(`PlayerController`/`AIController`의 `is_active`). **주의:** 그냥 멈추기만 하면(`set_physics_process(false)`) 멈추기 직전 프레임의 관성(velocity.x)이 남아서 계속 미끄러지는 버그가 났었음 — `is_active=false`일 때도 물리 처리(`apply_physics`)는 계속하되 `fighter.move(0.0)`으로 수평 속도를 매 프레임 0으로 고정해야 함
+
+## 맵 기믹
+
+- `maps/PassingTrain.gd` (`maps/SubwayTrack.tscn`): 제자리에서 켜졌다 꺼지는 **판정만 있는** 열차. 경고 → 판정 ON → OFF 순서로 깜빡이며, 열차가 실제로 움직이지는 않는다
+- `maps/SubwayTrain.gd` + `maps/SubwayTrain.tscn` (`maps/SubwayPlatform.tscn`의 `DecoSubwayTrain` 노드): 위와 별개로, 승강장 **아래 선로를 실제로 미끄러져 가로지르는** 열차. 시간 조절은 전부 인스펙터에서 한다 — `interval`(열차 사이 간격 8초) / `first_delay`(첫 열차까지 4초) / `warning_duration`(경고등 깜빡임 1.5초) / `speed`(950px/s) / `damage`(30) / `travel_x`(화면 밖 ±1400에서 출발·도착) / `alternate_direction`(true면 방향이 좌↔우로 번갈아 바뀜). 대기 중에는 `body.visible=false`로 화면 밖에 세워두고 판정도 꺼둔다
+  - 두 스크립트를 합치지 않은 이유: `SubwayTrack`은 "선로 한복판에서 싸우다 열차에 치인다", `SubwayPlatform`은 "승강장에서 싸우다 **떨어지면** 열차에 치인다"로 역할이 다르다. 후자는 승강장 위(y 280)에 서 있으면 절대 안 맞고, 선로(y 370~480)로 떨어졌을 때만 맞는다
+  - 열차 그림은 앞뒤 대칭이 아니라(한쪽 끝에 전조등) 방향이 바뀔 때 `body.scale.x`의 부호를 뒤집는다. 판정 사각형은 좌우 대칭이라 음수 스케일의 영향을 받지 않는다
+- **`maps/SubwayPlatform.tscn` 좌표 기준**(2026-09-03 기획 그림대로 다시 그림): 승강장 바닥 윗면 y=280(`Ground`는 y=300에 880x40) / 벤치 발판 윗면 y=226(`BenchLeft`·`BenchRight`, x=±280) / 승강장 앞면 y=320~372 / 선로 바닥 y=320~560 / 열차 y=370~480 / `ring_out_y`=540
+  - **발판 높이는 71px 위로 못 올린다.** 점프 높이가 `jump_velocity²/(2*gravity)` = 350²/1800 ≈ 68px(실측 **71.1px**)뿐이라, 기획 그림에서 벤치가 벽 중간쯤 높이에 있어도 실제로는 바닥에서 54px 위에 둬야 올라갈 수 있다. 그림보다 낮게 그린 건 이 때문
+  - 기획 그림에서는 좌우 벤치 높이가 서로 달랐지만, 대전 맵이라 **양쪽 대칭**으로 맞췄다
+  - **주의(실제로 겪은 버그): 발판은 반드시 `one_way_collision = true`로 둘 것.** 캐릭터 캡슐이 60px 높이인데 점프가 71px밖에 안 되니, 올라갈 수 있는 발판(바닥+54px)의 **밑 공간은 34px**밖에 안 남는다 — 즉 "밑으로 지나다닐 수 있으면서 뛰어올라갈 수도 있는 높이"는 이 게임에 존재하지 않는다. 꽉 찬 충돌로 두면 발판 밑에 선 캐릭터가 발판과 바닥 사이에 껴서 바닥(y=250)이 아니라 y≈266에 눌린 채 서 있게 된다. 원웨이로 바꾸면 위에서만 착지 판정이 걸려서 밑은 자유롭게 지나다니고 아래에서 점프하면 뚫고 올라가 발판 위(y=196)에 선다 — 헤드리스로 검증함
+  - **`maps/NoisyApartment.tscn`의 `UpperPlatform`에는 아직 이 버그가 남아 있다**(발판 225~245, 밑 공간 35px → 밑에 선 캐릭터가 y≈265.6으로 눌림). 같은 방식(원웨이)으로 고쳐야 함
+- **`Deco`로 시작하는 노드 이름은 "맵 선택 미리보기에서 빼라"는 뜻이다.** `ui/MapPreview.gd`는 맵 씬의 `Polygon2D`를 전부 모아 바운딩 박스에 맞춰 축소해 그리는데, 배경 벽·선로처럼 화면 밖까지 크게 깔아둔 장식(`SubwayPlatform`의 `DecoBackground`는 1800x860)이 섞이면 실제 스테이지가 미리보기 안에서 점처럼 작아진다. 그래서 `Camera2D`/`CanvasLayer`와 함께 이름이 `Deco`로 시작하는 가지를 통째로 건너뛴다 — 새 맵에 배경 장식을 넣을 때도 이 이름 규칙을 지킬 것
 
 ## GDScript 코드 스타일
 

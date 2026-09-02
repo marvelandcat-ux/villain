@@ -20,12 +20,40 @@ offset_top = 16.0
 offset_right = -20.0
 offset_bottom = 90.0
 
+[node name="TimerFrame" type="ColorRect" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -58.0
+offset_top = 10.0
+offset_right = 58.0
+offset_bottom = 74.0
+color = Color(0.92, 0.92, 0.95, 1)
+
+[node name="TimerBox" type="ColorRect" parent="TimerFrame"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+color = Color(0.08, 0.08, 0.11, 1)
+
+[node name="TimerLabel" type="Label" parent="TimerFrame/TimerBox"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_font_sizes/font_size = 38
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="RoundLabel" type="Label" parent="."]
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -80.0
-offset_top = 16.0
+offset_top = 78.0
 offset_right = 80.0
-offset_bottom = 44.0
+offset_bottom = 106.0
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 text = "0 : 0"
