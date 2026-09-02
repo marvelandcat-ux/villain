@@ -95,9 +95,18 @@ func _make_tile(label: String, color: Color, font_size: int, callback: Callable)
 
 func _apply_tile_style(button: Button, color: Color) -> void:
 	button.custom_minimum_size = Vector2(100, 90)
-	for state in ["normal", "hover", "pressed"]:
+	# hover/pressed/focus(마우스로 올렸거나 키보드로 이동해 지금 고르고 있는 칸)는 두꺼운 흰 테두리로 강조해서
+	# "지금 뭘 고르는 중인지"가 한눈에 구분되게 한다 (MapSelect의 칸 강조와 같은 방식)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var is_highlighted: bool = state != "normal"
 		var style := StyleBoxFlat.new()
 		style.bg_color = color * (1.15 if state == "hover" else (0.8 if state == "pressed" else 1.0))
+		var border_width: int = 4 if is_highlighted else 0
+		style.border_width_left = border_width
+		style.border_width_right = border_width
+		style.border_width_top = border_width
+		style.border_width_bottom = border_width
+		style.border_color = Color(1, 1, 1)
 		style.corner_radius_top_left = 6
 		style.corner_radius_top_right = 6
 		style.corner_radius_bottom_left = 6
@@ -111,6 +120,13 @@ func _on_character_picked(character_name: String) -> void:
 	_show_preview(character_name)
 	confirm_button.disabled = false
 	_update_highlight()
+	_focus_thumb(character_name)
+
+## 목록 칸에 흰 테두리(포커스 스타일)를 준다 — 룰렛이 도는 동안 매 칸마다 불러서 테두리가 옮겨 다니게 한다
+func _focus_thumb(character_name: String) -> void:
+	var button: Button = _thumb_buttons.get(character_name)
+	if button:
+		button.grab_focus()
 
 ## 미리보기 칸에 캐릭터 이름·색·초상화를 반영한다(선택 확정 여부와는 무관 — 룰렛 연출 중에도 이걸로 화면을 갱신함)
 func _show_preview(character_name: String) -> void:
@@ -142,7 +158,9 @@ func _on_random_pressed() -> void:
 	var keys: Array = GameState.CHARACTERS.keys()
 	var spin_count := 14
 	for i in range(spin_count):
-		_show_preview(keys.pick_random())
+		var key: String = keys.pick_random()
+		_show_preview(key)
+		_focus_thumb(key)
 		var progress := float(i) / float(spin_count - 1)
 		await _wait(lerp(0.04, 0.22, progress))
 
