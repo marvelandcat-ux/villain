@@ -156,17 +156,19 @@ func _on_random_pressed() -> void:
 	_set_thumb_buttons_disabled(true)
 
 	var keys: Array = GameState.CHARACTERS.keys()
-	var spin_count := 14
+	var start_index: int = randi() % keys.size()
+	var spin_count: int = keys.size() * 3  # 최소 3바퀴는 돌고 멈추게
+	var final_key: String = keys[start_index]
 	for i in range(spin_count):
-		var key: String = keys.pick_random()
-		_show_preview(key)
-		_focus_thumb(key)
+		final_key = keys[(start_index + i) % keys.size()]
+		_show_preview(final_key)
+		_focus_thumb(final_key)
 		var progress := float(i) / float(spin_count - 1)
-		await _wait(lerp(0.04, 0.22, progress))
+		await _wait(lerp(0.0133, 0.22, progress))
 
 	_set_thumb_buttons_disabled(false)
 	_is_spinning = false
-	_on_character_picked(keys.pick_random())
+	_on_character_picked(final_key)
 
 func _wait(duration: float) -> void:
 	var timer := Timer.new()

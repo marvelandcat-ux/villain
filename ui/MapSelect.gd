@@ -6,9 +6,14 @@ extends Control
 
 @onready var map_grid: GridContainer = $Center/VBox/MapGrid
 
+var _map_buttons: Dictionary = {}  # {map_name: Button} — 룰렛 연출에서 흰 테두리를 옮길 때 씀
+var _is_spinning: bool = false
+
 func _ready() -> void:
 	for map_name in GameState.MAPS.keys():
-		map_grid.add_child(_make_tile(map_name, GameState.MAPS[map_name], _on_map_picked.bind(map_name)))
+		var button := _make_tile(map_name, GameState.MAPS[map_name], _on_map_picked.bind(map_name))
+		map_grid.add_child(button)
+		_map_buttons[map_name] = button
 	map_grid.add_child(_make_tile("?", "", _on_random_pressed))
 
 func _make_tile(label: String, map_path: String, callback: Callable) -> Button:
@@ -66,13 +71,107 @@ func _apply_tile_style(button: Button) -> void:
 		style.corner_radius_bottom_right = 4
 		button.add_theme_stylebox_override(state, style)
 
+## 고른 맵으로 바로 들어가지 않고, 그 맵을 크게 보여주는 팝업을 잠깐 띄운 뒤 들어간다
 func _on_map_picked(map_name: String) -> void:
+	_set_map_buttons_disabled(true)
+	await _show_map_popup(map_name)
 	GameState.selected_map_path = GameState.MAPS[map_name]
 	get_tree().change_scene_to_file(GameState.selected_map_path)
 
+## 화면 전체를 어둡게 가리고 가운데에 큰 MapPreview + 맵 이름을 잠깐 보여준다.
+## MapPreview는 칸에 쓰던 것과 같은 스크립트라, 크기만 키우면 그대로 큰 미리보기가 된다
+func _show_map_popup(map_name: String) -> void:
+	var overlay := ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.8)
+	overlay.anchor_right = 1.0
+	overlay.anchor_bottom = 1.0
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -320
+	panel.offset_right = 320
+	panel.offset_top = -220
+	panel.offset_bottom = 220
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.09, 0.09, 0.11, 1)
+	style.border_width_left = 4
+	style.border_width_right = 4
+	style.border_width_top = 4
+	style.border_width_bottom = 4
+	style.border_color = Color(1, 1, 1)
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", style)
+	overlay.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var name_label := Label.new()
+	name_label.text = map_name
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(name_label)
+
+	var preview := MapPreview.new()
+	preview.custom_minimum_size = Vector2(560, 320)
+	preview.set_map(GameState.MAPS[map_name])
+	vbox.add_child(preview)
+
+	await _wait(1.1)
+
+## 캐릭터 선택 화면의 룰렛과 같은 방식 — 흰 테두리(포커스)가 빠르게 옮겨다니다가 점점 느려지며 멈춘다.
+## 대기는 이 노드의 자식 Timer로 만들어서, 연출 도중 뒤로 나가 씬이 정리되면 Timer도 같이 사라져
+## 남은 연출이 그냥 실행되지 않고 끝난다(에러 없이 조용히 중단됨)
 func _on_random_pressed() -> void:
-	var map_name: String = GameState.MAPS.keys().pick_random()
-	_on_map_picked(map_name)
+	if _is_spinning:
+		return
+	_is_spinning = true
+	_set_map_buttons_disabled(true)
+
+	var keys: Array = GameState.MAPS.keys()
+	var start_index: int = randi() % keys.size()
+	var spin_count: int = keys.size() * 3  # 최소 3바퀴는 돌고 멈추게
+	var final_key: String = keys[start_index]
+	for i in range(spin_count):
+		final_key = keys[(start_index + i) % keys.size()]
+		_focus_tile(final_key)
+		var progress := float(i) / float(spin_count - 1)
+		await _wait(lerp(0.0133, 0.22, progress))
+
+	_set_map_buttons_disabled(false)
+	_is_spinning = false
+	_on_map_picked(final_key)
+
+func _focus_tile(map_name: String) -> void:
+	var button: Button = _map_buttons.get(map_name)
+	if button:
+		button.grab_focus()
+
+func _set_map_buttons_disabled(disabled: bool) -> void:
+	for child in map_grid.get_children():
+		child.disabled = disabled
+
+func _wait(duration: float) -> void:
+	var timer := Timer.new()
+	timer.wait_time = duration
+	timer.one_shot = true
+	add_child(timer)
+	timer.start()
+	await timer.timeout
+	timer.queue_free()
 
 func _on_back_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
