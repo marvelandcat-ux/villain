@@ -52,7 +52,8 @@ func _physics_process(delta: float) -> void:
 	fighter.apply_physics(delta)
 
 ## 아래 방향 키를 누른 채 점프를 눌렀을 때 — 발밑 발판을 통과해서 아래층으로 내려간다.
-## TODO: 현재 맵에는 통과 가능한 발판(one_way_collision)이 아직 없어서 동작하지 않는다.
-## 발판을 원웨이로 만든 뒤 여기서 통과 처리를 구현할 것
+## 통과 가능한 발판(one_way_collision) 위가 아니면 그냥 평범한 점프가 나간다 —
+## 진짜 지면 위에서 아래키를 누른 채 점프했다고 아무 일도 안 일어나면 입력이 씹힌 것처럼 느껴지기 때문
 func _drop_through_platform() -> void:
-	pass
+	if not fighter.drop_through_platform():
+		fighter.jump()

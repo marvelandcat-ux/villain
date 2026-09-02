@@ -16,6 +16,10 @@ signal died
 const DEFAULT_GRAVITY: float = 900.0
 const DEFAULT_JUMP_VELOCITY: float = -350.0
 
+## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
+## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
+const DROP_THROUGH_DURATION: float = 0.35
+
 ## 모든 Fighter가 함께 쓰는 중력/점프력. 아직 값을 정하는 중이라 훈련장(maps/TrainingGround.gd)에서
 ## 실시간으로 바꿔볼 수 있게 static var로 두었다 — 값이 확정되면 위 DEFAULT_ 상수에 옮겨 적으면 된다.
 ## 점프력은 위쪽이 음수라서 -350처럼 음수 값이다
@@ -174,6 +178,46 @@ func jump() -> void:
 	velocity.y = jump_velocity * jump_multiplier
 	if vault_jump:
 		_play_vault_effect()
+
+## 지금 밟고 있는 바닥이 통과 가능한 발판(one_way_collision)이면, 그 발판과의 충돌만 잠깐 꺼서
+## 아래층으로 내려간다. 성공하면 true, 발판 위가 아니면(진짜 지면이거나 공중) 아무것도 안 하고 false.
+##
+## 충돌 레이어를 통째로 끄지 않고 add_collision_exception_with()로 그 발판 하나만 예외 처리하는 이유:
+## 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 같이 통과해버려서 맵 밖으로 떨어진다
+func drop_through_platform() -> bool:
+	var platform: PhysicsBody2D = _get_one_way_floor()
+	if platform == null:
+		return false
+	add_collision_exception_with(platform)
+	# 예외를 걸어도 속도가 0이면 그 자리에 멈춰 있으므로, 곧바로 떨어지기 시작하게 아래로 살짝 밀어준다
+	velocity.y = maxf(velocity.y, 10.0)
+	# 다 내려간 뒤 예외를 되돌린다. get_tree().create_timer()가 아니라 자식 Timer(_after)를 쓰는 이유는
+	# 대전 도중 나가기 등으로 이 Fighter가 먼저 사라지면 콜백 자체가 실행되지 않게 하기 위함
+	_after(DROP_THROUGH_DURATION, func():
+		# 맵이 먼저 정리되어 발판만 사라진 경우를 대비 (해제된 객체는 == null 비교가 안 통해서 이 함수로 확인)
+		if is_instance_valid(platform):
+			remove_collision_exception_with(platform)
+	)
+	return true
+
+## 발밑에 닿아 있는 바닥 중 "통과 가능한 발판"이 있으면 그 StaticBody2D를 돌려준다.
+## 직전 move_and_slide()가 기록해둔 충돌 목록에서 위를 향한 면만 골라 보고,
+## 그 면이 속한 충돌 도형에 one_way_collision이 켜져 있는지 확인한다
+func _get_one_way_floor() -> PhysicsBody2D:
+	if not is_on_floor():
+		return null
+	for i in range(get_slide_collision_count()):
+		var collision := get_slide_collision(i)
+		# 법선이 위를 향하는 면 = 발밑 바닥. 벽이나 천장에 스친 충돌은 건너뛴다
+		if collision.get_normal().y > -0.7:
+			continue
+		var body = collision.get_collider()
+		if not (body is PhysicsBody2D):
+			continue
+		var owner_id: int = body.shape_find_owner(collision.get_collider_shape_index())
+		if owner_id != -1 and body.is_shape_owner_one_way_collision_enabled(owner_id):
+			return body
+	return null
 
 ## 개찰구를 훌쩍 뛰어넘는 듯한 점프 연출 (지하철빌런 전용)
 func _play_vault_effect() -> void:
