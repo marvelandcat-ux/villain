@@ -7,7 +7,6 @@ const CHARACTERS := {
 	"잼민이": "res://characters/jaemini/Jaemini.tscn",
 	"악플러": "res://characters/akpeulleo/Akpeulleo.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
-	"예수천국 불신지옥": "res://characters/yesucheonguk/Yesucheonguk.tscn",
 	"캣맘": "res://characters/catmom/CatMom.tscn",
 	"지하철빌런": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간피해빌런": "res://characters/floornoise/FloorNoise.tscn",
@@ -19,7 +18,6 @@ const CHARACTER_COLORS := {
 	"잼민이": Color(0.95, 0.85, 0.2),
 	"악플러": Color(0.85, 0.25, 0.25),
 	"주정뱅이": Color(0.8, 0.5, 0.2),
-	"예수천국 불신지옥": Color(0.55, 0.35, 0.75),
 	"캣맘": Color(0.9, 0.55, 0.7),
 	"지하철빌런": Color(0.3, 0.65, 0.55),
 	"층간피해빌런": Color(0.3, 0.5, 0.85),
@@ -31,7 +29,6 @@ const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 const PORTRAITS := {
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
-	"예수천국 불신지옥": "res://sprite/body/Yeegy.png",
 }
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
@@ -52,7 +49,6 @@ const STORY_OPPONENTS: Array = [
 	"res://characters/jaemini/Jaemini.tscn",
 	"res://characters/akpeulleo/Akpeulleo.tscn",
 	"res://characters/jujeongbaengi/Jujeongbaengi.tscn",
-	"res://characters/yesucheonguk/Yesucheonguk.tscn",
 	"res://characters/catmom/CatMom.tscn",
 	"res://characters/subwayvillain/SubwayVillain.tscn",
 	"res://characters/floornoise/FloorNoise.tscn",

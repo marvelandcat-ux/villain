@@ -1,7 +1,7 @@
 class_name FirePlate
 extends Area2D
 
-## 바닥에 깔리는 화상 장판 — 겹쳐있는 상대에게 주기적으로 데미지를 준다. 자기 자신은 무시한다 (예수천국 불신지옥 악마 스킬2)
+## 바닥에 깔리는 화상 장판 — 겹쳐있는 상대에게 주기적으로 데미지를 준다. 자기 자신은 무시한다 (지하철빌런 궁극기 "떡볶이"가 재사용)
 @export var damage_per_tick: int = 4
 @export var tick_interval: float = 1.0
 @export var lifetime: float = 6.0

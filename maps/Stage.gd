@@ -22,7 +22,9 @@ func _ready() -> void:
 	# 궁극기 컷인 연출 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
 	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false, 1)
-	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", true, 2)
+	# 로컬 대전(pvp)은 P2도 사람이 직접 조작하고, 스토리 모드는 정해진 상대를 AI가 조작한다
+	var p2_is_ai: bool = GameState.game_mode == "story"
+	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", p2_is_ai, 2)
 
 	# 스폰된 Fighter들의 _ready()가 끝날 때까지 한 프레임 기다렸다가 연결한다
 	await get_tree().process_frame
