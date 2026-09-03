@@ -21,6 +21,8 @@ func _ready() -> void:
 	_round_time_left = GameState.time_limit_seconds
 	# 궁극기 컷인 연출 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
+	# 같은 스킬 슬롯을 동시에 쓰면 연타 미니게임(클래시)을 벌이는 매니저 (Fighter가 그룹으로 찾아 쓴다)
+	add_child(SkillClashManager.new())
 	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false, 1)
 	# 로컬 대전(pvp)은 P2도 사람이 직접 조작하고, 스토리 모드는 정해진 상대를 AI가 조작한다
 	var p2_is_ai: bool = GameState.game_mode == "story"

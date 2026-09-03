@@ -203,19 +203,41 @@ func is_busy() -> bool:
 func start_busy(duration: float) -> void:
 	_busy_time = maxf(_busy_time, duration)
 
+## 씬에 SkillClashManager가 있으면(1대1 대전 맵) 반환하고, 없으면(훈련장 등) null
+func _get_clash_manager() -> Node:
+	return get_tree().get_first_node_in_group("skill_clash_manager")
+
 func use_skill_1() -> void:
-	if skill_1 and not is_feared and not is_busy():
+	if skill_1 == null or is_feared or is_busy() or not skill_1.can_use():
+		return
+	var manager: Node = _get_clash_manager()
+	if manager:
+		manager.request(self, "skill_1", func(): skill_1.use(self), func(): skill_1.cancel_use())
+	else:
 		skill_1.use(self)
 
 func use_skill_2() -> void:
-	if skill_2 and not is_feared and not is_busy():
+	if skill_2 == null or is_feared or is_busy() or not skill_2.can_use():
+		return
+	var manager: Node = _get_clash_manager()
+	if manager:
+		manager.request(self, "skill_2", func(): skill_2.use(self), func(): skill_2.cancel_use())
+	else:
 		skill_2.use(self)
 
 ## 궁극기는 바로 나가지 않고, 씬에 컷인 연출이 있으면 연출을 먼저 재생한다.
-## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다
+## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다.
+## 상대와 같은 타이밍에 궁극기를 함께 쓰면(클래시) 진 쪽은 컷인조차 뜨지 않고 쿨타임만 소모된다
 func use_ultimate() -> void:
 	if skill_ultimate == null or is_feared or is_busy() or not skill_ultimate.can_use():
 		return
+	var manager: Node = _get_clash_manager()
+	if manager:
+		manager.request(self, "ultimate", func(): _play_ultimate_cutin(), func(): skill_ultimate.cancel_use())
+	else:
+		_play_ultimate_cutin()
+
+func _play_ultimate_cutin() -> void:
 	var cutin: Node = get_tree().get_first_node_in_group("ultimate_cutin")
 	if cutin and cutin.has_method("play"):
 		cutin.play(self)
@@ -228,10 +250,17 @@ func fire_ultimate_now() -> void:
 		skill_ultimate.use(self)
 
 func use_basic_attack() -> void:
-	# 쿨타임 중이면 use()가 아무것도 안 하므로, 실제로 나가는 경우에만 공격 모션을 재생한다
-	if basic_attack and not is_feared and not is_busy() and basic_attack.can_use():
-		basic_attack.use(self)
-		_play_visual_attack()
+	if basic_attack == null or is_feared or is_busy() or not basic_attack.can_use():
+		return
+	var manager: Node = _get_clash_manager()
+	if manager:
+		manager.request(self, "basic_attack", func(): _fire_basic_attack(), func(): basic_attack.cancel_use())
+	else:
+		_fire_basic_attack()
+
+func _fire_basic_attack() -> void:
+	basic_attack.use(self)
+	_play_visual_attack()
 
 ## 공격 모션을 가진 비주얼(BodyRig 등)에 휘두르라고 알린다.
 ## 아직 임시 사각형(Polygon2D)을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다
