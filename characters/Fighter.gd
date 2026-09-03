@@ -14,18 +14,30 @@ signal died
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 900.0
-const DEFAULT_JUMP_VELOCITY: float = -450.0
+const DEFAULT_JUMP_VELOCITY: float = -350.0
+## 공중에서 한 번 더 뛰는 이단 점프의 세기. 지상 점프(-350, 71px)보다 세게 잡아서
+## 둘을 이어 뛰면 약 172px까지 올라간다 — 지하철 승강장의 의자 발판(바닥에서 145px)이
+## 지상 점프 한 번(71px)으로는 절대 안 닿고 이단 점프로만 닿게 하려고 정한 값.
+## 의자를 이 높이에 둔 이유는 의자에 올라선 캐릭터가 열차 지붕(y=195)보다 확실히 위에 있어야 하기 때문
+const DEFAULT_AIR_JUMP_VELOCITY: float = -420.0
+
+## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
+## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
+const DROP_THROUGH_DURATION: float = 0.35
 
 ## 모든 Fighter가 함께 쓰는 중력/점프력. 아직 값을 정하는 중이라 훈련장(maps/TrainingGround.gd)에서
 ## 실시간으로 바꿔볼 수 있게 static var로 두었다 — 값이 확정되면 위 DEFAULT_ 상수에 옮겨 적으면 된다.
-## 점프력은 위쪽이 음수라서 -450처럼 음수 값이다
+## 점프력은 위쪽이 음수라서 -350처럼 음수 값이다
 static var gravity: float = DEFAULT_GRAVITY
 static var jump_velocity: float = DEFAULT_JUMP_VELOCITY
+static var air_jump_velocity: float = DEFAULT_AIR_JUMP_VELOCITY
+## 바닥에서 뛴 뒤 공중에서 추가로 뛸 수 있는 횟수. 1이면 이단 점프, 0이면 예전처럼 바닥에서만 점프
+static var max_air_jumps: int = 1
 
 var current_hp: int = 0
 var facing: float = 1.0
-## 마지막으로 바닥에 닿은 뒤 지금까지 점프한 횟수 (착지하면 0으로 초기화). max_jumps와 비교해 더블 점프를 판정한다
-var _jumps_used: int = 0
+## 지금 공중에서 몇 번 더 뛸 수 있는지. 바닥에 닿을 때마다 max_air_jumps로 다시 채워진다
+var _air_jumps_left: int = 0
 
 ## 자식 노드 이름(Skill1/Skill2/SkillUltimate/BasicAttack)으로 자동 연결되는 스킬 슬롯.
 ## 스탠스 전환처럼 특수한 캐릭터는 직접 다시 할당해서 바꿀 수 있다
@@ -52,8 +64,6 @@ var is_invincible: bool = false
 var is_feared: bool = false
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철빌런 전용, 캐릭터 씬에서 켬)
 @export var vault_jump: bool = false
-## 한 번 착지할 때까지 점프할 수 있는 총 횟수 (2면 더블 점프 — 공중에서 한 번 더 가능)
-@export var max_jumps: int = 2
 
 ## 캐릭터별 스킬이 자유롭게 쓰는 임시 데이터 저장소 (예: 주정뱅이 술 스택)
 var custom_data: Dictionary = {}
@@ -176,14 +186,58 @@ func move(direction: float) -> void:
 		facing = signf(direction)
 	velocity.x = direction * stats.move_speed * move_speed_multiplier
 
-## 점프한다. 공중에서도 max_jumps번까지(기본 2 = 더블 점프) 가능하고, 바닥에 닿으면 횟수가 초기화된다
+## 바닥에서는 보통 점프, 공중에서는 남은 횟수만큼 이단 점프.
+## 이단 점프는 지금까지의 낙하 속도를 무시하고 속도를 새로 덮어써서, 떨어지는 중에 눌러도 제대로 뜬다
 func jump() -> void:
-	if _jumps_used >= max_jumps:
+	if is_on_floor():
+		velocity.y = jump_velocity * jump_multiplier
+	elif _air_jumps_left > 0:
+		_air_jumps_left -= 1
+		velocity.y = air_jump_velocity * jump_multiplier
+	else:
 		return
-	_jumps_used += 1
-	velocity.y = jump_velocity * jump_multiplier
 	if vault_jump:
 		_play_vault_effect()
+
+## 지금 밟고 있는 바닥이 통과 가능한 발판(one_way_collision)이면, 그 발판과의 충돌만 잠깐 꺼서
+## 아래층으로 내려간다. 성공하면 true, 발판 위가 아니면(진짜 지면이거나 공중) 아무것도 안 하고 false.
+##
+## 충돌 레이어를 통째로 끄지 않고 add_collision_exception_with()로 그 발판 하나만 예외 처리하는 이유:
+## 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 같이 통과해버려서 맵 밖으로 떨어진다
+func drop_through_platform() -> bool:
+	var platform: PhysicsBody2D = _get_one_way_floor()
+	if platform == null:
+		return false
+	add_collision_exception_with(platform)
+	# 예외를 걸어도 속도가 0이면 그 자리에 멈춰 있으므로, 곧바로 떨어지기 시작하게 아래로 살짝 밀어준다
+	velocity.y = maxf(velocity.y, 10.0)
+	# 다 내려간 뒤 예외를 되돌린다. get_tree().create_timer()가 아니라 자식 Timer(_after)를 쓰는 이유는
+	# 대전 도중 나가기 등으로 이 Fighter가 먼저 사라지면 콜백 자체가 실행되지 않게 하기 위함
+	_after(DROP_THROUGH_DURATION, func():
+		# 맵이 먼저 정리되어 발판만 사라진 경우를 대비 (해제된 객체는 == null 비교가 안 통해서 이 함수로 확인)
+		if is_instance_valid(platform):
+			remove_collision_exception_with(platform)
+	)
+	return true
+
+## 발밑에 닿아 있는 바닥 중 "통과 가능한 발판"이 있으면 그 StaticBody2D를 돌려준다.
+## 직전 move_and_slide()가 기록해둔 충돌 목록에서 위를 향한 면만 골라 보고,
+## 그 면이 속한 충돌 도형에 one_way_collision이 켜져 있는지 확인한다
+func _get_one_way_floor() -> PhysicsBody2D:
+	if not is_on_floor():
+		return null
+	for i in range(get_slide_collision_count()):
+		var collision := get_slide_collision(i)
+		# 법선이 위를 향하는 면 = 발밑 바닥. 벽이나 천장에 스친 충돌은 건너뛴다
+		if collision.get_normal().y > -0.7:
+			continue
+		var body = collision.get_collider()
+		if not (body is PhysicsBody2D):
+			continue
+		var owner_id: int = body.shape_find_owner(collision.get_collider_shape_index())
+		if owner_id != -1 and body.is_shape_owner_one_way_collision_enabled(owner_id):
+			return body
+	return null
 
 ## 개찰구를 훌쩍 뛰어넘는 듯한 점프 연출 (지하철빌런 전용)
 func _play_vault_effect() -> void:
@@ -319,9 +373,8 @@ func apply_physics(delta: float) -> void:
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
 	move_and_slide()
-	# 바닥에 닿아 있으면 점프 횟수를 초기화한다 (다음엔 다시 max_jumps번 점프 가능).
-	# move_and_slide 뒤에 확인해야 방금 뛰어오른 프레임에 잘못 초기화되지 않는다
+	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)
 	if is_on_floor():
-		_jumps_used = 0
+		_air_jumps_left = max_air_jumps
 	if movement_override:
 		movement_override.after_physics(self, delta)

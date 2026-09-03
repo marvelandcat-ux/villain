@@ -61,7 +61,13 @@
 
   - 이전의 임시 배정(방향키 이동 + Z 기본공격 + 숫자키 1/2/3)은 폐기됨. 액션 이름도 `basic_attack`/`skill_3` → `p1_basic_attack`/`p1_ultimate` 식으로 바뀜
   - "P2는 항상 AI라 2P 키가 필요 없다"던 이전 결론도 이 결정으로 뒤집힘 — 키는 다 등록해뒀지만, `Stage.gd`는 아직 P2에 `ClaudeAIController`를 붙이므로 **실제 2P 사람 조작을 켜려면 `_spawn_fighter(..., is_ai)` 인자를 false로 넘기는 분기(모드 선택)가 추가로 필요**하다
-  - **TODO(미구현):** 플랫폼 아래로 내려가기는 키만 잡아두고 동작은 비어 있다(`PlayerController._drop_through_platform()`). 현재 맵 발판에 원웨이 충돌(one_way_collision)이 하나도 없어서, 발판을 원웨이로 바꾼 뒤에 통과 처리를 구현해야 함
+  - **이단 점프(구현 완료, 2026-09-03):** 점프 키를 공중에서 한 번 더 누르면 다시 뛴다. 조작키는 그대로(W / ↑)고 `Fighter.jump()`가 `is_on_floor()`인지 보고 지상 점프와 공중 점프를 알아서 나눈다. `Fighter.max_air_jumps`(기본 1)·`Fighter.air_jump_velocity`(기본 -420)는 `gravity`/`jump_velocity`와 같이 **static var**라 훈련장에서 바로 바꿔볼 수 있다
+    - 공중 점프는 지금까지의 낙하 속도를 무시하고 `velocity.y`를 새로 덮어쓴다 — 떨어지는 중에 눌러도 제대로 뜬다
+    - 남은 횟수(`_air_jumps_left`)는 `apply_physics()`의 `move_and_slide()` **뒤에** `is_on_floor()`를 보고 다시 채운다(앞에서 채우면 이번 프레임의 착지가 아직 반영되지 않아 한 프레임 늦는다)
+    - 높이: 지상 점프 71.1px, 이단까지 이어 뛰면 **165.4px**(실측). 지하철 승강장의 의자 발판을 "지상 점프로는 절대 못 닿고 이단 점프로만 닿는" 145px에 둔 근거다. **전 맵 공통 변경이라 링아웃형 맵(학교 옥상)이 그만큼 관대해졌다** — 밸런스 확인 필요
+  - **플랫폼 아래로 내려가기(구현 완료, 2026-09-03):** 아래키를 누른 채 점프하면 `PlayerController._drop_through_platform()` → `Fighter.drop_through_platform()`이 발밑 발판을 통과해 아래층으로 내려간다. 통과 가능한 발판 위가 아니면(진짜 지면이거나 공중) 그냥 평범한 점프가 나간다 — 입력이 씹힌 것처럼 느껴지지 않게
+    - **충돌 레이어를 통째로 끄지 않고 `add_collision_exception_with(발판)`으로 그 발판 하나만 예외 처리한다.** 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 통과해서 맵 밖으로 떨어진다. 예외는 `Fighter.DROP_THROUGH_DURATION`(0.35초) 뒤 자식 Timer(`_after`)로 되돌린다
+    - 발밑 발판은 직전 `move_and_slide()`가 남긴 충돌 목록(`get_slide_collision`)에서 **법선이 위를 향하는 면**만 골라, 그 도형에 `is_shape_owner_one_way_collision_enabled()`가 켜져 있는지로 판별한다(`Fighter._get_one_way_floor()`)
 
 ## 캐릭터 몸(스프라이트 조립)
 
@@ -150,13 +156,67 @@
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
 - 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
 - **라운드제:** `Stage._process()`가 KO(HP 0) 또는 시간 초과(`GameState.time_limit_seconds`>0이고 다 됐을 때 — 그 순간 HP 높은 쪽이 라운드 승, 동률이면 무승부)를 감지하면 `_end_round(p1_won, is_draw)`를 부른다. 라운드 승수는 `GameState.p1_round_wins`/`p2_round_wins`에 누적되고, 둘 중 하나가 `rounds_to_win`에 도달하지 못했으면 `MatchResult.show_round_result()`로 점수 배너만 잠깐 보여준 뒤 `get_tree().reload_current_scene()`으로 같은 맵에서 다음 라운드를 새로 시작한다(HP/위치는 씬 리로드로 초기화되고, 라운드 승수는 `GameState`가 오토로드라 그대로 유지됨). 도달했으면 최종 결과(`MatchResult.show_result()`/`show_draw()`) 또는 스토리 모드 승리 시 `ReformCutscene`으로 분기
-- `CombatHUD`의 `RoundLabel`이 화면 중앙 상단에 라운드 점수(`P1승 : P2승`)와(시간제한이 있으면) 남은 초를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신
+- `CombatHUD`는 화면 중앙 상단에 **남은 시간 박스**(`TimerFrame` > `TimerBox` > `TimerLabel`)와 그 아래 라운드 점수(`RoundLabel`, `P1승 : P2승`)를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신한다. 시간 값은 방 설정에서 고른 `GameState.time_limit_seconds`를 `Stage`가 깎아 내려주는 것이라 HUD는 표시만 한다 — **시간 제한 없음(0)이면 `TimerFrame` 자체가 숨겨지고**, 10초 이하로 남으면 숫자가 빨개진다
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성한다. P1에는 항상 `PlayerController`를 붙이고, P2는 `GameState.game_mode`를 봐서 스토리 모드면 `ClaudeAIController`(정해진 상대를 AI가 조작), 로컬 대전(pvp)이면 `PlayerController`(사람이 직접 조작)를 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
 - 승패: `Stage._process()`가 매 프레임 양쪽 Fighter의 `current_hp`를 직접 확인해서 판정한다(HP 0 또는 `ring_out()`). **`died` 시그널에 바로 반응하지 않는 이유:** 시그널에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 쪽이 임의로 승자가 되는 버그가 있었음 — 지금은 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정해서 양쪽 다 0이면 무승부(`MatchResult.show_draw()`)로 처리. 링아웃은 `Stage.ring_out_y`보다 아래로 떨어지면 발동 — 벽이 있는 맵(편의점 앞/PC방/아파트 단지 놀이터)은 사실상 발동 안 되고, 벽이 없는 학교 옥상·지하철 승강장에서만 의미가 있음
 - 히트 이펙트: 맞으면 `Fighter._flash_hit()`가 캐릭터를 잠깐 빨갛게 물들이고, `combat/Hitbox.gd`가 실제로 맞았을 때 `combat/HitSpark.tscn`을 스폰
 - 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(도발+열등감 오라 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 9종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 촉법소년 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 빨간 부채꼴+보라 디버프(`ScreamConeUltimate`)
 - 넉백: `MeleeAttack`/`Projectile`이 각자 `Hitbox.knockback`을 설정해서 맞은 캐릭터의 `velocity`에 즉시 더한다(`Fighter.take_damage`). 바운스어택류 콤보의 기반 — 아직 스킬 하나하나에 맞는 세밀한 값 조정은 안 되어 있음(전부 임시값)
 - 대전 시작 시 `ui/RoundStart.tscn`이 "3, 2, 1, FIGHT!" 카운트다운을 보여주는 동안 양쪽 컨트롤러가 멈춘다(`PlayerController`/`AIController`의 `is_active`). **주의:** 그냥 멈추기만 하면(`set_physics_process(false)`) 멈추기 직전 프레임의 관성(velocity.x)이 남아서 계속 미끄러지는 버그가 났었음 — `is_active=false`일 때도 물리 처리(`apply_physics`)는 계속하되 `fighter.move(0.0)`으로 수평 속도를 매 프레임 0으로 고정해야 함
+
+## 맵 기믹
+
+- `maps/PassingTrain.gd` (`maps/SubwayTrack.tscn`): 제자리에서 켜졌다 꺼지는 **판정만 있는** 열차. 경고 → 판정 ON → OFF 순서로 깜빡이며, 열차가 실제로 움직이지는 않는다. `maps/SubwayTrack.tscn`은 아직 폴리곤 열차를 쓴다 — 필요하면 `Metro!.png`로 갈아끼울 수 있다
+- `maps/SubwayTrain.gd` + `maps/SubwayTrain.tscn` (`maps/SubwayPlatform.tscn`의 `DecoSubwayTrain` 노드): 선로를 실제로 미끄러져 가로지르는 열차. 시간·세기 조절은 전부 인스펙터에서 한다 — `interval`(도착에서 다음 도착까지 **30초**) / `first_delay`(첫 열차까지 12초) / `warning_duration`(도착 몇 초 전부터 음악·경고등, **5초**) / `speed`(950px/s) / `damage`(12) / `hit_interval`(0.35초) / `knockback_push`(420) / `knockback_lift`(260) / `travel_x`(±1200) / `alternate_direction` / `arrival_music`
+  - **`interval`은 "도착에서 다음 도착까지"다.** 열차가 출발하는 순간 `_timer = interval`로 다시 채우기 때문에 지나가는 시간까지 그 안에 포함된다 — 30으로 두면 정확히 30초마다 한 대씩 온다(헤드리스 실측: 0.6s / 30.6s / 60.6s). 예전처럼 "열차가 나간 뒤부터 세는" 방식이 아니다
+  - **`arrival_music`은 아직 비어 있다.** 옛날 지하철 도착 음악 파일을 넣으면 도착 5초 전부터 재생되고 열차가 지나가면 멈춘다. 비어 있으면 `music.play()`를 건너뛰고 경고등만 깜빡인다
+  - **부딪히면 계속 밀린다.** `Hitbox.repeat_interval`(아래 참고)로 겹쳐 있는 동안 0.35초마다 다시 때리고, 넉백은 `Vector2(knockback_push * 진행방향, -knockback_lift)`라 **열차가 가는 쪽으로 밀리면서 위로 튕긴다**. 판정이 열차 전체(지붕까지)를 덮고 있어서 지붕에 올라타도 그냥 튕겨 나간다(기획 확정 4·5)
+  - 열차 그림은 운전실이 **왼쪽**에 있어서 `_apply_direction()`이 `body.scale.x = -_direction`으로 **부호를 뒤집어서** 진행 방향을 보게 한다(`+_direction`이면 뒤로 달리는 것처럼 보인다). 판정 사각형은 좌우 대칭이라 음수 스케일의 영향을 받지 않는다
+- **`combat/Hitbox.gd`의 `repeat_interval`(기본 0):** 0보다 크면 겹쳐 있는 동안 그 간격마다 계속 다시 때린다(`_process`가 `get_overlapping_areas()`를 훑으며 대상별 쿨타임을 관리 — `HazardPlatform.gd`와 같은 방식). 0이면 예전처럼 처음 겹친 순간 한 번만. **스킬 히트박스는 전부 0을 쓰므로 기존 동작은 그대로다.** 판정을 껐다 켤 때는 `clear_repeat_state()`로 쿨타임을 비운다
+
+### `maps/SubwayPlatform.tscn` 구조 (2026-09-03 기획 확정본)
+
+**승강장 바닥이 없다 — 플레이어는 선로 바닥에서 싸운다.** 기획 그림에서 승강장 폴리곤에 X 표시가 와서 통째로 지웠고, 올라갈 수 있는 발판은 **의자 2개뿐**이다.
+
+| 요소 | 좌표 |
+|---|---|
+| 선로 바닥(서 있는 곳) | y = 300 (`Ground`는 y=320에 1120x40) |
+| 좌우 터널 벽 | x = ±560 (40x900) → 실제 이동 범위 x -520~520 |
+| 의자 발판 윗면 | y = 155 (`BenchLeft`/`BenchRight`, x=±280, 220폭, 원웨이) |
+| 열차 | y 195~300 (`DecoSubwayTrain`이 y=247.5) |
+| 역 이름 표시 | 중심 (0, 25), 띠 y -4~61 |
+| 벽 타일 | x -1000~1000 / y -320~320 |
+| 카메라 | `min_y` 80 / `max_y` 190 (바닥이 화면 아래쪽이라 위로 붙임) |
+
+- **의자 높이(바닥에서 145px)는 이단 점프 전용이다.** 지상 점프는 71.1px뿐이라 절대 못 닿고, 이단 점프(실측 165.4px)로만 올라간다 — "넉백으로 거리가 벌어졌을 때 이단 점프로 의자에 올라간다"는 기획 확정 5를 숫자로 강제한 것
+- **의자에 올라서면 열차에 안 맞는다.** 의자에 선 캐릭터는 y 95~155를 차지하고 열차 지붕은 195라 **40px 여유**가 있다. 이 여유가 이 맵의 유일한 피난 수단이므로, 의자 높이나 열차 크기를 건드릴 때 반드시 같이 계산할 것
+- **의자는 트리에서 열차보다 먼저 나온다 = 열차가 의자 앞을 지나간다.** 기획 확정 3의 "건너편에 있는 의자처럼 표현"을 깊이감으로 살린 것 — 의자 그림은 y 108.6~221.9라 다리 끝이 열차와 겹치는데, 열차가 그 위를 덮고 지나가면 "건너편 승강장 의자"로 읽힌다. 순서를 바꾸면 의자가 열차 위에 얹힌 것처럼 보인다
+- 의자는 이제 공중에 떠 있으므로 **다리 끝을 바닥에 맞추던 제약이 없어졌다.** 배율을 0.153846 → 0.190147로 키워 폭 220으로 넓혔다(착지가 쉬워짐)
+- 링아웃은 없다 — 바닥이 벽 사이를 꽉 채우고 있어서 떨어질 곳이 없다. 맵 이름도 `GameState.MAPS`에서 "지하철 승강장 (열차)"로 바꿨다
+
+### 지하철역 스프라이트 배치 (`sprite/맵/지하철역/`)
+
+전부 `region_rect`로 **투명 여백을 잘라낸 뒤** 배치했다(여백까지 쓰면 위치 계산이 전부 어긋난다). 아래 숫자는 헤드리스로 실측해 맞춘 값이다.
+
+| 그림 | 잘라 쓰는 영역(region_rect) | 배율 | 월드 배치 |
+|---|---|---|---|
+| `Metro!.png` (열차) | `Rect2(36, 221, 2101, 250)` | 0.42 | 882.4 x 105, 그림 y 195~300 |
+| `지하철선로.png` (선로) | `Rect2(14, 287, 2143, 177)` | 0.541297 | 1160 x 95.8, 윗면 y=300. 스테이지 안쪽 1장은 `Track`(미리보기 포함), 바깥 2장은 `DecoBackground` |
+| `등받이.png` (의자 발판) | `Rect2(144, 245, 1157, 596)` | 0.190147 | 220 x 113.3, 의자마다 `position (-110, -56.4)`·`centered=false` |
+| `역이름.png` (역 표시) | `Rect2(88, 184, 2015, 325)` | 0.496278 | 1000 x 161.3, 중심 (0, 25) |
+| `지하철벽타일.png` (벽 타일) | `Rect2(44, 40, 1446, 926)` | 0.345781 | 500 x 320.2짜리 8장(4열 x 2행) |
+
+- **`Metro! - 복사본.png`는 `Metro!.png`와 md5까지 같은 완전 중복 파일**이다. 쓰지 않는다
+- **벽 타일은 반복(texture_repeat) 대신 스프라이트를 여러 장 깔았다.** 원본 바깥쪽에 반투명 비네트가 있어서 그냥 타일링하면 이음매마다 어두운 띠가 생긴다 — `region_rect`로 비네트를 잘라내고 8장을 이어 붙이면 이음매가 타일 사이 검은 줄눈처럼 보인다
+- **`역이름.png`의 좌우로 뻗은 띠는 그림 폭(1000)까지밖에 안 간다.** 벽 전체로 이어지도록 같은 색 `Color(0.2431, 0.2431, 0.5569)` 띠(`SignBand`, y 0~57)와 검은 테두리(`SignBandOutline`, y -4~61)를 벽 전체 폭으로 깔고 그 위에 그림을 얹었다. 그림 안 띠의 세로 위치와 정확히 맞춰둔 값이라 그림 위치를 옮기면 이 두 폴리곤도 같이 옮겨야 한다
+- `Track`(선로 안쪽 1장)만 `Deco` 접두사가 없는 이유: 미리보기에서 바닥 선이 보이려면 스테이지 폭만큼의 선로가 필요하고, 화면 밖까지 이어지는 나머지 2장은 미리보기 바운딩 박스만 키우기 때문이다
+- **아직 안 들어간 기획:** ① 열차 위에서 전투(지금은 확정 4대로 지붕에 올라가도 튕겨 나간다) ② 두 번째 열차에 지하철 빌런 무리가 쏟아져 나오는 연출 — 둘 다 "넣고 싶은 것"으로만 받아둔 상태
+
+- **발판은 반드시 `one_way_collision = true`로 둘 것(실제로 겪은 버그).** 캐릭터 캡슐이 60px 높이인데 지상 점프가 71px밖에 안 되니, 지상 점프로 올라갈 수 있는 발판의 **밑 공간은 34px**밖에 안 남는다 — "밑으로 지나다닐 수 있으면서 뛰어올라갈 수도 있는 높이"는 이 게임에 존재하지 않는다. 꽉 찬 충돌로 두면 발판 밑에 선 캐릭터가 발판과 바닥 사이에 껴서 y=250이 아니라 y≈266으로 눌린다. 원웨이면 위에서만 착지 판정이 걸려 밑은 자유롭게 지나다니고 아래에서 점프하면 뚫고 올라간다
+  - `maps/NoisyApartment.tscn`의 `UpperPlatform`에도 같은 버그가 있었다(발판 225~245, 밑 공간 35px). 함께 원웨이로 고침
+  - 반대로 `maps/TrashRoom.tscn`의 쓰레기 더미들은 바닥에 붙어 있는(밑 공간이 아예 없는) 장애물이라 **원웨이로 바꾸면 안 된다** — 통과해서 지나다닐 수 있게 되면 장애물 역할이 없어진다
+- **`Deco`로 시작하는 노드 이름은 "맵 선택 미리보기에서 빼라"는 뜻이다.** `ui/MapPreview.gd`는 맵 씬의 `Polygon2D`와 `Sprite2D`를 전부 모아 바운딩 박스에 맞춰 축소해 그리는데, 배경 벽·선로처럼 화면 밖까지 크게 깔아둔 장식(`SubwayPlatform`의 `DecoBackground`는 1800x860)이 섞이면 실제 스테이지가 미리보기 안에서 점처럼 작아진다. 그래서 `Camera2D`/`CanvasLayer`와 함께 이름이 `Deco`로 시작하는 가지를 통째로 건너뛴다 — 새 맵에 배경 장식을 넣을 때도 이 이름 규칙을 지킬 것
+  - `MapPreview`는 원래 `Polygon2D`만 그렸는데, 지하철 승강장의 벤치가 폴리곤에서 스프라이트로 바뀌면서 미리보기에 아무것도 안 남는 문제가 생겨 **`Sprite2D`도 같이 그리도록 확장했다**(`_sprite_entry()`가 `region_enabled`/`centered`/`scale`을 반영해 사각형을 계산하고 `draw_texture_rect_region()`으로 그린다). 앞으로 다른 맵도 스프라이트로 갈아끼울 때 미리보기가 저절로 따라온다
 
 ## GDScript 코드 스타일
 

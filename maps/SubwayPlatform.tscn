@@ -1,42 +1,212 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" path="res://maps/CameraRig.gd" id="3"]
+[ext_resource type="PackedScene" path="res://maps/SubwayTrain.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/맵/지하철역/지하철벽타일.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/맵/지하철역/역이름.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/맵/지하철역/지하철선로.png" id="7"]
+[ext_resource type="Texture2D" path="res://sprite/맵/지하철역/등받이.png" id="8"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(760, 40)
+size = Vector2(1120, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(40, 900)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
+size = Vector2(220, 20)
 
 [node name="SubwayPlatform" type="Node2D"]
 script = ExtResource("1")
-stage_width = 760.0
+stage_width = 1080.0
+
+[node name="DecoBackground" type="Node2D" parent="."]
+z_index = -10
+
+[node name="BackWall" type="Polygon2D" parent="DecoBackground"]
+color = Color(0.86, 0.85, 0.83, 1)
+polygon = PackedVector2Array(-1000, -400, 1000, -400, 1000, 320, -1000, 320)
+
+[node name="WallTile0" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(-1000, -320.2)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile1" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(-500, -320.2)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile2" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(0, -320.2)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile3" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(500, -320.2)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile4" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(-1000, 0)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile5" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(-500, 0)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile6" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(0, 0)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTile7" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(500, 0)
+scale = Vector2(0.345781, 0.345781)
+texture = ExtResource("5")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="SignBandOutline" type="Polygon2D" parent="DecoBackground"]
+color = Color(0.05, 0.05, 0.07, 1)
+polygon = PackedVector2Array(-1000, -4, 1000, -4, 1000, 61, -1000, 61)
+
+[node name="SignBand" type="Polygon2D" parent="DecoBackground"]
+color = Color(0.2431, 0.2431, 0.5569, 1)
+polygon = PackedVector2Array(-1000, 0, 1000, 0, 1000, 57, -1000, 57)
+
+[node name="StationSign" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(0, 25)
+scale = Vector2(0.496278, 0.496278)
+texture = ExtResource("6")
+region_enabled = true
+region_rect = Rect2(88, 184, 2015, 325)
+
+[node name="TrackPit" type="Polygon2D" parent="DecoBackground"]
+color = Color(0.08, 0.08, 0.11, 1)
+polygon = PackedVector2Array(-1740, 300, 1740, 300, 1740, 760, -1740, 760)
+
+[node name="RailFarLeft" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(-1740, 300)
+scale = Vector2(0.541297, 0.541297)
+texture = ExtResource("7")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
+
+[node name="RailFarRight" type="Sprite2D" parent="DecoBackground"]
+position = Vector2(580, 300)
+scale = Vector2(0.541297, 0.541297)
+texture = ExtResource("7")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
+
+[node name="Track" type="Node2D" parent="."]
+
+[node name="Rail" type="Sprite2D" parent="Track"]
+position = Vector2(-580, 300)
+scale = Vector2(0.541297, 0.541297)
+texture = ExtResource("7")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
+
+[node name="BenchLeft" type="StaticBody2D" parent="."]
+position = Vector2(-280, 165)
+
+[node name="BenchLeftCollision" type="CollisionShape2D" parent="BenchLeft"]
+shape = SubResource("RectangleShape2D_bench")
+one_way_collision = true
+
+[node name="BenchLeftSprite" type="Sprite2D" parent="BenchLeft"]
+position = Vector2(-110, -56.4)
+scale = Vector2(0.190147, 0.190147)
+texture = ExtResource("8")
+centered = false
+region_enabled = true
+region_rect = Rect2(144, 245, 1157, 596)
+
+[node name="BenchRight" type="StaticBody2D" parent="."]
+position = Vector2(280, 165)
+
+[node name="BenchRightCollision" type="CollisionShape2D" parent="BenchRight"]
+shape = SubResource("RectangleShape2D_bench")
+one_way_collision = true
+
+[node name="BenchRightSprite" type="Sprite2D" parent="BenchRight"]
+position = Vector2(-110, -56.4)
+scale = Vector2(0.190147, 0.190147)
+texture = ExtResource("8")
+centered = false
+region_enabled = true
+region_rect = Rect2(144, 245, 1157, 596)
+[node name="DecoSubwayTrain" parent="." instance=ExtResource("4")]
+position = Vector2(0, 247.5)
 
 [node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(0, 300)
+position = Vector2(0, 320)
 
 [node name="GroundCollision" type="CollisionShape2D" parent="Ground"]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="GroundVisual" type="Polygon2D" parent="Ground"]
-color = Color(0.42, 0.42, 0.46, 1)
-polygon = PackedVector2Array(-380, -20, 380, -20, 380, 20, -380, 20)
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(-560, 0)
 
-[node name="SafetyLine" type="Polygon2D" parent="Ground"]
-color = Color(0.95, 0.8, 0.1, 1)
-polygon = PackedVector2Array(-380, -20, -368, -20, -368, 20, -380, 20)
+[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("RectangleShape2D_wall")
 
-[node name="SafetyLine2" type="Polygon2D" parent="Ground"]
-color = Color(0.95, 0.8, 0.1, 1)
-polygon = PackedVector2Array(368, -20, 380, -20, 380, 20, 368, 20)
+[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall"]
+color = Color(0.08, 0.08, 0.11, 1)
+polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(560, 0)
+
+[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="RightWallVisual" type="Polygon2D" parent="RightWall"]
+color = Color(0.08, 0.08, 0.11, 1)
+polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
+
 
 [node name="PlayerSpawn1" type="Marker2D" parent="."]
-position = Vector2(-270, 260)
+position = Vector2(-320, 260)
 
 [node name="PlayerSpawn2" type="Marker2D" parent="."]
-position = Vector2(270, 260)
+position = Vector2(320, 260)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, 150)
 script = ExtResource("3")
+min_y = 80.0
+max_y = 190.0
 
 [node name="CombatHUD" parent="." instance=ExtResource("2")]

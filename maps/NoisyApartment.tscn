@@ -53,6 +53,7 @@ position = Vector2(0, 235)
 
 [node name="UpperPlatformCollision" type="CollisionShape2D" parent="UpperPlatform"]
 shape = SubResource("RectangleShape2D_platform")
+one_way_collision = true
 
 [node name="UpperPlatformVisual" type="Polygon2D" parent="UpperPlatform"]
 color = Color(0.5, 0.45, 0.4, 1)
