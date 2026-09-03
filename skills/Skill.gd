@@ -24,6 +24,11 @@ func use(fighter: Fighter) -> void:
 	cooldown_left = cooldown
 	_execute(fighter)
 
+## 스킬 클래시(연타 미니게임)에서 졌을 때 호출한다 — 실제 효과(_execute)는 내지 않고
+## 쿨타임만 정상적으로 소모시킨다. "동시에 썼지만 상대에게 밀려서 불발됐다"는 느낌
+func cancel_use() -> void:
+	cooldown_left = cooldown
+
 ## 하위 클래스가 실제 효과를 구현하는 곳
 func _execute(_fighter: Fighter) -> void:
 	pass
