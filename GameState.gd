@@ -4,7 +4,7 @@ extends Node
 
 ## 선택 가능한 캐릭터 (표시 이름 -> 씬 경로)
 const CHARACTERS := {
-	"잼민이": "res://characters/jaemini/Jaemini.tscn",
+	"촉법소년": "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
 	"악플러": "res://characters/akpeulleo/Akpeulleo.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"캣맘": "res://characters/catmom/CatMom.tscn",
@@ -15,7 +15,7 @@ const CHARACTERS := {
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
 ## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
 const CHARACTER_COLORS := {
-	"잼민이": Color(0.95, 0.85, 0.2),
+	"촉법소년": Color(0.95, 0.85, 0.2),
 	"악플러": Color(0.85, 0.25, 0.25),
 	"주정뱅이": Color(0.8, 0.5, 0.2),
 	"캣맘": Color(0.9, 0.55, 0.7),
@@ -46,7 +46,7 @@ const MAPS := {
 
 ## 스토리 모드에서 순서대로 맞서는 상대 목록 (캐릭터 씬 경로) — 로스터 등록 순서 그대로 사용
 const STORY_OPPONENTS: Array = [
-	"res://characters/jaemini/Jaemini.tscn",
+	"res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
 	"res://characters/akpeulleo/Akpeulleo.tscn",
 	"res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"res://characters/catmom/CatMom.tscn",

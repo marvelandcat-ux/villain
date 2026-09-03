@@ -14,16 +14,18 @@ signal died
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 900.0
-const DEFAULT_JUMP_VELOCITY: float = -350.0
+const DEFAULT_JUMP_VELOCITY: float = -450.0
 
 ## 모든 Fighter가 함께 쓰는 중력/점프력. 아직 값을 정하는 중이라 훈련장(maps/TrainingGround.gd)에서
 ## 실시간으로 바꿔볼 수 있게 static var로 두었다 — 값이 확정되면 위 DEFAULT_ 상수에 옮겨 적으면 된다.
-## 점프력은 위쪽이 음수라서 -350처럼 음수 값이다
+## 점프력은 위쪽이 음수라서 -450처럼 음수 값이다
 static var gravity: float = DEFAULT_GRAVITY
 static var jump_velocity: float = DEFAULT_JUMP_VELOCITY
 
 var current_hp: int = 0
 var facing: float = 1.0
+## 마지막으로 바닥에 닿은 뒤 지금까지 점프한 횟수 (착지하면 0으로 초기화). max_jumps와 비교해 더블 점프를 판정한다
+var _jumps_used: int = 0
 
 ## 자식 노드 이름(Skill1/Skill2/SkillUltimate/BasicAttack)으로 자동 연결되는 스킬 슬롯.
 ## 스탠스 전환처럼 특수한 캐릭터는 직접 다시 할당해서 바꿀 수 있다
@@ -44,12 +46,14 @@ var attack_debuff_multiplier: float = 1.0
 var cooldown_rate_multiplier: float = 1.0
 ## 받는 데미지 감소율 (0.0=없음, 1.0=완전 무효) — 가드 스킬 등이 사용
 var damage_reduction: float = 0.0
-## true인 동안은 어떤 데미지도 받지 않는다 (예: 잼민이 궁극기 사용 중)
+## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중)
 var is_invincible: bool = false
 ## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철빌런 공포 단소 등
 var is_feared: bool = false
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철빌런 전용, 캐릭터 씬에서 켬)
 @export var vault_jump: bool = false
+## 한 번 착지할 때까지 점프할 수 있는 총 횟수 (2면 더블 점프 — 공중에서 한 번 더 가능)
+@export var max_jumps: int = 2
 
 ## 캐릭터별 스킬이 자유롭게 쓰는 임시 데이터 저장소 (예: 주정뱅이 술 스택)
 var custom_data: Dictionary = {}
@@ -172,9 +176,11 @@ func move(direction: float) -> void:
 		facing = signf(direction)
 	velocity.x = direction * stats.move_speed * move_speed_multiplier
 
+## 점프한다. 공중에서도 max_jumps번까지(기본 2 = 더블 점프) 가능하고, 바닥에 닿으면 횟수가 초기화된다
 func jump() -> void:
-	if not is_on_floor():
+	if _jumps_used >= max_jumps:
 		return
+	_jumps_used += 1
 	velocity.y = jump_velocity * jump_multiplier
 	if vault_jump:
 		_play_vault_effect()
@@ -284,5 +290,9 @@ func apply_physics(delta: float) -> void:
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
 	move_and_slide()
+	# 바닥에 닿아 있으면 점프 횟수를 초기화한다 (다음엔 다시 max_jumps번 점프 가능).
+	# move_and_slide 뒤에 확인해야 방금 뛰어오른 프레임에 잘못 초기화되지 않는다
+	if is_on_floor():
+		_jumps_used = 0
 	if movement_override:
 		movement_override.after_physics(self, delta)

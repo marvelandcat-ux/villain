@@ -33,6 +33,25 @@ extends Node2D
 @export var jump_foot_deg: float = 60.0
 ## 점프 자세로 바뀌고 착지해서 풀리는 빠르기
 @export var jump_blend_speed: float = 12.0
+## 중력으로 떨어지는 동안(하강 중) 고개를 아래로 숙이는 각도(도). 양수가 아래를 보는 방향(마시기와 같은 규칙)
+@export var fall_head_tilt_deg: float = 18.0
+## 하강 자세로 바뀌고 풀리는 빠르기
+@export var fall_blend_speed: float = 10.0
+
+## 조작 없이 가만히 서 있을 때, 이 시간(초)이 지나면 idle 모션(머리 긁기 또는 뒤돌아보기)이 랜덤으로 하나 나온다 (생동감용)
+@export var idle_motion_delay: float = 5.0
+## 머리 긁는 동작 하나의 전체 길이(초)
+@export var scratch_duration: float = 1.0
+## 긁을 때 왼손이 제자리에서 머리 쪽으로 옮겨가는 거리(px). 위(-y)로 올리되 뒤통수(-x쪽)를 긁도록 앞으로는 조금만 당긴다
+@export var scratch_hand_offset: Vector2 = Vector2(6, -32)
+## 긁을 때 왼손이 돌아가는 각도(도)
+@export var scratch_hand_deg: float = -30.0
+## 긁는 동안 손이 좌우로 떠는 횟수
+@export var scratch_count: float = 4.0
+## 긁는 손 떨림의 폭(px)
+@export var scratch_amount: float = 3.0
+## 뒤돌아보는 동작 하나의 전체 길이(초) — 돌아보기 → 잠깐 정지 → 다시 앞으로
+@export var lookback_duration: float = 1.2
 ## 기본공격 예비동작에서 손이 돌아가는 각도(도) — 반시계 방향(무기가 뒤로 넘어간다)
 @export var attack_raise_deg: float = 100.0
 ## 기본공격에서 손이 내려찍히는 각도(도) — 시계 방향
@@ -99,6 +118,14 @@ var _phase: float = 0.0
 var _blend: float = 0.0
 ## 점프 자세 세기 (0=바닥, 1=완전히 공중 자세). 뜨고 내릴 때 각도가 툭 튀지 않게 서서히 오간다
 var _air_blend: float = 0.0
+## 하강 자세 세기 (0=평소, 1=완전히 고개 숙임). 떨어지는 동안 서서히 오간다
+var _fall_blend: float = 0.0
+## 조작 없이 가만히 있은 시간(초). idle_motion_delay를 넘으면 idle 모션이 하나 시작된다
+var _idle_time: float = 0.0
+## 머리 긁는 동작에 남은 시간(초). 0보다 크면 긁는 중이다
+var _scratch_time: float = 0.0
+## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
+var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
 var _attack_time: float = 0.0
 ## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
@@ -150,6 +177,33 @@ func _process(delta: float) -> void:
 	var air_target: float = 0.0 if on_floor else 1.0
 	_air_blend = move_toward(_air_blend, air_target, delta * jump_blend_speed)
 
+	# 공중에서 아래로 떨어지는 중(velocity.y > 0)이면 고개를 숙인다 — 올라가는 중엔 숙이지 않는다
+	var falling: bool = not on_floor and _fighter != null and is_instance_valid(_fighter) and _fighter.velocity.y > 0.0
+	_fall_blend = move_toward(_fall_blend, 1.0 if falling else 0.0, delta * fall_blend_speed)
+
+	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
+	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0
+	if not idle:
+		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
+		_idle_time = 0.0
+		_scratch_time = 0.0
+		_end_lookback()
+	elif _scratch_time > 0.0:
+		_scratch_time = maxf(_scratch_time - delta, 0.0)
+	elif _lookback_time > 0.0:
+		_lookback_time = maxf(_lookback_time - delta, 0.0)
+		if is_zero_approx(_lookback_time):
+			_end_lookback()   # 정상 종료 — 머리를 앞으로 되돌린다
+	else:
+		_idle_time += delta
+		if _idle_time >= idle_motion_delay:
+			_idle_time = 0.0
+			# 머리 긁기 / 뒤돌아보기 중 하나를 랜덤으로 고른다
+			if randf() < 0.5:
+				_scratch_time = scratch_duration
+			elif _head:
+				_lookback_time = lookback_duration
+
 	if on_floor and speed_ratio > 0.05:
 		_phase += delta * step_speed * maxf(speed_ratio, 0.3)
 		_blend = minf(_blend + delta * blend_speed, 1.0)
@@ -182,7 +236,8 @@ func _apply_pose(speed_ratio: float) -> void:
 			part.position.y = _rest_positions[part].y + bob
 	# 술 마시기·두 손 잡기가 매 프레임 덮어쓰므로, 오른손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
 	if _head:
-		_head.rotation = 0.0
+		# 하강 중이면 고개를 아래로 숙인다 (마시기 동작이 있으면 아래에서 덮어써서 그쪽이 우선한다)
+		_head.rotation = deg_to_rad(fall_head_tilt_deg) * _fall_blend
 		# 토하는 얼굴일 때는 입 위치를 맞추기 위한 보정만 더한다(누적되지 않게 절대 위치로 잡는다)
 		if _vomit_time > 0.0:
 			_head.position = _rest_positions[_head] + Vector2(0.0, bob) + vomit_head_offset
@@ -205,6 +260,14 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 마시는 중이면 머리와 오른손을 술 마시는 자세로 덮어쓴다 (공격보다 나중이라 우선한다)
 	if _drink_time > 0.0:
 		_pose_drink()
+
+	# 가만히 있을 때는 왼손으로 머리를 긁는다 (idle 생동감). 왼손만 건드려서 다른 동작과 안 겹친다
+	if _scratch_time > 0.0:
+		_pose_scratch()
+
+	# 뒤돌아보는 중이면 몸은 그대로 두고 머리만 반대쪽을 본다
+	if _lookback_time > 0.0:
+		_pose_lookback()
 
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
@@ -354,6 +417,26 @@ func _pose_drink() -> void:
 		_hand_r.rotation = deg_to_rad(drink_hand_deg * reach)
 		_hand_r.position = _rest_positions[_hand_r] + drink_hand_offset * reach + arc + Vector2(0.0, gulp)
 
+## 왼손을 머리로 올려 긁는 idle 동작 — 올리기(0~25%) → 긁기(25~75%) → 내리기(75~100%).
+## reach는 "얼마나 머리에 닿은 자세인지"(0=제자리, 1=머리에 손이 닿음)
+func _pose_scratch() -> void:
+	if _hand_l == null:
+		return
+	var progress: float = 1.0 - _scratch_time / scratch_duration
+	var reach: float
+	if progress < 0.25:
+		var p: float = progress / 0.25
+		reach = 1.0 - (1.0 - p) * (1.0 - p)
+	elif progress < 0.75:
+		reach = 1.0
+	else:
+		var p: float = (progress - 0.75) / 0.25
+		reach = 1.0 - p * p
+	# 긁는 동안 손이 좌우로 잘게 떨린다 (출발·도착에선 reach가 0이라 안 떨림)
+	var wiggle: float = sin(progress * TAU * scratch_count) * reach * scratch_amount
+	_hand_l.position = _rest_positions[_hand_l] + scratch_hand_offset * reach + Vector2(wiggle, 0.0)
+	_hand_l.rotation = deg_to_rad(scratch_hand_deg * reach)
+
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,
 ## 크기는 건드리지 않고 x의 부호만 바라보는 방향에 맞춘다
@@ -363,3 +446,26 @@ func _face_moving_direction() -> void:
 	var facing_x: float = absf(scale.x) * signf(_fighter.facing)
 	if not is_equal_approx(scale.x, facing_x):
 		scale.x = facing_x
+
+## 몸은 그대로 두고 머리만 반대쪽을 돌아본다 — 머리 scale.x가 옆모습(0)을 지나 부호가 뒤집혔다가 돌아온다.
+## 머리 세로 크기(scale.y)는 안 뒤집으므로 그게 곧 원래 크기다 — 가로를 거기에 맞춰 부호만 바꾼다
+func _pose_lookback() -> void:
+	if _head == null:
+		return
+	_head.scale.x = _head.scale.y * (1.0 - 2.0 * _lookback_reach())
+
+## 뒤돌아보기를 끝내고 머리를 앞 방향으로 되돌린다 (정상 종료·중단 공통).
+## 세로 크기(scale.y)가 원래 크기이므로 가로를 거기에 양수로 맞춘다 — 끊겨도 머리가 뒤집힌 채 굳지 않는다
+func _end_lookback() -> void:
+	_lookback_time = 0.0
+	if _head:
+		_head.scale.x = _head.scale.y
+
+## 뒤돌아보기 진행도(0=앞을 봄, 1=완전히 뒤를 봄) — 돌아보기(0~30%) → 뒤를 본 채 정지(30~70%) → 앞으로(70~100%)
+func _lookback_reach() -> float:
+	var progress: float = 1.0 - _lookback_time / lookback_duration
+	if progress < 0.3:
+		return progress / 0.3
+	elif progress < 0.7:
+		return 1.0
+	return (1.0 - progress) / 0.3

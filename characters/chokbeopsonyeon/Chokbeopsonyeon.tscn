@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Script" path="res://skills/DashSkill.gd" id="2"]
-[ext_resource type="Resource" path="res://stats/JaeminiStats.tres" id="3"]
+[ext_resource type="Resource" path="res://stats/ChokbeopsonyeonStats.tres" id="3"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn" id="10"]
 [ext_resource type="Script" path="res://skills/BBGunSkill.gd" id="4"]
 [ext_resource type="PackedScene" path="res://skills/Projectile.tscn" id="5"]
 [ext_resource type="Script" path="res://skills/HealSkill.gd" id="6"]
@@ -17,16 +18,14 @@ height = 60.0
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
 
-[node name="Jaemini" type="CharacterBody2D"]
+[node name="Chokbeopsonyeon" type="CharacterBody2D"]
 script = ExtResource("1")
 stats = ExtResource("3")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.95, 0.85, 0.2, 1)
-polygon = PackedVector2Array(-18, -30, 18, -30, 18, 30, -18, 30)
+[node name="Visual" parent="." instance=ExtResource("10")]
 
 [node name="Hurtbox" type="Area2D" parent="."]
 script = ExtResource("9")

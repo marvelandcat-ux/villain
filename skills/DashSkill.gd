@@ -1,7 +1,7 @@
 class_name DashSkill
 extends Skill
 
-## 픽시 돌진 — 브레이크 없이 돌진하다가 벽에 부딪히면 자신이 피해를 입는다 (잼민이 스킬1)
+## 픽시 돌진 — 브레이크 없이 돌진하다가 벽에 부딪히면 자신이 피해를 입는다 (촉법소년 스킬1)
 @export var dash_speed: float = 600.0
 @export var dash_duration: float = 0.3
 @export var self_damage_on_wall: int = 10  ## 오픈 이슈 임시값
@@ -47,19 +47,22 @@ func _end_dash(fighter: Fighter) -> void:
 	if visual:
 		visual.scale = Vector2(1, 1)
 
-## 돌진하는 잔상(반투명 복제)을 하나 남기고 서서히 지운다
+## 돌진하는 잔상(반투명 복제)을 하나 남기고 서서히 지운다.
+## Visual이 임시 사각형(Polygon2D)이든 스프라이트 몸(BodyRig 등 Node2D)이든 상관없이 그대로 복제해서 쓴다
 func _spawn_afterimage(fighter: Fighter) -> void:
-	var visual: Polygon2D = fighter.get_node_or_null("Visual")
+	var visual: Node2D = fighter.get_node_or_null("Visual")
 	var parent: Node = fighter.get_parent()
 	if visual == null or parent == null:
 		return
-	var ghost := Polygon2D.new()
-	ghost.polygon = visual.polygon
-	ghost.color = visual.color
+	var ghost := visual.duplicate() as Node2D
+	if ghost == null:
+		return
+	# 잔상은 복제한 그 순간의 모습으로 고정한다 — 스크립트(BodyRig의 매 프레임 자세 계산)가 돌지 않게 뗀다
+	ghost.set_script(null)
+	parent.add_child(ghost)
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
 	ghost.modulate.a = 0.45
-	parent.add_child(ghost)
 	var tween := ghost.create_tween()
 	tween.tween_property(ghost, "modulate:a", 0.0, 0.25)
 	tween.tween_callback(ghost.queue_free)

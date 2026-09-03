@@ -106,7 +106,7 @@
 `maps/TrainingGround.tscn` — 평평한 바닥 하나에 캐릭터 하나만 세워두고 **중력·점프력·이동속도를 슬라이더로 실시간으로 바꿔보는 방**. 아직 이 수치들이 확정되지 않아서 만든 개발용 화면이다.
 
 - 배경에 가로 100px / 세로 50px 눈금선을 그려서 이동 거리와 점프 높이를 눈으로 잴 수 있다(500px마다 진한 선)
-- 점프할 때마다 **최고 높이 / 체공 시간 / 수평 이동 거리**를 자동으로 재서 패널에 표시한다 (기본값 중력 900·점프력 -350 기준: 약 65px, 0.78초)
+- 점프할 때마다 **최고 높이 / 체공 시간 / 수평 이동 거리**를 자동으로 재서 패널에 표시한다 (기본값 중력 900·점프력 -450 기준: 약 112px, 1.0초). 모든 캐릭터는 `Fighter.max_jumps`(기본 2)만큼 공중에서 더 점프할 수 있다 — 더블 점프
 - 조절 패널은 게임 UI가 아니라 개발 도구라서 `.tscn`에 배치하지 않고 `TrainingGround.gd`에서 코드로 만든다
 - **중요:** 이 화면에서 값을 바꾸려고 `Fighter.GRAVITY`/`JUMP_VELOCITY` 상수를 `static var Fighter.gravity`/`Fighter.jump_velocity`로 바꿨다. 모든 Fighter가 공유하는 값이고, 훈련장에서 바꾼 값은 **게임을 끌 때까지 유지**돼서 그대로 로컬 대전에 들어가 시험해볼 수 있다. 값이 마음에 들면 `Fighter.gd`의 `DEFAULT_GRAVITY`/`DEFAULT_JUMP_VELOCITY`에 옮겨 적어야 영구 반영된다
 - 이동속도는 캐릭터별 스탯(`stats/*.tres`의 `move_speed`)이라 훈련장에서는 배수(`move_speed_multiplier`)로만 조절한다 — 확정되면 각 `.tres`를 고칠 것
@@ -154,7 +154,7 @@
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성한다. P1에는 항상 `PlayerController`를 붙이고, P2는 `GameState.game_mode`를 봐서 스토리 모드면 `ClaudeAIController`(정해진 상대를 AI가 조작), 로컬 대전(pvp)이면 `PlayerController`(사람이 직접 조작)를 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
 - 승패: `Stage._process()`가 매 프레임 양쪽 Fighter의 `current_hp`를 직접 확인해서 판정한다(HP 0 또는 `ring_out()`). **`died` 시그널에 바로 반응하지 않는 이유:** 시그널에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 쪽이 임의로 승자가 되는 버그가 있었음 — 지금은 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정해서 양쪽 다 0이면 무승부(`MatchResult.show_draw()`)로 처리. 링아웃은 `Stage.ring_out_y`보다 아래로 떨어지면 발동 — 벽이 있는 맵(편의점 앞/PC방/아파트 단지 놀이터)은 사실상 발동 안 되고, 벽이 없는 학교 옥상·지하철 승강장에서만 의미가 있음
 - 히트 이펙트: 맞으면 `Fighter._flash_hit()`가 캐릭터를 잠깐 빨갛게 물들이고, `combat/Hitbox.gd`가 실제로 맞았을 때 `combat/HitSpark.tscn`을 스폰
-- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(도발+열등감 오라 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 9종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 잼민이 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 빨간 부채꼴+보라 디버프(`ScreamConeUltimate`)
+- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(도발+열등감 오라 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 9종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 촉법소년 돌진 잔상(`DashSkill`)·BB탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 빨간 부채꼴+보라 디버프(`ScreamConeUltimate`)
 - 넉백: `MeleeAttack`/`Projectile`이 각자 `Hitbox.knockback`을 설정해서 맞은 캐릭터의 `velocity`에 즉시 더한다(`Fighter.take_damage`). 바운스어택류 콤보의 기반 — 아직 스킬 하나하나에 맞는 세밀한 값 조정은 안 되어 있음(전부 임시값)
 - 대전 시작 시 `ui/RoundStart.tscn`이 "3, 2, 1, FIGHT!" 카운트다운을 보여주는 동안 양쪽 컨트롤러가 멈춘다(`PlayerController`/`AIController`의 `is_active`). **주의:** 그냥 멈추기만 하면(`set_physics_process(false)`) 멈추기 직전 프레임의 관성(velocity.x)이 남아서 계속 미끄러지는 버그가 났었음 — `is_active=false`일 때도 물리 처리(`apply_physics`)는 계속하되 `fighter.move(0.0)`으로 수평 속도를 매 프레임 0으로 고정해야 함
 
@@ -174,7 +174,7 @@
 
 - `class_name`과 `extends` 선언은 파일 맨 위, `class_name`이 없다면 `extends`만
 - `export`/`@export` 변수 → 그 외 멤버 변수 → `_ready()` 등 생명주기 함수 → 커스텀 함수 순으로 배치
-- 씬(`.tscn`)과 스크립트(`.gd`)는 같은 폴더에 짝지어 배치 (예: `characters/jaemini/Jaemini.tscn`, `characters/jaemini/Jaemini.gd`)
+- 씬(`.tscn`)과 스크립트(`.gd`)는 같은 폴더에 짝지어 배치 (예: `characters/jujeongbaengi/Jujeongbaengi.tscn`, `characters/jujeongbaengi/Jujeongbaengi.gd`)
 
 ### 주석 — 한국어 필수
 
@@ -186,7 +186,7 @@
 ```
 res://
   GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
-  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (jaemini/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/ — 6종)
+  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/ — 6종)
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
   combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
   controllers/    # PlayerController / AIController

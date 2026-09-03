@@ -6,7 +6,7 @@ extends Control
 @onready var body_label: Label = $VBox/BodyLabel
 
 const REFORM_LINES := {
-	"res://characters/jaemini/Jaemini.tscn": "\"미안... PC방에서 그렇게 소리 지르고 던진 거, 진상이었네.\"\n잼민이는 이제 매너 있게 게임하기로 다짐했다.",
+	"res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn": "\"미안... PC방에서 그렇게 소리 지르고 던진 거, 진상이었네.\"\n촉법소년은 이제 매너 있게 게임하기로 다짐했다.",
 	"res://characters/akpeulleo/Akpeulleo.tscn": "\"내가 쓴 댓글이 누군가에게는 진짜 상처였구나...\"\n악플러는 계정을 정리하고 조용히 반성의 시간을 갖기로 했다.",
 	"res://characters/jujeongbaengi/Jujeongbaengi.tscn": "\"길바닥에서 이러고 있었다니, 부끄럽다...\"\n주정뱅이는 술을 줄이고 도움을 받기로 결심했다.",
 	"res://characters/catmom/CatMom.tscn": "\"동네 분들과 상의 없이 밥자리를 늘린 게 문제였구나...\"\n캣맘은 보호소와 함께 책임감 있게 돌보는 법을 찾기로 했다.",
