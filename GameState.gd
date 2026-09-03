@@ -36,7 +36,7 @@ const MAPS := {
 	"편의점 앞": "res://maps/ConvenienceStore.tscn",
 	"PC방": "res://maps/PcBang.tscn",
 	"학교 옥상 (링아웃)": "res://maps/SchoolRooftop.tscn",
-	"지하철 승강장 (링아웃·열차)": "res://maps/SubwayPlatform.tscn",
+	"지하철 승강장 (열차)": "res://maps/SubwayPlatform.tscn",
 	"아파트 단지 놀이터": "res://maps/ApartmentPlayground.tscn",
 	"악플러의 방(쓰레기집)": "res://maps/TrashRoom.tscn",
 	"층간소음 아파트": "res://maps/NoisyApartment.tscn",
