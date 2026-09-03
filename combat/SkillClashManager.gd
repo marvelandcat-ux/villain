@@ -35,7 +35,7 @@ func request(fighter: Fighter, slot_id: String, on_win: Callable, on_lose: Calla
 		existing.timer.stop()
 		existing.timer.queue_free()
 		_pending.erase(slot_id)
-		_start_clash(existing.fighter, existing.on_win, existing.on_lose, fighter, on_win, on_lose)
+		_start_clash(slot_id, existing.fighter, existing.on_win, existing.on_lose, fighter, on_win, on_lose)
 		return
 
 	var req := PendingRequest.new()
@@ -56,14 +56,14 @@ func request(fighter: Fighter, slot_id: String, on_win: Callable, on_lose: Calla
 	_pending[slot_id] = req
 
 ## 클래시를 실제로 진행한다 — 화면을 멈추고 연타 미니게임을 띄운 뒤, 결과에 따라 승자는 on_win, 패자는 on_lose를 부른다
-func _start_clash(fighter_a: Fighter, on_win_a: Callable, on_lose_a: Callable,
+func _start_clash(slot_id: String, fighter_a: Fighter, on_win_a: Callable, on_lose_a: Callable,
 		fighter_b: Fighter, on_win_b: Callable, on_lose_b: Callable) -> void:
 	if not (is_instance_valid(fighter_a) and is_instance_valid(fighter_b)):
 		return
 	var popup: SkillClashPopup = load("res://ui/SkillClashPopup.tscn").instantiate()
 	add_child(popup)
 	get_tree().paused = true
-	popup.start(fighter_a, fighter_b)
+	popup.start(fighter_a, fighter_b, slot_id)
 	var a_won: bool = await popup.finished
 	get_tree().paused = false
 	popup.queue_free()
