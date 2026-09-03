@@ -54,6 +54,10 @@ var is_feared: bool = false
 ## 캐릭터별 스킬이 자유롭게 쓰는 임시 데이터 저장소 (예: 주정뱅이 술 스택)
 var custom_data: Dictionary = {}
 
+## 스킬 모션(마시기/토하기/공격 등)이 재생되는 동안 다른 스킬·기본공격을 못 쓰게 막는 남은 시간(초).
+## 이동은 막지 않는다(마시면서 걷기 등은 그대로). apply_physics에서 매 물리 프레임 줄어든다
+var _busy_time: float = 0.0
+
 ## move_speed_multiplier 등을 여러 효과가 동시에 걸어도 서로 안 지우도록 관리하는 내부 저장소.
 ## {property: {id: value}} — 최종 배수는 같은 property에 걸린 값들을 전부 곱한 것
 var _modifiers: Dictionary = {}
@@ -184,18 +188,27 @@ func _play_vault_effect() -> void:
 	tween.tween_property(visual, "rotation", facing * -0.5, 0.15)
 	tween.tween_property(visual, "rotation", 0.0, 0.15)
 
+## 지금 스킬 모션 중이라 다른 행동을 못 하는 상태인지
+func is_busy() -> bool:
+	return _busy_time > 0.0
+
+## duration초 동안 다른 스킬·기본공격 입력을 막는다 (모션이 겹쳐 나오지 않게). 이동은 계속 가능하다.
+## 더 긴 잠금이 이미 걸려 있으면 짧은 걸로 줄어들지 않게 둘 중 큰 값을 쓴다
+func start_busy(duration: float) -> void:
+	_busy_time = maxf(_busy_time, duration)
+
 func use_skill_1() -> void:
-	if skill_1 and not is_feared:
+	if skill_1 and not is_feared and not is_busy():
 		skill_1.use(self)
 
 func use_skill_2() -> void:
-	if skill_2 and not is_feared:
+	if skill_2 and not is_feared and not is_busy():
 		skill_2.use(self)
 
 ## 궁극기는 바로 나가지 않고, 씬에 컷인 연출이 있으면 연출을 먼저 재생한다.
 ## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다
 func use_ultimate() -> void:
-	if skill_ultimate == null or is_feared or not skill_ultimate.can_use():
+	if skill_ultimate == null or is_feared or is_busy() or not skill_ultimate.can_use():
 		return
 	var cutin: Node = get_tree().get_first_node_in_group("ultimate_cutin")
 	if cutin and cutin.has_method("play"):
@@ -210,7 +223,7 @@ func fire_ultimate_now() -> void:
 
 func use_basic_attack() -> void:
 	# 쿨타임 중이면 use()가 아무것도 안 하므로, 실제로 나가는 경우에만 공격 모션을 재생한다
-	if basic_attack and not is_feared and basic_attack.can_use():
+	if basic_attack and not is_feared and not is_busy() and basic_attack.can_use():
 		basic_attack.use(self)
 		_play_visual_attack()
 
@@ -264,6 +277,8 @@ func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
 ## 이동/점프 입력 처리 후 컨트롤러가 매 물리 프레임 마지막에 호출한다.
 ## Fighter 스스로는 _physics_process를 갖지 않고, 이 함수로만 물리 갱신이 일어난다
 func apply_physics(delta: float) -> void:
+	if _busy_time > 0.0:
+		_busy_time = maxf(_busy_time - delta, 0.0)
 	if not is_on_floor():
 		velocity.y += gravity * delta
 	if movement_override:

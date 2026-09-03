@@ -22,6 +22,11 @@ extends Skill
 @export var mouth_offset: Vector2 = Vector2(18.0, -24.0)
 
 func _execute(fighter: Fighter) -> void:
+	# 토하는 표정으로 잠깐 얼굴을 바꾼다. 그 메서드가 없는 비주얼(임시 사각형 등)은 그냥 넘어간다
+	var visual: Node2D = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("play_vomit_face"):
+		visual.play_vomit_face()
+
 	var stacks: int = fighter.custom_data.get("drink_stacks", 0)
 	var damage: int = base_damage + damage_per_stack * stacks
 	var length: float = base_range + range_per_stack * stacks
@@ -29,6 +34,9 @@ func _execute(fighter: Fighter) -> void:
 	fighter.custom_data["drink_stacks"] = 0
 	fighter.clear_modifier("move_speed_multiplier", "drink_stacks")
 	fighter.clear_tint("drunk")
+	# 다 게워냈으니 맨정신 얼굴로 되돌린다 (토하는 표정이 끝나는 시점에 반영된다)
+	if visual and visual.has_method("set_drunk_head"):
+		visual.set_drunk_head(false)
 
 	if beam_scene == null:
 		return

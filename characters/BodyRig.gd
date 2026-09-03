@@ -69,6 +69,20 @@ extends Node2D
 ## 술병을 추가로 기울이는 각도(도). 씬에 잡아둔 제자리 각도(-155도)가 이미 붓는 자세라 기본은 0이다
 @export var drink_hand_deg: float = 0.0
 
+## 토하기 스킬을 쓸 때 잠깐 이 얼굴(토하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(주정뱅이만 지정)
+@export var vomit_head_texture: Texture2D
+## 토하는 얼굴을 보여주는 시간(초)
+@export var vomit_face_duration: float = 0.6
+## 토하는 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다(원본 크기가 달라 안 맞을 때만 조정)
+@export var vomit_head_scale: Vector2 = Vector2.ZERO
+## 토하는 얼굴일 때 머리 위치 보정(px) — 입이 게워내는 위치에 안 맞으면 조정
+@export var vomit_head_offset: Vector2 = Vector2.ZERO
+
+## 술 스택이 남아있는 동안(몸이 빨간 동안) 머리를 이 얼굴(술 머금은 표정)로 유지한다. 비어 있으면 안 바꾼다
+@export var drunk_head_texture: Texture2D
+## 술 머금은 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var drunk_head_scale: Vector2 = Vector2.ZERO
+
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
 @onready var _body: Sprite2D = get_node_or_null("Body")
@@ -89,6 +103,13 @@ var _air_blend: float = 0.0
 var _attack_time: float = 0.0
 ## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
 var _drink_time: float = 0.0
+## 토하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 토하는 표정이다
+var _vomit_time: float = 0.0
+## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
+var _drunk_head_on: bool = false
+## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
+var _head_rest_texture: Texture2D
+var _head_rest_scale: Vector2
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
 
@@ -99,6 +120,10 @@ func _ready() -> void:
 	for part in [_foot_l, _foot_r, _body, _head, _hand_l, _hand_r]:
 		if part:
 			_rest_positions[part] = part.position
+	# 토하기가 끝나면 되돌릴 수 있게 원래 머리 그림/배율을 기억해둔다
+	if _head:
+		_head_rest_texture = _head.texture
+		_head_rest_scale = _head.scale
 
 func _process(delta: float) -> void:
 	var speed_ratio: float = 0.0
@@ -115,6 +140,11 @@ func _process(delta: float) -> void:
 		_attack_time = maxf(_attack_time - delta, 0.0)
 	if _drink_time > 0.0:
 		_drink_time = maxf(_drink_time - delta, 0.0)
+	if _vomit_time > 0.0:
+		_vomit_time = maxf(_vomit_time - delta, 0.0)
+		# 시간이 다 되면 원래 얼굴로 되돌린다
+		if is_zero_approx(_vomit_time):
+			_restore_head()
 
 	# 공중이면 점프 자세로, 바닥이면 원래 자세로 서서히 옮겨간다
 	var air_target: float = 0.0 if on_floor else 1.0
@@ -153,6 +183,9 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 술 마시기·두 손 잡기가 매 프레임 덮어쓰므로, 오른손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
 	if _head:
 		_head.rotation = 0.0
+		# 토하는 얼굴일 때는 입 위치를 맞추기 위한 보정만 더한다(누적되지 않게 절대 위치로 잡는다)
+		if _vomit_time > 0.0:
+			_head.position = _rest_positions[_head] + Vector2(0.0, bob) + vomit_head_offset
 	if _hand_l:
 		_hand_l.rotation = 0.0
 
@@ -253,6 +286,39 @@ func _pose_grip_hand(progress: float) -> void:
 ## DrinkSkill이 술을 실제로 마신 순간 호출한다
 func play_drink_motion() -> void:
 	_drink_time = drink_duration
+
+## 토하기 동작 — 잠깐 토하는 표정으로 머리를 바꾼다. VomitSkill이 토한 순간 호출한다.
+## vomit_head_texture가 비어 있으면(주정뱅이 외 캐릭터) 아무 일도 안 한다
+func play_vomit_face() -> void:
+	if _head == null or vomit_head_texture == null:
+		return
+	_head.texture = vomit_head_texture
+	if vomit_head_scale != Vector2.ZERO:
+		_head.scale = vomit_head_scale
+	_vomit_time = vomit_face_duration
+
+## 토하는 표정이 끝나면 현재 상태(취함/맨정신)에 맞는 기본 머리로 돌아간다
+func _restore_head() -> void:
+	_apply_base_head()
+
+## 술 스택 유무에 따라 "기본 머리"를 정한다 (맨정신=원래 얼굴 / 취함=술 머금은 얼굴).
+## DrinkSkill이 true, VomitSkill이 false로 부른다. 토하는 표정이 떠 있는 동안엔 건드리지 않고,
+## 그 표정이 끝나면 _restore_head가 여기서 정한 기본 머리로 돌아간다
+func set_drunk_head(on: bool) -> void:
+	_drunk_head_on = on
+	if _vomit_time <= 0.0:
+		_apply_base_head()
+
+## 현재 상태(취함/맨정신)에 맞는 머리 그림·배율을 머리에 적용한다
+func _apply_base_head() -> void:
+	if _head == null:
+		return
+	if _drunk_head_on and drunk_head_texture != null:
+		_head.texture = drunk_head_texture
+		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
+	else:
+		_head.texture = _head_rest_texture
+		_head.scale = _head_rest_scale
 
 ## 술병을 입까지 다 올리는 시점 (전체 시간 대비 비율)
 const DRINK_RAISE_END: float = 0.25

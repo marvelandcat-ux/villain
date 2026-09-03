@@ -20,3 +20,6 @@ func _execute(fighter: Fighter) -> void:
 	# 마실수록 점점 빨개진다 (기획 문서 그대로 구현)
 	var redness: float = float(stacks) / float(max_stacks)
 	fighter.set_tint("drunk", Color(1.0, 1.0 - redness * max_redness, 1.0 - redness * max_redness))
+	# 술이 들어간 동안엔 머리를 술 머금은 얼굴로 (그 기능이 있는 비주얼만)
+	if visual and visual.has_method("set_drunk_head"):
+		visual.set_drunk_head(true)
