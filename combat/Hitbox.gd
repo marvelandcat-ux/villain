@@ -7,6 +7,8 @@ extends Area2D
 ## true면 knockback을 그대로 쓰지 않고, 맞는 순간 "공격자 쪽으로" 방향을 계산해서 끌어당긴다 (청소기 흡입 등)
 @export var pull_to_source: bool = false
 @export var pull_strength: float = 250.0
+## 명중 순간 게임 전체를 멈추는 시간(초, hit-stop). 0이면 안 멈춘다. 센 공격일수록 크게 주면 묵직해진다
+@export var hitstop_duration: float = 0.06
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -32,6 +34,9 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	if area is Hurtbox and area.take_hit(damage, _compute_knockback(area), source_fighter):
 		_spawn_spark(area.global_position)
+		# 맞은 순간 아주 잠깐 시간을 멈춰 타격감을 준다
+		if hitstop_duration > 0.0:
+			HitStop.hit(hitstop_duration)
 
 func _compute_knockback(hurtbox: Hurtbox) -> Vector2:
 	if not pull_to_source or source_fighter == null:

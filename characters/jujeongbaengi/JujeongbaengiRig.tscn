@@ -30,4 +30,6 @@ scale = Vector2(0.03271075, 0.03315925)
 texture = ExtResource("2_bottle")
 
 [node name="Head" parent="." index="6" unique_id=1394957076]
+position = Vector2(-2, -31.4)
+scale = Vector2(0.045, 0.0507)
 texture = ExtResource("5_head")

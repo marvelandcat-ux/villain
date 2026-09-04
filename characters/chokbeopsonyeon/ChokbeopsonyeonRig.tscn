@@ -14,10 +14,10 @@ texture = ExtResource("4_foot")
 texture = ExtResource("4_foot")
 
 [node name="Body" parent="." index="2"]
-scale = Vector2(0.032, 0.032)
+scale = Vector2(0.0266, 0.0322)
 texture = ExtResource("3_body")
 
 [node name="Head" parent="." index="6"]
-position = Vector2(1.5, -34)
-scale = Vector2(0.06, 0.06)
+position = Vector2(1.5, -32.6)
+scale = Vector2(0.055, 0.055)
 texture = ExtResource("2_head")

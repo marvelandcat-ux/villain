@@ -33,6 +33,12 @@ extends Node2D
 @export var jump_foot_deg: float = 60.0
 ## 점프 자세로 바뀌고 착지해서 풀리는 빠르기
 @export var jump_blend_speed: float = 12.0
+## 점프하는 순간 몸이 세로로 늘어나는 정도 (x가 작을수록 홀쭉, y가 클수록 길쭉). 세로 약 1.33배
+@export var jump_stretch: Vector2 = Vector2(0.75, 1.33)
+## 착지하는 순간 몸이 납작해지는 정도 (x가 클수록 넓적, y가 작을수록 납작)
+@export var land_squash: Vector2 = Vector2(1.33, 0.75)
+## 스쿼시/스트레치가 원래 크기(1,1)로 돌아오는 속도 (클수록 빨리 복구)
+@export var squash_recover_speed: float = 2.5
 ## 중력으로 떨어지는 동안(하강 중) 고개를 아래로 숙이는 각도(도). 양수가 아래를 보는 방향(마시기와 같은 규칙)
 @export var fall_head_tilt_deg: float = 18.0
 ## 하강 자세로 바뀌고 풀리는 빠르기
@@ -120,6 +126,12 @@ var _blend: float = 0.0
 var _air_blend: float = 0.0
 ## 하강 자세 세기 (0=평소, 1=완전히 고개 숙임). 떨어지는 동안 서서히 오간다
 var _fall_blend: float = 0.0
+## 현재 스쿼시/스트레치 배율 (1,1이면 없음). 점프/착지 때 튀었다가 서서히 원래대로 돌아온다
+var _squash: Vector2 = Vector2.ONE
+## 스쿼시/스트레치가 진행 중인지 (원래 크기로 완전히 돌아오면 꺼진다)
+var _squashing: bool = false
+## 직전 프레임에 바닥에 있었는지 (착지 순간 감지용)
+var _was_on_floor: bool = true
 ## 조작 없이 가만히 있은 시간(초). idle_motion_delay를 넘으면 idle 모션이 하나 시작된다
 var _idle_time: float = 0.0
 ## 머리 긁는 동작에 남은 시간(초). 0보다 크면 긁는 중이다
@@ -204,6 +216,15 @@ func _process(delta: float) -> void:
 			elif _head:
 				_lookback_time = lookback_duration
 
+	# 점프/착지 스쿼시&스트레치 — 착지하는 순간(공중→바닥)을 감지해 몸을 납작하게 눌렀다 편다
+	if on_floor and not _was_on_floor:
+		_squash = land_squash
+		_squashing = true
+	_was_on_floor = on_floor
+	# 튄 크기는 시간이 지나며 원래(1,1)로 돌아온다
+	if _squashing and not _squash.is_equal_approx(Vector2.ONE):
+		_squash = _squash.move_toward(Vector2.ONE, delta * squash_recover_speed)
+
 	if on_floor and speed_ratio > 0.05:
 		_phase += delta * step_speed * maxf(speed_ratio, 0.3)
 		_blend = minf(_blend + delta * blend_speed, 1.0)
@@ -273,6 +294,15 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
+
+	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
+	if _squashing:
+		var sgn: float = signf(_fighter.facing) if (_fighter != null and is_instance_valid(_fighter)) else 1.0
+		if _squash.is_equal_approx(Vector2.ONE):
+			scale = Vector2(sgn, 1.0)   # 정확히 원래 크기로 스냅하고 종료
+			_squashing = false
+		else:
+			scale = Vector2(_squash.x * sgn, _squash.y)
 
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
@@ -344,6 +374,11 @@ func _pose_grip_hand(progress: float) -> void:
 		grip = 1.0 - (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
 	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, grip)
 	_hand_l.rotation = _hand_r.rotation * grip
+
+## 점프하는 순간 몸을 세로로 늘린다 (squash & stretch). Fighter.jump()이 호출한다
+func play_jump_stretch() -> void:
+	_squash = jump_stretch
+	_squashing = true
 
 ## 술 마시기 동작 — 고개를 뒤로 젖히고 술병을 입으로 가져가 꿀꺽거린다.
 ## DrinkSkill이 술을 실제로 마신 순간 호출한다

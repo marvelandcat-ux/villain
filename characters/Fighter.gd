@@ -184,6 +184,10 @@ func jump() -> void:
 	velocity.y = jump_velocity * jump_multiplier
 	if vault_jump:
 		_play_vault_effect()
+	# 점프하는 순간 몸이 세로로 늘어나는 연출 (그 메서드가 있는 비주얼만)
+	var visual := get_node_or_null("Visual")
+	if visual and visual.has_method("play_jump_stretch"):
+		visual.play_jump_stretch()
 
 ## 개찰구를 훌쩍 뛰어넘는 듯한 점프 연출 (지하철빌런 전용)
 func _play_vault_effect() -> void:
