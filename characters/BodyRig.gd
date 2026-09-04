@@ -39,6 +39,22 @@ extends Node2D
 @export var land_squash: Vector2 = Vector2(1.33, 0.75)
 ## 스쿼시/스트레치가 원래 크기(1,1)로 돌아오는 속도 (클수록 빨리 복구)
 @export var squash_recover_speed: float = 2.5
+
+## --- 자전거 타기 (촉법소년 돌진) ---
+## 자전거가 "탄 위치"에서 이만큼 떨어진 곳(캐릭터 뒤쪽)에서 슬라이드해 들어온다. x가 음수면 진행 반대쪽(뒤)
+@export var ride_enter_offset: Vector2 = Vector2(-70, 0)
+## 자전거가 들어오고/빠져나가는 빠르기 (클수록 빨리)
+@export var ride_blend_speed: float = 12.0
+## 페달 밟을 때 두 발이 도는 중심(크랭크 위치, 리그 원점 기준)
+@export var pedal_center: Vector2 = Vector2(1, 23)
+## 페달 원의 반지름(px)
+@export var pedal_radius: float = 7.0
+## 페달 밟는 속도(라디안/초)
+@export var pedal_speed: float = 14.0
+## 자전거 탈 때 왼손이 가는 위치(핸들바 잡기, 리그 원점 기준)
+@export var ride_hand_l_pos: Vector2 = Vector2(19, -4)
+## 자전거 탈 때 오른손이 가는 위치(핸들바 잡기)
+@export var ride_hand_r_pos: Vector2 = Vector2(25, -6)
 ## 중력으로 떨어지는 동안(하강 중) 고개를 아래로 숙이는 각도(도). 양수가 아래를 보는 방향(마시기와 같은 규칙)
 @export var fall_head_tilt_deg: float = 18.0
 ## 하강 자세로 바뀌고 풀리는 빠르기
@@ -116,6 +132,8 @@ extends Node2D
 @onready var _hand_r: Sprite2D = get_node_or_null("HandR")
 ## 오른손이 든 물건(소주병 등)을 매다는 빈 노드 — 손의 위치·회전을 그대로 따라간다
 @onready var _hand_r_hold: Node2D = get_node_or_null("HandRHold")
+## 자전거 노드(있으면 촉법소년) — 돌진 중에만 보인다
+@onready var _bike: Sprite2D = get_node_or_null("Bike")
 
 var _fighter: Fighter
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
@@ -132,6 +150,13 @@ var _squash: Vector2 = Vector2.ONE
 var _squashing: bool = false
 ## 직전 프레임에 바닥에 있었는지 (착지 순간 감지용)
 var _was_on_floor: bool = true
+## 자전거를 탄(보이는) 정도 0~1. set_riding으로 목표를 정하고 서서히 오간다
+var _ride_blend: float = 0.0
+var _ride_target: float = 0.0
+## 페달 회전 각도 (계속 커짐)
+var _pedal_phase: float = 0.0
+## 자전거의 "탄 위치"(씬에 저장된 제자리) — 여기서 뒤로 밀어 슬라이드 연출한다
+var _bike_mounted_pos: Vector2
 ## 조작 없이 가만히 있은 시간(초). idle_motion_delay를 넘으면 idle 모션이 하나 시작된다
 var _idle_time: float = 0.0
 ## 머리 긁는 동작에 남은 시간(초). 0보다 크면 긁는 중이다
@@ -163,6 +188,10 @@ func _ready() -> void:
 	if _head:
 		_head_rest_texture = _head.texture
 		_head_rest_scale = _head.scale
+	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
+	if _bike:
+		_bike_mounted_pos = _bike.position
+		_bike.visible = false
 
 func _process(delta: float) -> void:
 	var speed_ratio: float = 0.0
@@ -225,6 +254,18 @@ func _process(delta: float) -> void:
 	if _squashing and not _squash.is_equal_approx(Vector2.ONE):
 		_squash = _squash.move_toward(Vector2.ONE, delta * squash_recover_speed)
 
+	# 자전거 타기 — 목표(_ride_target)로 서서히 오가며, 뒤에서 슬라이드해 들어오고 페이드된다
+	if _bike:
+		_ride_blend = move_toward(_ride_blend, _ride_target, delta * ride_blend_speed)
+		if _ride_blend > 0.001:
+			_bike.visible = true
+			# blend 0이면 뒤(enter_offset)에 투명하게, 1이면 탄 위치에 선명하게
+			_bike.position = _bike_mounted_pos + ride_enter_offset * (1.0 - _ride_blend)
+			_bike.modulate.a = _ride_blend
+			_pedal_phase += delta * pedal_speed
+		else:
+			_bike.visible = false
+
 	if on_floor and speed_ratio > 0.05:
 		_phase += delta * step_speed * maxf(speed_ratio, 0.3)
 		_blend = minf(_blend + delta * blend_speed, 1.0)
@@ -240,6 +281,8 @@ func _apply_pose(speed_ratio: float) -> void:
 	_face_moving_direction()
 
 	var amount: float = _blend * maxf(speed_ratio, 0.4)
+	# 자전거를 타는 동안엔 걷기 흔들림을 줄인다 (발은 아래에서 페달 동작으로 덮어쓴다)
+	amount *= (1.0 - _ride_blend)
 
 	# 두 발은 반 바퀴 어긋난 채로 계속 앞뒤를 오간다 — 한쪽이 앞으로 나가면 다른 쪽은 뒤로 밀리고,
 	# 반 바퀴 뒤에 앞발과 뒷발이 뒤바뀐다
@@ -290,6 +333,11 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _lookback_time > 0.0:
 		_pose_lookback()
 
+	# 자전거를 타는 동안엔 두 발이 페달을 밟고, 두 손이 핸들바를 잡는다 (걷기 동작을 덮어쓴다)
+	if _bike and _ride_blend > 0.3:
+		_pose_pedal()
+		_pose_ride_hands()
+
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
@@ -313,6 +361,8 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	# 점프는 반대로 발끝이 아래로 뻗게 해서 서로 반대 방향으로 돈다
 	foot.rotation = deg_to_rad(-foot_swing_deg * lift + jump_foot_deg * _air_blend)
 	foot.position.x = _rest_positions[foot].x + foot_stride * slide
+	# 세로 위치는 항상 제자리로 되돌린다 — 페달 동작(자전거)이 바꿔놓은 발 Y가 돌진 후에 남지 않게
+	foot.position.y = _rest_positions[foot].y
 
 ## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
 ## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
@@ -379,6 +429,31 @@ func _pose_grip_hand(progress: float) -> void:
 func play_jump_stretch() -> void:
 	_squash = jump_stretch
 	_squashing = true
+
+## 자전거를 탄다/내린다 (촉법소년 돌진). 자전거 노드가 없는 캐릭터에선 아무 일도 안 한다.
+## DashSkill이 돌진 시작에 true, 끝에 false로 부른다
+func set_riding(on: bool) -> void:
+	if _bike == null:
+		return
+	_ride_target = 1.0 if on else 0.0
+
+## 자전거 탈 때 두 손을 앞(핸들바)으로 가져가 잡는다
+func _pose_ride_hands() -> void:
+	if _hand_l:
+		_hand_l.position = ride_hand_l_pos
+		_hand_l.rotation = 0.0
+	if _hand_r:
+		_hand_r.position = ride_hand_r_pos
+		_hand_r.rotation = 0.0
+
+## 두 발이 크랭크(pedal_center)를 중심으로 180도 어긋나게 원을 그리며 돈다 — 페달 밟기
+func _pose_pedal() -> void:
+	if _foot_l:
+		_foot_l.position = pedal_center + Vector2(cos(_pedal_phase), sin(_pedal_phase)) * pedal_radius
+		_foot_l.rotation = 0.0
+	if _foot_r:
+		_foot_r.position = pedal_center + Vector2(cos(_pedal_phase + PI), sin(_pedal_phase + PI)) * pedal_radius
+		_foot_r.rotation = 0.0
 
 ## 술 마시기 동작 — 고개를 뒤로 젖히고 술병을 입으로 가져가 꿀꺽거린다.
 ## DrinkSkill이 술을 실제로 마신 순간 호출한다

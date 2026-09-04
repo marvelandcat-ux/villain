@@ -1,23 +1,33 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://b8n8uyugqh0hu"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/축법소년/축법소년 머리.png" id="2_head"]
 [ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://ds6act8buxm8g" path="res://sprite/축법소년/축법소년 발.png" id="4_foot"]
+[ext_resource type="Texture2D" uid="uid://dvtebq6yqbyxj" path="res://sprite/축법소년/자전거.png" id="5_bike"]
 
-[node name="BodyRig" instance=ExtResource("1_rig")]
+[node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 
-[node name="FootL" parent="." index="0"]
+[node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
+visible = false
+position = Vector2(5.9999995, 11)
+scale = Vector2(0.062109377, 0.062109377)
+texture = ExtResource("5_bike")
+
+[node name="FootL" parent="." index="1" unique_id=1982953737]
 texture = ExtResource("4_foot")
 
-[node name="FootR" parent="." index="1"]
+[node name="FootR" parent="." index="2" unique_id=1509249644]
 texture = ExtResource("4_foot")
 
-[node name="Body" parent="." index="2"]
+[node name="Body" parent="." index="3" unique_id=1277525598]
 scale = Vector2(0.0266, 0.0322)
 texture = ExtResource("3_body")
 
-[node name="Head" parent="." index="6"]
+[node name="HandL" parent="." index="4" unique_id=927525538]
+position = Vector2(-27, 4)
+
+[node name="Head" parent="." index="7" unique_id=1394957076]
 position = Vector2(1.5, -32.6)
 scale = Vector2(0.055, 0.055)
 texture = ExtResource("2_head")

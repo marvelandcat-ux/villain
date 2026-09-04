@@ -7,14 +7,11 @@ extends Area2D
 ## true면 knockback을 그대로 쓰지 않고, 맞는 순간 "공격자 쪽으로" 방향을 계산해서 끌어당긴다 (청소기 흡입 등)
 @export var pull_to_source: bool = false
 @export var pull_strength: float = 250.0
-<<<<<<< HEAD
 ## 명중 순간 게임 전체를 멈추는 시간(초, hit-stop). 0이면 안 멈춘다. 센 공격일수록 크게 주면 묵직해진다
 @export var hitstop_duration: float = 0.06
-=======
 ## 0보다 크면 겹쳐 있는 동안 이 간격(초)마다 계속 다시 때린다 (지나가는 열차에 계속 밀리는 연출).
 ## 0이면 예전처럼 처음 겹친 순간에 딱 한 번만 때린다 — 스킬 히트박스는 전부 0을 쓴다
 @export var repeat_interval: float = 0.0
->>>>>>> 4431582d1dec5efeb00ec5aa1ae1c3a7afc42ed4
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -62,26 +59,20 @@ func _try_hit(area: Area2D) -> bool:
 	# 기둥·투사체는 남는다) 해제된 객체를 take_hit에 넘기게 되어 타입 에러가 난다 — 그냥 무시한다.
 	# 주인이 원래 없는 히트박스(지하철 열차 등)는 계속 정상 동작해야 하므로 _has_source로 구분한다
 	if _has_source and not is_instance_valid(_source_fighter):
-<<<<<<< HEAD
-		return
-	if area is Hurtbox and area.take_hit(damage, _compute_knockback(area), source_fighter):
-		_spawn_spark(area.global_position)
-		# 맞은 순간 아주 잠깐 시간을 멈춰 타격감을 준다
-		if hitstop_duration > 0.0:
-			HitStop.hit(hitstop_duration)
-=======
 		return false
 	if not (area is Hurtbox):
 		return false
 	if not area.take_hit(damage, _compute_knockback(area), source_fighter):
 		return false
 	_spawn_spark(area.global_position)
+	# 맞은 순간 아주 잠깐 시간을 멈춰 타격감을 준다
+	if hitstop_duration > 0.0:
+		HitStop.hit(hitstop_duration)
 	return true
 
 ## 판정을 껐다 켤 때(열차가 지나가고 다음 열차가 올 때) 반복 타격 쿨타임을 초기화한다
 func clear_repeat_state() -> void:
 	_repeat_cooldowns.clear()
->>>>>>> 4431582d1dec5efeb00ec5aa1ae1c3a7afc42ed4
 
 func _compute_knockback(hurtbox: Hurtbox) -> Vector2:
 	if not pull_to_source or source_fighter == null:
