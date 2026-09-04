@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://burvaaypmgjfd"]
+[gd_scene load_steps=14 format=3 uid="uid://burvaaypmgjfd"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://8dsgnn757hfa" path="res://sprite/맵/지하철역/지하철선로.png" id="7"]
 [ext_resource type="Texture2D" uid="uid://bpq00y7pcriss" path="res://sprite/맵/지하철역/등받이.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://d3apxkvb3r2x6" path="res://sprite/맵/지하철역/지하철아래.png" id="9"]
+[ext_resource type="Script" path="res://maps/AISafeSpot.gd" id="10"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(220, 20)
@@ -239,6 +240,14 @@ texture = ExtResource("8")
 centered = false
 region_enabled = true
 region_rect = Rect2(144, 245, 1157, 596)
+
+[node name="AISafeSpotLeft" type="Marker2D" parent="."]
+position = Vector2(-280, 155)
+script = ExtResource("10")
+
+[node name="AISafeSpotRight" type="Marker2D" parent="."]
+position = Vector2(280, 155)
+script = ExtResource("10")
 
 [node name="DecoSubwayTrain" parent="." unique_id=7725255 instance=ExtResource("4")]
 position = Vector2(-29, 259)

@@ -4,7 +4,7 @@ extends Control
 ## 로컬 대전(pvp)과 스토리 모드 둘 다 이 화면 하나를 같이 쓴다.
 ## - pvp: P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2(AI) 캐릭터를 고르면 맵 선택 화면으로 넘어간다
 ## - story: P2는 GameState.STORY_OPPONENTS[story_index]로 이미 정해져 있어서 P2 칸에 미리 공개해두고,
-##   P1만 고르면 바로 확정되어 GameState.STORY_MAP_PATH로 넘어간다 (맵은 고정이라 맵 선택 화면 생략)
+##   P1만 고르면 바로 확정되어 GameState.STORY_MAPS[story_index]가 정한 맵으로 넘어간다 (에피소드별 고정 맵이라 맵 선택 화면 생략)
 ## 아래쪽 캐릭터 목록에서 하나를 누르면 위쪽 P1/P2 미리보기 칸에 이름과 색이 채워지는 방식
 
 @onready var status_label: Label = $Center/VBox/StatusLabel
@@ -39,7 +39,7 @@ func _ready() -> void:
 
 	if _is_story_mode:
 		status_label.text = "당신의 캐릭터를 선택하세요"
-		back_button.text = "모드 선택으로 (ESC)"
+		back_button.text = "에피소드 선택으로 (ESC)"
 		var opponent_name := _find_character_name(GameState.STORY_OPPONENTS[GameState.story_index])
 		p2_name_label.text = "상대"
 		p2_preview_box.color = GameState.CHARACTER_COLORS.get(opponent_name, GameState.DEFAULT_COLOR)
@@ -191,7 +191,8 @@ func _on_confirm_pressed() -> void:
 		GameState.p1_character_path = path
 		if _is_story_mode:
 			GameState.p2_character_path = GameState.STORY_OPPONENTS[GameState.story_index]
-			GameState.selected_map_path = GameState.STORY_MAP_PATH
+			GameState.selected_map_path = GameState.STORY_MAPS[GameState.story_index]
+			GameState.reset_round_wins()
 			get_tree().change_scene_to_file(GameState.selected_map_path)
 			return
 		_picking_p1 = false
@@ -212,7 +213,7 @@ func _update_highlight() -> void:
 
 func _on_back_pressed() -> void:
 	if _is_story_mode:
-		get_tree().change_scene_to_file("res://ui/ModeSelect.tscn")
+		get_tree().change_scene_to_file("res://ui/EpisodeSelect.tscn")
 	else:
 		get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 

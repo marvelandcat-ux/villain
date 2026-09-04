@@ -7,9 +7,9 @@ func _on_story_pressed() -> void:
 	GameState.game_mode = "story"
 	GameState.rounds_to_win = 2
 	GameState.time_limit_seconds = 120
-	GameState.story_index = 0
+	GameState.reset_story_progress()
 	GameState.reset_round_wins()
-	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
+	get_tree().change_scene_to_file("res://ui/EpisodeSelect.tscn")
 
 func _on_local_pvp_pressed() -> void:
 	GameState.game_mode = "pvp"

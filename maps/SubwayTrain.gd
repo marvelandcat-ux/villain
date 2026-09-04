@@ -52,6 +52,8 @@ var _timer: float = 0.0
 var _direction: int = 1
 
 func _ready() -> void:
+	# AIController가 "ai_danger_zone" 그룹으로 찾아서 is_dangerous()를 물어보고 피신 여부를 판단한다
+	add_to_group("ai_danger_zone")
 	_timer = first_delay
 	hitbox.damage = damage
 	hitbox.repeat_interval = hit_interval
@@ -59,6 +61,10 @@ func _ready() -> void:
 	_set_hitbox_active(false)
 	_park_body()
 	warning_light.visible = false
+
+## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
+func is_dangerous() -> bool:
+	return _state != State.WAITING
 
 func _process(delta: float) -> void:
 	_timer -= delta

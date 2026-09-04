@@ -23,8 +23,8 @@ var player_index: int = 1
 var is_active: bool = true
 
 ## "left" → "p1_left" 처럼 이 컨트롤러가 담당하는 플레이어의 액션 이름을 만든다
-func _action(name: String) -> String:
-	return "p%d_%s" % [player_index, name]
+func _action(action_name: String) -> String:
+	return "p%d_%s" % [player_index, action_name]
 
 func _physics_process(delta: float) -> void:
 	if is_active:

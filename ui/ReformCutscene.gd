@@ -15,10 +15,9 @@ const REFORM_LINES := {
 }
 
 func _ready() -> void:
-	var defeated_index: int = GameState.story_index - 1
 	var defeated_path: String = ""
-	if defeated_index >= 0 and defeated_index < GameState.STORY_OPPONENTS.size():
-		defeated_path = GameState.STORY_OPPONENTS[defeated_index]
+	if GameState.story_index >= 0 and GameState.story_index < GameState.STORY_OPPONENTS.size():
+		defeated_path = GameState.STORY_OPPONENTS[GameState.story_index]
 	title_label.text = "%s, 개과천선!" % _find_character_name(defeated_path)
 	body_label.text = REFORM_LINES.get(defeated_path, "\"제가 잘못했습니다...\"")
 
@@ -29,12 +28,10 @@ func _find_character_name(path: String) -> String:
 	return "상대"
 
 func _on_next_pressed() -> void:
-	if GameState.story_index >= GameState.STORY_OPPONENTS.size():
+	if GameState.is_story_complete():
 		get_tree().change_scene_to_file("res://ui/StoryClear.tscn")
 		return
-	GameState.p2_character_path = GameState.STORY_OPPONENTS[GameState.story_index]
-	GameState.reset_round_wins()
-	get_tree().change_scene_to_file(GameState.selected_map_path)
+	get_tree().change_scene_to_file("res://ui/EpisodeSelect.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):

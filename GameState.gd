@@ -54,8 +54,15 @@ const STORY_OPPONENTS: Array = [
 	"res://characters/subwayvillain/SubwayVillain.tscn",
 	"res://characters/floornoise/FloorNoise.tscn",
 ]
-## 스토리 모드에서 매 상대전마다 쓰는 맵 (간단하게 고정)
-const STORY_MAP_PATH := "res://maps/ConvenienceStore.tscn"
+## 스토리 모드에서 에피소드별로 쓰는 맵 (STORY_OPPONENTS와 같은 순서). 딱히 정하지 않으면 편의점 앞을 쓴다
+const STORY_MAPS: Array = [
+	"res://maps/ConvenienceStore.tscn",
+	"res://maps/SubwayPlatform.tscn", # 악플러 — 임시로 지하철 승강장에서 붙는다
+	"res://maps/ConvenienceStore.tscn",
+	"res://maps/ConvenienceStore.tscn",
+	"res://maps/ConvenienceStore.tscn",
+	"res://maps/ConvenienceStore.tscn",
+]
 
 var p1_character_path: String = CHARACTERS.values()[0]
 var p2_character_path: String = CHARACTERS.values()[1]
@@ -69,8 +76,10 @@ var rounds_to_win: int = 2
 var time_limit_seconds: int = 0
 var p1_round_wins: int = 0
 var p2_round_wins: int = 0
-## 스토리 모드에서 지금 몇 번째 상대인지 (STORY_OPPONENTS 인덱스)
+## 스토리 모드에서 지금 몇 번째 상대인지 (STORY_OPPONENTS 인덱스) — EpisodeSelect에서 고르면 여기에 저장된다
 var story_index: int = 0
+## 스토리 모드에서 각 상대(STORY_OPPONENTS와 같은 순서)를 깼는지 여부. reset_story_progress()로 초기화
+var story_cleared: Array = []
 
 ## .env 파일에서 불러온 Claude API 키. ClaudeAIController가 P2 AI 판단에 사용한다.
 ## .env는 git에 커밋하지 않는 로컬 파일이라(.env.example 참고) 파일이 없으면 빈 문자열로 남는다
@@ -102,6 +111,31 @@ func _ready() -> void:
 func reset_round_wins() -> void:
 	p1_round_wins = 0
 	p2_round_wins = 0
+
+## 스토리 모드를 처음부터 새로 시작할 때 호출 — 모든 에피소드를 안 깬 상태로 되돌린다
+func reset_story_progress() -> void:
+	story_cleared.clear()
+	for i in STORY_OPPONENTS.size():
+		story_cleared.append(false)
+
+## index번째 에피소드가 지금 고를 수 있는 상태인지 — 1번(0)은 항상 열려있고,
+## 그 다음부터는 바로 앞 에피소드를 깨야 열린다
+func is_episode_unlocked(index: int) -> bool:
+	if index <= 0:
+		return true
+	# TODO(임시): 프로토타입 영상 촬영용으로 2번(악플러/지하철 승강장) 에피소드를 처음부터 열어둠 — 촬영 끝나면 지울 것
+	if index == 1:
+		return true
+	return index - 1 < story_cleared.size() and story_cleared[index - 1]
+
+## index번째 상대를 이겼다고 기록한다 (다음 에피소드가 열리는 조건)
+func mark_story_cleared(index: int) -> void:
+	if index >= 0 and index < story_cleared.size():
+		story_cleared[index] = true
+
+## 스토리 모드의 모든 상대를 다 깼는지
+func is_story_complete() -> bool:
+	return story_cleared.size() == STORY_OPPONENTS.size() and not story_cleared.has(false)
 
 ## res://.env 파일을 한 줄씩 읽어서 KEY=VALUE 형식을 파싱한다 (# 시작 줄은 주석으로 무시)
 func _load_env() -> void:
@@ -145,7 +179,7 @@ func _save_setting(section: String, key: String, value) -> void:
 func _apply_keybind(action: String, physical_keycode: int) -> void:
 	InputMap.action_erase_events(action)
 	var event := InputEventKey.new()
-	event.physical_keycode = physical_keycode
+	event.physical_keycode = physical_keycode as Key
 	InputMap.action_add_event(action, event)
 
 ## ui/Settings.gd에서 키를 재배정할 때 호출한다. InputMap에 바로 반영하고 파일에도 저장해서 다음 실행에도 유지시킨다

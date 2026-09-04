@@ -19,6 +19,8 @@ var is_active: bool = true
 
 var _is_ranged: bool = false
 var _retreat_timer: float = 0.0
+## 안전지대로 피신할 때 이단 점프 진행 단계: 0=아직 안 뜀, 1=1단 뛰고 정점 기다리는 중, 2=2단까지 다 씀
+var _dodge_jump_stage: int = 0
 
 @onready var fighter: Fighter = get_parent()
 
@@ -44,10 +46,69 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if fighter.movement_override == null:
-		_decide_movement(delta)
+		if not _try_dodge_hazard():
+			_decide_movement(delta)
 	_decide_skills()
 
 	fighter.apply_physics(delta)
+
+## 맵 기믹(지나가는 열차 등)이 위험한 상태면 싸움을 잠깐 멈추고 가장 가까운 안전지대(ai_safe_spot)로 피신한다.
+## "ai_danger_zone" 그룹의 노드 중 하나라도 is_dangerous()가 true면 위험하다고 본다.
+## 실제로 피신 판단을 했으면 true를 돌려줘서 평소 이동 판단(_decide_movement)을 건너뛰게 한다.
+## 위험한 맵이 아니면(ai_danger_zone/ai_safe_spot가 씬에 하나도 없으면) 항상 false라 기존 동작 그대로다
+func _try_dodge_hazard() -> bool:
+	var danger := false
+	for hazard in get_tree().get_nodes_in_group("ai_danger_zone"):
+		if hazard.has_method("is_dangerous") and hazard.is_dangerous():
+			danger = true
+			break
+	if not danger:
+		return false
+
+	var spot: Node2D = _nearest_safe_spot()
+	if spot == null:
+		return false
+
+	# 발판 위에 실제로 착지해서 더 안 움직이고 버티는 조건 — is_on_floor()까지 같이 봐야 한다.
+	# 높이만 보면, 점프 도중 목표 높이를 스쳐 지나가는 순간에도 "다 왔다"고 착각해서
+	# 이단 점프를 이어서 안 누르고 그대로 떨어져버리는 버그가 있었다(점프 한 번만 하고 마는 것처럼 보임).
+	# Godot는 y가 작을수록 위쪽이라 "<="가 "더 높거나 같음"이다
+	if fighter.is_on_floor() and fighter.global_position.y <= spot.global_position.y + 4.0:
+		fighter.move(0.0)
+		_dodge_jump_stage = 0
+		return true
+
+	# 발판이 아니라 진짜 바닥에 도로 내려왔다 — 처음부터 다시 시도한다 (한 번에 못 닿았을 때의 재시도)
+	if fighter.is_on_floor():
+		_dodge_jump_stage = 0
+
+	var dx: float = spot.global_position.x - fighter.global_position.x
+	if absf(dx) > 16.0:
+		fighter.move(signf(dx))
+		_dodge_jump_stage = 0
+	else:
+		fighter.move(0.0)
+		# 1단 점프를 뛰고, 곧바로 2단 점프를 잇지 않고 velocity.y가 0 이상(더 못 오르고 떨어지기 시작하는 정점)이
+		# 될 때까지 기다렸다가 쏜다. jump()의 공중 점프는 그 순간까지 남아있던 속도를 "더하지" 않고
+		# air_jump_velocity로 덮어쓰기 때문에, 1단 점프가 아직 한창 오르는 중에 곧바로 이어 쓰면
+		# 1단으로 번 높이가 거의 다 날아가서 발판까지 못 닿는 버그가 있었다(밖에서 보면 "한 번만 뛰고 마는" 것처럼 보임)
+		if _dodge_jump_stage == 0:
+			fighter.jump()
+			_dodge_jump_stage = 1
+		elif _dodge_jump_stage == 1 and fighter.velocity.y >= 0.0:
+			fighter.jump()
+			_dodge_jump_stage = 2
+	return true
+
+func _nearest_safe_spot() -> Node2D:
+	var nearest: Node2D = null
+	var nearest_dist: float = INF
+	for spot in get_tree().get_nodes_in_group("ai_safe_spot"):
+		var d: float = absf(spot.global_position.x - fighter.global_position.x)
+		if d < nearest_dist:
+			nearest = spot
+			nearest_dist = d
+	return nearest
 
 func _decide_movement(delta: float) -> void:
 	var dx: float = target.global_position.x - fighter.global_position.x
@@ -76,7 +137,9 @@ func _decide_movement(delta: float) -> void:
 		if dist <= attack_range:
 			fighter.use_basic_attack()
 
-	if fighter.is_on_floor() and randf() < jump_chance:
+	# 바닥에 있을 때뿐 아니라 공중에 뜬 상태에서도 굴려서, 가끔 이단 점프까지 이어서 쓴다
+	# (jump()가 바닥/공중 점프를 스스로 구분하고 다 썼으면 조용히 무시하므로 안전하다)
+	if randf() < jump_chance:
 		fighter.jump()
 
 	# 쓸 수 있는 스킬이 하나도 없으면 가끔 한 발짝 물러나서 쿨타임을 번다

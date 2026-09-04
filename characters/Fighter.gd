@@ -307,14 +307,12 @@ func fire_ultimate_now() -> void:
 	if skill_ultimate:
 		skill_ultimate.use(self)
 
+## 기본공격은 스킬 클래시(연타 미니게임)에 태우지 않는다 — 스킬1/2/궁극기보다 훨씬 자주 나가는 잽이라,
+## 여기까지 클래시로 걸리면 마주칠 때마다 화면이 멈추고 연타 게임이 뜨는 꼴이 된다. 항상 바로 나간다
 func use_basic_attack() -> void:
 	if basic_attack == null or is_feared or is_busy() or not basic_attack.can_use():
 		return
-	var manager: Node = _get_clash_manager()
-	if manager:
-		manager.request(self, "basic_attack", func(): _fire_basic_attack(), func(): basic_attack.cancel_use())
-	else:
-		_fire_basic_attack()
+	_fire_basic_attack()
 
 func _fire_basic_attack() -> void:
 	basic_attack.use(self)
