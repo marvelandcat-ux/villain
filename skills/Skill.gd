@@ -7,6 +7,8 @@ extends Node
 ## 이 스킬을 쓰는 동안(모션이 재생되는 동안) 다른 스킬·기본공격을 못 쓰게 막는 시간(초).
 ## 0이면 안 막는다. 마시기/토하기처럼 동작이 긴 스킬에만 값을 준다
 @export var lock_duration: float = 0.0
+## HUD 쿨타임 슬롯에 뜨는 스킬 로고. 비워두면 로고 대신 캐릭터 색 사각형이 차오른다
+@export var icon: Texture2D
 
 var cooldown_left: float = 0.0
 
