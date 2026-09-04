@@ -35,4 +35,4 @@ func _process(delta: float) -> void:
 	_tick_timer = tick_interval
 	for area in get_overlapping_areas():
 		if area is Hurtbox:
-wd			area.take_hit(damage_per_tick, Vector2.ZERO, source_fighter)
+			area.take_hit(damage_per_tick, Vector2.ZERO, source_fighter)

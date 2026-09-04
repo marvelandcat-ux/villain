@@ -12,6 +12,9 @@
 [ext_resource type="PackedScene" uid="uid://5whlo20oxk51" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://skills/ScreamCone.tscn" id="11"]
 [ext_resource type="Script" uid="uid://cpik24gbnnkkt" path="res://characters/SkillRangePreview.gd" id="12"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/1번.png" id="13"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/2번.png" id="14"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/궁극기.png" id="15"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -53,6 +56,7 @@ shape = SubResource("RectangleShape2D_hitbox")
 script = ExtResource("6")
 lock_duration = 1.1
 cooldown = 3.0
+icon = ExtResource("13")
 
 [node name="Skill2" type="Node" parent="." unique_id=556174220]
 script = ExtResource("7")
@@ -60,6 +64,7 @@ lock_duration = 0.6
 beam_scene = ExtResource("8")
 mouth_offset = Vector2(18, -15)
 cooldown = 4.0
+icon = ExtResource("14")
 
 [node name="SkillUltimate" type="Node" parent="." unique_id=2025535014]
 script = ExtResource("9")
@@ -67,6 +72,7 @@ lock_duration = 0.5
 cone_scene = ExtResource("11")
 mouth_offset = Vector2(18, -17)
 cooldown = 20.0
+icon = ExtResource("15")
 
 [node name="SkillRangePreview" type="Node2D" parent="." unique_id=1400754697]
 script = ExtResource("12")
