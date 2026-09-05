@@ -2,8 +2,8 @@ class_name DashSkill
 extends Skill
 
 ## 픽시 돌진 — 브레이크 없이 돌진하다가 벽에 부딪히면 자신이 피해를 입는다 (촉법소년 스킬1)
-## 돌진 속도 = 캐릭터 기본 이동속도(stats.move_speed)의 이 배수. 1.41이면 이동속도 160 기준 약 226 (걷기보다 확실히 빠른 자전거)
-@export var dash_speed_multiplier: float = 1.41
+## 돌진 속도 = 캐릭터 기본 이동속도(stats.move_speed)의 이 배수. 2.5면 이동속도 160 기준 400 (걷기보다 확 빠른 픽시 자전거)
+@export var dash_speed_multiplier: float = 2.5
 @export var dash_duration: float = 0.9
 @export var self_damage_on_wall: int = 10  ## 오픈 이슈 임시값
 ## 벽에 부딪혔을 때 튕겨 나오는 넉백 (돌진 방향의 반대 + 살짝 위로)
@@ -73,6 +73,9 @@ func _spawn_afterimage(fighter: Fighter) -> void:
 	# 잔상은 복제한 그 순간의 모습으로 고정한다 — 스크립트(BodyRig의 매 프레임 자세 계산)가 돌지 않게 뗀다
 	ghost.set_script(null)
 	parent.add_child(ghost)
+	# 잔상은 본체보다 뒤에 그려져야 한다 — 나중에 add_child되면 기본적으로 앞에 겹치므로 z를 낮춘다.
+	# 잔상 내부 손(z_index=1, 상대값)까지 확실히 뒤로 보내려고 -2로 둔다 (본체는 z 0, 손 z 1)
+	ghost.z_index = -2
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
 	ghost.modulate.a = 0.45

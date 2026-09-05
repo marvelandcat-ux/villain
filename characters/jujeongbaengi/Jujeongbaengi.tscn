@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/1번.png" id="13"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/2번.png" id="14"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/궁극기.png" id="15"]
+[ext_resource type="PackedScene" path="res://combat/GlassShard.tscn" id="16"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -48,6 +49,7 @@ windup = 0.16
 monitoring = false
 monitorable = false
 script = ExtResource("4")
+debris_scene = ExtResource("16")
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox" unique_id=488706040]
 shape = SubResource("RectangleShape2D_hitbox")

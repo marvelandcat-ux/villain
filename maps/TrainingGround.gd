@@ -101,8 +101,18 @@ func _spawn_character(character_path: String) -> void:
 	var controller := PlayerController.new()
 	controller.player_index = 1
 	_fighter.add_child(controller)
+	_disable_cooldowns()
 	_apply_speed_scale()
 	_reset_measurements()
+
+## 훈련장에서는 스킬 쿨타임을 없앤다 — 값을 마음껏 시험해볼 수 있게 모든 스킬 노드의 cooldown을 0으로 만든다
+func _disable_cooldowns() -> void:
+	if not (_fighter and is_instance_valid(_fighter)):
+		return
+	for child in _fighter.get_children():
+		if child is Skill:
+			child.cooldown = 0.0
+			child.cooldown_left = 0.0
 
 ## 캐릭터를 지우지 않고 스폰 위치로 되돌린다
 func _respawn() -> void:
