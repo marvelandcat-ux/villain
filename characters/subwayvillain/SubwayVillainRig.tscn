@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" uid="uid://dmik7lktbd644" path="res://sprite/지하철빌/지하철빌런머리.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="3_body"]
+
+[node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
+
+[node name="Body" parent="." index="2" unique_id=1277525598]
+scale = Vector2(0.0315, 0.0335)
+texture = ExtResource("3_body")
+
+[node name="HandL" parent="." index="3" unique_id=927525538]
+position = Vector2(-27, 4)
+
+[node name="Head" parent="." index="6" unique_id=1394957076]
+position = Vector2(-2, -32)
+scale = Vector2(0.055, 0.055)
+texture = ExtResource("2_head")
