@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://cq8shardgl0ss"]
+[gd_scene format=3 uid="uid://cq8shardgl0ss"]
 
 [ext_resource type="Script" path="res://combat/GlassShard.gd" id="1"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/유리조각.png" id="2"]
