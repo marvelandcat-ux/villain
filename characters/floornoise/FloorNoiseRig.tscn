@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://buypdf5wmusqa"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://dwyomcftmyr45" path="res://sprite/층간소/층간소음측면.png" id="2_head"]
@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://2eahk8savgss" path="res://sprite/층간소/손.png" id="5_hand"]
 
 [node name="BodyRig" unique_id=1130472801 instance=ExtResource("1_rig")]
+position = Vector2(169, 153)
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")
