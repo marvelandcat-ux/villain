@@ -3,8 +3,14 @@ extends Hitbox
 
 ## 직선으로 날아가는 투사체 공용 컴포넌트 (BB탄, 토하기 등). Hitbox를 상속해서 맞으면 실제 데미지를 준다
 @export var lifetime: float = 1.5
+## 진행 방향으로 매초 이만큼 빨라진다(px/s²). 0이면 등속. 시간이 지날수록 빨라지는 총알에 쓴다
+@export var acceleration: float = 0.0
+## 가속으로 붙는 속도의 상한(px/s). 0이면 무제한 (너무 빨라져 얇은 벽을 뚫는 것 방지)
+@export var max_speed: float = 0.0
 
 var _velocity_x: float = 0.0
+## 진행 방향(+1/-1) — 가속을 이 방향으로 더한다
+var _direction: float = 1.0
 
 func _ready() -> void:
 	super._ready()
@@ -12,6 +18,7 @@ func _ready() -> void:
 
 ## 발사 방향(1 또는 -1), 속도, 최종 데미지, 발사자를 지정한다
 func setup(direction: float, speed: float, projectile_damage: int, shooter: Fighter) -> void:
+	_direction = 1.0 if direction >= 0.0 else -1.0
 	_velocity_x = direction * speed
 	damage = projectile_damage
 	source_fighter = shooter
@@ -32,6 +39,11 @@ func _start_lifetime_timer() -> void:
 	timer.start()
 
 func _physics_process(delta: float) -> void:
+	# 시간이 지날수록 진행 방향으로 빨라진다 (max_speed가 있으면 거기서 멈춘다)
+	if acceleration != 0.0:
+		_velocity_x += _direction * acceleration * delta
+		if max_speed > 0.0:
+			_velocity_x = clampf(_velocity_x, -max_speed, max_speed)
 	position.x += _velocity_x * delta
 
 func _on_area_entered(area: Area2D) -> void:

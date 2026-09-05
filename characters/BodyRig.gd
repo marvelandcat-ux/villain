@@ -110,6 +110,22 @@ extends Node2D
 ## 술병을 추가로 기울이는 각도(도). 씬에 잡아둔 제자리 각도(-155도)가 이미 붓는 자세라 기본은 0이다
 @export var drink_hand_deg: float = 0.0
 
+## --- 총 쏘기 (촉법소년 BB탄) : 몸에서 총을 꺼내 두 손을 모아 앞으로 겨눈다 ---
+## 총을 "몸에서 꺼내는" 시작점(허리/가슴 근처, 리그 원점 기준). 여기서 앞으로 뻗어 조준 자세로 간다
+@export var gun_draw_offset: Vector2 = Vector2(2, -4)
+## 두 손을 모아 앞으로 겨누는 그립 위치(리그 원점 기준). x가 클수록 팔을 더 앞으로 뻗는다
+@export var gun_aim_offset: Vector2 = Vector2(20, -6)
+## 왼손이 오른손(그립)에서 떨어져 있는 거리 — 두 손을 살짝 어긋나게 모아 잡는다
+@export var gun_hand_l_offset: Vector2 = Vector2(-4, 3)
+## 총 스프라이트가 그립(손)보다 총구 쪽으로 나가 있는 거리
+@export var gun_forward_offset: Vector2 = Vector2(10, 0)
+## 전체 동작 중 "몸에서 꺼내 조준까지" 올리는 구간 비율(앞 20%). 나머지는 겨눈 채 유지한다
+@export var gun_draw_ratio: float = 0.2
+## 발사 반동으로 총·손이 뒤로 밀리는 거리(px)
+@export var gun_recoil_kick: float = 6.0
+## 반동이 원래대로 돌아오는 속도(클수록 빨리 회복)
+@export var gun_recoil_recover: float = 9.0
+
 ## 토하기 스킬을 쓸 때 잠깐 이 얼굴(토하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(주정뱅이만 지정)
 @export var vomit_head_texture: Texture2D
 ## 토하는 얼굴을 보여주는 시간(초)
@@ -134,6 +150,8 @@ extends Node2D
 @onready var _hand_r_hold: Node2D = get_node_or_null("HandRHold")
 ## 자전거 노드(있으면 촉법소년) — 돌진 중에만 보인다
 @onready var _bike: Sprite2D = get_node_or_null("Bike")
+## 총 노드(있으면 촉법소년) — 총 쏘는 스킬 중에만 보인다
+@onready var _gun: Sprite2D = get_node_or_null("Gun")
 
 var _fighter: Fighter
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
@@ -167,6 +185,12 @@ var _lookback_time: float = 0.0
 var _attack_time: float = 0.0
 ## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
 var _drink_time: float = 0.0
+## 총 조준 동작에 남은 시간(초). 0보다 크면 총을 겨누는 중이다
+var _gun_time: float = 0.0
+## 총 조준 동작 전체 길이(스킬이 넘겨준다) — 진행도 계산용
+var _gun_duration: float = 0.5
+## 발사 반동 세기 0~1 — 쏠 때마다 1로 튀었다가 서서히 0으로 줄어든다
+var _recoil: float = 0.0
 ## 토하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 토하는 표정이다
 var _vomit_time: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
@@ -213,6 +237,14 @@ func _process(delta: float) -> void:
 		# 시간이 다 되면 원래 얼굴로 되돌린다
 		if is_zero_approx(_vomit_time):
 			_restore_head()
+	# 총 조준 시간 카운트다운 — 끝나면 총을 다시 숨긴다
+	if _gun_time > 0.0:
+		_gun_time = maxf(_gun_time - delta, 0.0)
+		if is_zero_approx(_gun_time) and _gun:
+			_gun.visible = false
+	# 발사 반동은 매 프레임 서서히 잦아든다
+	if _recoil > 0.0:
+		_recoil = maxf(_recoil - delta * gun_recoil_recover, 0.0)
 
 	# 공중이면 점프 자세로, 바닥이면 원래 자세로 서서히 옮겨간다
 	var air_target: float = 0.0 if on_floor else 1.0
@@ -223,7 +255,7 @@ func _process(delta: float) -> void:
 	_fall_blend = move_toward(_fall_blend, 1.0 if falling else 0.0, delta * fall_blend_speed)
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
-	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0
+	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -324,6 +356,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 마시는 중이면 머리와 오른손을 술 마시는 자세로 덮어쓴다 (공격보다 나중이라 우선한다)
 	if _drink_time > 0.0:
 		_pose_drink()
+
+	# 총을 겨누는 중이면 두 손을 모아 총을 잡은 자세로 덮어쓴다 (걷기·공격보다 우선한다)
+	if _gun_time > 0.0:
+		_pose_gun()
 
 	# 가만히 있을 때는 왼손으로 머리를 긁는다 (idle 생동감). 왼손만 건드려서 다른 동작과 안 겹친다
 	if _scratch_time > 0.0:
@@ -460,6 +496,18 @@ func _pose_pedal() -> void:
 func play_drink_motion() -> void:
 	_drink_time = drink_duration
 
+## 총 쏘기 동작 시작 — 몸에서 총을 꺼내 두 손을 모아 앞으로 겨눈다.
+## BBGunSkill이 발동하는 순간 전체 지속시간을 넘겨서 호출한다 (총 노드가 없으면 아무 일도 안 한다)
+func play_gun_motion(duration: float) -> void:
+	if _gun == null:
+		return
+	_gun_duration = maxf(duration, 0.05)
+	_gun_time = _gun_duration
+
+## 한 발 쏠 때마다 반동을 준다 — BBGunSkill이 총알을 발사한 순간 호출한다
+func gun_recoil() -> void:
+	_recoil = 1.0
+
 ## 토하기 동작 — 잠깐 토하는 표정으로 머리를 바꾼다. VomitSkill이 토한 순간 호출한다.
 ## vomit_head_texture가 비어 있으면(주정뱅이 외 캐릭터) 아무 일도 안 한다
 func play_vomit_face() -> void:
@@ -526,6 +574,27 @@ func _pose_drink() -> void:
 		var arc: Vector2 = Vector2(-drink_hand_offset.y, drink_hand_offset.x).normalized() 			* drink_hand_arc * sin(reach * PI)
 		_hand_r.rotation = deg_to_rad(drink_hand_deg * reach)
 		_hand_r.position = _rest_positions[_hand_r] + drink_hand_offset * reach + arc + Vector2(0.0, gulp)
+
+## 총 조준 자세 — 몸에서 꺼내(앞 gun_draw_ratio 구간) 두 손을 모아 앞으로 겨눈다.
+## 두 손과 총을 그립 위치에 두고, 발사 반동이 있으면 뒤로 살짝 밀어낸다 (걷기 동작보다 우선)
+func _pose_gun() -> void:
+	var progress: float = 1.0 - _gun_time / _gun_duration
+	# 꺼내는 구간(0~draw_ratio)에서 그립이 몸에서 조준 위치로 부드럽게 이동, 이후엔 조준 위치 유지
+	var t: float = clampf(progress / maxf(gun_draw_ratio, 0.001), 0.0, 1.0)
+	var ease_t: float = t * t * (3.0 - 2.0 * t)   # smoothstep
+	var grip: Vector2 = gun_draw_offset.lerp(gun_aim_offset, ease_t)
+	# 발사 반동 — 뒤(-x)로 밀리며 살짝 들린다(-y)
+	grip += Vector2(-gun_recoil_kick, -gun_recoil_kick * 0.4) * _recoil
+	if _hand_r:
+		_hand_r.position = grip
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.position = grip + gun_hand_l_offset
+		_hand_l.rotation = 0.0
+	if _gun:
+		_gun.visible = true
+		_gun.position = grip + gun_forward_offset
+		_gun.rotation = 0.0
 
 ## 왼손을 머리로 올려 긁는 idle 동작 — 올리기(0~25%) → 긁기(25~75%) → 내리기(75~100%).
 ## reach는 "얼마나 머리에 닿은 자세인지"(0=제자리, 1=머리에 손이 닿음)

@@ -5,7 +5,11 @@ extends Skill
 @export var projectile_scene: PackedScene
 @export var shot_count: int = 3
 @export var shot_interval: float = 0.12
-@export var projectile_speed: float = 500.0
+@export var projectile_speed: float = 650.0
+## 총알이 날아가면서 매초 이만큼 빨라진다(px/s²)
+@export var projectile_accel: float = 1200.0
+## 가속으로 붙는 속도의 상한(px/s)
+@export var projectile_max_speed: float = 1400.0
 @export var damage: int = 6  ## 오픈 이슈 임시값
 
 var _shots_left: int = 0
@@ -31,17 +35,27 @@ func _execute(fighter: Fighter) -> void:
 	_direction = fighter.facing
 	_shots_left = shot_count
 	_shot_timer = 0.0
+	# 몸에서 총을 꺼내 두 손 모아 겨누는 모션 — 마지막 발 뒤에도 잠깐 겨눈 채 있도록 여유를 준다
+	var visual: Node2D = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("play_gun_motion"):
+		visual.play_gun_motion(shot_count * shot_interval + 0.15)
 
 func _fire_one() -> void:
 	if projectile_scene == null or _fighter_ref == null:
 		return
 	var projectile: Projectile = projectile_scene.instantiate()
 	_fighter_ref.get_parent().add_child(projectile)
+	projectile.acceleration = projectile_accel
+	projectile.max_speed = projectile_max_speed
 	# 자기 자신과 겹쳐서 즉시 사라지지 않도록 캐릭터 앞쪽으로 살짝 띄워서 스폰
 	var muzzle_pos: Vector2 = _fighter_ref.global_position + Vector2(_direction * 30.0, 0.0)
 	projectile.global_position = muzzle_pos
 	projectile.setup(_direction, projectile_speed, _fighter_ref.compute_damage(damage), _fighter_ref)
 	_spawn_muzzle_flash(muzzle_pos)
+	# 발사 반동 — 총·손이 뒤로 살짝 밀린다
+	var visual: Node2D = _fighter_ref.get_node_or_null("Visual")
+	if visual and visual.has_method("gun_recoil"):
+		visual.gun_recoil()
 
 ## 발사 순간 총구에 잠깐 반짝이는 이펙트
 func _spawn_muzzle_flash(pos: Vector2) -> void:

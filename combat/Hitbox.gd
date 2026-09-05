@@ -7,11 +7,12 @@ extends Area2D
 ## true면 knockback을 그대로 쓰지 않고, 맞는 순간 "공격자 쪽으로" 방향을 계산해서 끌어당긴다 (청소기 흡입 등)
 @export var pull_to_source: bool = false
 @export var pull_strength: float = 250.0
-## 명중 순간 게임 전체를 멈추는 시간(초, hit-stop). 0이면 안 멈춘다. 센 공격일수록 크게 주면 묵직해진다
-@export var hitstop_duration: float = 0.06
 ## 0보다 크면 겹쳐 있는 동안 이 간격(초)마다 계속 다시 때린다 (지나가는 열차에 계속 밀리는 연출).
 ## 0이면 예전처럼 처음 겹친 순간에 딱 한 번만 때린다 — 스킬 히트박스는 전부 0을 쓴다
 @export var repeat_interval: float = 0.0
+## 명중 시 이 장면을 명중 지점에 스폰한다 (주정뱅이 술병 깨진 유리 파편 등). 비어 있으면 아무것도 안 한다.
+## 스폰된 노드에 setup(pos) 메서드가 있으면 그걸로 위치를 넘기고, 없으면 global_position만 맞춘다
+@export var debris_scene: PackedScene
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -65,9 +66,8 @@ func _try_hit(area: Area2D) -> bool:
 	if not area.take_hit(damage, _compute_knockback(area), source_fighter):
 		return false
 	_spawn_spark(area.global_position)
-	# 맞은 순간 아주 잠깐 시간을 멈춰 타격감을 준다
-	if hitstop_duration > 0.0:
-		HitStop.hit(hitstop_duration)
+	if debris_scene != null:
+		_spawn_debris(area.global_position)
 	return true
 
 ## 판정을 껐다 켤 때(열차가 지나가고 다음 열차가 올 때) 반복 타격 쿨타임을 초기화한다
@@ -89,3 +89,15 @@ func _spawn_spark(pos: Vector2) -> void:
 	var spark: Node2D = load("res://combat/HitSpark.tscn").instantiate()
 	scene_root.add_child(spark)
 	spark.global_position = pos
+
+## 명중 지점에 debris_scene을 스폰한다 (유리 파편 등). 파편이 바닥까지 떨어지는 처리는 스폰된 노드가 맡는다
+func _spawn_debris(pos: Vector2) -> void:
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	var debris: Node = debris_scene.instantiate()
+	scene_root.add_child(debris)
+	if debris.has_method("setup"):
+		debris.setup(pos)
+	elif debris is Node2D:
+		debris.global_position = pos

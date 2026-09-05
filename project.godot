@@ -18,7 +18,6 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameState="*res://GameState.gd"
-HitStop="*res://HitStop.gd"
 
 [display]
 
