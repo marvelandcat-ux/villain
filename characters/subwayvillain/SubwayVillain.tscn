@@ -1,6 +1,7 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="9"]
 [ext_resource type="Resource" path="res://stats/SubwayVillainStats.tres" id="2"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="3"]
 [ext_resource type="Script" path="res://skills/TurnstileSkill.gd" id="4"]
@@ -21,9 +22,7 @@ vault_jump = true
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.3, 0.4, 0.45, 1)
-polygon = PackedVector2Array(-18, -30, 18, -30, 18, 30, -18, 30)
+[node name="Visual" parent="." instance=ExtResource("9")]
 
 [node name="Hurtbox" type="Area2D" parent="."]
 script = ExtResource("3")
