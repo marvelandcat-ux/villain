@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xquoga3ipxmx"
-path="res://.godot/imported/지하철빌런머리.png-2d493288fd99128b8e130775905efe5a.ctex"
+uid="uid://b66h74br7hpui"
+path="res://.godot/imported/층간소음정면샷.png-d458560e57842eecd3121073a0cdc62e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/지하철빌/지하철빌런머리.png"
-dest_files=["res://.godot/imported/지하철빌런머리.png-2d493288fd99128b8e130775905efe5a.ctex"]
+source_file="res://sprite/층간소/층간소음정면샷.png"
+dest_files=["res://.godot/imported/층간소음정면샷.png-d458560e57842eecd3121073a0cdc62e.ctex"]
 
 [params]
 
