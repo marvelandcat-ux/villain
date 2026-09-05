@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bdlvipsamj2oi"
-path="res://.godot/imported/촉법소년 정면.png-5f697a1710ff0bec98bc5d07799b0b6b.ctex"
+uid="uid://dm5gc2chybuoe"
+path="res://.godot/imported/축법소년 정면.png-5c0a5e5bc45e35dca4c6fdf8748c9173.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/축법소년/촉법소년 정면.png"
-dest_files=["res://.godot/imported/촉법소년 정면.png-5f697a1710ff0bec98bc5d07799b0b6b.ctex"]
+source_file="res://sprite/축법소년/축법소년 정면.png"
+dest_files=["res://.godot/imported/축법소년 정면.png-5c0a5e5bc45e35dca4c6fdf8748c9173.ctex"]
 
 [params]
 

@@ -18,13 +18,13 @@ extends Node2D
 ## 그래서 에디터에서 조각 위치를 옮겨도 애니메이션 코드는 손댈 필요가 없다.
 
 ## 걸을 때 발끝이 위로 들리는 최대 각도(도)
-@export var foot_swing_deg: float = 22.0
+@export var foot_swing_deg: float = 36.0
 ## 발이 제자리에서 앞뒤로 움직이는 거리(px) — 클수록 보폭이 커지고 앞발/뒷발이 뚜렷하게 바뀐다
-@export var foot_stride: float = 8.0
+@export var foot_stride: float = 15.0
 ## 몸이 들썩이는 높이(px)
-@export var body_bob: float = 2.0
+@export var body_bob: float = 4.0
 ## 손이 앞뒤로 흔들리는 거리(px)
-@export var hand_swing: float = 5.0
+@export var hand_swing: float = 12.0
 ## 걸음 빠르기 — 캐릭터가 최고 속도로 달릴 때 1초에 이 값(라디안)만큼 걸음 위상이 진행된다
 @export var step_speed: float = 9.0
 ## 걷기 시작/멈출 때 동작이 켜지고 꺼지는 빠르기 (클수록 뚝뚝 끊긴다)

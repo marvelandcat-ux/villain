@@ -13,6 +13,8 @@ extends Area2D
 ## 명중 시 이 장면을 명중 지점에 스폰한다 (주정뱅이 술병 깨진 유리 파편 등). 비어 있으면 아무것도 안 한다.
 ## 스폰된 노드에 setup(pos) 메서드가 있으면 그걸로 위치를 넘기고, 없으면 global_position만 맞춘다
 @export var debris_scene: PackedScene
+## 명중 시 카메라를 흔드는 세기 = damage × 이 값 (0이면 안 흔든다). 데미지가 클수록 크게·오래 흔들린다
+@export var shake_per_damage: float = 0.04
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -68,7 +70,16 @@ func _try_hit(area: Area2D) -> bool:
 	_spawn_spark(area.global_position)
 	if debris_scene != null:
 		_spawn_debris(area.global_position)
+	_shake_camera()
 	return true
+
+## 명중 시 카메라를 데미지에 비례해 흔든다 (game_camera 그룹의 카메라를 찾아 trauma를 더한다)
+func _shake_camera() -> void:
+	if shake_per_damage <= 0.0:
+		return
+	var cam: Node = get_tree().get_first_node_in_group("game_camera")
+	if cam and cam.has_method("add_trauma"):
+		cam.add_trauma(float(damage) * shake_per_damage)
 
 ## 판정을 껐다 켤 때(열차가 지나가고 다음 열차가 올 때) 반복 타격 쿨타임을 초기화한다
 func clear_repeat_state() -> void:
