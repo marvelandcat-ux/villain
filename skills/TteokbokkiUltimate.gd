@@ -3,7 +3,7 @@ extends Skill
 
 ## 떡볶이 국물 흘리기 — 일정 시간 동안 전방으로 이동하며 바닥에 뜨거운 국물 자국(FirePlate 재사용)을 흘린다.
 ## 기획에는 "궁 키를 누르고 있는 동안 이동"이라고 되어 있으나, 지금 조작 체계는 원샷 입력이라
-## 고정 시간 채널로 단순화했다(오픈 이슈) (지하철빌런 궁극기)
+## 고정 시간 채널로 단순화했다(오픈 이슈) (지하철 아저씨 궁극기)
 @export var channel_duration: float = 2.5
 @export var move_speed: float = 150.0
 @export var drop_interval: float = 0.3

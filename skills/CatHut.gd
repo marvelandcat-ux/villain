@@ -1,7 +1,7 @@
 class_name CatHut
 extends Area2D
 
-## 고양이를 주기적으로 소환하는 오두막 구조물 — 자체 HP가 있어서 공격으로 부술 수 있고, 시간이 지나도 사라진다 (캣맘 궁극기).
+## 고양이를 주기적으로 소환하는 오두막 구조물 — 자체 HP가 있어서 공격으로 부술 수 있고, 시간이 지나도 사라진다 (고양이 아주머니 궁극기).
 ## Fighter가 아니라서 combat/Hurtbox.gd(Fighter 전용)를 못 쓰고, 여기서 직접 Hitbox를 감지한다
 @export var max_hp: int = 40
 @export var spawn_interval: float = 3.0

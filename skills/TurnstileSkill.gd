@@ -1,7 +1,7 @@
 class_name TurnstileSkill
 extends Skill
 
-## 개찰구 생성 — 전방에 낮은 장애물(점프로만 통과) 2개를 간격을 두고 놓는다 (지하철빌런 스킬1)
+## 개찰구 생성 — 전방에 낮은 장애물(점프로만 통과) 2개를 간격을 두고 놓는다 (지하철 아저씨 스킬1)
 @export var turnstile_scene: PackedScene
 @export var count: int = 2
 @export var spacing: float = 60.0

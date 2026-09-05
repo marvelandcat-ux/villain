@@ -1,7 +1,7 @@
 class_name TunaPlaceSkill
 extends Skill
 
-## 참치캔 놓기 — 그 자리에 고양이가 나타나 잠깐 밥을 먹은 뒤, 다 먹으면 맵을 돌아다니며 상대를 할퀸다 (캣맘 스킬2)
+## 참치캔 놓기 — 그 자리에 고양이가 나타나 잠깐 밥을 먹은 뒤, 다 먹으면 맵을 돌아다니며 상대를 할퀸다 (고양이 아주머니 스킬2)
 @export var eating_duration: float = 1.5
 @export var wander_duration: float = 6.0
 @export var damage: int = 6

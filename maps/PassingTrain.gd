@@ -2,7 +2,7 @@ class_name PassingTrain
 extends Node2D
 
 ## 일정 주기로 지나가는 지하철 — 경고 후 궤도 판정 지역에 있으면 큰 데미지를 입는다.
-## 판정 높이가 낮아서 점프로 피할 수 있다 (지하철빌런 상징 맵)
+## 판정 높이가 낮아서 점프로 피할 수 있다 (지하철 아저씨 상징 맵)
 @export var interval: float = 6.0
 @export var warning_duration: float = 1.0
 @export var active_duration: float = 0.3

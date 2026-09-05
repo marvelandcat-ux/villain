@@ -60,9 +60,9 @@ var cooldown_rate_multiplier: float = 1.0
 var damage_reduction: float = 0.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중)
 var is_invincible: bool = false
-## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철빌런 공포 단소 등
+## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철 아저씨 공포 단소 등
 var is_feared: bool = false
-## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철빌런 전용, 캐릭터 씬에서 켬)
+## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철 아저씨 전용, 캐릭터 씬에서 켬)
 @export var vault_jump: bool = false
 
 ## 캐릭터별 스킬이 자유롭게 쓰는 임시 데이터 저장소 (예: 주정뱅이 술 스택)
@@ -243,7 +243,7 @@ func _get_one_way_floor() -> PhysicsBody2D:
 			return body
 	return null
 
-## 개찰구를 훌쩍 뛰어넘는 듯한 점프 연출 (지하철빌런 전용)
+## 개찰구를 훌쩍 뛰어넘는 듯한 점프 연출 (지하철 아저씨 전용)
 func _play_vault_effect() -> void:
 	var visual: Node2D = get_node_or_null("Visual")
 	if visual == null:

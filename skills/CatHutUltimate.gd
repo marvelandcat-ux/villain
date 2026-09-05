@@ -1,7 +1,7 @@
 class_name CatHutUltimate
 extends Skill
 
-## 고양이 오두막 설치 — 시간차로 고양이를 계속 소환하는 구조물을 놓는다 (캣맘 궁극기)
+## 고양이 오두막 설치 — 시간차로 고양이를 계속 소환하는 구조물을 놓는다 (고양이 아주머니 궁극기)
 @export var hut_scene: PackedScene
 
 func _execute(fighter: Fighter) -> void:

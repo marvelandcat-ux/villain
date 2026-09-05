@@ -1,7 +1,7 @@
 class_name DunkUltimate
 extends Skill
 
-## 농구공 덩크 — 상대 쪽으로 짧게 도약한 뒤 착지 지점에 큰 데미지의 범위 공격을 낸다 (층간피해빌런 궁극기)
+## 농구공 덩크 — 상대 쪽으로 짧게 도약한 뒤 착지 지점에 큰 데미지의 범위 공격을 낸다 (층간소음 청년 궁극기)
 @export var leap_speed: float = 500.0
 @export var leap_duration: float = 0.35
 @export var jump_velocity: float = -450.0

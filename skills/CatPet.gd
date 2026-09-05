@@ -2,7 +2,7 @@ class_name CatPet
 extends CharacterBody2D
 
 ## 참치캔에 이끌려 나타나는 고양이 — 주인이 아닌 쪽에게 다가가서 할퀸다.
-## 돌진형(캣맘 스킬1)과 배회형(스킬2/궁극기)이 전부 이 스크립트 하나를 값만 다르게 써서 재사용한다
+## 돌진형(고양이 아주머니 스킬1)과 배회형(스킬2/궁극기)이 전부 이 스크립트 하나를 값만 다르게 써서 재사용한다
 @export var move_speed: float = 220.0
 @export var damage: int = 5
 @export var attack_range: float = 40.0

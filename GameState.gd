@@ -7,9 +7,9 @@ const CHARACTERS := {
 	"촉법소년": "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
 	"악플러": "res://characters/akpeulleo/Akpeulleo.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
-	"캣맘": "res://characters/catmom/CatMom.tscn",
-	"지하철빌런": "res://characters/subwayvillain/SubwayVillain.tscn",
-	"층간피해빌런": "res://characters/floornoise/FloorNoise.tscn",
+	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
+	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
+	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
 }
 
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
@@ -18,9 +18,9 @@ const CHARACTER_COLORS := {
 	"촉법소년": Color(0.95, 0.85, 0.2),
 	"악플러": Color(0.85, 0.25, 0.25),
 	"주정뱅이": Color(0.8, 0.5, 0.2),
-	"캣맘": Color(0.9, 0.55, 0.7),
-	"지하철빌런": Color(0.3, 0.65, 0.55),
-	"층간피해빌런": Color(0.3, 0.5, 0.85),
+	"고양이 아주머니": Color(0.9, 0.55, 0.7),
+	"지하철 아저씨": Color(0.3, 0.65, 0.55),
+	"층간소음 청년": Color(0.3, 0.5, 0.85),
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
@@ -30,9 +30,9 @@ const PORTRAITS := {
 	"촉법소년": "res://sprite/축법소년/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
-	"층간피해빌런": "res://sprite/층간소/층간소음정면샷.png",
-	"지하철빌런": "res://sprite/지하철빌/지하철빌런정면.png",
-	"캣맘": "res://sprite/body/캣맘정면.png",
+	"층간소음 청년": "res://sprite/층간소/층간소음정면샷.png",
+	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
+	"고양이 아주머니": "res://sprite/body/캣맘정면.png",
 }
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
