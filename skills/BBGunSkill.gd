@@ -11,6 +11,8 @@ extends Skill
 ## 가속으로 붙는 속도의 상한(px/s)
 @export var projectile_max_speed: float = 1400.0
 @export var damage: int = 6  ## 오픈 이슈 임시값
+## 총알이 나오는 위치(총구) — 캐릭터 원점 기준. x는 앞으로 나가는 거리(바라보는 방향으로 자동 반전), y는 높이(음수가 위)
+@export var muzzle_offset: Vector2 = Vector2(42, -8)
 
 var _shots_left: int = 0
 var _shot_timer: float = 0.0
@@ -47,8 +49,8 @@ func _fire_one() -> void:
 	_fighter_ref.get_parent().add_child(projectile)
 	projectile.acceleration = projectile_accel
 	projectile.max_speed = projectile_max_speed
-	# 자기 자신과 겹쳐서 즉시 사라지지 않도록 캐릭터 앞쪽으로 살짝 띄워서 스폰
-	var muzzle_pos: Vector2 = _fighter_ref.global_position + Vector2(_direction * 30.0, 0.0)
+	# 총구 위치에서 스폰 — muzzle_offset.x는 바라보는 방향으로 반전. 자기 몸(반지름 20)보다 앞이라 즉시 사라지지 않는다
+	var muzzle_pos: Vector2 = _fighter_ref.global_position + Vector2(muzzle_offset.x * _direction, muzzle_offset.y)
 	projectile.global_position = muzzle_pos
 	projectile.setup(_direction, projectile_speed, _fighter_ref.compute_damage(damage), _fighter_ref)
 	_spawn_muzzle_flash(muzzle_pos)

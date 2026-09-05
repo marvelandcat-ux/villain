@@ -27,7 +27,7 @@ const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 ## 정면 초상화 그림이 있는 캐릭터만 등록 — CharacterSelect가 이 목록에 있으면 이미지로,
 ## 없으면(아직 그림이 없는 캐릭터) 위 CHARACTER_COLORS 색상 타일로 대신 보여준다
 const PORTRAITS := {
-	"촉법소년": "res://sprite/축법소년/촉법소년 정면.png",
+	"촉법소년": "res://sprite/축법소년/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
 	"층간피해빌런": "res://sprite/층간소/층간소음정면샷.png",

@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cd7713qovg2g0"]
+[gd_scene format=3 uid="uid://buypdf5wmusqa"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://dy7656p8gyjb" path="res://sprite/층간소/층간소음빌런측면.png" id="2_head"]

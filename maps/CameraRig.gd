@@ -14,8 +14,17 @@ extends Camera2D
 ## 1.0이면 벽 사이가 화면에 딱 맞아서(= 벽 밖이 절대 안 보이는 최소 배율) 카메라가 좌우로 전혀 안 움직인다.
 ## 1보다 키우면 그만큼 더 확대되는 대신 좌우로 따라다닐 여유가 생긴다 (1.1이면 벽 사이 폭의 약 9%)
 @export_range(1.0, 2.0, 0.01) var extra_zoom: float = 1.0
+## 흔들림이 초당 이만큼 잦아든다 (클수록 빨리 멈춘다)
+@export var shake_decay: float = 3.0
+## 흔들림이 최대(trauma 1.0)일 때 화면이 흔들리는 폭(px)
+@export var shake_max_offset: float = 12.0
+
+## 현재 흔들림 세기 0~1 — 타격이 들어오면 데미지에 비례해 쌓이고, 매 프레임 감쇠한다
+var _trauma: float = 0.0
 
 func _ready() -> void:
+	# 타격 판정(Hitbox)이 찾아서 흔들 수 있도록 그룹에 등록한다
+	add_to_group("game_camera")
 	if not clamp_to_walls:
 		return
 	_apply_wall_limits()
@@ -24,11 +33,24 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var fighters := get_tree().get_nodes_in_group("fighters")
-	if fighters.size() < 2:
+	if fighters.size() >= 2:
+		var mid: Vector2 = (fighters[0].global_position + fighters[1].global_position) / 2.0
+		mid.y = clampf(mid.y, min_y, max_y)
+		global_position = global_position.lerp(mid, follow_speed * delta)
+	_apply_shake(delta)
+
+## 타격 세기(trauma)를 더한다 — Hitbox가 명중 시 데미지에 비례해서 호출한다
+func add_trauma(amount: float) -> void:
+	_trauma = clampf(_trauma + amount, 0.0, 1.0)
+
+## 화면(offset)을 랜덤으로 흔들고 trauma를 서서히 줄인다. trauma가 0이면 offset을 원위치로 되돌린다
+func _apply_shake(delta: float) -> void:
+	if _trauma <= 0.0:
+		if offset != Vector2.ZERO:
+			offset = Vector2.ZERO
 		return
-	var mid: Vector2 = (fighters[0].global_position + fighters[1].global_position) / 2.0
-	mid.y = clampf(mid.y, min_y, max_y)
-	global_position = global_position.lerp(mid, follow_speed * delta)
+	_trauma = maxf(_trauma - shake_decay * delta, 0.0)
+	offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * shake_max_offset * _trauma
 
 ## 좌우 벽의 바깥면을 찾아 카메라 한계선(limit_left/right)으로 설정한다.
 ## 벽 사이 폭이 화면 폭보다 좁으면 한계선만으로는 화면이 벽 밖을 물게 되므로,
