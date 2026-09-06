@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-character_name = "층간피해빌런"
+character_name = "층간소음 청년"
 max_hp = 105
 move_speed = 215.0
 attack_multiplier = 1.0

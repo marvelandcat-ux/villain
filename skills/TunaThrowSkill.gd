@@ -1,7 +1,7 @@
 class_name TunaThrowSkill
 extends Skill
 
-## 참치캔 투척 — 캔을 던진 자리에서 잠시 후 고양이가 튀어나와 상대에게 빠르게 돌진해 한 번 할퀴고 사라진다 (캣맘 스킬1)
+## 참치캔 투척 — 캔을 던진 자리에서 잠시 후 고양이가 튀어나와 상대에게 빠르게 돌진해 한 번 할퀴고 사라진다 (고양이 아주머니 스킬1)
 @export var throw_distance: float = 150.0
 @export var delay: float = 0.8
 @export var damage: int = 10

@@ -1,7 +1,7 @@
 class_name VacuumSkill
 extends Skill
 
-## 청소기 흡입 — 전방 상대를 잠깐 끌어당긴다 (층간피해빌런 스킬2)
+## 청소기 흡입 — 전방 상대를 잠깐 끌어당긴다 (층간소음 청년 스킬2)
 @export var range: float = 110.0
 @export var damage: int = 4
 @export var pull_strength: float = 300.0

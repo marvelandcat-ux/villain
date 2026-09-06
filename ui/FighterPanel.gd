@@ -59,8 +59,10 @@ func _apply_portrait(character_name: String) -> void:
 		return
 	character_image.texture = load(portrait_path)
 	name_label.anchor_top = 1.0
-	name_label.offset_top = -16
-	name_label.add_theme_font_size_override("font_size", 10)
+	# "고양이 아주머니"처럼 긴 이름은 두 줄로 접히므로 이름표 높이를 두 줄치로 잡는다 —
+	# 16px로 두면 두 번째 줄이 초상화 칸 밖으로 흘러내린다 (실제로 그렇게 보였음)
+	name_label.offset_top = -28
+	name_label.add_theme_font_size_override("font_size", 9)
 	name_label.add_theme_constant_override("outline_size", 4)
 	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 

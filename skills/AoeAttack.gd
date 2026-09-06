@@ -2,7 +2,7 @@ class_name AoeAttack
 extends Skill
 
 ## 자기 중심 원형 범위 공격 공용 스킬 — 전방이 아니라 캐릭터 주변 전체에 판정이 생긴다.
-## damage/radius/슬로우 효과를 export로 다르게 지정해서 재사용한다 (층간피해빌런 기타 연주 등)
+## damage/radius/슬로우 효과를 export로 다르게 지정해서 재사용한다 (층간소음 청년 기타 연주 등)
 @export var damage: int = 8
 @export var radius: float = 70.0
 @export var active_duration: float = 0.2

@@ -24,9 +24,9 @@
 - **주의(실제로 겪은 버그):** `get_tree().create_timer(t).timeout.connect(func(): 어떤노드.뭔가 = 값)`처럼 다른 노드를 건드리는 콜백을 예약할 때, 그 노드가 타이머가 끝나기 전에 사라지면(대전 도중 나가기·다시하기 등으로 씬이 통째로 정리되는 경우) `ERROR: Lambda capture ... was freed`가 나면서 사라진 노드를 건드리려다 에러가 난다. `get_tree().create_timer()`는 SceneTree에 속해서 관련 노드보다 오래 살아남기 때문. 해결책은 `is_instance_valid()` 체크가 아니라 **그 노드(또는 관련 스킬 노드)의 자식으로 `Timer` 노드를 만들어서 씀** — 부모가 사라지면 자식 Timer도 같이 사라져서 콜백 자체가 아예 실행되지 않는다(`Fighter._after()`, `FirePlate.gd`, `Projectile.gd` 참고). `await get_tree().create_timer(t).timeout`처럼 하나만 기다리고 끝내는 짧은 대기(`MeleeAttack`의 히트박스 on/off 등)는 이 문제가 잘 안 생겨서 그대로 둬도 됨
 - **주의(실제로 겪은 버그):** `Skill`은 `Node`를 상속해서 `Node2D`가 아니다. 그래서 `Hitbox`(Area2D)를 Skill 노드의 자식으로 둔 경우 `hitbox.position = ...`(부모 상대 좌표)을 쓰면 부모 트랜스폼 체인이 끊겨서 항상 `(0,0)` 기준으로 배치된다 — 겉으로는 에러 없이 조용히 공격이 안 맞는 버그가 된다. 이런 히트박스는 반드시 `hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0)`처럼 **global_position으로 직접 배치**할 것 (`MeleeAttack.gd` 참고). 반대로 `Projectile`/`FirePlate`처럼 맵(Node2D)에 직접 `add_child`하는 경우는 이 문제가 없음
 - 이동을 잠깐 가로채는 스킬(돌진 등)은 `Fighter.movement_override`에 자기 자신을 등록하고 `get_move_velocity_x()`/`after_physics(fighter, delta)`를 구현 (`skills/DashSkill.gd` 참고)
-- `Fighter.is_feared`/`apply_fear(duration)`: 공포 상태(지하철빌런 `skills/FearSkill.gd`)면 이동은 되지만 `use_skill_1/2/ultimate/basic_attack`이 전부 무시된다("무서워서 반격을 못 하는" 느낌). `set_tint`로 색조도 같이 걸어서 눈으로 구분됨
+- `Fighter.is_feared`/`apply_fear(duration)`: 공포 상태(지하철 아저씨 `skills/FearSkill.gd`)면 이동은 되지만 `use_skill_1/2/ultimate/basic_attack`이 전부 무시된다("무서워서 반격을 못 하는" 느낌). `set_tint`로 색조도 같이 걸어서 눈으로 구분됨
 - `combat/Hitbox.gd`의 `pull_to_source`/`pull_strength`: true면 고정된 `knockback` 대신, 맞는 순간 공격자 쪽 방향을 계산해서 끌어당긴다(청소기 흡입 — `skills/VacuumSkill.gd`)
-- `skills/AoeAttack.gd`: `MeleeAttack`(전방 사각형)과 별개로, 캐릭터 자신을 중심으로 한 원형 범위 공격 공용 스킬. `damage`/`radius`에 더해 `slow_multiplier`/`slow_duration`을 주면 맞은 상대에게 `apply_temp_multiplier`로 둔화 디버프도 건다(층간피해빌런 기타연주, 재사용 가능)
+- `skills/AoeAttack.gd`: `MeleeAttack`(전방 사각형)과 별개로, 캐릭터 자신을 중심으로 한 원형 범위 공격 공용 스킬. `damage`/`radius`에 더해 `slow_multiplier`/`slow_duration`을 주면 맞은 상대에게 `apply_temp_multiplier`로 둔화 디버프도 건다(층간소음 청년 기타연주, 재사용 가능)
 - **주정뱅이 술 스택 밸런스(2026-09-01 조정):** `DrinkSkill.max_stacks`는 **3**(예전 5). 술 쿨타임이 3초라 풀스택까지 6초. 토하기는 **날아가는 투사체가 아니라 입에서 한 번에 뻗는 가로 기둥**이라(아이작 혈사포 느낌) 길이를 직접 지정한다 — `base_range=40`(0스택, 캐릭터 한 칸 폭)에서 `range_per_stack=310`씩 늘어 **3스택이면 970px**, 두께는 `base_height=14`에서 `height_per_stack=4`씩 늘어 3스택에 26px. 970px는 가로맵 벽 안쪽 폭(920px)보다 길어서 **풀스택이면 벽에 딱 붙어 쏴도 반대편 벽까지 닿는다**(헤드리스 검증: 왼쪽 벽에 붙어 발사 → 기둥 끝이 정확히 오른쪽 벽 안쪽 면 x=460에서 끊김)
 - `skills/VomitBeam.gd` + `skills/VomitBeam.tscn`: 토하기 기둥. `Hitbox`를 상속하고 `ScreamCone`과 같은 방식으로 **맵에 직접 붙여 `global_position`으로 입 위치에 놓는다**(Skill은 Node라 좌표가 없음). 길이·두께는 스택에 따라 달라지므로 `VomitSkill`이 계산해서 `setup(방향, 길이, 두께, 데미지, 시전자)`로 넘기고, 기둥이 유지되는 시간·뻗는 연출·넉백은 씬이 들고 있다. 그림(`sprite/주정뱅이/토프로토.png`)은 투명 여백을 뺀 영역만 `region_rect = Rect2(15, 42, 783, 159)`로 잘라 쓰고 `centered = false`로 왼쪽 끝을 입에 맞춘 뒤 길이만큼 늘린다 — 왼쪽을 볼 때는 `scale.x`를 음수로 줘서 뒤집는다(판정 사각형은 음수 스케일을 안 쓰고 `_facing`을 곱한 위치에 직접 놓는다). `stop_at_wall`이 켜져 있으면 레이캐스트로 벽까지 거리를 재서 기둥을 끊는데, **캐릭터는 뚫고 지나가야 하므로 `fighters` 그룹 전체를 레이캐스트에서 제외**한다. BB탄은 계속 공용 `Projectile.tscn`(흰 사각형)을 쓴다
 - **주의(실제로 겪은 버그):** `Projectile`이 **쏜 사람 본인의 Hurtbox/CharacterBody2D에도 반응해서 발사 즉시 사라지던** 문제. 총구는 캐릭터 앞 30px에 잡히는데, 판정이 커지거나(토사물 36px 폭) 투사체가 느리면(0스택 토하기 100px/s) 첫 물리 프레임에 아직 시전자 몸(반지름 20)과 겹쳐 있어서 그대로 `queue_free()`가 됐다. BB탄은 판정이 작고(반지름 5) 빨라서(500px/s) 우연히 안 걸렸을 뿐. `_on_area_entered`/`_on_body_entered` 둘 다 `source_fighter`면 무시하도록 고침. **투사체 판정을 키우거나 느리게 만들 때 재발 주의**
@@ -38,8 +38,8 @@
   **값이 사는 곳이 갈려 있다:** 데미지·입 위치·디버프처럼 캐릭터마다 다를 값은 캐릭터 씬의 `SkillUltimate` 노드,
   부채꼴 길이(`cone_range`)·각도(`half_angle_deg`)·연출은 전부 `ScreamCone.tscn` 루트. 한 값은 반드시 한 군데에만 둔다 —
   처음엔 길이·각도를 양쪽에 두고 스킬이 씬 값을 덮어썼는데, `ScreamCone.tscn`에서 아무리 고쳐도 게임에선 안 먹는 함정이 돼서 스킬 쪽을 지웠다
-- `Fighter.vault_jump: bool`: true인 캐릭터(지하철빌런)는 기본공격이 없는 대신, 점프할 때 `_play_vault_effect()`가 회전 트윈으로 "개찰구를 뛰어넘는" 연출을 보여준다
-- **주의(실제로 겪은 버그):** `add_child(node)`로 노드를 트리에 붙이면 `_ready()`가 **그 자리에서 동기적으로** 실행된다 — `add_child()` 호출 다음 줄에서 그 노드의 export 변수를 세팅해도, `_ready()`는 이미 그 전에(즉 기본값으로) 끝나버린 뒤다. `_ready()` 안에서 `wait_time = lifetime` 처럼 export 값을 캐싱하면 호출자가 나중에 설정한 값이 아니라 기본값이 캐싱되는 버그가 생김(캣맘 `skills/CatPet.gd`에서 실제로 겪음). 해결책: 그런 캐싱은 `_ready()`가 아니라 **첫 `_physics_process`/`_process` 호출 시점**(`_initialized` 플래그로 한 번만 실행)으로 미룰 것 — 그때는 호출자의 프로퍼티 설정이 이미 끝나 있음이 보장됨
+- `Fighter.vault_jump: bool`: true인 캐릭터(지하철 아저씨)는 기본공격이 없는 대신, 점프할 때 `_play_vault_effect()`가 회전 트윈으로 "개찰구를 뛰어넘는" 연출을 보여준다
+- **주의(실제로 겪은 버그):** `add_child(node)`로 노드를 트리에 붙이면 `_ready()`가 **그 자리에서 동기적으로** 실행된다 — `add_child()` 호출 다음 줄에서 그 노드의 export 변수를 세팅해도, `_ready()`는 이미 그 전에(즉 기본값으로) 끝나버린 뒤다. `_ready()` 안에서 `wait_time = lifetime` 처럼 export 값을 캐싱하면 호출자가 나중에 설정한 값이 아니라 기본값이 캐싱되는 버그가 생김(고양이 아주머니 `skills/CatPet.gd`에서 실제로 겪음). 해결책: 그런 캐싱은 `_ready()`가 아니라 **첫 `_physics_process`/`_process` 호출 시점**(`_initialized` 플래그로 한 번만 실행)으로 미룰 것 — 그때는 호출자의 프로퍼티 설정이 이미 끝나 있음이 보장됨
 
 ## 조작 / AI
 
@@ -75,13 +75,13 @@
 `characters/BodyRig.tscn` — 러프 스프라이트 조각(머리/몸/손/발)을 Sprite2D로 조립해둔 공용 몸. 캐릭터 씬의 `Visual` 자리에 인스턴스로 넣는다(현재 6명 전원 적용 — 임시 사각형 Polygon2D를 쓰는 캐릭터는 없다). 이름이 `Visual`이라 피격 시 빨개지는 연출(`Fighter._flash_hit`)이나 궁극기 연출이 그대로 동작한다.
 
 - **파일 배치 규칙:** 여러 캐릭터가 함께 쓰는 파츠는 `sprite/body/`(몸통·손·발), 캐릭터 전용 파츠는 `sprite/<캐릭터>/몸/`에 둔다(주정뱅이는 몸·발·머리를 전용으로 쓰고 손만 공용)
-  - 층간소음·캣맘·지하철빌런은 `sprite/층간소/`·`sprite/캣/`·`sprite/지하철빌/` 바로 아래에 `발.png`/`손.png`를 두고 리그에서 각자 참조한다(`몸/` 하위 폴더를 안 씀 — 폴더 구조가 캐릭터마다 갈려 있으니 새 파츠를 찾을 땐 두 군데 다 볼 것). **이 세 명의 `손.png`는 지금 `sprite/body/손.png`와 바이트까지 같은 복사본**이라 화면상 차이가 없다 — 나중에 캐릭터 색으로 칠하면 리그가 이미 각자 파일을 보고 있으므로 그대로 반영된다
-  - 발은 캐릭터 색 신발로 각자 다르다(층간소음 빨강 / 캣맘 자홍 / 지하철빌런 파랑). 캔버스가 공용 `발.png`와 같은 179x101이라 `BodyRig`의 기본 배율을 그대로 쓰고 텍스처만 덮어쓴다
-- **인게임 머리는 옆모습, 선택창 초상화는 정면 — 그림이 두 장씩이다.** 전투가 사이드뷰라 리그의 `Head`에는 옆모습을 넣고(층간소음은 `층간소음측면.png`), 정면 그림은 `GameState.PORTRAITS`에만 등록한다(층간피해빌런은 `층간소음머리.png`). 정면 그림을 리그에 잘못 넣으면 옆으로 걸어가는데 얼굴만 정면을 보는 꼴이 된다
+  - 층간소음·고양이 아주머니·지하철 아저씨는 `sprite/층간소/`·`sprite/캣/`·`sprite/지하철빌/` 바로 아래에 `발.png`/`손.png`를 두고 리그에서 각자 참조한다(`몸/` 하위 폴더를 안 씀 — 폴더 구조가 캐릭터마다 갈려 있으니 새 파츠를 찾을 땐 두 군데 다 볼 것). **이 세 명의 `손.png`는 지금 `sprite/body/손.png`와 바이트까지 같은 복사본**이라 화면상 차이가 없다 — 나중에 캐릭터 색으로 칠하면 리그가 이미 각자 파일을 보고 있으므로 그대로 반영된다
+  - 발은 캐릭터 색 신발로 각자 다르다(층간소음 빨강 / 고양이 아주머니 자홍 / 지하철 아저씨 파랑). 캔버스가 공용 `발.png`와 같은 179x101이라 `BodyRig`의 기본 배율을 그대로 쓰고 텍스처만 덮어쓴다
+- **인게임 머리는 옆모습, 선택창 초상화는 정면 — 그림이 두 장씩이다.** 전투가 사이드뷰라 리그의 `Head`에는 옆모습을 넣고(층간소음은 `층간소음측면.png`), 정면 그림은 `GameState.PORTRAITS`에만 등록한다(층간소음 청년은 `층간소음머리.png`). 정면 그림을 리그에 잘못 넣으면 옆으로 걸어가는데 얼굴만 정면을 보는 꼴이 된다
   - **초상화는 배경이 투명해야 한다.** `CharacterSelect`가 캐릭터 색 타일(`CHARACTER_COLORS`) 위에 그림을 겹쳐 얹기 때문에, 흰 배경이 남아 있으면 색이 안 비치고 흰 사각형으로 보인다. `sprite/body/지하철정면.png`이 흰 배경이라 테두리에서부터 플러드 필로 배경만 깎아 `sprite/지하철빌/지하철빌런정면.png`로 저장해 쓰고 있다(머리카락도 흰색이라 '흰 픽셀 전부 지우기'로는 안 된다 — 반드시 테두리에서 번져 나가는 방식으로). 원본은 그대로 남겨뒀다
-  - 초상화는 6명 전원 등록 완료. 캣맘(`sprite/body/캣맘정면.png`)은 받은 그림이 이미 배경 투명이라 그대로 등록했다
+  - 초상화는 6명 전원 등록 완료. 고양이 아주머니(`sprite/body/캣맘정면.png`)은 받은 그림이 이미 배경 투명이라 그대로 등록했다
 - `BodyRig.tscn`의 `Head`에는 텍스처가 비어 있다 — 머리는 캐릭터마다 다르므로 각자 상속 씬에서 지정한다
-- **캐릭터별 머리는 씬 상속으로 만든다.** `BodyRig.tscn`을 상속한 씬을 캐릭터 폴더에 두고 `Head`의 텍스처/위치/크기만 덮어쓴다(예: `characters/akpeulleo/AkpeulleoRig.tscn`). 이러면 몸/손/발 위치를 `BodyRig.tscn`에서 한 번만 고쳐도 전 캐릭터에 반영되고, 에디터에서 미리보기도 제대로 된다. 현재 6명 전원 적용됨 — 주정뱅이(`JujeongbaengiRig`)·악플러(`AkpeulleoRig`)·촉법소년(`ChokbeopsonyeonRig`)·층간소음(`FloorNoiseRig`)·캣맘(`CatMomRig`)·지하철빌런(`SubwayVillainRig`).
+- **캐릭터별 머리는 씬 상속으로 만든다.** `BodyRig.tscn`을 상속한 씬을 캐릭터 폴더에 두고 `Head`의 텍스처/위치/크기만 덮어쓴다(예: `characters/akpeulleo/AkpeulleoRig.tscn`). 이러면 몸/손/발 위치를 `BodyRig.tscn`에서 한 번만 고쳐도 전 캐릭터에 반영되고, 에디터에서 미리보기도 제대로 된다. 현재 6명 전원 적용됨 — 주정뱅이(`JujeongbaengiRig`)·악플러(`AkpeulleoRig`)·촉법소년(`ChokbeopsonyeonRig`)·층간소음(`FloorNoiseRig`)·고양이 아주머니(`CatMomRig`)·지하철 아저씨(`SubwayVillainRig`).
   - **새 캐릭터 리그를 만들 땐 배율을 눈대중으로 잡지 말고 기존 캐릭터에 맞춘다.** 기준값은 화면에 보이는 그림(투명 여백을 뺀 실제 영역) 크기로 **몸 약 33x30px, 머리 약 55x55px**이고, 머리의 보이는 중심이 리그 원점 기준 약 `(-2, -32.8)`에 오게 위치를 잡는다. PNG마다 여백이 달라서 캔버스 크기로 계산하면 어긋난다 — `Image.get_used_rect()`로 실제 그림 영역을 재서 배율을 역산할 것
 - 조각 위치는 **에디터에서 `BodyRig.tscn`을 직접 열어** 옮긴다. 캐릭터 씬 쪽에서 `Visual`을 펼쳐 만지면 그 캐릭터만의 덮어쓰기가 생기니 주의
 - `characters/BodyRig.gd`: 애니메이션 파일 없이 **코드로 걷기 동작**을 만든다. 부모 Fighter의 속도를 보고 **두 발이 반 바퀴 어긋난 채로 계속 앞뒤를 오가게** 한다(`foot_stride`만큼 — 앞발/뒷발이 번갈아 바뀌는 교차 걸음). 앞으로 나가는 동안에만 발끝을 `foot_swing_deg`만큼 들고, 뒤로 밀리는 동안엔 바닥을 딛는 것처럼 눕힌다, 한 걸음마다 몸/머리/손을 위로 살짝 들썩이게 하며(`body_bob`), 손은 발과 반대로 앞뒤로 흔든다(`hand_swing` — 왼발이 나갈 때 오른손이 앞으로). 두 발을 서로 반대로 회전시키는 방식은 어색하다는 피드백을 받아 폐기함. 왼쪽으로 갈 때는 리그 전체의 `scale.x` 부호를 뒤집어 좌우 반전한다(크기는 안 건드리고 부호만 — 궁극기 연출이 `Visual.scale`을 만지기 때문). 각 조각의 제자리 값은 `_ready()`에서 씬에 저장된 위치를 그대로 기억하므로, **에디터에서 위치를 옮겨도 애니메이션 코드는 고칠 필요가 없다**
@@ -103,6 +103,13 @@
 - 히트박스는 이 내리치는 순간에 맞춰야 해서 `MeleeAttack`에 `windup`(예비동작 대기시간)을 추가했다. 기본 0이라 다른 캐릭터는 그대로고, 주정뱅이만 0.16초로 맞춰둠
 - 흔들림 세기·걸음 빠르기는 전부 `@export`라 인스펙터에서 조절 가능: `foot_swing_deg`(22도) / `foot_stride`(8px) / `body_bob`(2px) / `hand_swing`(5px) / `step_speed`(9) / `blend_speed`(8) / `jump_foot_deg`(60도) / `jump_blend_speed`(12)
 - **아직 안 된 것:** 공격 모션
+
+### 그림 파일을 교체할 때 (실제로 겪은 함정)
+
+- **에디터 밖에서 PNG를 덮어써도 Godot이 다시 임포트하지 않는다.** `.godot/imported/`에 예전 텍스처가 캐시된 채로 남아서, 파일은 바뀌었는데 게임에는 **옛 그림이 그대로 나온다**(크기·유효영역까지 옛 값으로 보고된다). 새 배율을 옛 그림에 적용해 버리는 꼴이라 조용히 크기가 어긋난다. 해결: 해당 `.png.import` 파일을 지우고 `godot --headless --editor --path <프로젝트> --quit`로 한 번 돌려서 강제 재임포트할 것
+- **그림을 바꾸면 배율(`scale`)과 위치(`position`)를 다시 계산해야 한다.** 원본 크기와 투명 여백이 달라지므로, 화면에서 차지하던 크기를 유지하려면 `유효영역(get_used_rect) x scale`이 예전과 같아지도록 배율을 다시 잡고, `centered` 스프라이트는 **유효영역 중심과 텍스처 중심의 차이**만큼 position도 보정해야 제자리에 온다
+  - 예: 지하철 아저씨 머리를 새 그림으로 교체(2026-09-06). 옛 그림 1376x1143(유효 1136x953)·`scale (0.0528, 0.0577)` → 화면 59.98x54.99. 새 그림 762x651(유효 698x597)이라 `scale (0.085932, 0.092107)` / `position (-1.48, -33.63)`로 다시 잡아 화면 크기를 그대로 유지했다
+- **캐릭터 그림을 새로 받으면 배경이 흰색으로 막혀 있는 경우가 많다.** 그대로 넣으면 캐릭터 주변에 흰 사각형이 생긴다. 지울 때는 "흰색이면 다 지우기"가 아니라 **바깥 테두리에서 번져 들어가는 방식(flood fill)**으로 지워야 한다 — 지하철 아저씨·층간소음 청년처럼 **흰 머리카락**이 있는 캐릭터는 단순 색상 제거로 머리카락까지 날아간다(검은 외곽선에 막혀서 flood fill은 안전하다)
 
 ## 스킬 범위 미리보기 (에디터 전용)
 
