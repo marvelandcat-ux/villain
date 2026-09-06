@@ -13,7 +13,7 @@ signal died
 @export var stats: CharacterStats
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
-const DEFAULT_GRAVITY: float = 900.0
+const DEFAULT_GRAVITY: float = 1150.0
 const DEFAULT_JUMP_VELOCITY: float = -350.0
 ## 공중에서 한 번 더 뛰는 이단 점프의 세기. 지상 점프(-350, 71px)보다 세게 잡아서
 ## 둘을 이어 뛰면 약 172px까지 올라간다 — 지하철 승강장의 의자 발판(바닥에서 145px)이
@@ -71,6 +71,11 @@ var custom_data: Dictionary = {}
 ## 스킬 모션(마시기/토하기/공격 등)이 재생되는 동안 다른 스킬·기본공격을 못 쓰게 막는 남은 시간(초).
 ## 이동은 막지 않는다(마시면서 걷기 등은 그대로). apply_physics에서 매 물리 프레임 줄어든다
 var _busy_time: float = 0.0
+## 피격 경직(히트스턴) 남은 시간(초). 0보다 크면 조작(이동·점프·스킬)을 막고 넉백 속도가 실려 미끄러진다
+var _hitstun_time: float = 0.0
+## 지금까지 연속으로 맞은 콤보 수와, 콤보가 유지되는 남은 시간
+var _combo_count: int = 0
+var _combo_timer: float = 0.0
 
 ## move_speed_multiplier 등을 여러 효과가 동시에 걸어도 서로 안 지우도록 관리하는 내부 저장소.
 ## {property: {id: value}} — 최종 배수는 같은 property에 걸린 값들을 전부 곱한 것
@@ -89,6 +94,28 @@ func _ready() -> void:
 	if basic_attack == null:
 		basic_attack = get_node_or_null("BasicAttack")
 
+## --- 피격 리액션(격투 게임식 히트 리액션) 튜닝값 ---
+## 넉백 방향으로 기우는 각도(도) = 이 기본값 + 데미지 × 비례값, 최대 HIT_LEAN_MAX_DEG로 제한
+const HIT_LEAN_BASE_DEG := 7.0
+const HIT_LEAN_PER_DAMAGE := 0.4
+const HIT_LEAN_MAX_DEG := 20.0
+## 피격 시 살짝 떠오르는 팝업 세기(위로 튀는 속도) = 이 기본값 + 데미지 × 비례값, 최대 HIT_POP_MAX
+## 피격 시 위로 뜨는 팝업 세기 — 옆보다 위로 날아가게 크게 잡는다
+const HIT_POP_BASE := 220.0
+const HIT_POP_PER_DAMAGE := 7.0
+const HIT_POP_MAX := 400.0
+## 들어온 수평 넉백을 이 배수로 조절한다. 1보다 작으면 옆으로 덜 밀린다(위로 뜨는 느낌 강조)
+const KNOCKBACK_MULTIPLIER := 1.15
+## 경직(히트스턴) 중 넉백 속도가 이 감속도(px/s²)로 줄며 미끄러진다
+const HITSTUN_FRICTION := 900.0
+## 최소 경직(체공) 시간 — 넉백이 작아도 이만큼은 떠 있는다
+const HITSTUN_MIN := 0.3
+const HITSTUN_MAX := 0.5
+## 피격으로 떠 있는 동안(경직+공중) 적용할 중력 배수 — 1보다 작으면 평소보다 천천히 떨어져 잠깐 더 체공한다
+const HIT_LAUNCH_GRAVITY_SCALE := 0.6
+## 이 시간(초) 안에 다시 맞으면 콤보가 이어진다. 넘으면 다음 타격은 콤보 1부터 새로 시작
+const COMBO_WINDOW := 1.5
+
 ## 데미지를 받는다. damage_reduction이 있으면 경감하고, 경감분은 custom_data["guard_absorbed"]에 누적된다.
 ## is_invincible이 true면 아예 무시한다
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
@@ -98,11 +125,47 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
 	if damage_reduction > 0.0:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + (amount - reduced_amount)
 	current_hp = max(current_hp - reduced_amount, 0)
-	velocity += knockback
 	_flash_hit()
+	# 실제 타격(넉백이 있는 피해)에만 히트 리액션 — 공포·틱 데미지 같은 넉백 없는 피해엔 적용 안 한다
+	if knockback != Vector2.ZERO:
+		# 수평 넉백을 키워 콤보처럼 넉백 방향으로 멀리 날린다 (수직은 팝업이 담당)
+		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
+		velocity.x += kb_x
+		velocity.y += knockback.y
+		# 살짝 공중으로 떠오르게 (이미 그보다 크게 위로 뜨는 넉백은 그대로 둔다)
+		var pop: float = clampf(HIT_POP_BASE + amount * HIT_POP_PER_DAMAGE, 0.0, HIT_POP_MAX)
+		velocity.y = minf(velocity.y, -pop)
+		# 경직: 이 동안 조작으로 velocity.x를 못 덮어써서 넉백이 실려 미끄러진다.
+		# 길이 = 마찰이 넉백 속도를 멈추는 데 걸리는 시간이라, 미끄러져 멈추는 순간 조작이 돌아온다
+		_hitstun_time = clampf(absf(kb_x) / HITSTUN_FRICTION, HITSTUN_MIN, HITSTUN_MAX)
+		# 콤보 카운트 — 유지 시간 안에 다시 맞으면 누적, 끊겼으면 1부터
+		if _combo_timer <= 0.0:
+			_combo_count = 0
+		_combo_count += 1
+		_combo_timer = COMBO_WINDOW
+		_play_hit_reaction(knockback, amount)
+	else:
+		velocity += knockback
 	health_changed.emit(current_hp, stats.max_hp)
 	if current_hp <= 0:
 		died.emit()
+
+## 지금까지 연속으로 맞은 콤보 수 (데미지 팝업이 "N HIT" 표시에 쓴다)
+func get_combo_count() -> int:
+	return _combo_count
+
+## 피격 시 넉백 방향으로 몸을 살짝 기울였다가 되돌린다 (데미지가 클수록 크게 기운다)
+func _play_hit_reaction(knockback: Vector2, amount: int) -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		return
+	var dir: float = signf(knockback.x)
+	if dir == 0.0:
+		dir = -facing   # 수평 넉백이 없으면 뒤로(바라보는 반대쪽) 기운다
+	var lean_deg: float = clampf(HIT_LEAN_BASE_DEG + amount * HIT_LEAN_PER_DAMAGE, 0.0, HIT_LEAN_MAX_DEG)
+	var tween := create_tween()
+	tween.tween_property(visual, "rotation", deg_to_rad(dir * lean_deg), 0.05)
+	tween.tween_property(visual, "rotation", 0.0, 0.22)
 
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
@@ -182,6 +245,9 @@ func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
 func move(direction: float) -> void:
+	# 피격 경직 중엔 조작으로 넉백 속도를 덮어쓰지 않는다 (그래야 넉백 방향으로 날아간다)
+	if _hitstun_time > 0.0:
+		return
 	if direction != 0.0:
 		facing = signf(direction)
 	velocity.x = direction * stats.move_speed * move_speed_multiplier
@@ -189,6 +255,9 @@ func move(direction: float) -> void:
 ## 바닥에서는 보통 점프, 공중에서는 남은 횟수만큼 이단 점프.
 ## 이단 점프는 지금까지의 낙하 속도를 무시하고 속도를 새로 덮어써서, 떨어지는 중에 눌러도 제대로 뜬다
 func jump() -> void:
+	# 경직 중엔 점프로 넉백을 못 벗어난다
+	if _hitstun_time > 0.0:
+		return
 	if is_on_floor():
 		velocity.y = jump_velocity * jump_multiplier
 	elif _air_jumps_left > 0:
@@ -254,7 +323,7 @@ func _play_vault_effect() -> void:
 
 ## 지금 스킬 모션 중이라 다른 행동을 못 하는 상태인지
 func is_busy() -> bool:
-	return _busy_time > 0.0
+	return _busy_time > 0.0 or _hitstun_time > 0.0
 
 ## duration초 동안 다른 스킬·기본공격 입력을 막는다 (모션이 겹쳐 나오지 않게). 이동은 계속 가능하다.
 ## 더 긴 잠금이 이미 걸려 있으면 짧은 걸로 줄어들지 않게 둘 중 큰 값을 쓴다
@@ -370,8 +439,18 @@ func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
 func apply_physics(delta: float) -> void:
 	if _busy_time > 0.0:
 		_busy_time = maxf(_busy_time - delta, 0.0)
+	# 경직 중엔 넉백 속도가 마찰로 서서히 줄며 미끄러진다 (멈출 때쯤 경직도 끝나 조작이 돌아온다)
+	if _hitstun_time > 0.0:
+		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
+		velocity.x = move_toward(velocity.x, 0.0, HITSTUN_FRICTION * delta)
+	if _combo_timer > 0.0:
+		_combo_timer = maxf(_combo_timer - delta, 0.0)
 	if not is_on_floor():
-		velocity.y += gravity * delta
+		# 피격으로 떠 있는 동안엔 중력을 줄여 잠깐 더 체공하게 한다 (옆보다 위로 뜨는 넉백과 어울림)
+		var g: float = gravity
+		if _hitstun_time > 0.0:
+			g *= HIT_LAUNCH_GRAVITY_SCALE
+		velocity.y += g * delta
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
 	move_and_slide()
