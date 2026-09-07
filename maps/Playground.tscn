@@ -8,7 +8,7 @@
 [ext_resource type="PackedScene" path="res://maps/FallingPot.tscn" id="6"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(960, 40)
+size = Vector2(1440, 40)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 400)
@@ -18,6 +18,7 @@ size = Vector2(190, 20)
 
 [node name="Playground" type="Node2D"]
 script = ExtResource("1")
+stage_width = 1440.0
 
 [node name="DecoSky" type="Node2D" parent="."]
 z_index = -10
@@ -37,23 +38,28 @@ polygon = PackedVector2Array(40, 0, 28.3, 28.3, 0, 40, -28.3, 28.3, -40, 0, -28.
 
 [node name="SlideRoof" type="Polygon2D" parent="."]
 color = Color(0.82, 0.32, 0.28, 1)
-polygon = PackedVector2Array(-250, 55, -358, 163, -142, 163)
+polygon = PackedVector2Array(-605, 55, -713, 163, -497, 163)
+
+[node name="RoofShelter" type="Area2D" parent="." groups=["pot_shelter"]]
+
+[node name="RoofShelterCollision" type="CollisionPolygon2D" parent="RoofShelter"]
+polygon = PackedVector2Array(-605, 55, -713, 163, -497, 163)
 
 [node name="SlideWindow" type="Polygon2D" parent="."]
-position = Vector2(-250, 123)
+position = Vector2(-605, 123)
 color = Color(0.97, 0.96, 0.86, 1)
 polygon = PackedVector2Array(18, 0, 12.7, 12.7, 0, 18, -12.7, 12.7, -18, 0, -12.7, -12.7, 0, -18, 12.7, -12.7)
 
 [node name="SlidePostLeft" type="Polygon2D" parent="."]
 color = Color(0.55, 0.38, 0.22, 1)
-polygon = PackedVector2Array(-336, 163, -320, 163, -320, 282, -336, 282)
+polygon = PackedVector2Array(-691, 163, -675, 163, -675, 282, -691, 282)
 
 [node name="SlidePostRight" type="Polygon2D" parent="."]
 color = Color(0.55, 0.38, 0.22, 1)
-polygon = PackedVector2Array(-176, 163, -160, 163, -160, 282, -176, 282)
+polygon = PackedVector2Array(-531, 163, -515, 163, -515, 282, -531, 282)
 
 [node name="SlideDeck" type="StaticBody2D" parent="."]
-position = Vector2(-250, 170)
+position = Vector2(-605, 170)
 
 [node name="SlideDeckCollision" type="CollisionShape2D" parent="SlideDeck"]
 shape = SubResource("RectangleShape2D_deck")
@@ -66,17 +72,17 @@ polygon = PackedVector2Array(-95, -10, 95, -10, 95, 10, -95, 10)
 [node name="Slide" type="StaticBody2D" parent="."]
 
 [node name="SlideCollision" type="CollisionPolygon2D" parent="Slide"]
-polygon = PackedVector2Array(-175, 160, -155, 160, -48, 280, -68, 280)
+polygon = PackedVector2Array(-530, 160, -510, 160, -403, 280, -423, 280)
 
 [node name="SlideVisual" type="Polygon2D" parent="Slide"]
 color = Color(0.76, 0.77, 0.83, 1)
-polygon = PackedVector2Array(-175, 160, -155, 160, -48, 280, -68, 280)
+polygon = PackedVector2Array(-530, 160, -510, 160, -403, 280, -423, 280)
 
 [node name="SpringRideLeft" parent="." instance=ExtResource("4")]
-position = Vector2(200, 0)
+position = Vector2(400, 0)
 
 [node name="SpringRideRight" parent="." instance=ExtResource("4")]
-position = Vector2(340, 0)
+position = Vector2(560, 0)
 
 [node name="Head" parent="SpringRideRight" index="1"]
 color = Color(0.55, 0.82, 0.45, 1)
@@ -92,14 +98,14 @@ shape = SubResource("RectangleShape2D_ground")
 
 [node name="GroundVisual" type="Polygon2D" parent="Ground"]
 color = Color(0.52, 0.38, 0.24, 1)
-polygon = PackedVector2Array(-480, -20, 480, -20, 480, 20, -480, 20)
+polygon = PackedVector2Array(-720, -20, 720, -20, 720, 20, -720, 20)
 
 [node name="GrassVisual" type="Polygon2D" parent="Ground"]
 color = Color(0.45, 0.68, 0.33, 1)
-polygon = PackedVector2Array(-480, -20, 480, -20, 480, -10, -480, -10)
+polygon = PackedVector2Array(-720, -20, 720, -20, 720, -10, -720, -10)
 
 [node name="LeftWall" type="StaticBody2D" parent="."]
-position = Vector2(-480, 100)
+position = Vector2(-720, 100)
 
 [node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
 shape = SubResource("RectangleShape2D_wall")
@@ -109,7 +115,7 @@ color = Color(0.38, 0.5, 0.32, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 
 [node name="RightWall" type="StaticBody2D" parent="."]
-position = Vector2(480, 100)
+position = Vector2(720, 100)
 
 [node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
 shape = SubResource("RectangleShape2D_wall")
@@ -122,13 +128,13 @@ polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 script = ExtResource("5")
 pot_scene = ExtResource("6")
 spawn_y = -360.0
-spawn_half_width = 420.0
+spawn_half_width = 680.0
 
 [node name="PlayerSpawn1" type="Marker2D" parent="."]
-position = Vector2(-400, 240)
+position = Vector2(-300, 240)
 
 [node name="PlayerSpawn2" type="Marker2D" parent="."]
-position = Vector2(400, 240)
+position = Vector2(620, 240)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, 150)

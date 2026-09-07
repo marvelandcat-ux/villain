@@ -31,9 +31,10 @@ func _physics_process(delta: float) -> void:
 	if global_position.y >= floor_y:
 		_break()
 
-## 누군가를 맞혔으면 그 자리에서 깨진다 (데미지 자체는 Hitbox가 이미 처리했다)
+## 누군가를 맞혔으면 그 자리에서 깨진다 (데미지 자체는 Hitbox가 이미 처리했다).
+## "pot_shelter" 그룹(놀이터 미끄럼틀 지붕 등)에 닿아도 깨진다 — 지붕 밑은 안전지대가 된다
 func _on_pot_hit(area: Area2D) -> void:
-	if area is Hurtbox:
+	if area is Hurtbox or area.is_in_group("pot_shelter"):
 		_break()
 
 ## 판정을 끄고 잠깐 깨지는 모습을 보여준 뒤 사라진다

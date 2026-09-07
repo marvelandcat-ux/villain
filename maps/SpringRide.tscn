@@ -6,7 +6,7 @@
 size = Vector2(92, 18)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jumppad"]
-size = Vector2(92, 56)
+size = Vector2(92, 40)
 
 [node name="SpringRide" type="Node2D"]
 
@@ -44,13 +44,14 @@ position = Vector2(0, 235)
 
 [node name="SeatCollision" type="CollisionShape2D" parent="Seat"]
 shape = SubResource("RectangleShape2D_seat")
+one_way_collision = true
 
 [node name="SeatVisual" type="Polygon2D" parent="Seat"]
 color = Color(0.25, 0.5, 0.85, 1)
 polygon = PackedVector2Array(-46, -9, 46, -9, 46, 9, -46, 9)
 
 [node name="JumpPad" type="Area2D" parent="."]
-position = Vector2(0, 208)
+position = Vector2(0, 196)
 script = ExtResource("1")
 spring_visual = NodePath("../Spring")
 
