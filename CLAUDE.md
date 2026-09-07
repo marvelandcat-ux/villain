@@ -17,6 +17,9 @@
 
 - `characters/Fighter.gd`: 모든 캐릭터의 공용 베이스(`CharacterBody2D`). 이동/점프/중력, HP(`take_damage`/`heal`/`health_changed` 시그널), 스킬 슬롯(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack` — 자식 노드 이름 `Skill1`/`Skill2`/`SkillUltimate`/`BasicAttack`으로 자동 연결됨), 자유 형식 데이터 저장소 `custom_data`(예: 주정뱅이 술 스택)를 담당
 - 버프·디버프(`move_speed_multiplier` 등)는 직접 대입하지 않고 **`fighter.set_modifier(property, id, value)`/`clear_modifier(property, id)`**로 건다. 같은 property에 여러 효과가 동시에 걸려도 서로 안 지우고 곱해져서 적용된다(id별로 따로 저장했다가 곱함). 일정 시간만 유지되는 임시 효과는 `apply_temp_multiplier(property, value, duration)`가 자동으로 id를 발급해서 만료 처리까지 해줌. 술 스택처럼 켰다 껐다 하는 지속 효과는 `"drink_stacks"` 같은 고정 문자열 id로 직접 `set_modifier`/`clear_modifier` 호출 (`DrinkSkill.gd`/`VomitSkill.gd` 참고). **예전에는 `set(property, value)`로 직접 덮어써서 디버프 두 개가 겹치면 나중 게 먼저 걸린 걸 지워버리는 버그가 있었음 — 지금은 해결됨**
+- **캐릭터끼리는 몸 충돌을 하지 않는다.** `Fighter._ignore_other_fighters()`가 `_ready()`에서 같은 씬의 다른 Fighter들과 양방향으로 `add_collision_exception_with`를 걸어둔다 — 안 걸면 캐릭터가 **상대 머리 위에 올라서서 발판처럼 밟고 다닐 수 있다**(실제로 나온 문제). 새로 스폰된 쪽이 자기 `_ready()`에서 기존 캐릭터들과 걸어두므로 라운드 리로드·훈련장 캐릭터 교체도 자동으로 처리된다
+  - **충돌 레이어를 바꾸지 않은 이유:** 레이어를 건드리면 바닥·벽·발판까지 같이 영향을 받는다. 예외 처리로 빼는 건 몸(`CharacterBody2D`)끼리의 충돌뿐이고, 공격 판정(`Hitbox`/`Hurtbox`)은 Area2D라 그대로 서로를 감지한다 — 헤드리스로 기본공격 데미지·발판 착지가 그대로인 것까지 확인함
+  - 대신 두 캐릭터가 같은 자리에 겹쳐 설 수 있게 됐다(스매시브라더스류와 같은 방식). 서로 밀어내는 처리가 필요하면 따로 넣어야 한다
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
 - `skills/MeleeAttack.gd`: 기본공격 공용 스킬 — 캐릭터 앞에 히트박스를 잠깐 켰다 끈다. `damage`/`range`만 캐릭터마다 다르게 지정해서 재사용 (사탕찌르기, 키보드 휘두르기, 술병깨기, 팻말 때리기 전부 이걸 씀)

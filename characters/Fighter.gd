@@ -85,6 +85,7 @@ var _next_modifier_id: int = 0
 func _ready() -> void:
 	current_hp = stats.max_hp
 	add_to_group("fighters")
+	_ignore_other_fighters()
 	if skill_1 == null:
 		skill_1 = get_node_or_null("Skill1")
 	if skill_2 == null:
@@ -93,6 +94,20 @@ func _ready() -> void:
 		skill_ultimate = get_node_or_null("SkillUltimate")
 	if basic_attack == null:
 		basic_attack = get_node_or_null("BasicAttack")
+
+## 캐릭터끼리는 서로의 몸을 밟고 올라설 수 없게 몸 충돌을 무시한다.
+## 충돌 레이어를 통째로 바꾸지 않고 add_collision_exception_with로 "상대 캐릭터"만 예외 처리하는 이유:
+## 레이어를 바꾸면 바닥·벽·발판까지 같이 영향을 받는다. 여기서 빼는 건 몸(CharacterBody2D)끼리의
+## 충돌뿐이고, 공격 판정(Hitbox/Hurtbox)은 Area2D라 그대로 서로를 감지한다.
+##
+## 새로 스폰된 쪽이 자기 _ready()에서 이미 있던 캐릭터들과 양방향으로 걸어두므로,
+## 라운드 리로드·훈련장 캐릭터 교체처럼 나중에 생기는 경우도 자동으로 처리된다
+func _ignore_other_fighters() -> void:
+	for other in get_tree().get_nodes_in_group("fighters"):
+		if other == self or not (other is PhysicsBody2D):
+			continue
+		add_collision_exception_with(other)
+		other.add_collision_exception_with(self)
 
 ## --- 피격 리액션(격투 게임식 히트 리액션) 튜닝값 ---
 ## 넉백 방향으로 기우는 각도(도) = 이 기본값 + 데미지 × 비례값, 최대 HIT_LEAN_MAX_DEG로 제한
