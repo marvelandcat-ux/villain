@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dwyomcftmyr45"
-path="res://.godot/imported/층간소음측면.png-e8eefce2e2eb0ac6823f07a79cc5e230.ctex"
+uid="uid://2eahk8savgss"
+path="res://.godot/imported/손.png-49667b11bdb36df6428e35d5fec8c8a1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소/층간소음측면.png"
-dest_files=["res://.godot/imported/층간소음측면.png-e8eefce2e2eb0ac6823f07a79cc5e230.ctex"]
+source_file="res://sprite/층간소음/손.png"
+dest_files=["res://.godot/imported/손.png-49667b11bdb36df6428e35d5fec8c8a1.ctex"]
 
 [params]
 

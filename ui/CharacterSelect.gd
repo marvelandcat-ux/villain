@@ -65,9 +65,10 @@ func _make_tile(label: String, color: Color, font_size: int, callback: Callable)
 	if portrait_path != "":
 		# 초상화가 있는 캐릭터는 글자 대신 그림으로 채우고, 이름은 하단에 작게 걸친다
 		var image := TextureRect.new()
-		image.texture = load(portrait_path)
+		image.texture = _cropped_portrait(portrait_path)
 		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		# 잘라내며 꽉 채우는 COVERED 대신, 상자에 맞게 넣고 가운데 정렬 → 그림마다 비율이 달라도 얼굴 크기가 통일된다
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		image.anchor_right = 1.0
 		image.anchor_bottom = 1.0
 		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -143,7 +144,24 @@ func _show_preview(character_name: String) -> void:
 ## 초상화 그림이 있는 캐릭터면 TextureRect에 채워 보여주고, 없으면 비워서 뒤의 색상 배경(P#PreviewBox)이 그대로 보이게 한다
 func _apply_portrait(image: TextureRect, character_name: String) -> void:
 	var portrait_path: String = GameState.PORTRAITS.get(character_name, "")
-	image.texture = load(portrait_path) if portrait_path != "" else null
+	image.texture = _cropped_portrait(portrait_path) if portrait_path != "" else null
+	# 위쪽 큰 미리보기도 같은 방식으로 통일 (상자에 맞게 넣고 가운데)
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+
+## 초상화 그림의 투명 여백을 잘라내고 실제 얼굴 영역만 남긴 텍스처를 돌려준다.
+## 그림마다 여백이 달라 타일 안에서 크기가 제각각으로 보이던 걸, 내용 영역 기준으로 통일한다
+func _cropped_portrait(path: String) -> Texture2D:
+	var tex: Texture2D = load(path)
+	if tex == null:
+		return null
+	var used: Rect2i = tex.get_image().get_used_rect()
+	if used.size == Vector2i.ZERO:
+		return tex
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = Rect2(used)
+	return atlas
 
 ## 슬롯머신처럼 캐릭터가 빠르게 바뀌다가 점점 느려지며 멈추는 연출. 멈춘 결과가 그대로 임시 선택(pending)이 된다.
 ## 대기는 이 노드(CharacterSelect)의 자식 Timer로 만들어서, 연출 도중 뒤로 나가 씬이 정리되면

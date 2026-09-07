@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PortraitConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/PortraitConfig.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+zoom = {
+"고양이 아주머니": 1.0,
+"악플러": 1.0,
+"주정뱅이": 1.0,
+"지하철 아저씨": 1.0,
+"촉법소년": 1.0,
+"층간소음 청년": 1.0
+}
+offset = {}

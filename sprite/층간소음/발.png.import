@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2eahk8savgss"
-path="res://.godot/imported/손.png-86c7262d894695d9b94b38fa27485a1e.ctex"
+uid="uid://c52uakfygx8to"
+path="res://.godot/imported/발.png-5ebaa5986adee184ec13aef713848a95.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소/손.png"
-dest_files=["res://.godot/imported/손.png-86c7262d894695d9b94b38fa27485a1e.ctex"]
+source_file="res://sprite/층간소음/발.png"
+dest_files=["res://.godot/imported/발.png-5ebaa5986adee184ec13aef713848a95.ctex"]
 
 [params]
 

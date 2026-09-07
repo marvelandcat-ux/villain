@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c52uakfygx8to"
-path="res://.godot/imported/발.png-5a780b9866d5852fae65571806cd33a1.ctex"
+uid="uid://b66h74br7hpui"
+path="res://.godot/imported/층간소음정면샷.png-64a38198ab99f69ff4a010179b7fd008.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소/발.png"
-dest_files=["res://.godot/imported/발.png-5a780b9866d5852fae65571806cd33a1.ctex"]
+source_file="res://sprite/층간소음/층간소음정면샷.png"
+dest_files=["res://.godot/imported/층간소음정면샷.png-64a38198ab99f69ff4a010179b7fd008.ctex"]
 
 [params]
 
