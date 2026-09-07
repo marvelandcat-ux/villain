@@ -1,40 +1,43 @@
 class_name SpringJumpPad
 extends Area2D
 
-## 어린이용 스프링 시소(스프링 목마)를 점프대로 쓰는 기믹.
-## 이 판정 안에 들어와 있는 동안 Fighter의 jump_multiplier에 boost를 걸어서,
-## 여기 올라가서 점프하면 훨씬 높이 뜬다. 판정에서 벗어나면 바로 원래대로 돌아온다.
+## 어린이용 스프링 시소를 **트램폴린**처럼 쓰는 기믹.
+## 좌석에 닿는 순간 위로 튕겨 올라간다 — 점프 버튼과 무관하게 착지 자체가 반동이 된다.
+## 세게 떨어질수록 더 높이 튕기고(bounce_restitution), 그냥 걸어 올라와도 최소 bounce_velocity만큼은 튕긴다.
 ##
-## 버프·디버프와 같은 방식(set_modifier/clear_modifier)을 쓰므로 다른 점프 효과
-## (주정뱅이 궁극기의 점프력 디버프 등)와 겹쳐도 서로 지우지 않고 곱해진다.
-## 스프링대마다 다른 id를 쓰기 때문에 두 대에 동시에 걸려도 서로 안 꼬인다.
+## 판정 위치가 좌석 바로 위(y 176~216)라 좌석에 올라선 캐릭터만 걸리고,
+## 좌석 밑(지면 y 220~280)으로 지나가는 캐릭터는 반응하지 않는다.
 
-## 점프력이 몇 배가 되는지. 2.0이면 점프 높이가 4배가 된다(높이는 속도의 제곱에 비례)
-@export var boost: float = 2.0
-## 밟고 있는 동안 스프링 그림이 눌리는 정도(0이면 연출 없음)
-@export var squash: float = 0.45
-## 눌리는 스프링 그림. 비워두면 연출 없이 점프력만 올라간다
+## 최소 튕김 속도(px/초). 중력 1150 기준 700이면 약 213px 튀어오른다
+@export var bounce_velocity: float = 700.0
+## 떨어진 속도에 이 값을 곱해서 튕긴다 — 높은 곳에서 떨어질수록 더 높이 튀어오른다
+@export var bounce_restitution: float = 1.15
+## 아무리 세게 떨어져도 이 속도를 넘지 않는다 (화면 밖으로 날아가는 걸 막는다)
+@export var max_bounce_velocity: float = 1100.0
+## 튕길 때 스프링 그림이 눌리는 정도(0이면 연출 없음)
+@export var squash: float = 0.12
+## 눌리는 스프링 그림. 지면 높이에 놓인 노드를 지정해야 아래에서 눌리는 것처럼 보인다
 @export var spring_visual: NodePath
 
-## 지금 이 판정 위에 올라와 있는 Fighter들 {Fighter: true}
-var _boosted: Dictionary = {}
-## set_modifier에 쓰는 이 스프링대만의 id (두 대가 서로 덮어쓰지 않게)
-var _modifier_id: String = ""
+## 캐릭터별로 직전 프레임의 낙하 속도 {Fighter: float} — 착지 순간에는 이미 0이 되어 있어서
+## 충돌 직전 속도를 따로 기억해둬야 "세게 떨어질수록 높이"를 계산할 수 있다
+var _prev_fall: Dictionary = {}
 var _spring: Node2D
 var _spring_base_scale := Vector2.ONE
+## 이번 프레임에 누가 튕겼는지 (연출용)
+var _bounced: bool = false
 
 func _ready() -> void:
-	_modifier_id = "spring_pad_%d" % get_instance_id()
 	if spring_visual != NodePath():
 		_spring = get_node_or_null(spring_visual)
 		if _spring:
 			_spring_base_scale = _spring.scale
 
-## area_entered/exited 신호 대신 매 프레임 겹친 목록을 훑는다 —
-## 캐릭터가 판정 안에서 사라지거나(라운드 리셋) 순간이동하면 exited가 안 오는 경우가 있어서,
-## "지금 겹쳐 있는가"를 매 프레임 다시 보는 쪽이 확실하다 (HazardPlatform과 같은 방식)
-func _process(_delta: float) -> void:
+## area_entered 신호 대신 매 프레임 겹친 목록을 훑는다 — 캐릭터가 판정 안에서
+## 사라지거나 순간이동하면 신호가 안 오는 경우가 있어서, "지금 겹쳐 있는가"를 다시 보는 쪽이 확실하다
+func _physics_process(_delta: float) -> void:
 	var standing: Dictionary = {}
+	_bounced = false
 	for area in get_overlapping_areas():
 		if not (area is Hurtbox):
 			continue
@@ -42,20 +45,20 @@ func _process(_delta: float) -> void:
 		if fighter == null or not is_instance_valid(fighter):
 			continue
 		standing[fighter] = true
-		if not _boosted.has(fighter):
-			fighter.set_modifier("jump_multiplier", _modifier_id, boost)
-			_boosted[fighter] = true
+		if fighter.is_on_floor():
+			var fall: float = _prev_fall.get(fighter, 0.0)
+			fighter.velocity.y = -clampf(maxf(bounce_velocity, fall * bounce_restitution), 0.0, max_bounce_velocity)
+			_bounced = true
+		# 튕긴 직후에는 velocity.y가 음수라 0으로 기록되고, 다음 착지까지 다시 쌓인다
+		_prev_fall[fighter] = maxf(fighter.velocity.y, 0.0)
 
-	for fighter in _boosted.keys():
-		if standing.has(fighter):
-			continue
-		if is_instance_valid(fighter):
-			fighter.clear_modifier("jump_multiplier", _modifier_id)
-		_boosted.erase(fighter)
+	for fighter in _prev_fall.keys():
+		if not standing.has(fighter):
+			_prev_fall.erase(fighter)
 
-	_update_spring_visual(not standing.is_empty())
+	_update_spring_visual(_bounced)
 
-## 누가 올라가 있으면 스프링을 눌린 모양으로, 아니면 원래대로
+## 튕기는 순간 스프링을 눌렀다가 서서히 펴지게 한다
 func _update_spring_visual(pressed: bool) -> void:
 	if _spring == null:
 		return
