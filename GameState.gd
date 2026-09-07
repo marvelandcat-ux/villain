@@ -32,7 +32,7 @@ const PORTRAITS := {
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
 	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
-	"고양이 아주머니": "res://sprite/body/캣맘정면.png",
+	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
 }
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)

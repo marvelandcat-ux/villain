@@ -9,11 +9,21 @@ const TILE_SIZE := Vector2(100, 90)
 var _portrait_zoom: Dictionary = {}
 
 ## PortraitFrames 씬을 인스턴스해서 캐릭터별 노드의 scale을 배율로 읽어온다
+## PortraitFrames 씬에서 각 캐릭터 노드의 "박스 크기"를 기준(120px) 대비 배율로 읽어온다.
+## 에디터에서 노드를 드래그로 크게/작게 하면 그 크기가 여기 배율이 되어 선택 화면에 반영된다.
+## (혹시 Scale도 만졌으면 그것도 곱해서 반영)
+const FRAME_BASE := 120.0
+
 func _load_portrait_zoom() -> void:
-	var frames: Node = preload("res://ui/PortraitFrames.tscn").instantiate()
+	# preload가 아니라 load + 가드 — PortraitFrames 안의 그림 하나가 깨져도 선택 화면 전체가 죽지 않게 한다
+	var packed: PackedScene = load("res://ui/PortraitFrames.tscn")
+	if packed == null:
+		return
+	var frames: Node = packed.instantiate()
 	for child in frames.get_children():
 		if child is Control:
-			_portrait_zoom[child.name] = child.scale.x
+			var box_w: float = child.offset_right - child.offset_left
+			_portrait_zoom[child.name] = (box_w / FRAME_BASE) * child.scale.x
 	frames.free()
 
 ## 해당 캐릭터의 초상화 배율 (없으면 1.0)

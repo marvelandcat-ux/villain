@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cg4w76fd2ifm"
-path="res://.godot/imported/면.png-15fabec5ee857fc4940c5112bd965390.ctex"
+uid="uid://f37evm3qe40d"
+path="res://.godot/imported/고양이아줌마정면.png-2c575b471251791ed90bed480e725bff.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/body/면.png"
-dest_files=["res://.godot/imported/면.png-15fabec5ee857fc4940c5112bd965390.ctex"]
+source_file="res://sprite/캣/고양이아줌마정면.png"
+dest_files=["res://.godot/imported/고양이아줌마정면.png-2c575b471251791ed90bed480e725bff.ctex"]
 
 [params]
 

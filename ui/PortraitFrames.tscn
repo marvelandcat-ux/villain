@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="3"]
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://cg4w76fd2ifm" path="res://sprite/body/면.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
 
 [sub_resource type="AtlasTexture" id="a1"]
 atlas = ExtResource("1")
@@ -21,7 +21,7 @@ region = Rect2(21, 151, 1209, 990)
 
 [sub_resource type="AtlasTexture" id="a6"]
 atlas = ExtResource("6")
-region = Rect2(0, 0, 1194, 1226)
+region = Rect2(35, 6, 1185, 1248)
 
 [sub_resource type="AtlasTexture" id="a5"]
 atlas = ExtResource("5")
@@ -51,10 +51,10 @@ stretch_mode = 5
 
 [node name="악플러" type="TextureRect" parent="." unique_id=1620307724]
 layout_mode = 0
-offset_left = 136.0
-offset_top = 1.0
-offset_right = 278.0
-offset_bottom = 143.0
+offset_left = 128.0
+offset_top = 3.0
+offset_right = 281.0
+offset_bottom = 161.0
 texture = SubResource("a3")
 expand_mode = 1
 stretch_mode = 5
