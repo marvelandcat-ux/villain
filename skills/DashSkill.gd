@@ -54,6 +54,9 @@ func _execute(fighter: Fighter) -> void:
 			visual.set_riding(true)
 		else:
 			visual.scale = Vector2(1.35, 0.8)
+		# 돌진하는 동안 달리는 표정으로 바꾼다 (그 표정이 있는 캐릭터만)
+		if visual.has_method("set_action_face"):
+			visual.set_action_face(true)
 	_spawn_afterimage(fighter)
 
 ## 돌진 중 매 물리 프레임 적용할 수평 속도 (Fighter.apply_physics에서 호출)
@@ -130,6 +133,9 @@ func _end_dash(fighter: Fighter) -> void:
 			visual.set_riding(false)
 		else:
 			visual.scale = Vector2(1, 1)
+		# 돌진이 끝나면 원래 표정으로
+		if visual.has_method("set_action_face"):
+			visual.set_action_face(false)
 
 ## 돌진 시작 지점 아래로 레이캐스트해 바닥의 색을 가져온다 (바닥 StaticBody의 Polygon2D 색).
 ## 캐릭터는 제외하고, 못 찾으면(스프라이트 바닥 등) 기본 먼지색을 쓴다

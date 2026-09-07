@@ -18,10 +18,18 @@ var _shots_left: int = 0
 var _shot_timer: float = 0.0
 var _direction: float = 1.0
 var _fighter_ref: Fighter
+## 지금 총 쏘는 표정 상태인지 (연사 끝나면 원래 표정으로 되돌리려고 추적)
+var _face_active: bool = false
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	if _shots_left <= 0:
+		# 연사가 끝나면 원래 표정으로 되돌린다
+		if _face_active:
+			_face_active = false
+			var v: Node2D = _fighter_ref.get_node_or_null("Visual") if _fighter_ref else null
+			if v and v.has_method("set_action_face"):
+				v.set_action_face(false)
 		return
 	_shot_timer -= delta
 	if _shot_timer <= 0.0:
@@ -41,6 +49,10 @@ func _execute(fighter: Fighter) -> void:
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_gun_motion"):
 		visual.play_gun_motion(shot_count * shot_interval + 0.15)
+	# 총 쏘는 동안 달리는 표정으로 바꾼다 (연사가 끝나면 _process에서 되돌린다)
+	if visual and visual.has_method("set_action_face"):
+		visual.set_action_face(true)
+		_face_active = true
 
 func _fire_one() -> void:
 	if projectile_scene == null or _fighter_ref == null:

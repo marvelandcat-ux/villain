@@ -26,7 +26,7 @@ extends Node2D
 ## 손이 앞뒤로 흔들리는 거리(px)
 @export var hand_swing: float = 12.0
 ## 가만히 서 있을 때 몸/머리/손이 위아래로 미묘하게 숨쉬는 폭(px). 걷기 시작하면 서서히 사라진다
-@export var breathe_amount: float = 1.4
+@export var breathe_amount: float = 2.6
 ## 숨쉬기 속도(라디안/초) — 낮을수록 느긋하게 숨쉰다
 @export var breathe_speed: float = 2.2
 ## 손이 몸통과 다른 박자로 숨쉬게 하는 위상 차이(라디안). 0이면 몸과 똑같이 움직여서 어색하다
@@ -148,6 +148,11 @@ extends Node2D
 ## 술 머금은 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var drunk_head_scale: Vector2 = Vector2.ZERO
 
+## 스킬(자전거 돌진·총 쏘기)을 쓰는 동안 이 표정으로 머리를 바꾼다. 비어 있으면 안 바꾼다(촉법소년만 지정)
+@export var action_head_texture: Texture2D
+## 액션 표정일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var action_head_scale: Vector2 = Vector2.ZERO
+
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
 @onready var _body: Sprite2D = get_node_or_null("Body")
@@ -205,6 +210,8 @@ var _recoil: float = 0.0
 var _vomit_time: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
+## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
+var _action_face_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
@@ -553,11 +560,23 @@ func set_drunk_head(on: bool) -> void:
 	if _vomit_time <= 0.0:
 		_apply_base_head()
 
-## 현재 상태(취함/맨정신)에 맞는 머리 그림·배율을 머리에 적용한다
+## 스킬(자전거 돌진·총 쏘기)을 쓰는 동안 액션 표정으로 머리를 바꾼다. on=false면 원래 상태로 되돌린다.
+## action_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
+func set_action_face(on: bool) -> void:
+	if _head == null or action_head_texture == null:
+		return
+	_action_face_on = on
+	if _vomit_time <= 0.0:   # 토하는 표정이 떠 있으면 그게 끝난 뒤 반영된다
+		_apply_base_head()
+
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선)
 func _apply_base_head() -> void:
 	if _head == null:
 		return
-	if _drunk_head_on and drunk_head_texture != null:
+	if _action_face_on and action_head_texture != null:
+		_head.texture = action_head_texture
+		_head.scale = action_head_scale if action_head_scale != Vector2.ZERO else _head_rest_scale
+	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
 	else:
