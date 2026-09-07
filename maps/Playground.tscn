@@ -138,9 +138,9 @@ position = Vector2(-300, 240)
 position = Vector2(620, 240)
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(0, 110)
+position = Vector2(0, 20)
 script = ExtResource("3")
-min_y = 40.0
-max_y = 120.0
+min_y = -80.0
+max_y = 20.0
 
 [node name="CombatHUD" parent="." instance=ExtResource("2")]
