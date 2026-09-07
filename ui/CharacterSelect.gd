@@ -1,6 +1,25 @@
 class_name CharacterSelect
 extends Control
 
+## 목록 타일 크기
+const TILE_SIZE := Vector2(100, 90)
+
+## 캐릭터별 초상화 배율. ui/PortraitFrames.tscn의 각 캐릭터 TextureRect 노드 scale을 읽어 채운다.
+## → 그 씬을 에디터에서 열고 각 노드 크기(Scale)를 조절하면 여기 배율이 바뀌어 선택 화면에 반영된다
+var _portrait_zoom: Dictionary = {}
+
+## PortraitFrames 씬을 인스턴스해서 캐릭터별 노드의 scale을 배율로 읽어온다
+func _load_portrait_zoom() -> void:
+	var frames: Node = preload("res://ui/PortraitFrames.tscn").instantiate()
+	for child in frames.get_children():
+		if child is Control:
+			_portrait_zoom[child.name] = child.scale.x
+	frames.free()
+
+## 해당 캐릭터의 초상화 배율 (없으면 1.0)
+func _zoom_for(character_name: String) -> float:
+	return float(_portrait_zoom.get(character_name, 1.0))
+
 ## 로컬 대전(pvp)과 스토리 모드 둘 다 이 화면 하나를 같이 쓴다.
 ## - pvp: P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2(AI) 캐릭터를 고르면 맵 선택 화면으로 넘어간다
 ## - story: P2는 GameState.STORY_OPPONENTS[story_index]로 이미 정해져 있어서 P2 칸에 미리 공개해두고,
@@ -29,6 +48,7 @@ var _is_spinning: bool = false
 
 func _ready() -> void:
 	_is_story_mode = GameState.game_mode == "story"
+	_load_portrait_zoom()
 	for character_name in GameState.CHARACTERS.keys():
 		var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
 		var button := _make_tile(character_name, color, 14, _on_character_picked.bind(character_name))
@@ -72,6 +92,11 @@ func _make_tile(label: String, color: Color, font_size: int, callback: Callable)
 		image.anchor_right = 1.0
 		image.anchor_bottom = 1.0
 		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# 캐릭터별 배율 적용 (PortraitFrames 씬에서 노드 크기로 조절한 값). 넘치는 부분은 타일이 잘라낸다
+		var zoom: float = _zoom_for(label)
+		image.pivot_offset = TILE_SIZE * 0.5
+		image.scale = Vector2(zoom, zoom)
+		button.clip_contents = true
 		button.add_child(image)
 
 		var name_label := Label.new()
@@ -148,6 +173,14 @@ func _apply_portrait(image: TextureRect, character_name: String) -> void:
 	# 위쪽 큰 미리보기도 같은 방식으로 통일 (상자에 맞게 넣고 가운데)
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# 캐릭터별 배율 적용 (그리드 타일과 같은 값). 가운데 기준으로 확대/축소
+	if portrait_path != "":
+		var parent_box := image.get_parent()
+		if parent_box is Control:
+			parent_box.clip_contents = true
+		image.pivot_offset = image.size * 0.5
+		var z: float = _zoom_for(character_name)
+		image.scale = Vector2(z, z)
 
 ## 초상화 그림의 투명 여백을 잘라내고 실제 얼굴 영역만 남긴 텍스처를 돌려준다.
 ## 그림마다 여백이 달라 타일 안에서 크기가 제각각으로 보이던 걸, 내용 영역 기준으로 통일한다
