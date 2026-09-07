@@ -189,6 +189,46 @@
   - **AI(`AIController.gd`)가 이 기믹을 피한다(2026-09-04 구현):** `SubwayTrain.is_dangerous()`가 경고등 켜짐(WARNING) 또는 실제로 지나가는 중(RUNNING)이면 true를 돌려준다. `_ready()`에서 `add_to_group("ai_danger_zone")`으로 자신을 등록해두면 `AIController._try_dodge_hazard()`가 매 프레임 이 그룹을 훑어서 위험을 감지하고, `"ai_safe_spot"` 그룹의 `maps/AISafeSpot.gd`(빈 Marker2D에 붙이기만 하면 됨) 중 가장 가까운 곳으로 걸어가 이단 점프로 올라탄 뒤 위험이 끝날 때까지 버틴다. `SubwayPlatform.tscn`의 의자 발판(`BenchLeft`/`BenchRight`) 바로 위에 `AISafeSpotLeft`/`AISafeSpotRight`(y=155, 발판 윗면 높이)를 놓아뒀다. **캐릭터 이름이나 맵 이름으로 분기하지 않고 두 그룹만으로 판단하는 범용 시스템**이라, 다른 맵에 새 기믹을 추가할 때도 위험 판정 노드에 `is_dangerous()`만 만들어 그룹에 등록하고 대피 지점에 `AISafeSpot.gd`만 놓으면 자동으로 적용된다(피할 곳이 없는 기믹이면 `ai_safe_spot`을 안 놓으면 그만 — `_try_dodge_hazard()`가 그냥 false를 돌려주고 평소처럼 싸운다). 헤드리스로 전체 열차 주기(경고 5초 → 통과)를 실측해서 AI가 경고 시작 직후 발판으로 올라가 끝날 때까지 안 맞고 버티는 것을 확인했다
 - **`combat/Hitbox.gd`의 `repeat_interval`(기본 0):** 0보다 크면 겹쳐 있는 동안 그 간격마다 계속 다시 때린다(`_process`가 `get_overlapping_areas()`를 훑으며 대상별 쿨타임을 관리 — `HazardPlatform.gd`와 같은 방식). 0이면 예전처럼 처음 겹친 순간 한 번만. **스킬 히트박스는 전부 0을 쓰므로 기존 동작은 그대로다.** 판정을 껐다 켤 때는 `clear_repeat_state()`로 쿨타임을 비운다
 
+### `maps/Playground.tscn` (놀이터) — 미끄럼틀 / 스프링 시소 / 낙하 화분
+
+2026-09-07 기획 그림대로 새로 그렸다. **아직 스프라이트가 없어서 전부 `Polygon2D` 도형**이고,
+기능 검증을 먼저 끝낸 상태다(`sprite/맵/놀이터/화분.svg`가 들어와 있지만 아직 안 붙였다).
+예전 `Playground.tscn`(가운데 낙뎀 구역 하나만 있던 버전)을 통째로 대체했으므로,
+`maps/HazardPlatform.gd`는 이제 아무 씬도 안 쓰는 고아 스크립트다.
+
+| 요소 | 좌표 |
+|---|---|
+| 바닥 윗면 | y = 280 (`Ground`는 y=300에 960x40), 좌우 벽 x=±480 |
+| 미끄럼틀 위 발판 | 윗면 y = 160 (`SlideDeck`, x -345~-155, **원웨이**) |
+| 미끄럼틀 경사면 | (-155,160) → (-48,280), 수평 기준 **48.3°** |
+| 스프링 시소 좌석 윗면 | y = 226 (x = 200 / 340, `SpringRide.tscn` 인스턴스 2개) |
+| 화분 생성 | `PotSpawner`가 y=-360에서 x ±420 범위로 무작위 낙하 |
+
+- **발판 높이(바닥에서 120px)는 이단 점프 여유를 보고 정했다.** 처음엔 135px(윗면 145)로 뒀는데,
+  이단 점프 최대치(165px)에 너무 붙어서 두 번째 점프를 정점에서 정확히 눌러야만 올라갈 수 있었다
+  (실측: 40프레임 뒤에 누르면 4.5px 모자라 실패). 15px 낮춰서 여유를 45px로 만들었다
+- **경사면은 `floor_max_angle`(기본 45°)보다 가파르게 잡아야 미끄러진다.** 48.3°라 Godot이 이 면을
+  "바닥"이 아니라 "벽"으로 보고, 캐릭터가 붙어서 아래로 흘러내린다 — 그게 곧 미끄럼틀이다.
+  45°보다 완만하면 그냥 걸어 다니는 비탈이 된다
+- **주의(실제로 겪은 함정): 경사면 폴리곤의 평평한 윗변이 노출되면 거기가 "서 있을 수 있는 턱"이 된다.**
+  처음엔 경사면 윗변(x -160~-138)이 발판 바깥으로 삐져나와 있어서, 미끄러지라고 올려둔 캐릭터가
+  그 턱에 그냥 서 버렸다. 지금은 윗변을 x -175~-155로 옮겨 **발판(x ~-155)에 완전히 가려지게** 해뒀다
+- `maps/SpringJumpPad.gd`: 좌석 위 판정(Area2D)에 들어와 있는 동안 `set_modifier("jump_multiplier", ...)`로
+  점프력을 `boost`(2.0)배로 만든다 — **점프 높이는 속도의 제곱에 비례하므로 실제로는 4배**가 된다
+  (실측: 평지 71px → 스프링 278px). 판정에서 벗어나면 `clear_modifier`로 바로 원상복구.
+  버프·디버프와 같은 방식이라 다른 점프 효과와 겹쳐도 서로 안 지우고, 스프링대마다 `get_instance_id()`로
+  만든 고유 id를 써서 두 대가 서로 덮어쓰지 않는다
+  - `area_entered/exited` 신호 대신 매 프레임 `get_overlapping_areas()`를 훑는다(`HazardPlatform`과 같은 방식) —
+    라운드 리셋·순간이동으로 exited가 안 오면 점프력 부스트가 영구히 남기 때문
+- `maps/FallingPot.gd` + `FallingPot.tscn`: `Hitbox`를 상속한 낙하 화분(데미지 10, 주인 없는 판정).
+  맞히거나 바닥(`floor_y` 262)에 닿으면 몸통을 숨기고 파편을 0.25초 보여준 뒤 사라진다
+  - **주의(실제로 겪은 버그): `area_entered` 콜백 안에서 `monitoring = false`를 하면
+    "Function blocked during in/out signal" 에러가 난다.** `set_deferred("monitoring", false)`로 미뤄야 한다
+  - 화분은 Area2D라 발판·좌석을 그냥 통과한다(바닥 높이에서만 깨진다). 발판 위에서도 맞는다는 뜻이라
+    지금은 이대로 두었다 — 발판에 걸리게 하려면 별도 판정이 필요하다
+- `maps/PotSpawner.gd`: `interval_min/max`(1.2~2.8초)·`first_delay`(3초)·`spawn_half_width`(420)·
+  `max_alive`(6)로 빈도와 범위를 조절한다. 데미지는 화분 쪽(`FallingPot.tscn`)에 있다
+
 ### `maps/SubwayPlatform.tscn` 구조 (2026-09-03 기획 확정본)
 
 **승강장 바닥이 없다 — 플레이어는 선로 바닥에서 싸운다.** 기획 그림에서 승강장 폴리곤에 X 표시가 와서 통째로 지웠고, 올라갈 수 있는 발판은 **의자 2개뿐**이다.
