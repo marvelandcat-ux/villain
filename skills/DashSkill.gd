@@ -10,17 +10,40 @@ extends Skill
 @export var wall_bounce: Vector2 = Vector2(150, -80)
 ## 잔상을 몇 초마다 남길지
 @export var trail_interval: float = 0.04
+## 뒷바퀴 스키드 먼지를 몇 초마다 튈지
+@export var skid_interval: float = 0.05
+## 바닥 색을 못 찾았을 때 쓸 기본 먼지색 (바닥과 대비되게 어두운 흙색)
+@export var default_dust_color: Color = Color(0.3, 0.26, 0.22, 0.9)
+## 뒷바퀴 위치(캐릭터 원점 기준) — x는 진행 반대쪽(뒤)이라 음수, y는 바닥 높이. x는 진행 방향으로 반전된다
+@export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
+## 적을 들이받으면 적이 입는 데미지
+@export var enemy_hit_damage: int = 10
+## 적을 들이받으면 촉법소년 자신도 입는 데미지 (자전거는 브레이크가 없다)
+@export var enemy_hit_self_damage: int = 10
+## 적과 부딪힐 때 서로 튕겨나가는 넉백 세기 — 적은 진행 방향으로, 자신은 반대로 날아간다.
+## 이 값은 "돌진 지속시간을 꽉 채워서(최대) 부딪혔을 때"의 넉백이고, 덜 달렸으면 그만큼 약해진다
+@export var enemy_collision_knockback: Vector2 = Vector2(340, -150)
+## 돌진 진행도(오래 달린 정도)에 넉백을 비례시킨다. 이 값은 최소 배율 — 시작하자마자 부딪혀도 이만큼은 나간다(0이면 시작 순간 넉백 0)
+@export var min_knockback_scale: float = 0.15
 
 var _time_left: float = 0.0
 var _direction: float = 1.0
 var _trail_timer: float = 0.0
 ## 발동 순간 계산해둔 실제 돌진 속도 (캐릭터 이동속도 × 배수)
 var _dash_speed: float = 0.0
+## 이번 돌진에서 이미 적을 들이받았는지 (한 번만 충돌 처리)
+var _hit_enemy: bool = false
+## 다음 스키드 먼지까지 남은 시간, 돌진 시작 때 잡아둔 바닥 색
+var _skid_timer: float = 0.0
+var _ground_color: Color = Color.WHITE
 
 func _execute(fighter: Fighter) -> void:
 	_time_left = dash_duration
 	_direction = fighter.facing
 	_trail_timer = 0.0
+	_hit_enemy = false
+	_skid_timer = 0.0
+	_ground_color = _sample_ground_color(fighter)
 	_dash_speed = fighter.stats.move_speed * dash_speed_multiplier
 	fighter.movement_override = self
 	var visual: Node2D = fighter.get_node_or_null("Visual")
@@ -31,6 +54,9 @@ func _execute(fighter: Fighter) -> void:
 			visual.set_riding(true)
 		else:
 			visual.scale = Vector2(1.35, 0.8)
+		# 돌진하는 동안 달리는 표정으로 바꾼다 (그 표정이 있는 캐릭터만)
+		if visual.has_method("set_action_face"):
+			visual.set_action_face(true)
 	_spawn_afterimage(fighter)
 
 ## 돌진 중 매 물리 프레임 적용할 수평 속도 (Fighter.apply_physics에서 호출)
@@ -44,11 +70,59 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 	if _trail_timer <= 0.0:
 		_trail_timer = trail_interval
 		_spawn_afterimage(fighter)
+	# 뒷바퀴 스키드 먼지 (바닥에 붙어 있을 때만 — 공중에선 마찰이 없다)
+	_skid_timer -= delta
+	if _skid_timer <= 0.0 and fighter.is_on_floor():
+		_skid_timer = skid_interval
+		_spawn_skid(fighter)
+	# 적 충돌은 벽 충돌보다 먼저 검사한다 — 적도 물리 바디라 부딪히면 is_on_wall이 켜질 수 있어서,
+	# 여기서 안 걸러내면 벽 자해 코드가 대신 터진다
+	if not _hit_enemy:
+		var enemy: Fighter = _get_collided_enemy(fighter)
+		if enemy:
+			_hit_enemy = true
+			_collide_with_enemy(fighter, enemy)
+			_end_dash(fighter)
+			return
 	if fighter.is_on_wall():
 		fighter.take_damage(self_damage_on_wall, Vector2(-_direction * wall_bounce.x, wall_bounce.y))
+		# 벽에 박은 자리(자전거 앞)에 터지는 이펙트
+		_spawn_burst(fighter, fighter.global_position + Vector2(_direction * 20.0, 0.0))
 		_end_dash(fighter)
 	elif _time_left <= 0.0:
 		_end_dash(fighter)
+
+## 충돌 지점에 터지는 이펙트를 스폰한다
+func _spawn_burst(fighter: Fighter, pos: Vector2) -> void:
+	var parent: Node = fighter.get_parent()
+	if parent == null:
+		return
+	var burst := CrashBurst.new()
+	parent.add_child(burst)
+	burst.global_position = pos
+
+## 돌진 중 부딪힌 상대 Fighter를 move_and_slide 충돌 목록에서 찾는다 (벽·바닥 같은 정적 바디는 제외)
+func _get_collided_enemy(fighter: Fighter) -> Fighter:
+	for i in range(fighter.get_slide_collision_count()):
+		var collider: Object = fighter.get_slide_collision(i).get_collider()
+		if collider is Fighter and collider != fighter:
+			return collider
+	return null
+
+## 적을 들이받았을 때 — 적은 진행 방향으로, 촉법소년은 반대로 세게 튕겨나가고 둘 다 데미지를 입는다
+func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
+	# 오래 달렸을수록(지속시간 진행도) 넉백이 세진다. 진행도 1 = 지속시간 꽉 채움 = enemy_collision_knockback 그대로
+	var progress: float = clampf((dash_duration - _time_left) / dash_duration, 0.0, 1.0)
+	var scale: float = maxf(progress, min_knockback_scale)
+	var kb: Vector2 = enemy_collision_knockback * scale
+	# 부딪힌 지점(둘 사이 중간)에 터지는 이펙트
+	_spawn_burst(fighter, (fighter.global_position + enemy.global_position) * 0.5)
+	# 적: 돌진 방향으로 날아감
+	enemy.take_damage(enemy_hit_damage, Vector2(kb.x * _direction, kb.y))
+	# 촉법소년: 돌진 관성을 먼저 지운다 — 안 그러면 +돌진속도가 뒤로 튕기는 넉백을 상쇄해 거의 안 밀린다
+	fighter.velocity = Vector2.ZERO
+	# 반대 방향으로 튕겨나가며 자기도 피해 (브레이크 없는 픽시)
+	fighter.take_damage(enemy_hit_self_damage, Vector2(-kb.x * _direction, kb.y))
 
 func _end_dash(fighter: Fighter) -> void:
 	fighter.movement_override = null
@@ -59,6 +133,41 @@ func _end_dash(fighter: Fighter) -> void:
 			visual.set_riding(false)
 		else:
 			visual.scale = Vector2(1, 1)
+		# 돌진이 끝나면 원래 표정으로
+		if visual.has_method("set_action_face"):
+			visual.set_action_face(false)
+
+## 돌진 시작 지점 아래로 레이캐스트해 바닥의 색을 가져온다 (바닥 StaticBody의 Polygon2D 색).
+## 캐릭터는 제외하고, 못 찾으면(스프라이트 바닥 등) 기본 먼지색을 쓴다
+func _sample_ground_color(fighter: Fighter) -> Color:
+	var from: Vector2 = fighter.global_position
+	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, 200.0))
+	query.collide_with_areas = false
+	var excludes: Array[RID] = []
+	for f in fighter.get_tree().get_nodes_in_group("fighters"):
+		excludes.append(f.get_rid())
+	query.exclude = excludes
+	var hit: Dictionary = fighter.get_world_2d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return default_dust_color
+	for child in hit.collider.get_children():
+		if child is Polygon2D:
+			# 바닥 색을 그대로 쓰면 바닥에 묻혀 안 보인다 — 조금 어둡게(스크래치 자국처럼) 해서 대비를 준다
+			var c: Color = child.color.darkened(0.35)
+			c.a = 0.9
+			return c
+	return default_dust_color
+
+## 뒷바퀴 위치에 바닥 색 먼지 한 조각을 튀긴다 (진행 반대쪽으로 흩날림)
+func _spawn_skid(fighter: Fighter) -> void:
+	var parent: Node = fighter.get_parent()
+	if parent == null:
+		return
+	var dust: Node2D = load("res://skills/SkidDust.tscn").instantiate()
+	parent.add_child(dust)
+	dust.z_index = -1   # 자전거·본체보다 뒤에 (바닥에 붙어 보이게)
+	dust.global_position = fighter.global_position + Vector2(rear_wheel_offset.x * _direction, rear_wheel_offset.y)
+	dust.setup(_ground_color, _direction)
 
 ## 돌진하는 잔상(반투명 복제)을 하나 남기고 서서히 지운다.
 ## Visual이 임시 사각형(Polygon2D)이든 스프라이트 몸(BodyRig 등 Node2D)이든 상관없이 그대로 복제해서 쓴다

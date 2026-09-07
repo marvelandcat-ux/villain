@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c52uakfygx8to"
-path="res://.godot/imported/발.png-5a780b9866d5852fae65571806cd33a1.ctex"
+uid="uid://c3rrljta7b1s3"
+path="res://.godot/imported/달리는 축법소년 표정.png-8a2d3a2578cfe04d2a89ba90dbf8771a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소/발.png"
-dest_files=["res://.godot/imported/발.png-5a780b9866d5852fae65571806cd33a1.ctex"]
+source_file="res://sprite/축법소년/달리는 축법소년 표정.png"
+dest_files=["res://.godot/imported/달리는 축법소년 표정.png-8a2d3a2578cfe04d2a89ba90dbf8771a.ctex"]
 
 [params]
 

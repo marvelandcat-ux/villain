@@ -25,6 +25,14 @@ extends Node2D
 @export var body_bob: float = 4.0
 ## 손이 앞뒤로 흔들리는 거리(px)
 @export var hand_swing: float = 12.0
+## 가만히 서 있을 때 몸/머리/손이 위아래로 미묘하게 숨쉬는 폭(px). 걷기 시작하면 서서히 사라진다
+@export var breathe_amount: float = 2.6
+## 숨쉬기 속도(라디안/초) — 낮을수록 느긋하게 숨쉰다
+@export var breathe_speed: float = 2.2
+## 손이 몸통과 다른 박자로 숨쉬게 하는 위상 차이(라디안). 0이면 몸과 똑같이 움직여서 어색하다
+@export var breathe_hand_phase: float = 1.4
+## 손 숨쉬기 폭이 몸 대비 몇 배인지 (손이 조금 더 크게 움직이면 자연스럽다)
+@export var breathe_hand_ratio: float = 1.3
 ## 걸음 빠르기 — 캐릭터가 최고 속도로 달릴 때 1초에 이 값(라디안)만큼 걸음 위상이 진행된다
 @export var step_speed: float = 9.0
 ## 걷기 시작/멈출 때 동작이 켜지고 꺼지는 빠르기 (클수록 뚝뚝 끊긴다)
@@ -140,6 +148,11 @@ extends Node2D
 ## 술 머금은 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var drunk_head_scale: Vector2 = Vector2.ZERO
 
+## 스킬(자전거 돌진·총 쏘기)을 쓰는 동안 이 표정으로 머리를 바꾼다. 비어 있으면 안 바꾼다(촉법소년만 지정)
+@export var action_head_texture: Texture2D
+## 액션 표정일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var action_head_scale: Vector2 = Vector2.ZERO
+
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
 @onready var _body: Sprite2D = get_node_or_null("Body")
@@ -156,6 +169,8 @@ extends Node2D
 var _fighter: Fighter
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
 var _phase: float = 0.0
+## 숨쉬기 위상 — 계속 커지며 sin()으로 위아래 미묘한 움직임을 만든다 (idle breathing)
+var _breathe_phase: float = 0.0
 ## 동작 세기 (0=제자리, 1=완전히 걷는 중). 멈출 때 툭 끊기지 않게 서서히 줄인다
 var _blend: float = 0.0
 ## 점프 자세 세기 (0=바닥, 1=완전히 공중 자세). 뜨고 내릴 때 각도가 툭 튀지 않게 서서히 오간다
@@ -195,6 +210,8 @@ var _recoil: float = 0.0
 var _vomit_time: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
+## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
+var _action_face_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
@@ -227,6 +244,9 @@ func _process(delta: float) -> void:
 		var max_speed: float = _fighter.stats.move_speed * _fighter.move_speed_multiplier
 		if max_speed > 0.0:
 			speed_ratio = clampf(absf(_fighter.velocity.x) / max_speed, 0.0, 1.0)
+
+	# 숨쉬기 위상은 항상 진행 (가만히 서 있을 때만 화면에 반영된다)
+	_breathe_phase += delta * breathe_speed
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
@@ -327,9 +347,19 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	# 발이 가장 높이 들렸을 때 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
 	var bob: float = -absf(swing) * body_bob * amount
-	for part in [_body, _head, _hand_l, _hand_r]:
+	# 가만히 서 있을 때(바닥·안 걷는 중)만 몸/머리/손이 숨쉬듯 위아래로 미묘하게 움직인다. 걷기 시작하면 서서히 사라진다.
+	# 손은 몸통과 다른 박자(위상 차이)로, 좌우 손도 살짝 어긋나게 해서 같이 움직이는 어색함을 없앤다
+	var on_floor_now: bool = _fighter == null or (is_instance_valid(_fighter) and _fighter.is_on_floor())
+	var idle_f: float = (1.0 - _blend) if on_floor_now else 0.0
+	var body_breathe: float = sin(_breathe_phase) * breathe_amount * idle_f
+	var hand_amt: float = breathe_amount * breathe_hand_ratio * idle_f
+	for part in [_body, _head]:
 		if part:
-			part.position.y = _rest_positions[part].y + bob
+			part.position.y = _rest_positions[part].y + bob + body_breathe
+	if _hand_r:
+		_hand_r.position.y = _rest_positions[_hand_r].y + bob + sin(_breathe_phase + breathe_hand_phase) * hand_amt
+	if _hand_l:
+		_hand_l.position.y = _rest_positions[_hand_l].y + bob + sin(_breathe_phase + breathe_hand_phase + 0.5) * hand_amt
 	# 술 마시기·두 손 잡기가 매 프레임 덮어쓰므로, 오른손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
 	if _head:
 		# 하강 중이면 고개를 아래로 숙인다 (마시기 동작이 있으면 아래에서 덮어써서 그쪽이 우선한다)
@@ -530,11 +560,23 @@ func set_drunk_head(on: bool) -> void:
 	if _vomit_time <= 0.0:
 		_apply_base_head()
 
-## 현재 상태(취함/맨정신)에 맞는 머리 그림·배율을 머리에 적용한다
+## 스킬(자전거 돌진·총 쏘기)을 쓰는 동안 액션 표정으로 머리를 바꾼다. on=false면 원래 상태로 되돌린다.
+## action_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
+func set_action_face(on: bool) -> void:
+	if _head == null or action_head_texture == null:
+		return
+	_action_face_on = on
+	if _vomit_time <= 0.0:   # 토하는 표정이 떠 있으면 그게 끝난 뒤 반영된다
+		_apply_base_head()
+
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선)
 func _apply_base_head() -> void:
 	if _head == null:
 		return
-	if _drunk_head_on and drunk_head_texture != null:
+	if _action_face_on and action_head_texture != null:
+		_head.texture = action_head_texture
+		_head.scale = action_head_scale if action_head_scale != Vector2.ZERO else _head_rest_scale
+	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
 	else:

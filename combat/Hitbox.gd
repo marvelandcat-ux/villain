@@ -65,13 +65,30 @@ func _try_hit(area: Area2D) -> bool:
 		return false
 	if not (area is Hurtbox):
 		return false
-	if not area.take_hit(damage, _compute_knockback(area), source_fighter):
+	var kb: Vector2 = _compute_knockback(area)
+	if not area.take_hit(damage, kb, source_fighter):
 		return false
-	_spawn_spark(area.global_position)
+	_spawn_spark(area.global_position, kb)
 	if debris_scene != null:
 		_spawn_debris(area.global_position)
 	_shake_camera()
+	# 피격 지점에 데미지 숫자(+콤보) 팝업
+	var combo: int = 0
+	var victim: Node = area.fighter
+	if victim and victim.has_method("get_combo_count"):
+		combo = victim.get_combo_count()
+	_spawn_damage_number(area.global_position, damage, combo)
 	return true
+
+## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)
+func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	var popup: Node2D = load("res://combat/DamagePopup.tscn").instantiate()
+	scene_root.add_child(popup)
+	popup.global_position = pos
+	popup.setup(dmg, combo)
 
 ## 명중 시 카메라를 데미지에 비례해 흔든다 (game_camera 그룹의 카메라를 찾아 trauma를 더한다)
 func _shake_camera() -> void:
@@ -93,13 +110,16 @@ func _compute_knockback(hurtbox: Hurtbox) -> Vector2:
 		return Vector2.ZERO
 	return to_source.normalized() * pull_strength
 
-func _spawn_spark(pos: Vector2) -> void:
+func _spawn_spark(pos: Vector2, launch_dir: Vector2 = Vector2.ZERO) -> void:
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return
 	var spark: Node2D = load("res://combat/HitSpark.tscn").instantiate()
 	scene_root.add_child(spark)
 	spark.global_position = pos
+	# 넉백 방향이 주어지면 스파크가 그쪽으로 튀어나가게 한다
+	if launch_dir != Vector2.ZERO and spark.has_method("launch"):
+		spark.launch(launch_dir)
 
 ## 명중 지점에 debris_scene을 스폰한다 (유리 파편 등). 파편이 바닥까지 떨어지는 처리는 스폰된 노드가 맡는다
 func _spawn_debris(pos: Vector2) -> void:
