@@ -30,17 +30,16 @@ func _make_tile(index: int) -> Button:
 	if unlocked:
 		button.pressed.connect(_on_episode_picked.bind(index))
 
-	if unlocked:
-		var portrait_path: String = GameState.PORTRAITS.get(character_name, "")
-		if portrait_path != "":
-			var image := TextureRect.new()
-			image.texture = load(portrait_path)
-			image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-			image.anchor_right = 1.0
-			image.anchor_bottom = 1.0
-			image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			button.add_child(image)
+	if unlocked and GameState.has_portrait(character_name):
+		var image := TextureRect.new()
+		image.texture = GameState.portrait_texture(character_name)
+		image.anchor_right = 1.0
+		image.anchor_bottom = 1.0
+		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.clip_contents = true
+		button.add_child(image)
+		# 편집 씬(PortraitFrames.tscn) 값으로 프레이밍 (에피소드 타일 크기 120x100)
+		GameState.frame_portrait(image, character_name, Vector2(120, 100))
 
 	var episode_label := Label.new()
 	episode_label.text = "EPISODE %d" % (index + 1)
