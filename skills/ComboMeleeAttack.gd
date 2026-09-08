@@ -22,6 +22,9 @@ extends MeleeAttack
 @export var combo_pop: Array[float] = [-1.0, -1.0, -1.0]
 ## 한 타가 맞은 뒤 다음 타를 눌러 이어갈 수 있는 시간(초)
 @export var chain_window: float = 1.0
+## 헛발질(빗맞음)했을 때만 도는 쿨타임(초). 음수면 기본 cooldown을 그대로 쓴다.
+## 3타 마무리 쿨은 cooldown이라, 이 값으로 "못 맞췄을 때만" 더 크게 벌칙을 줄 수 있다
+@export var miss_cooldown: float = -1.0
 
 ## 지금 낼 타 (0=1타, 1=2타, 2=3타)
 var _step: int = 0
@@ -117,7 +120,8 @@ func _resolve(hit: bool) -> void:
 		else:
 			_reset(cooldown)   # 3타까지 다 맞춤 → 마무리 회복 쿨
 	else:
-		_reset(cooldown)   # 헛발 → 기본공격 쿨 + 1타 리셋 (예약 입력은 버림)
+		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋 (예약 입력은 버림)
+		_reset(miss_cooldown if miss_cooldown >= 0.0 else cooldown)
 
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:

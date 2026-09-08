@@ -32,8 +32,14 @@ const PORTRAITS := {
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
 	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
-	"고양이 아주머니": "res://sprite/body/캣맘정면.png",
+	"고양이 아주머니": "res://sprite/body/면.png",
 }
+
+## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.
+## 게임은 이 씬에서 초상화 텍스처·배율·위치를 그대로 읽어 쓰므로 "에디터에서 보이는 대로" 게임에 나온다
+const PORTRAIT_FRAMES_PATH := "res://ui/PortraitFrames.tscn"
+## PortraitFrames.tscn의 프레임 한 칸 크기(px). Portrait를 드래그한 거리를 이 크기 대비 비율로 환산할 때 기준으로 쓴다
+const PORTRAIT_FRAME_SIZE := Vector2(200, 180)
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
 const MAPS := {
@@ -106,9 +112,16 @@ var is_fullscreen: bool = false
 var resolution_index: int = 0
 var master_volume: float = DEFAULT_MASTER_VOLUME
 
+## PortraitFrames.tscn에서 읽어둔 캐릭터별 초상화 텍스처와, 프레임 대비 얼굴 네모의
+## 중심·크기 비율(둘 다 Vector2). _ready에서 채운다
+var _portrait_texture: Dictionary = {}
+var _portrait_rect_center: Dictionary = {}
+var _portrait_rect_size: Dictionary = {}
+
 func _ready() -> void:
 	_load_env()
 	_load_settings()
+	_load_portrait_frames()
 
 ## 새 대전을 시작하기 전에 라운드 스코어를 초기화한다
 func reset_round_wins() -> void:
@@ -217,3 +230,54 @@ func set_master_volume(volume: float) -> void:
 	var bus_index := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(master_volume))
 	_save_setting("audio", "master_volume", master_volume)
+
+## PortraitFrames.tscn을 인스턴스해서 각 캐릭터 프레임 안 "Portrait" 노드의 텍스처와,
+## 그 노드가 프레임(200x180) 안에서 차지하는 네모(위치+크기)를 읽어둔다.
+## 에디터에서 핸들로 리사이즈하든 Scale을 바꾸든 둘 다 반영되도록, 노드의 실제 네모
+## (offset으로 계산한 rect)에 scale까지 곱해서 "보이는 크기"로 환산한다.
+## 트리에 넣지 않아도 읽히도록 계산이 필요한 size 대신 씬에 저장된 offset 값을 직접 쓴다
+func _load_portrait_frames() -> void:
+	var packed: PackedScene = load(PORTRAIT_FRAMES_PATH)
+	if packed == null:
+		return
+	var frames := packed.instantiate()
+	for frame in frames.get_children():
+		if not (frame is Control):
+			continue
+		var portrait := frame.get_node_or_null("Portrait")
+		if portrait == null or not (portrait is TextureRect):
+			continue
+		var rect_pos := Vector2(portrait.offset_left, portrait.offset_top)
+		var rect_size := Vector2(portrait.offset_right, portrait.offset_bottom) - rect_pos
+		var eff_size: Vector2 = rect_size * portrait.scale.x  # 핸들 리사이즈 + Scale 둘 다 반영
+		var eff_center: Vector2 = rect_pos + rect_size * 0.5  # scale은 프레임 중심 기준이라 중심은 유지로 근사
+		_portrait_texture[frame.name] = portrait.texture
+		_portrait_rect_center[frame.name] = eff_center / PORTRAIT_FRAME_SIZE
+		_portrait_rect_size[frame.name] = eff_size / PORTRAIT_FRAME_SIZE
+	frames.free()
+
+## 이 캐릭터의 초상화 그림이 편집 씬에 등록돼 있는지
+func has_portrait(character_name: String) -> bool:
+	return _portrait_texture.has(character_name) and _portrait_texture[character_name] != null
+
+## 이 캐릭터의 초상화 텍스처 (없으면 null)
+func portrait_texture(character_name: String) -> Texture2D:
+	return _portrait_texture.get(character_name, null)
+
+## 초상화 TextureRect를 box_size 상자 안에서 캐릭터별로 프레이밍한다.
+## image는 상자를 꽉 채우는 앵커(anchor_right=1, anchor_bottom=1)에 놓여 있다고 가정한다.
+## 편집 씬(PortraitFrames.tscn)에서 얼굴 네모가 프레임 안에서 차지한 위치·크기 비율을
+## 이 상자 크기에 그대로 옮겨, 그 네모 안에 그림을 가운데 맞춰 넣는다(보이는 대로 게임에 나온다)
+func frame_portrait(image: TextureRect, character_name: String, box_size: Vector2) -> void:
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.scale = Vector2.ONE
+	var center_frac: Vector2 = _portrait_rect_center.get(character_name, Vector2(0.5, 0.5))
+	var size_frac: Vector2 = _portrait_rect_size.get(character_name, Vector2.ONE)
+	var rect_size: Vector2 = size_frac * box_size
+	var rect_pos: Vector2 = center_frac * box_size - rect_size * 0.5
+	# anchor_left/top=0, anchor_right/bottom=1 기준: 왼쪽·위는 그대로, 오른쪽·아래는 상자 끝에서의 안쪽 여백
+	image.offset_left = rect_pos.x
+	image.offset_top = rect_pos.y
+	image.offset_right = rect_pos.x + rect_size.x - box_size.x
+	image.offset_bottom = rect_pos.y + rect_size.y - box_size.y

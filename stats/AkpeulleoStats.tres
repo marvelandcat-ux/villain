@@ -6,5 +6,5 @@
 [resource]
 script = ExtResource("1")
 character_name = "악플러"
-move_speed = 230.0
+move_speed = 270.0
 ultimate_cutin_scene = ExtResource("2")

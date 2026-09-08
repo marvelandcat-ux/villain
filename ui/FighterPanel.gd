@@ -53,11 +53,12 @@ func _bind_skill_slots(player_index: int) -> void:
 ## 초상화 그림이 있는 캐릭터면 CharacterBox를 그림으로 채우고, 이름표는 그림 위에서도 읽히도록
 ## 하단으로 옮기고 테두리를 준다. 없으면 기존처럼 이름표가 박스 전체에 가운데 정렬된다
 func _apply_portrait(character_name: String) -> void:
-	var portrait_path: String = GameState.PORTRAITS.get(character_name, "")
-	if portrait_path == "":
+	if not GameState.has_portrait(character_name):
 		character_image.texture = null
 		return
-	character_image.texture = load(portrait_path)
+	character_image.texture = GameState.portrait_texture(character_name)
+	# 편집 씬(PortraitFrames.tscn)에서 잡은 배율·위치를 HUD 초상화 칸(70x70)에도 똑같이 적용
+	GameState.frame_portrait(character_image, character_name, Vector2(70, 70))
 	name_label.anchor_top = 1.0
 	# "고양이 아주머니"처럼 긴 이름은 두 줄로 접히므로 이름표 높이를 두 줄치로 잡는다 —
 	# 16px로 두면 두 번째 줄이 초상화 칸 밖으로 흘러내린다 (실제로 그렇게 보였음)

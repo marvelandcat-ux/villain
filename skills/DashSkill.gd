@@ -20,11 +20,18 @@ extends Skill
 @export var enemy_hit_damage: int = 10
 ## 적을 들이받으면 촉법소년 자신도 입는 데미지 (자전거는 브레이크가 없다)
 @export var enemy_hit_self_damage: int = 10
-## 적과 부딪힐 때 서로 튕겨나가는 넉백 세기 — 적은 진행 방향으로, 자신은 반대로 날아간다.
-## 이 값은 "돌진 지속시간을 꽉 채워서(최대) 부딪혔을 때"의 넉백이고, 덜 달렸으면 그만큼 약해진다
-@export var enemy_collision_knockback: Vector2 = Vector2(340, -150)
-## 돌진 진행도(오래 달린 정도)에 넉백을 비례시킨다. 이 값은 최소 배율 — 시작하자마자 부딪혀도 이만큼은 나간다(0이면 시작 순간 넉백 0)
-@export var min_knockback_scale: float = 0.15
+## 서로 튕겨나가는 넉백 — 적은 진행 방향으로, 자신은 반대로 날아간다.
+## 이 값은 "자전거를 딱 절반 탔을 때(진행도 0.5)"의 넉백 = 평균이다.
+## 실제 넉백 = 이 값 × (min~max 배율). 막 출발=min배, 다 탐=max배, 절반=1배(이 값 그대로)
+@export var enemy_collision_knockback: Vector2 = Vector2(220, -120)
+## 돌진 진행도(0=막 출발 ~ 1=다 탐)에 따라 넉백에 곱하는 배율. min에서 max로 선형 증가하고,
+## 진행도 0.5(절반)에서 정확히 (min+max)/2 = 1.0배 = 평균이 나오게 min 0 / max 2로 잡았다
+@export var min_knockback_scale: float = 0.0
+@export var max_knockback_scale: float = 2.0
+## 적을 들이받았다고 볼 몸 사이 거리(px). 캐릭터끼리 몸 충돌이 꺼져 있어(add_collision_exception_with)
+## 물리 충돌 대신 이 거리로 판정한다. 서로 밀어내는 최소 간격(BODY_PUSH_WIDTH=38)보다 살짝 크게 잡아 접촉 순간 잡는다
+@export var enemy_hit_range_x: float = 42.0
+@export var enemy_hit_range_y: float = 46.0
 
 var _time_left: float = 0.0
 var _direction: float = 1.0
@@ -78,7 +85,7 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 	# 적 충돌은 벽 충돌보다 먼저 검사한다 — 적도 물리 바디라 부딪히면 is_on_wall이 켜질 수 있어서,
 	# 여기서 안 걸러내면 벽 자해 코드가 대신 터진다
 	if not _hit_enemy:
-		var enemy: Fighter = _get_collided_enemy(fighter)
+		var enemy: Fighter = _get_enemy_in_range(fighter)
 		if enemy:
 			_hit_enemy = true
 			_collide_with_enemy(fighter, enemy)
@@ -101,19 +108,27 @@ func _spawn_burst(fighter: Fighter, pos: Vector2) -> void:
 	parent.add_child(burst)
 	burst.global_position = pos
 
-## 돌진 중 부딪힌 상대 Fighter를 move_and_slide 충돌 목록에서 찾는다 (벽·바닥 같은 정적 바디는 제외)
-func _get_collided_enemy(fighter: Fighter) -> Fighter:
-	for i in range(fighter.get_slide_collision_count()):
-		var collider: Object = fighter.get_slide_collision(i).get_collider()
-		if collider is Fighter and collider != fighter:
-			return collider
+## 돌진 중 몸 근처(enemy_hit_range 안)에 들어온 상대 Fighter를 찾는다.
+## 캐릭터끼리는 몸 충돌(add_collision_exception_with)이 꺼져 있어 get_slide_collision으로는 안 잡히므로 거리로 판정한다.
+## 돌진 방향 앞쪽(또는 거의 겹친) 상대만 대상으로 해서, 등지고 출발할 때 뒤에 있는 상대에 헛맞지 않게 한다
+func _get_enemy_in_range(fighter: Fighter) -> Fighter:
+	for other in fighter.get_tree().get_nodes_in_group("fighters"):
+		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
+			continue
+		var dx: float = other.global_position.x - fighter.global_position.x
+		var dy: float = other.global_position.y - fighter.global_position.y
+		if absf(dy) > enemy_hit_range_y or absf(dx) > enemy_hit_range_x:
+			continue
+		if dx * _direction < -20.0:   # 명백히 등 뒤에 있으면 제외 (거의 겹친 경우는 통과)
+			continue
+		return other
 	return null
 
 ## 적을 들이받았을 때 — 적은 진행 방향으로, 촉법소년은 반대로 세게 튕겨나가고 둘 다 데미지를 입는다
 func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
-	# 오래 달렸을수록(지속시간 진행도) 넉백이 세진다. 진행도 1 = 지속시간 꽉 채움 = enemy_collision_knockback 그대로
+	# 오래 달렸을수록(지속시간 진행도) 넉백이 세진다. min→max로 선형이라 진행도 0.5(절반)에서 1.0배(=평균)가 나온다
 	var progress: float = clampf((dash_duration - _time_left) / dash_duration, 0.0, 1.0)
-	var scale: float = maxf(progress, min_knockback_scale)
+	var scale: float = lerp(min_knockback_scale, max_knockback_scale, progress)
 	var kb: Vector2 = enemy_collision_knockback * scale
 	# 부딪힌 지점(둘 사이 중간)에 터지는 이펙트
 	_spawn_burst(fighter, (fighter.global_position + enemy.global_position) * 0.5)

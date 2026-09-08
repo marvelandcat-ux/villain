@@ -38,7 +38,7 @@ text = "P1 SELECT"
 horizontal_alignment = 1
 
 [node name="P1PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P1Side"]
-custom_minimum_size = Vector2(300, 330)
+custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 color = Color(0.35, 0.35, 0.4, 1)
 
@@ -61,7 +61,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="VsLabel" type="Label" parent="Center/VBox/PreviewRow"]
-custom_minimum_size = Vector2(300, 330)
+custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 theme_override_font_sizes/font_size = 36
 text = "VS"
@@ -80,7 +80,7 @@ text = "P2"
 horizontal_alignment = 1
 
 [node name="P2PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P2Side"]
-custom_minimum_size = Vector2(300, 330)
+custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 color = Color(0.35, 0.35, 0.4, 1)
 
