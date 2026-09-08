@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://eidii1746u40"
-path="res://.godot/imported/2번프레임.png-77afaa3af89f46b116b3613f6efe6a89.ctex"
+uid="uid://duijb8sooyhen"
+path="res://.godot/imported/3번배경.png-b78c6cfafc0a0b835568708c94ed89eb.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/축법소년/궁극기컷인/2번프레임.png"
-dest_files=["res://.godot/imported/2번프레임.png-77afaa3af89f46b116b3613f6efe6a89.ctex"]
+source_file="res://sprite/축법소년/궁극기컷인/3번배경.png"
+dest_files=["res://.godot/imported/3번배경.png-b78c6cfafc0a0b835568708c94ed89eb.ctex"]
 
 [params]
 
