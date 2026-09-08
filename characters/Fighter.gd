@@ -56,6 +56,8 @@ var move_speed_multiplier: float = 1.0
 var jump_multiplier: float = 1.0
 var attack_debuff_multiplier: float = 1.0
 var cooldown_rate_multiplier: float = 1.0
+## 기본공격 전용 공격속도 배수 — 1.5면 기본공격 쿨타임이 1.5배 빨리 돌아 50% 더 자주 때린다 (악플러 열등감 스킬)
+var attack_speed_multiplier: float = 1.0
 ## 받는 데미지 감소율 (0.0=없음, 1.0=완전 무효) — 가드 스킬 등이 사용
 var damage_reduction: float = 0.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중)
@@ -108,6 +110,31 @@ func _ignore_other_fighters() -> void:
 			continue
 		add_collision_exception_with(other)
 		other.add_collision_exception_with(self)
+
+## 캐릭터끼리 서로 밀어내 겹치지 않게 하는 최소 가로 간격(px). 몸 반지름(20)의 두 배쯤
+const BODY_PUSH_WIDTH := 38.0
+## 세로로 이만큼 넘게 벌어져 있으면(상대가 위에 있으면) 안 밀어낸다 — 점프로 넘어갈 수 있게
+const BODY_PUSH_HEIGHT := 46.0
+
+## 상대 캐릭터와 몸이 가로로 겹치면 서로 밀어내 통과하지 못하게 한다.
+## 몸 충돌(add_collision_exception_with)은 그대로 무시하므로 세로로는 안 막혀서 머리 위에 올라서는 건 여전히 방지되고,
+## 여기서는 가로로만 밀어낸다. 두 캐릭터가 각자 절반씩 밀어내므로 한두 프레임 안에 딱 붙어 떨어진다.
+## move_and_collide로 밀어서 벽은 뚫지 않는다(상대에게 몰리면 벽에 막혀 코너에 갇힌다)
+func _separate_from_others() -> void:
+	for other in get_tree().get_nodes_in_group("fighters"):
+		if other == self or not is_instance_valid(other):
+			continue
+		if absf(global_position.y - other.global_position.y) > BODY_PUSH_HEIGHT:
+			continue
+		var dx: float = global_position.x - other.global_position.x
+		var dist: float = absf(dx)
+		if dist >= BODY_PUSH_WIDTH:
+			continue
+		var dir: float = signf(dx)
+		if dir == 0.0:
+			# 완전히 겹쳤으면 인스턴스 순서로 방향을 갈라 서로 반대로 밀어낸다
+			dir = 1.0 if get_instance_id() > other.get_instance_id() else -1.0
+		move_and_collide(Vector2(dir * (BODY_PUSH_WIDTH - dist) * 0.5, 0.0))
 
 ## --- 피격 리액션(격투 게임식 히트 리액션) 튜닝값 ---
 ## 넉백 방향으로 기우는 각도(도) = 이 기본값 + 데미지 × 비례값, 최대 HIT_LEAN_MAX_DEG로 제한
@@ -480,3 +507,5 @@ func apply_physics(delta: float) -> void:
 		_air_jumps_left = max_air_jumps
 	if movement_override:
 		movement_override.after_physics(self, delta)
+	# 상대 캐릭터와 겹쳤으면 가로로 밀어내 통과하지 못하게 한다
+	_separate_from_others()

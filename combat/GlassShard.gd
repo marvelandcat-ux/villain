@@ -9,6 +9,10 @@ extends Node2D
 @export var fall_time: float = 0.35
 ## 떨어지면서 옆으로 튀는 최대 거리(px)
 @export var scatter_x: float = 26.0
+## 바닥에 쌓인 뒤 이 시간(초)이 지나면 서서히 투명해지며 사라진다
+@export var lifetime: float = 10.0
+## 사라질 때 투명해지는 데 걸리는 시간(초)
+@export var fade_time: float = 1.5
 ## 바닥을 못 찾았을 때(공중) 대비 아래로 쏘는 레이캐스트 길이(px)
 @export var ground_probe: float = 2000.0
 ## 파편 그림 후보 — 스폰할 때 이 중 하나를 무작위로 골라 쓴다 (비어 있으면 씬에 지정된 기본 그림을 그대로 둔다)
@@ -63,6 +67,10 @@ func _fall(spawn_pos: Vector2, base_scale: float) -> void:
 	# 착지 바운스 — 세로로 눌렸다 펴진다
 	tween.tween_property(self, "scale:y", base_scale * 0.7, 0.06)
 	tween.tween_property(self, "scale:y", base_scale, 0.08)
+	# 바닥에 쌓인 뒤 lifetime이 지나면 서서히 투명해지며 사라진다 (self에 붙은 트윈이라 씬이 정리되면 같이 사라진다)
+	tween.tween_interval(lifetime)
+	tween.tween_property(self, "modulate:a", 0.0, fade_time)
+	tween.tween_callback(queue_free)
 
 ## 스폰 지점에서 아래로 레이캐스트해 바닥 윗면 y를 찾는다. 캐릭터는 뚫고 지나가야 하므로 전부 제외한다
 func _find_ground_y(from: Vector2) -> float:

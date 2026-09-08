@@ -17,6 +17,9 @@ func _process(delta: float) -> void:
 		return
 	var fighter := get_parent() as Fighter
 	var rate: float = fighter.cooldown_rate_multiplier if fighter else 1.0
+	# 기본공격은 "공격속도" 버프(attack_speed_multiplier)만큼 쿨타임이 더 빨리 돈다 (악플러 열등감 등)
+	if fighter and fighter.basic_attack == self:
+		rate *= fighter.attack_speed_multiplier
 	cooldown_left -= delta * rate
 
 func can_use() -> bool:
