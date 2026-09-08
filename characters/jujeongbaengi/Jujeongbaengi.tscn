@@ -81,7 +81,6 @@ icon = ExtResource("15")
 script = ExtResource("12")
 
 [node name="토하기0" type="Node2D" parent="SkillRangePreview" unique_id=1345666781]
-visible = false
 position = Vector2(1.89, -10.83)
 scale = Vector2(0.83, 0.83)
 
@@ -90,10 +89,12 @@ position = Vector2(-8.235, -16.62)
 scale = Vector2(0.45, 0.45)
 
 [node name="토하기2" type="Node2D" parent="SkillRangePreview" unique_id=410238674]
-visible = false
+position = Vector2(-14.315, -18.51)
+scale = Vector2(0.41, 0.41)
 
 [node name="토하기3" type="Node2D" parent="SkillRangePreview" unique_id=107924155]
-visible = false
+position = Vector2(-0.495, -16.085)
+scale = Vector2(0.41, 0.41)
 
 [node name="괴성" type="Node2D" parent="SkillRangePreview" unique_id=1168439230]
 visible = false

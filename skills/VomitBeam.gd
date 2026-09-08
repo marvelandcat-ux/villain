@@ -34,24 +34,24 @@ extends Hitbox
 ## 이 영역이 판정 사각형에 딱 맞게 놓이도록 배율·위치가 계산된다
 @export var stack_body_rects: Array[Rect2] = []
 
-## 스택별 그림이 없을 때 쓰는 예전 방식 — 그림 한 장에서 여백을 뺀 영역을 통째로 늘린다
-const FALLBACK_REGION := Rect2(15, 42, 783, 159)
-
-## 인스펙터 배열이 비어 있을 때 쓰는 기본값. 씬에 안 걸려 있어도 무지개 기둥이 나오도록 코드에 박아둔다
-## (파일 이름의 1~4가 게임 스택 0~3에 대응한다)
-const DEFAULT_TEXTURES: Array[Texture2D] = [
-	preload("res://sprite/주정뱅이/토사물모음/1스택.png"),
-	preload("res://sprite/주정뱅이/토사물모음/2스택.png"),
-	preload("res://sprite/주정뱅이/토사물모음/3스택.png"),
-	preload("res://sprite/주정뱅이/토사물모음/4스택.png"),
+## 인스펙터 배열이 비어 있을 때 쓰는 기본값. 씬에 안 걸려 있어도 무지개 기둥이 나오도록 코드에 적어둔다.
+## **preload가 아니라 load를 쓴다** — 아직 임포트 안 된 그림이 섞여 있으면 preload는 스크립트 자체를 못 읽게 만든다
+const DEFAULT_TEXTURE_PATHS := [
+	"res://sprite/주정뱅이/토사물모음/1스택.png",
+	"res://sprite/주정뱅이/토사물모음/2스택.png",
+	"res://sprite/주정뱅이/토사물모음/3스택.png",
+	"res://sprite/주정뱅이/토사물모음/4스택진짜.png",
 ]
-## 위 그림들에서 기둥 몸통이 차지하는 영역 (세로 중앙선을 훑어 실측한 값)
+## 위 그림들에서 기둥 몸통이 차지하는 영역 (세로 중앙선을 훑어 실측한 값).
+## **그림을 갈아끼우면 이 값도 다시 재야 한다** — 캔버스 크기와 몸통 위치가 그림마다 다르다
 const DEFAULT_BODY_RECTS: Array[Rect2] = [
 	Rect2(877, 280, 254, 126),
-	Rect2(520, 284, 1027, 104),
-	Rect2(53, 264, 1960, 155),
-	Rect2(61, 268, 1947, 174),
+	Rect2(604, 284, 943, 104),
+	Rect2(161, 264, 1852, 154),
+	Rect2(1, 316, 2133, 137),
 ]
+## 위 경로를 실제로 읽어둔 것 (처음 쓸 때 한 번만 읽는다)
+static var _loaded_defaults: Array[Texture2D] = []
 
 var _facing: float = 1.0
 
@@ -98,8 +98,10 @@ func _build_beam(length: float, height: float, stacks: int, visual_offset: Vecto
 
 	var texture: Texture2D = _texture_for(stacks)
 	var body: Rect2 = _body_rect_for(stacks, texture)
-	if texture:
-		_visual.texture = texture
+	_visual.texture = texture
+	_visual.visible = texture != null
+	if texture == null:
+		return
 
 	# centered=false라 position이 그림의 왼쪽 위 모서리가 된다.
 	# 몸통 영역(body)의 왼쪽 끝이 입에, 세로 한가운데가 입 높이에 오도록 역산한다.
@@ -116,29 +118,48 @@ func _build_beam(length: float, height: float, stacks: int, visual_offset: Vecto
 
 	# 벽에 막힌 만큼 그림을 오른쪽에서 잘라낸다. 영역 시작을 (0,0)으로 둬야 위 좌표 계산이 그대로 맞는다
 	_visual.region_enabled = true
-	var tex_size: Vector2 = texture.get_size() if texture else FALLBACK_REGION.size
+	var tex_size: Vector2 = texture.get_size()
 	var cut: float = body.position.x + body.size.x * (clipped / maxf(length, 0.001))
 	_visual.region_rect = Rect2(0.0, 0.0, minf(cut, tex_size.x), tex_size.y)
 
-## 스택에 맞는 그림. 인스펙터 배열 -> 코드 기본값 -> 씬에 박힌 그림 순으로 찾는다
+## 스택에 맞는 그림. 인스펙터 배열 -> 코드 기본값 순으로 찾는다.
+## **못 찾으면 null이다** — 예전에는 옛날 갈색 토 그림으로 되돌아갔는데,
+## 뭔가 잘못됐을 때 조용히 엉뚱한 그림이 나와서 원인을 찾기가 더 어려웠다. 차라리 안 보이는 게 낫다
 func _texture_for(stacks: int) -> Texture2D:
 	if stacks < 0:
-		return _visual.texture
+		return null
 	if stacks < stack_textures.size() and stack_textures[stacks]:
 		return stack_textures[stacks]
-	if stacks < DEFAULT_TEXTURES.size():
-		return DEFAULT_TEXTURES[stacks]
-	return _visual.texture
+	var found: Texture2D = _default_texture(stacks)
+	if found == null:
+		push_warning("VomitBeam: %d스택 그림을 못 찾았다 (임포트 전이거나 경로가 바뀜)" % stacks)
+	return found
+
+## 코드에 적어둔 기본 그림.
+## **한 장이라도 못 읽으면 캐시하지 않는다** — 임포트 전에 한 번 실패한 걸 캐시해버리면
+## 나중에 임포트가 끝나도 계속 실패한 상태로 남는다(갈색 토가 다시 나오던 원인)
+func _default_texture(stacks: int) -> Texture2D:
+	if _loaded_defaults.size() != DEFAULT_TEXTURE_PATHS.size():
+		var loaded: Array[Texture2D] = []
+		for path in DEFAULT_TEXTURE_PATHS:
+			var tex: Texture2D = load(path) as Texture2D
+			if tex == null:
+				return null
+			loaded.append(tex)
+		_loaded_defaults = loaded
+	if stacks >= 0 and stacks < _loaded_defaults.size():
+		return _loaded_defaults[stacks]
+	return null
 
 ## 스택에 맞는 몸통 영역. 그림을 어디서 가져왔는지와 짝이 맞아야 하므로 같은 순서로 찾는다
 func _body_rect_for(stacks: int, texture: Texture2D) -> Rect2:
 	if stacks >= 0:
 		if stacks < stack_body_rects.size() and stack_body_rects[stacks].size.x > 0.0:
 			return stack_body_rects[stacks]
-		if stacks < DEFAULT_BODY_RECTS.size() and texture == DEFAULT_TEXTURES[stacks]:
+		if stacks < DEFAULT_BODY_RECTS.size():
 			return DEFAULT_BODY_RECTS[stacks]
-	if texture == null or texture == _visual.texture:
-		return FALLBACK_REGION
+	if texture == null:
+		return Rect2(0.0, 0.0, 1.0, 1.0)
 	return Rect2(Vector2.ZERO, texture.get_size())
 
 ## 판정은 처음부터 제 크기지만, 그림만 얇은 선에서 제 두께로 벌어지게 해서 "확 뻗는" 느낌을 준다

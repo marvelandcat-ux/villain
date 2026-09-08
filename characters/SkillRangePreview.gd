@@ -33,6 +33,14 @@ extends Node2D
 	set(value):
 		vomit_face_scale = value
 		_rebuild()
+## **누르면 `토하기N` 노드를 끌고/늘려 맞춰둔 모양이 Skill2의 값으로 들어간다.**
+## 홀더는 미리보기를 담는 껍데기라서 게임은 안 본다 — 이 버튼이 그 값을 게임이 읽는 곳으로 옮겨준다.
+## 옮긴 뒤 홀더는 원점·1배로 되돌아가지만 **보이는 모양은 그대로다**(같은 값을 스킬 쪽에서 다시 적용하므로).
+## 누른 다음 반드시 씬을 저장할 것
+@export var apply_holders_to_skill: bool = false:
+	set(value):
+		apply_holders_to_skill = false
+		_apply_holders()
 ## 효과 씬(VomitBeam.tscn / ScreamCone.tscn)에서 값을 고친 뒤 눌러서 다시 읽는다
 @export var refresh: bool = false:
 	set(value):
@@ -70,13 +78,14 @@ func _snapshot() -> Array:
 	var result: Array = []
 	if vomit:
 		result.append([vomit.mouth_offset, vomit.base_range, vomit.range_per_stack,
-			vomit.base_height, vomit.height_per_stack, vomit.stack_visual_offsets.duplicate()])
+			vomit.base_height, vomit.height_per_stack, vomit.stack_visual_offsets.duplicate(),
+			vomit.stack_scales.duplicate(), vomit.stack_offsets.duplicate()])
 	if scream:
 		result.append([scream.mouth_offset])
 	# 담는 노드를 껐다 켜면 바로 반영되도록 보이기 상태도 같이 본다
 	var shown: Array = []
 	for child in get_children():
-		shown.append(child.visible)
+		shown.append([child.visible, child.position, child.scale])
 	result.append(shown)
 	return result
 
@@ -88,10 +97,21 @@ func _skill(node_name: String) -> Node:
 ## **에디터에서는 @tool이 아닌 스크립트의 메서드를 부를 수 없다**(껍데기 인스턴스라 "placeholder" 에러가 난다).
 ## 그래서 VomitSkill.visual_offset_for()를 부르지 않고 export 배열을 직접 들여다본다
 func _offset_of(skill: Node, stacks: int) -> Vector2:
-	var offsets: Array = skill.stack_visual_offsets
-	if stacks >= 0 and stacks < offsets.size():
-		return offsets[stacks]
-	return Vector2.ZERO
+	return _array_at(skill.stack_visual_offsets, stacks, Vector2.ZERO)
+
+## 기둥 전체(판정 포함)를 미는 값
+func _whole_offset_of(skill: Node, stacks: int) -> Vector2:
+	return _array_at(skill.stack_offsets, stacks, Vector2.ZERO)
+
+## 크기 배수 (x=길이, y=두께). 0이 들어 있으면 무시하고 1배로 본다
+func _scale_of(skill: Node, stacks: int) -> Vector2:
+	var s: Vector2 = _array_at(skill.stack_scales, stacks, Vector2.ONE)
+	return s if s.x > 0.0 and s.y > 0.0 else Vector2.ONE
+
+func _array_at(arr: Array, index: int, fallback: Variant) -> Variant:
+	if index >= 0 and index < arr.size():
+		return arr[index]
+	return fallback
 
 ## 술 스택 상한은 마시기 스킬이 들고 있다
 func _max_stacks() -> int:
@@ -140,11 +160,13 @@ func _build_beam_previews() -> void:
 			continue
 		var beam := skill.beam_scene.instantiate() as VomitBeam
 		holder.add_child(beam)
-		beam.position = skill.mouth_offset
+		# 게임(VomitSkill._execute)과 똑같은 식을 쓴다 — 오른쪽을 볼 때(facing=1)와 같은 배치
+		var size_scale: Vector2 = _scale_of(skill, stacks)
+		beam.position = skill.mouth_offset + _whole_offset_of(skill, stacks)
 		beam.modulate.a = alpha
 		beam.build_preview(1.0,
-			skill.base_range + skill.range_per_stack * stacks,
-			skill.base_height + skill.height_per_stack * stacks,
+			(skill.base_range + skill.range_per_stack * stacks) * size_scale.x,
+			(skill.base_height + skill.height_per_stack * stacks) * size_scale.y,
 			stacks,
 			_offset_of(skill, stacks))
 
@@ -186,3 +208,44 @@ func _build_cone_preview() -> void:
 	holder.add_child(cone)
 	cone.position = skill.mouth_offset
 	cone.build_preview(1.0)
+
+## `토하기N` 홀더를 뷰포트에서 끌고/늘려 맞춰둔 모양을 Skill2의 값으로 옮긴다.
+##
+## 홀더는 미리보기를 담는 껍데기라 **게임은 홀더 트랜스폼을 전혀 안 본다.**
+## 그래서 에디터에서 아무리 맞춰도 게임에서는 원래 크기로 나왔다 — 이 버튼이 그 간극을 메운다.
+##
+## 옮기고 나면 홀더는 원점·1배로 되돌리지만, 같은 값을 스킬 쪽에서 다시 적용하므로 **보이는 모양은 그대로다.**
+## 원래 값에 홀더 값을 곱해서 누적하므로 여러 번 눌러도 어긋나지 않는다
+func _apply_holders() -> void:
+	if not Engine.is_editor_hint() or not is_inside_tree():
+		return
+	var skill := _skill("Skill2") as VomitSkill
+	if skill == null:
+		push_warning("SkillRangePreview: 형제 노드 Skill2를 못 찾았다")
+		return
+	var mouth: Vector2 = skill.mouth_offset
+	var scales: Array[Vector2] = []
+	var offsets: Array[Vector2] = []
+	for stacks in range(_max_stacks() + 1):
+		var holder: Node2D = _holder(BEAM_HOLDER % stacks)
+		var hs: Vector2 = holder.scale
+		# 홀더 안에서 기둥은 (입 + 기존 조정값) 자리에 기존 배수 크기로 놓여 있다.
+		# 홀더의 이동·확대까지 먹인 최종 자리와 크기를 구해서 그대로 스킬 값으로 바꿔 적는다
+		var old_scale: Vector2 = _scale_of(skill, stacks)
+		var old_offset: Vector2 = _whole_offset_of(skill, stacks)
+		var origin: Vector2 = holder.position + hs * (mouth + old_offset)
+		scales.append(old_scale * hs)
+		offsets.append(origin - mouth)
+		holder.position = Vector2.ZERO
+		holder.scale = Vector2.ONE
+	skill.set("stack_scales", scales)
+	skill.set("stack_offsets", offsets)
+	# 값이 제대로 안 들어갔을 때 손으로 옮겨 적을 수 있도록 항상 찍어둔다
+	print("[SkillRangePreview] 홀더 -> Skill2 적용")
+	print("  stack_scales  = ", scales)
+	print("  stack_offsets = ", offsets)
+	if Engine.has_singleton("EditorInterface"):
+		var ei: Object = Engine.get_singleton("EditorInterface")
+		if ei.has_method("mark_scene_as_unsaved"):
+			ei.call("mark_scene_as_unsaved")
+	_rebuild()

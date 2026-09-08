@@ -26,6 +26,16 @@ extends Skill
 ## 캐릭터 씬을 열어놓고 이 값을 만지면 미리보기가 그 자리에서 같이 움직인다
 @export var stack_visual_offsets: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
 
+@export_group("스택별 크기·위치")
+## 스택별 **크기 배수** (index = 술 스택 수). **x는 길이, y는 두께**를 곱하고 판정도 같이 커지고 작아진다.
+## 위 base_range/height 공식으로 뼈대를 잡고, 그림에 맞는 최종 크기는 여기서 스택마다 손본다.
+## **캐릭터 씬의 SkillRangePreview 아래 `토하기N` 노드를 뷰포트에서 직접 끌고 늘린 뒤
+## `Apply Holders To Skill`을 누르면 그 값이 여기로 들어온다** — 에디터에서 본 게 그대로 게임에 나온다
+@export var stack_scales: Array[Vector2] = [Vector2.ONE, Vector2.ONE, Vector2.ONE, Vector2.ONE]
+## 스택별로 **기둥 전체를(판정 포함) 입에서 더 밀어내는 양**. x는 바라보는 방향 기준이라 양수가 항상 "앞쪽".
+## 그림만 밀고 싶으면 위의 stack_visual_offsets를 쓸 것 — 이건 맞는 범위까지 같이 움직인다
+@export var stack_offsets: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
+
 func _execute(fighter: Fighter) -> void:
 	# 토하는 표정으로 잠깐 얼굴을 바꾼다. 그 메서드가 없는 비주얼(임시 사각형 등)은 그냥 넘어간다
 	var visual: Node2D = fighter.get_node_or_null("Visual")
@@ -34,8 +44,10 @@ func _execute(fighter: Fighter) -> void:
 
 	var stacks: int = fighter.custom_data.get("drink_stacks", 0)
 	var damage: int = base_damage + damage_per_stack * stacks
-	var length: float = base_range + range_per_stack * stacks
-	var height: float = base_height + height_per_stack * stacks
+	# 스택별 크기 배수는 길이·두께에 똑같이 곱한다 — 에디터에서 홀더를 통째로 늘린 것과 같은 뜻이 되도록
+	var size_scale: Vector2 = scale_for(stacks)
+	var length: float = (base_range + range_per_stack * stacks) * size_scale.x
+	var height: float = (base_height + height_per_stack * stacks) * size_scale.y
 	fighter.custom_data["drink_stacks"] = 0
 	fighter.clear_modifier("move_speed_multiplier", "drink_stacks")
 	fighter.clear_tint("drunk")
@@ -47,11 +59,31 @@ func _execute(fighter: Fighter) -> void:
 		return
 	var beam: VomitBeam = beam_scene.instantiate()
 	fighter.get_parent().add_child(beam)
-	beam.global_position = fighter.global_position + Vector2(mouth_offset.x * fighter.facing, mouth_offset.y)
+	beam.global_position = fighter.global_position + spawn_offset(stacks, fighter.facing)
 	beam.setup(fighter.facing, length, height, fighter.compute_damage(damage), fighter, stacks, visual_offset_for(stacks))
+
+## 캐릭터 원점에서 기둥이 시작되는 지점. 입 위치에 스택별 조정값을 더한 것.
+## 미리보기도 같은 함수를 쓰므로 에디터와 게임이 어긋날 수 없다
+func spawn_offset(stacks: int, facing: float) -> Vector2:
+	var extra: Vector2 = offset_for(stacks)
+	return Vector2((mouth_offset.x + extra.x) * facing, mouth_offset.y + extra.y)
 
 ## 그 스택의 그림 조정값 (안 적어뒀으면 0)
 func visual_offset_for(stacks: int) -> Vector2:
 	if stacks >= 0 and stacks < stack_visual_offsets.size():
 		return stack_visual_offsets[stacks]
+	return Vector2.ZERO
+
+## 그 스택의 크기 배수 (x=길이, y=두께). 안 적어뒀거나 0이면 1배
+func scale_for(stacks: int) -> Vector2:
+	if stacks >= 0 and stacks < stack_scales.size():
+		var s: Vector2 = stack_scales[stacks]
+		if s.x > 0.0 and s.y > 0.0:
+			return s
+	return Vector2.ONE
+
+## 그 스택의 전체 위치 조정값 (안 적어뒀으면 0)
+func offset_for(stacks: int) -> Vector2:
+	if stacks >= 0 and stacks < stack_offsets.size():
+		return stack_offsets[stacks]
 	return Vector2.ZERO
