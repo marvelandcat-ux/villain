@@ -21,5 +21,8 @@ polygon = PackedVector2Array(-1000, -20, 1000, -20, 1000, 20, -1000, 20)
 [node name="PlayerSpawn" type="Marker2D" parent="."]
 position = Vector2(0, 250)
 
+[node name="DummySpawn" type="Marker2D" parent="."]
+position = Vector2(200, 250)
+
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, 150)

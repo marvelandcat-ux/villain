@@ -8,6 +8,8 @@ extends CharacterBody2D
 signal health_changed(current: int, max: int)
 ## HP가 0이 되면 알린다 — Stage.gd가 이 시그널을 듣고 승패를 판정한다
 signal died
+## 기본공격을 실제로 발동시켰을 때 알린다 (분신이 기본공격을 따라 하는 스킬 등이 듣는다)
+signal basic_attack_used
 
 ## 캐릭터 고정 수치
 @export var stats: CharacterStats
@@ -62,6 +64,9 @@ var damage_reduction: float = 0.0
 var is_invincible: bool = false
 ## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철 아저씨 공포 단소 등
 var is_feared: bool = false
+## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
+## 잡은 스킬(파일드라이버 등)이 apply_physics를 건너뛰게 해서 위치를 직접 조작할 수 있게 한다
+var is_grabbed: bool = false
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철 아저씨 전용, 캐릭터 씬에서 켬)
 @export var vault_jump: bool = false
 
@@ -261,7 +266,7 @@ func compute_damage(base_damage: int) -> int:
 
 func move(direction: float) -> void:
 	# 피격 경직 중엔 조작으로 넉백 속도를 덮어쓰지 않는다 (그래야 넉백 방향으로 날아간다)
-	if _hitstun_time > 0.0:
+	if _hitstun_time > 0.0 or is_grabbed:
 		return
 	if direction != 0.0:
 		facing = signf(direction)
@@ -271,7 +276,7 @@ func move(direction: float) -> void:
 ## 이단 점프는 지금까지의 낙하 속도를 무시하고 속도를 새로 덮어써서, 떨어지는 중에 눌러도 제대로 뜬다
 func jump() -> void:
 	# 경직 중엔 점프로 넉백을 못 벗어난다
-	if _hitstun_time > 0.0:
+	if _hitstun_time > 0.0 or is_grabbed:
 		return
 	if is_on_floor():
 		velocity.y = jump_velocity * jump_multiplier
@@ -350,7 +355,7 @@ func _get_clash_manager() -> Node:
 	return get_tree().get_first_node_in_group("skill_clash_manager")
 
 func use_skill_1() -> void:
-	if skill_1 == null or is_feared or is_busy() or not skill_1.can_use():
+	if skill_1 == null or is_feared or is_grabbed or is_busy() or not skill_1.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
@@ -359,7 +364,7 @@ func use_skill_1() -> void:
 		skill_1.use(self)
 
 func use_skill_2() -> void:
-	if skill_2 == null or is_feared or is_busy() or not skill_2.can_use():
+	if skill_2 == null or is_feared or is_grabbed or is_busy() or not skill_2.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
@@ -371,7 +376,7 @@ func use_skill_2() -> void:
 ## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다.
 ## 상대와 같은 타이밍에 궁극기를 함께 쓰면(클래시) 진 쪽은 컷인조차 뜨지 않고 쿨타임만 소모된다
 func use_ultimate() -> void:
-	if skill_ultimate == null or is_feared or is_busy() or not skill_ultimate.can_use():
+	if skill_ultimate == null or is_feared or is_grabbed or is_busy() or not skill_ultimate.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
@@ -394,13 +399,14 @@ func fire_ultimate_now() -> void:
 ## 기본공격은 스킬 클래시(연타 미니게임)에 태우지 않는다 — 스킬1/2/궁극기보다 훨씬 자주 나가는 잽이라,
 ## 여기까지 클래시로 걸리면 마주칠 때마다 화면이 멈추고 연타 게임이 뜨는 꼴이 된다. 항상 바로 나간다
 func use_basic_attack() -> void:
-	if basic_attack == null or is_feared or is_busy() or not basic_attack.can_use():
+	if basic_attack == null or is_feared or is_grabbed or is_busy() or not basic_attack.can_use():
 		return
 	_fire_basic_attack()
 
 func _fire_basic_attack() -> void:
 	basic_attack.use(self)
 	_play_visual_attack()
+	basic_attack_used.emit()
 
 ## 공격 모션을 가진 비주얼(BodyRig 등)에 휘두르라고 알린다.
 ## 아직 임시 사각형(Polygon2D)을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다
@@ -452,6 +458,11 @@ func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
 ## 이동/점프 입력 처리 후 컨트롤러가 매 물리 프레임 마지막에 호출한다.
 ## Fighter 스스로는 _physics_process를 갖지 않고, 이 함수로만 물리 갱신이 일어난다
 func apply_physics(delta: float) -> void:
+	# 붙잡힌 동안은 중력·이동을 전부 건너뛴다 — 잡은 스킬(파일드라이버 등)이 global_position을
+	# 직접 옮기므로, 여기서 물리를 건드리면 서로 부딪혀 위치가 튄다
+	if is_grabbed:
+		velocity = Vector2.ZERO
+		return
 	if _busy_time > 0.0:
 		_busy_time = maxf(_busy_time - delta, 0.0)
 	# 경직 중엔 넉백 속도가 마찰로 서서히 줄며 미끄러진다 (멈출 때쯤 경직도 끝나 조작이 돌아온다)
