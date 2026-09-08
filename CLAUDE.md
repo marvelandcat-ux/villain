@@ -64,7 +64,8 @@
 | 플랫폼 아래로 내려가기 | S 누른 채 W | ↓ 누른 채 ↑ | `p1_down`+`p1_jump` / `p2_down`+`p2_jump` |
 
   - "P2는 항상 AI라 2P 키가 필요 없다"던 이전 결론도 이 결정으로 뒤집힘 — 키는 다 등록해뒀지만, `Stage.gd`는 아직 P2에 `ClaudeAIController`를 붙이므로 **실제 2P 사람 조작을 켜려면 `_spawn_fighter(..., is_ai)` 인자를 false로 넘기는 분기(모드 선택)가 추가로 필요**하다
-  - **이단 점프(구현 완료, 2026-09-03):** 점프 키를 공중에서 한 번 더 누르면 다시 뛴다. 조작키는 그대로(W / ↑)고 `Fighter.jump()`가 `is_on_floor()`인지 보고 지상 점프와 공중 점프를 알아서 나눈다. `Fighter.max_air_jumps`(기본 1)·`Fighter.air_jump_velocity`(기본 -420)는 `gravity`/`jump_velocity`와 같이 **static var**라 훈련장에서 바로 바꿔볼 수 있다
+  - **이단 점프(구현 완료, 2026-09-03):** 점프 키를 공중에서 한 번 더 누르면 다시 뛴다. 조작키는 그대로(W / ↑)고 `Fighter.jump()`가 `is_on_floor()`인지 보고 지상 점프와 공중 점프를 알아서 나눈다. `Fighter.max_air_jumps`(기본 1)·`Fighter.air_jump_velocity`는 `gravity`/`jump_velocity`와 같이 **static var**라 훈련장에서 바로 바꿔볼 수 있다
+  - **⚠️ 값 변경(2026-09-08, 사용자 요청):** 전 캐릭터 이동속도 +40(각 `stats/*.tres`), 점프력 `DEFAULT_JUMP_VELOCITY` -350→**-430** / `DEFAULT_AIR_JUMP_VELOCITY` -420→**-510**. **이 아래에 적힌 실측 점프 높이(지상 71.1px·이단 165.4px, 그리고 놀이터 절의 56.3/129.2px, -507 권장치 등)는 전부 옛 값(-350/-420) 기준이라 지금은 더 높다** — 지하철 벤치(145px)·놀이터 발판(120px)은 이제 여유 있게 닿을 것. 정확한 새 수치는 훈련장에서 재측정 필요
     - 공중 점프는 지금까지의 낙하 속도를 무시하고 `velocity.y`를 새로 덮어쓴다 — 떨어지는 중에 눌러도 제대로 뜬다
     - 남은 횟수(`_air_jumps_left`)는 `apply_physics()`의 `move_and_slide()` **뒤에** `is_on_floor()`를 보고 다시 채운다(앞에서 채우면 이번 프레임의 착지가 아직 반영되지 않아 한 프레임 늦는다)
     - 높이: 지상 점프 71.1px, 이단까지 이어 뛰면 **165.4px**(실측). 지하철 승강장의 의자 발판을 "지상 점프로는 절대 못 닿고 이단 점프로만 닿는" 145px에 둔 근거다. **전 맵 공통 변경이라 링아웃형 맵(학교 옥상)이 그만큼 관대해졌다** — 밸런스 확인 필요
@@ -374,7 +375,8 @@ res://
 
 - 기획 오픈 이슈(히트스턴 예외, 승리 조건 HP vs 링아웃 등)는 아티팩트 문서의 "다음에 정할 것" 표를 확인. 확정 전까지는 구현 시 임시값으로 처리하고 주석/TODO로 표시
 - **엔진 버전은 4.6으로 통일한다.** 4.7로 프로젝트를 열면 `project.godot`의 `config/features`가 `"4.7"`로 다시 쓰이고, 4.6으로 연 커밋과 **매번 머지 충돌이 난다**(실제로 겪음 — 바로 옆 줄인 `run/main_scene`까지 같이 충돌로 딸려 들어왔다). 반드시 4.6.x로 열 것
-- Godot 실행 파일(PC마다 다름): 이 PC는 `D:\Godot_v4.6.3-stable_win64.exe\Godot_v4.6.3-stable_win64_console.exe`, 다른 PC는 `D:\10인준완\Godot\engine\` 아래. 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있음 — 예: `<위 경로> --headless --path "<프로젝트 경로>" "res://maps/ConvenienceStore.tscn" --quit-after 120`. 코드를 수정한 뒤에는 이렇게 실행해서 에러 콘솔이 깨끗한지 확인하고 보고할 것. (경로가 없으면 `Godot*4.6*win64_console.exe`를 찾을 것 — 4.7을 쓰면 위의 충돌이 난다)
+- **코드 수정 후 헤드리스로 에러 확인은 기본적으로 하지 않는다(사용자 요청, 2026-09-08).** 시간·크레딧을 아끼기 위해 매번 돌리지 말 것 — 사용자가 명시적으로 "실행해서 확인해줘"라고 할 때만 돌린다.
+- Godot 실행 파일(PC마다 다름): 이 PC는 `D:\Godot_v4.6.3-stable_win64.exe\Godot_v4.6.3-stable_win64_console.exe`, 다른 PC는 `D:\10인준완\Godot\engine\` 아래. (필요할 때) 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있음 — 예: `<위 경로> --headless --path "<프로젝트 경로>" "res://maps/ConvenienceStore.tscn" --quit-after 120`. (경로가 없으면 `Godot*4.6*win64_console.exe`를 찾을 것 — 4.7을 쓰면 위의 충돌이 난다)
 - **주의:** 새 `class_name` 스크립트를 추가한 직후에는 먼저 `<위 경로> --headless --path "D:/10인준완/Godot/villain" --editor --quit-after 5`로 한 번 실행해서 전역 클래스 캐시를 갱신해야 함. 안 그러면 방금 만든 클래스를 참조하는 다른 스크립트가 "Could not find type" 에러로 로드 실패함
 - 자동 입력 시뮬레이션이 필요한 테스트는 `extends SceneTree` + `--script` 방식이 아니라, `extends Node` 스크립트를 임시 `.tscn`으로 감싸서 `--headless --path ... <임시 씬> --quit-after N`로 실행할 것 — `--script` 모드는 오토로드(`GameState` 등)가 초기화되지 않아 컴파일 에러가 남
 - **주의:** 헤드리스 모드는 프레임 제한이 없어서 60fps보다 훨씬 빠르게 돈다(실측 약 145fps). 쿨타임·버프 지속시간처럼 시간 기반 로직을 테스트할 때 `--quit-after N`의 N을 "60fps 기준 초"로 계산하면 실제로는 그보다 훨씬 짧은 시간만 흐른다 — 프레임 수 대신 `Time.get_ticks_msec()`로 실제 경과 시간을 재면서 대기하거나, `--fixed-fps 60`을 같이 붙여서 프레임당 델타를 고정시킬 것

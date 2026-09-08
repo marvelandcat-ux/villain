@@ -3,8 +3,8 @@ extends Control
 
 ## 목록 타일 크기
 const TILE_SIZE := Vector2(100, 90)
-## 위쪽 큰 미리보기 상자 크기 (CharacterSelect.tscn의 P1/P2 PreviewBox custom_minimum_size와 같은 값)
-const PREVIEW_BOX_SIZE := Vector2(300, 330)
+## 위쪽 큰 미리보기 상자 크기 (CharacterSelect.tscn의 P1/P2 PreviewBox custom_minimum_size와 같은 값 — 정사각형)
+const PREVIEW_BOX_SIZE := Vector2(300, 300)
 
 ## 초상화의 그림·배율·위치는 전부 ui/PortraitFrames.tscn에서 읽는다(GameState가 로드해둠).
 ## 그 씬을 에디터에서 열어 각 캐릭터 얼굴을 프레임 안에서 조절하면 여기 선택 화면에 그대로 반영된다

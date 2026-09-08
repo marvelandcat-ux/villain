@@ -14,12 +14,12 @@ signal died
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 1150.0
-const DEFAULT_JUMP_VELOCITY: float = -350.0
+const DEFAULT_JUMP_VELOCITY: float = -430.0
 ## 공중에서 한 번 더 뛰는 이단 점프의 세기. 지상 점프(-350, 71px)보다 세게 잡아서
 ## 둘을 이어 뛰면 약 172px까지 올라간다 — 지하철 승강장의 의자 발판(바닥에서 145px)이
 ## 지상 점프 한 번(71px)으로는 절대 안 닿고 이단 점프로만 닿게 하려고 정한 값.
 ## 의자를 이 높이에 둔 이유는 의자에 올라선 캐릭터가 열차 지붕(y=195)보다 확실히 위에 있어야 하기 때문
-const DEFAULT_AIR_JUMP_VELOCITY: float = -420.0
+const DEFAULT_AIR_JUMP_VELOCITY: float = -510.0
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
