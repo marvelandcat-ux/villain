@@ -56,6 +56,8 @@ var move_speed_multiplier: float = 1.0
 var jump_multiplier: float = 1.0
 var attack_debuff_multiplier: float = 1.0
 var cooldown_rate_multiplier: float = 1.0
+## 기본공격 전용 공격속도 배수 — 1.5면 기본공격 쿨타임이 1.5배 빨리 돌아 50% 더 자주 때린다 (악플러 열등감 스킬)
+var attack_speed_multiplier: float = 1.0
 ## 받는 데미지 감소율 (0.0=없음, 1.0=완전 무효) — 가드 스킬 등이 사용
 var damage_reduction: float = 0.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중)
@@ -85,6 +87,7 @@ var _next_modifier_id: int = 0
 func _ready() -> void:
 	current_hp = stats.max_hp
 	add_to_group("fighters")
+	_ignore_other_fighters()
 	if skill_1 == null:
 		skill_1 = get_node_or_null("Skill1")
 	if skill_2 == null:
@@ -93,6 +96,45 @@ func _ready() -> void:
 		skill_ultimate = get_node_or_null("SkillUltimate")
 	if basic_attack == null:
 		basic_attack = get_node_or_null("BasicAttack")
+
+## 캐릭터끼리는 서로의 몸을 밟고 올라설 수 없게 몸 충돌을 무시한다.
+## 충돌 레이어를 통째로 바꾸지 않고 add_collision_exception_with로 "상대 캐릭터"만 예외 처리하는 이유:
+## 레이어를 바꾸면 바닥·벽·발판까지 같이 영향을 받는다. 여기서 빼는 건 몸(CharacterBody2D)끼리의
+## 충돌뿐이고, 공격 판정(Hitbox/Hurtbox)은 Area2D라 그대로 서로를 감지한다.
+##
+## 새로 스폰된 쪽이 자기 _ready()에서 이미 있던 캐릭터들과 양방향으로 걸어두므로,
+## 라운드 리로드·훈련장 캐릭터 교체처럼 나중에 생기는 경우도 자동으로 처리된다
+func _ignore_other_fighters() -> void:
+	for other in get_tree().get_nodes_in_group("fighters"):
+		if other == self or not (other is PhysicsBody2D):
+			continue
+		add_collision_exception_with(other)
+		other.add_collision_exception_with(self)
+
+## 캐릭터끼리 서로 밀어내 겹치지 않게 하는 최소 가로 간격(px). 몸 반지름(20)의 두 배쯤
+const BODY_PUSH_WIDTH := 38.0
+## 세로로 이만큼 넘게 벌어져 있으면(상대가 위에 있으면) 안 밀어낸다 — 점프로 넘어갈 수 있게
+const BODY_PUSH_HEIGHT := 46.0
+
+## 상대 캐릭터와 몸이 가로로 겹치면 서로 밀어내 통과하지 못하게 한다.
+## 몸 충돌(add_collision_exception_with)은 그대로 무시하므로 세로로는 안 막혀서 머리 위에 올라서는 건 여전히 방지되고,
+## 여기서는 가로로만 밀어낸다. 두 캐릭터가 각자 절반씩 밀어내므로 한두 프레임 안에 딱 붙어 떨어진다.
+## move_and_collide로 밀어서 벽은 뚫지 않는다(상대에게 몰리면 벽에 막혀 코너에 갇힌다)
+func _separate_from_others() -> void:
+	for other in get_tree().get_nodes_in_group("fighters"):
+		if other == self or not is_instance_valid(other):
+			continue
+		if absf(global_position.y - other.global_position.y) > BODY_PUSH_HEIGHT:
+			continue
+		var dx: float = global_position.x - other.global_position.x
+		var dist: float = absf(dx)
+		if dist >= BODY_PUSH_WIDTH:
+			continue
+		var dir: float = signf(dx)
+		if dir == 0.0:
+			# 완전히 겹쳤으면 인스턴스 순서로 방향을 갈라 서로 반대로 밀어낸다
+			dir = 1.0 if get_instance_id() > other.get_instance_id() else -1.0
+		move_and_collide(Vector2(dir * (BODY_PUSH_WIDTH - dist) * 0.5, 0.0))
 
 ## --- 피격 리액션(격투 게임식 히트 리액션) 튜닝값 ---
 ## 넉백 방향으로 기우는 각도(도) = 이 기본값 + 데미지 × 비례값, 최대 HIT_LEAN_MAX_DEG로 제한
@@ -118,7 +160,9 @@ const COMBO_WINDOW := 1.5
 
 ## 데미지를 받는다. damage_reduction이 있으면 경감하고, 경감분은 custom_data["guard_absorbed"]에 누적된다.
 ## is_invincible이 true면 아예 무시한다
-func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
+## pop_override: 위로 띄우는 힘(px/s)을 직접 지정한다. 음수(기본)면 데미지에 비례한 기본 팝업을 쓰고,
+## 0이면 전혀 안 띄운다(지상 유지 — 콤보 앞 타격이 상대를 붙잡아두게). 콤보 마무리만 기본 팝업으로 크게 날린다
+func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
 	if is_invincible:
 		return
 	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction)))
@@ -132,9 +176,11 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
 		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
 		velocity.x += kb_x
 		velocity.y += knockback.y
-		# 살짝 공중으로 떠오르게 (이미 그보다 크게 위로 뜨는 넉백은 그대로 둔다)
-		var pop: float = clampf(HIT_POP_BASE + amount * HIT_POP_PER_DAMAGE, 0.0, HIT_POP_MAX)
-		velocity.y = minf(velocity.y, -pop)
+		# 살짝 공중으로 떠오르게 (이미 그보다 크게 위로 뜨는 넉백은 그대로 둔다).
+		# pop_override가 0 이상이면 그 값을 쓴다 — 0이면 안 띄워서 지상에 붙잡아둔다
+		var pop: float = pop_override if pop_override >= 0.0 else clampf(HIT_POP_BASE + amount * HIT_POP_PER_DAMAGE, 0.0, HIT_POP_MAX)
+		if pop > 0.0:
+			velocity.y = minf(velocity.y, -pop)
 		# 경직: 이 동안 조작으로 velocity.x를 못 덮어써서 넉백이 실려 미끄러진다.
 		# 길이 = 마찰이 넉백 속도를 멈추는 데 걸리는 시간이라, 미끄러져 멈추는 순간 조작이 돌아온다
 		_hitstun_time = clampf(absf(kb_x) / HITSTUN_FRICTION, HITSTUN_MIN, HITSTUN_MAX)
@@ -385,7 +431,9 @@ func use_basic_attack() -> void:
 
 func _fire_basic_attack() -> void:
 	basic_attack.use(self)
-	_play_visual_attack()
+	# 콤보 평타처럼 스킬이 타별 스윙을 직접 재생하는 경우엔 여기서 기본 스윙을 덧대지 않는다
+	if not basic_attack.handles_own_visual():
+		_play_visual_attack()
 
 ## 공격 모션을 가진 비주얼(BodyRig 등)에 휘두르라고 알린다.
 ## 아직 임시 사각형(Polygon2D)을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다
@@ -459,3 +507,5 @@ func apply_physics(delta: float) -> void:
 		_air_jumps_left = max_air_jumps
 	if movement_override:
 		movement_override.after_physics(self, delta)
+	# 상대 캐릭터와 겹쳤으면 가로로 밀어내 통과하지 못하게 한다
+	_separate_from_others()

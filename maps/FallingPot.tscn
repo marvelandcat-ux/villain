@@ -1,6 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://maps/FallingPot.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/화분.png" id="2"]
+[ext_resource type="PackedScene" uid="uid://cq8shardgl0ss" path="res://combat/GlassShard.tscn" id="3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pot"]
 size = Vector2(36, 30)
@@ -10,6 +12,7 @@ script = ExtResource("1")
 damage = 10
 knockback = Vector2(0, -140)
 floor_y = 262.0
+shard_scene = ExtResource("3")
 
 [node name="PotCollision" type="CollisionShape2D" parent="."]
 position = Vector2(0, 4)
@@ -17,17 +20,13 @@ shape = SubResource("RectangleShape2D_pot")
 
 [node name="Body" type="Node2D" parent="."]
 
-[node name="Leaf" type="Polygon2D" parent="Body"]
-color = Color(0.25, 0.6, 0.28, 1)
-polygon = PackedVector2Array(0, -24, 12, -12, 0, -6, -12, -12)
-
-[node name="Rim" type="Polygon2D" parent="Body"]
-color = Color(0.68, 0.34, 0.24, 1)
-polygon = PackedVector2Array(-18, -8, 18, -8, 18, -1, -18, -1)
-
-[node name="Pot" type="Polygon2D" parent="Body"]
-color = Color(0.78, 0.42, 0.28, 1)
-polygon = PackedVector2Array(-16, -1, 16, -1, 11, 19, -11, 19)
+[node name="Sprite" type="Sprite2D" parent="Body"]
+position = Vector2(-25.65, -34.97)
+scale = Vector2(0.055385, 0.055385)
+texture = ExtResource("2")
+centered = false
+region_enabled = true
+region_rect = Rect2(189, 161, 912, 954)
 
 [node name="Shards" type="Node2D" parent="."]
 visible = false

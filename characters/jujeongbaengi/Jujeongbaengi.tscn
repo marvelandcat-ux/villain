@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://co7j0mkhanpwb" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/JujeongbaengiStats.tres" id="2"]
-[ext_resource type="Script" uid="uid://3xium7rvk8b5" path="res://skills/MeleeAttack.gd" id="3"]
+[ext_resource type="Script" path="res://skills/ComboMeleeAttack.gd" id="3"]
 [ext_resource type="Script" uid="uid://e5ogygpslhbn" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" uid="uid://dxpabj3yhils" path="res://combat/Hurtbox.gd" id="5"]
 [ext_resource type="Script" uid="uid://cky2qdirbbk6y" path="res://skills/DrinkSkill.gd" id="6"]
@@ -41,8 +41,6 @@ shape = SubResource("CapsuleShape2D_body")
 
 [node name="BasicAttack" type="Node" parent="." unique_id=1370111561]
 script = ExtResource("3")
-lock_duration = 0.4
-damage = 6
 windup = 0.16
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]

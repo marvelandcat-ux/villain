@@ -50,7 +50,7 @@ custom_minimum_size = Vector2(0, 40)
 text = "캐릭터 선택으로"
 
 [node name="BackButton" type="Button" parent="VBox"]
-text = "모드 선택으로 (ESC)"
+text = "메인 메뉴로 (ESC)"
 
 [connection signal="pressed" from="VBox/NextButton" to="." method="_on_next_pressed"]
 [connection signal="pressed" from="VBox/BackButton" to="." method="_on_back_pressed"]

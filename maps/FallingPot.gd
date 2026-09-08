@@ -12,6 +12,12 @@ extends Hitbox
 @export var fall_gravity: float = 900.0
 ## 이 y보다 아래로 내려가면 바닥에 부딪힌 것으로 보고 사라진다
 @export var floor_y: float = 296.0
+## 화분이 깨질 때 남길 조각 장면 (술병 유리조각 GlassShard 재사용). 비어 있으면 안 남긴다
+@export var shard_scene: PackedScene
+## 남길 조각 개수
+@export var shard_count: int = 3
+## 조각 색조 — 임시로 술병 초록 조각을 갈색으로 물들여 화분 조각처럼 보이게 한다
+@export var shard_color: Color = Color(0.6, 0.4, 0.25)
 
 var _speed: float = 0.0
 ## 이미 깨졌으면 두 번 처리하지 않는다
@@ -42,6 +48,7 @@ func _break() -> void:
 	if _broken:
 		return
 	_broken = true
+	_spawn_pot_shards()
 	# area_entered 콜백 안에서 바로 끄면 Godot이 "Function blocked during in/out signal"로 막는다.
 	# 물리 처리가 끝난 뒤에 반영되도록 set_deferred로 미룬다
 	set_deferred("monitoring", false)
@@ -62,3 +69,18 @@ func _break() -> void:
 		timer.start()
 	else:
 		queue_free()
+
+## 화분이 깨진 자리에 갈색 조각 몇 개를 남긴다 (술병 유리조각 재사용, 임시로 갈색 물들임).
+## 조각은 씬 루트에 붙여서 화분이 사라져도 남고, GlassShard가 10초 뒤 스스로 페이드되어 사라진다
+func _spawn_pot_shards() -> void:
+	if shard_scene == null:
+		return
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	for i in range(shard_count):
+		var shard: Node2D = shard_scene.instantiate()
+		root.add_child(shard)
+		shard.modulate = shard_color
+		if shard.has_method("setup"):
+			shard.setup(global_position)

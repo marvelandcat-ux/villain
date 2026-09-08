@@ -17,6 +17,9 @@ func _process(delta: float) -> void:
 		return
 	var fighter := get_parent() as Fighter
 	var rate: float = fighter.cooldown_rate_multiplier if fighter else 1.0
+	# 기본공격은 "공격속도" 버프(attack_speed_multiplier)만큼 쿨타임이 더 빨리 돈다 (악플러 열등감 등)
+	if fighter and fighter.basic_attack == self:
+		rate *= fighter.attack_speed_multiplier
 	cooldown_left -= delta * rate
 
 func can_use() -> bool:
@@ -40,3 +43,8 @@ func cancel_use() -> void:
 ## 하위 클래스가 실제 효과를 구현하는 곳
 func _execute(_fighter: Fighter) -> void:
 	pass
+
+## true면 이 스킬이 자기 공격 모션을 직접 재생한다는 뜻 — Fighter가 기본 스윙(play_attack_swing())을
+## 덧대지 않는다. 타별로 스윙이 다른 콤보 평타처럼, 모션 타이밍/종류를 스킬이 직접 제어할 때 쓴다
+func handles_own_visual() -> bool:
+	return false

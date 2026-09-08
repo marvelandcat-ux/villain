@@ -6,7 +6,7 @@
 
 ## 프로젝트 정보
 
-- 엔진: Godot 4.7, GDScript
+- 엔진: Godot 4.6, GDScript
 - 렌더러: Forward Plus, 3D 물리엔진 Jolt (프로젝트 기본값 — 실제 게임은 2D)
 - 장르: 사이드뷰 대전 격투, 바운스어택류(타격 후 넉백을 다시 잡아채는) 콤보 중심
 - 전투 원칙: 피격 경직(히트스턴) 최소화 지향, 지형·벽을 활용하는 스테이지 기믹
@@ -17,6 +17,9 @@
 
 - `characters/Fighter.gd`: 모든 캐릭터의 공용 베이스(`CharacterBody2D`). 이동/점프/중력, HP(`take_damage`/`heal`/`health_changed` 시그널), 스킬 슬롯(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack` — 자식 노드 이름 `Skill1`/`Skill2`/`SkillUltimate`/`BasicAttack`으로 자동 연결됨), 자유 형식 데이터 저장소 `custom_data`(예: 주정뱅이 술 스택)를 담당
 - 버프·디버프(`move_speed_multiplier` 등)는 직접 대입하지 않고 **`fighter.set_modifier(property, id, value)`/`clear_modifier(property, id)`**로 건다. 같은 property에 여러 효과가 동시에 걸려도 서로 안 지우고 곱해져서 적용된다(id별로 따로 저장했다가 곱함). 일정 시간만 유지되는 임시 효과는 `apply_temp_multiplier(property, value, duration)`가 자동으로 id를 발급해서 만료 처리까지 해줌. 술 스택처럼 켰다 껐다 하는 지속 효과는 `"drink_stacks"` 같은 고정 문자열 id로 직접 `set_modifier`/`clear_modifier` 호출 (`DrinkSkill.gd`/`VomitSkill.gd` 참고). **예전에는 `set(property, value)`로 직접 덮어써서 디버프 두 개가 겹치면 나중 게 먼저 걸린 걸 지워버리는 버그가 있었음 — 지금은 해결됨**
+- **캐릭터끼리는 몸 충돌을 하지 않는다.** `Fighter._ignore_other_fighters()`가 `_ready()`에서 같은 씬의 다른 Fighter들과 양방향으로 `add_collision_exception_with`를 걸어둔다 — 안 걸면 캐릭터가 **상대 머리 위에 올라서서 발판처럼 밟고 다닐 수 있다**(실제로 나온 문제). 새로 스폰된 쪽이 자기 `_ready()`에서 기존 캐릭터들과 걸어두므로 라운드 리로드·훈련장 캐릭터 교체도 자동으로 처리된다
+  - **충돌 레이어를 바꾸지 않은 이유:** 레이어를 건드리면 바닥·벽·발판까지 같이 영향을 받는다. 예외 처리로 빼는 건 몸(`CharacterBody2D`)끼리의 충돌뿐이고, 공격 판정(`Hitbox`/`Hurtbox`)은 Area2D라 그대로 서로를 감지한다 — 헤드리스로 기본공격 데미지·발판 착지가 그대로인 것까지 확인함
+  - 대신 두 캐릭터가 같은 자리에 겹쳐 설 수 있게 됐다(스매시브라더스류와 같은 방식). 서로 밀어내는 처리가 필요하면 따로 넣어야 한다
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
 - `skills/MeleeAttack.gd`: 기본공격 공용 스킬 — 캐릭터 앞에 히트박스를 잠깐 켰다 끈다. `damage`/`range`만 캐릭터마다 다르게 지정해서 재사용 (사탕찌르기, 키보드 휘두르기, 술병깨기, 팻말 때리기 전부 이걸 씀)
@@ -161,11 +164,18 @@
 
 `GameState.gd`(프로젝트 루트, 오토로드 싱글턴)가 화면 사이에서 선택값을 들고 다닙니다.
 
-**로컬 대전(PvP) 흐름:** `ui/MainMenu.tscn`(시작) → `ui/ModeSelect.tscn`("로컬 대전" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+**첫 화면 구성(2026-09-01 개편):** 게임을 켜면 `ui/TitleScreen.tscn`(게임 제목 + "아무 키나 누르세요")이 뜨고, 아무 키나 누르면 `ui/MainMenu.tscn`으로 넘어간다. 메인 메뉴는 **왼쪽에 버튼 4개(스토리 모드 / 대전 모드 / 조작 방법 / 설정), 오른쪽에 캐릭터 일러스트**가 숨쉬듯 흔들리는 구성이다.
 
-**스토리 모드 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해짐) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+- **일러스트는 Control이 아니라 `Sprite2D`다.** Control은 앵커 레이아웃이 매 프레임 `position`을 되돌려놔서 코드로 흔들면 서로 싸운다. Node2D 계열은 레이아웃을 안 받으므로 좌표를 그대로 쓸 수 있다
+- 일러스트를 안 넣어두면 `GameState.PORTRAITS[fallback_character]`(기본 주정뱅이)로 자동으로 채워지고, **어떤 크기의 그림이든 `illust_height`(560px)에 맞춰 배율이 자동 계산**된다 — 나중에 제대로 된 일러스트가 오면 `MainMenu` 인스펙터의 `Illustration`에 넣기만 하면 된다
+- `ui/HowToPlay.tscn`(조작 방법)은 키를 고정 문자열로 적어두지 않고 **`InputMap`에서 읽어온다** — 설정에서 키를 재배정하면 표시도 같이 바뀐다. 읽기 전용이고, 바꾸는 건 설정 > 조작 탭
+- **`ui/ModeSelect.tscn`은 이 개편으로 안 쓰이게 됐다.** 모드 분기 로직은 `MainMenu.gd`로, 훈련장 입구는 `HowToPlay.gd`로 옮겼다. 파일은 남겨뒀으니 필요 없으면 지워도 된다
 
-**훈련장 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("훈련장" 선택) → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
+**로컬 대전(PvP) 흐름:** `ui/TitleScreen.tscn`(아무 키) → `ui/MainMenu.tscn`("대전 모드" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+
+**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해짐) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+
+**훈련장 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("조작 방법") → `ui/HowToPlay.tscn`("훈련장에서 해보기") → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
 - 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
@@ -191,8 +201,8 @@
 
 ### `maps/Playground.tscn` (놀이터) — 미끄럼틀 / 스프링 시소 / 낙하 화분
 
-2026-09-07 기획 그림대로 새로 그렸다. **아직 스프라이트가 없어서 전부 `Polygon2D` 도형**이고,
-기능 검증을 먼저 끝낸 상태다(`sprite/맵/놀이터/화분.svg`가 들어와 있지만 아직 안 붙였다).
+2026-09-07 기획 그림대로 새로 그렸다. 시소 2종과 화분은 스프라이트를 붙였고,
+미끄럼틀·지붕·바닥은 아직 `Polygon2D` 도형이다.
 예전 `Playground.tscn`(가운데 낙뎀 구역 하나만 있던 버전)을 통째로 대체했으므로,
 `maps/HazardPlatform.gd`는 이제 아무 씬도 안 쓰는 고아 스크립트다.
 
@@ -204,6 +214,12 @@
 | 미끄럼틀 지붕 | 삼각형 (-605,55)-(-713,163)-(-497,163) |
 | 스프링 시소 좌석 윗면 | y = 226 (x = 400 / 560, `SpringRide.tscn` 인스턴스 2개, **원웨이**) |
 | 화분 생성 | `PotSpawner`가 y=-360에서 x ±680 범위로 무작위 낙하 |
+| 카메라 | `min_y` -80 / `max_y` 20 |
+
+- **카메라를 기본값(`max_y` 250)으로 두면 화면 아래 흙이 330px(46%)나 보인다.** 이 맵은 바닥 밑에
+  아무것도 없고 화분이 위에서 떨어지며 트램폴린으로 높이 튀어오르므로, 위쪽 공간이 훨씬 중요하다.
+  `max_y`를 **20**까지 낮춰 지면을 화면 620/720 위치로 내렸다(아래 흙 100px).
+  `min_y`는 -80이라 트램폴린으로 높이 튀어오르면 카메라가 그만큼 따라 올라간다
 
 - **지붕 밑은 화분 안전지대다.** 지붕 삼각형과 똑같은 모양의 `RoofShelter`(Area2D, `pot_shelter` 그룹)가 있고,
   화분이 여기 닿으면 그 자리에서 깨진다 — "보이는 지붕 = 막아주는 범위"라 눈으로 판단한 대로 안전하다.
@@ -216,21 +232,40 @@
   그 공간은 발판(원웨이)을 통해 이단 점프로 오갈 수 있다
 
 - **발판 높이(바닥에서 120px)는 이단 점프 여유를 보고 정했다.** 처음엔 135px(윗면 145)로 뒀는데,
-  이단 점프 최대치(165px)에 너무 붙어서 두 번째 점프를 정점에서 정확히 눌러야만 올라갈 수 있었다
-  (실측: 40프레임 뒤에 누르면 4.5px 모자라 실패). 15px 낮춰서 여유를 45px로 만들었다
+  당시 이단 점프 최대치(165px)에 너무 붙어서 두 번째 점프를 정점에서 정확히 눌러야만 올라갈 수 있었다.
+  15px 낮춰 여유 45px를 만들었다
+- **주의: `1834b5f`(넉백 시스템)에서 `DEFAULT_GRAVITY`가 900 → 1150으로 바뀌면서 점프 높이가 전부 줄었다.**
+  실측 평지 1단 71 → **56.3px**, 이단 165 → **129.2px**, 스프링 278 → **219px**.
+  놀이터 발판(필요 120px)은 여유가 45 → **9px**로 줄어 아슬아슬하게 올라가고,
+  **지하철 승강장 벤치(필요 145px)는 아예 못 올라간다** — 열차를 피할 유일한 수단이라 사실상 맵이 깨진 상태다.
+  중력을 되돌리지 않는다면 `DEFAULT_AIR_JUMP_VELOCITY`를 -420 → **약 -507**로 올리면
+  이단 점프가 다시 165px가 되어 두 맵 모두 원래 설계대로 돌아온다
 - **경사면은 `floor_max_angle`(기본 45°)보다 가파르게 잡아야 미끄러진다.** 48.3°라 Godot이 이 면을
   "바닥"이 아니라 "벽"으로 보고, 캐릭터가 붙어서 아래로 흘러내린다 — 그게 곧 미끄럼틀이다.
   45°보다 완만하면 그냥 걸어 다니는 비탈이 된다
 - **주의(실제로 겪은 함정): 경사면 폴리곤의 평평한 윗변이 노출되면 거기가 "서 있을 수 있는 턱"이 된다.**
   처음엔 경사면 윗변(x -160~-138)이 발판 바깥으로 삐져나와 있어서, 미끄러지라고 올려둔 캐릭터가
   그 턱에 그냥 서 버렸다. 지금은 윗변을 x -175~-155로 옮겨 **발판(x ~-155)에 완전히 가려지게** 해뒀다
-- `maps/SpringJumpPad.gd`: 좌석 위 판정(Area2D)에 들어와 있는 동안 `set_modifier("jump_multiplier", ...)`로
-  점프력을 `boost`(2.0)배로 만든다 — **점프 높이는 속도의 제곱에 비례하므로 실제로는 4배**가 된다
-  (실측: 평지 71px → 스프링 278px). 판정에서 벗어나면 `clear_modifier`로 바로 원상복구.
-  버프·디버프와 같은 방식이라 다른 점프 효과와 겹쳐도 서로 안 지우고, 스프링대마다 `get_instance_id()`로
-  만든 고유 id를 써서 두 대가 서로 덮어쓰지 않는다
+- **놀이터 스프라이트 배치**(전부 배경 제거 후 `region_rect`로 여백을 잘라 씀):
+  `기린시소.png`는 왼쪽(x=400), `파란시소.png`는 오른쪽(x=560), `화분.png`는 `FallingPot.tscn`.
+  시소는 **안장 윗면이 좌석 충돌(y=226)에, 받침 바닥이 지면(y=280)에** 오도록 배율을 잡았다
+  (기린 0.09 / 파란 0.078261 — 각 그림의 "안장→받침" 픽셀 거리가 54px이 되는 값).
+  화분은 테라코타 몸통 폭이 충돌 상자(36px)와 맞도록 0.055385
+  - **주의: 시소 원본 두 장은 투명 배경이 아니라 체크무늬가 그려져 있었다**(모서리 알파 1.0).
+    "밝고 무채색"(min>0.82, 최대-최소<0.06)인 픽셀만 바깥에서 flood fill로 지웠다 —
+    캐릭터의 크림색 얼굴은 채도가 있어서 안 지워진다. 원본은 스크래치패드에 백업해둠
+  - 스프링 눌림 연출은 `Visual` 노드를 **지면(y=280) 기준으로** 세로 압축한다.
+    스프라이트가 `centered = false`라 노드 자체를 지면에 두지 않으면 위로 줄어들어 어색해진다
+- `maps/SpringJumpPad.gd`: **트램폴린** — 좌석에 닿는 순간 점프 버튼과 무관하게 위로 튕겨 올라간다.
+  `bounce_velocity`(700, 최소 튕김) / `bounce_restitution`(1.15, 떨어진 속도에 곱함) /
+  `max_bounce_velocity`(1100, 상한)로 조절한다. 실측: 그냥 올라서면 **219px**, 높은 데서 떨어지면 **362px**
+  - 착지 순간에는 `velocity.y`가 이미 0이라 낙하 속도를 알 수 없다. 그래서 캐릭터별로 **직전 프레임의
+    낙하 속도(`_prev_fall`)를 기억해뒀다가** "세게 떨어질수록 높이 튕김"을 계산한다
+  - 판정을 좌석 바로 위(y 176~216)에만 두어서, 좌석 밑(지면 y 220~280)으로 지나가는 캐릭터는 반응하지 않는다
   - `area_entered/exited` 신호 대신 매 프레임 `get_overlapping_areas()`를 훑는다(`HazardPlatform`과 같은 방식) —
-    라운드 리셋·순간이동으로 exited가 안 오면 점프력 부스트가 영구히 남기 때문
+    라운드 리셋·순간이동으로 신호가 안 오는 경우가 있기 때문
+  - **예전에는 `set_modifier("jump_multiplier", ...)`로 점프력을 2배 만드는 방식이었다.** 트램폴린으로 바뀌면서
+    폐기 — 닿으면 바로 튕기므로 좌석 위에 가만히 서 있을 수가 없어 배수를 걸어둘 이유가 없어졌다
 - `maps/FallingPot.gd` + `FallingPot.tscn`: `Hitbox`를 상속한 낙하 화분(데미지 10, 주인 없는 판정).
   맞히거나 바닥(`floor_y` 262)에 닿으면 몸통을 숨기고 파편을 0.25초 보여준 뒤 사라진다
   - **주의(실제로 겪은 버그): `area_entered` 콜백 안에서 `monitoring = false`를 하면
@@ -324,7 +359,8 @@ res://
 ## 참고
 
 - 기획 오픈 이슈(히트스턴 예외, 승리 조건 HP vs 링아웃 등)는 아티팩트 문서의 "다음에 정할 것" 표를 확인. 확정 전까지는 구현 시 임시값으로 처리하고 주석/TODO로 표시
-- Godot 실행 파일: `D:\10인준완\Godot\engine\Godot_v4.7.1-stable_win64_console.exe`(4.7.1-stable, 포터블 압축 해제본 — 설치 프로그램 아님). 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있음 — 예: `<위 경로> --headless --path "D:/10인준완/Godot/villain" "res://maps/ConvenienceStore.tscn" --quit-after 120`. 코드를 수정한 뒤에는 이렇게 실행해서 에러 콘솔이 깨끗한지 확인하고 보고할 것. (다른 PC에서 작업할 땐 이 경로가 없을 수 있으니, `Godot*win64_console.exe`를 찾거나 `winget install GodotEngine.GodotEngine`로 설치)
+- **엔진 버전은 4.6으로 통일한다.** 4.7로 프로젝트를 열면 `project.godot`의 `config/features`가 `"4.7"`로 다시 쓰이고, 4.6으로 연 커밋과 **매번 머지 충돌이 난다**(실제로 겪음 — 바로 옆 줄인 `run/main_scene`까지 같이 충돌로 딸려 들어왔다). 반드시 4.6.x로 열 것
+- Godot 실행 파일(PC마다 다름): 이 PC는 `D:\Godot_v4.6.3-stable_win64.exe\Godot_v4.6.3-stable_win64_console.exe`, 다른 PC는 `D:\10인준완\Godot\engine\` 아래. 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있음 — 예: `<위 경로> --headless --path "<프로젝트 경로>" "res://maps/ConvenienceStore.tscn" --quit-after 120`. 코드를 수정한 뒤에는 이렇게 실행해서 에러 콘솔이 깨끗한지 확인하고 보고할 것. (경로가 없으면 `Godot*4.6*win64_console.exe`를 찾을 것 — 4.7을 쓰면 위의 충돌이 난다)
 - **주의:** 새 `class_name` 스크립트를 추가한 직후에는 먼저 `<위 경로> --headless --path "D:/10인준완/Godot/villain" --editor --quit-after 5`로 한 번 실행해서 전역 클래스 캐시를 갱신해야 함. 안 그러면 방금 만든 클래스를 참조하는 다른 스크립트가 "Could not find type" 에러로 로드 실패함
 - 자동 입력 시뮬레이션이 필요한 테스트는 `extends SceneTree` + `--script` 방식이 아니라, `extends Node` 스크립트를 임시 `.tscn`으로 감싸서 `--headless --path ... <임시 씬> --quit-after N`로 실행할 것 — `--script` 모드는 오토로드(`GameState` 등)가 초기화되지 않아 컴파일 에러가 남
 - **주의:** 헤드리스 모드는 프레임 제한이 없어서 60fps보다 훨씬 빠르게 돈다(실측 약 145fps). 쿨타임·버프 지속시간처럼 시간 기반 로직을 테스트할 때 `--quit-after N`의 N을 "60fps 기준 초"로 계산하면 실제로는 그보다 훨씬 짧은 시간만 흐른다 — 프레임 수 대신 `Time.get_ticks_msec()`로 실제 경과 시간을 재면서 대기하거나, `--fixed-fps 60`을 같이 붙여서 프레임당 델타를 고정시킬 것
