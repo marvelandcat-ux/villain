@@ -3,62 +3,32 @@ extends Control
 
 ## 타이틀 화면 다음에 나오는 메인 메뉴.
 ## 왼쪽에 모드 버튼 4개(스토리 모드 / 대전 모드 / 조작 방법 / 설정),
-## 오른쪽에 캐릭터 일러스트가 숨쉬듯 조금씩 움직인다.
+## 오른쪽에 캐릭터 일러스트(ui/MenuIllust.tscn)가 파츠별로 따로 움직인다.
 ##
-## 일러스트는 Control이 아니라 Sprite2D다 — Control은 앵커 레이아웃이 매 프레임 position을 되돌려놔서
-## 코드로 흔들면 서로 싸운다. Node2D 계열은 레이아웃을 안 받으므로 좌표를 그대로 쓸 수 있다.
+## 일러스트를 움직이는 건 전부 MenuIllust.gd가 하고, 여기서는 위치와 크기만 잡는다.
+## 일러스트는 Control이 아니라 Node2D다 — Control은 앵커 레이아웃이 매 프레임 position을 되돌려놔서
+## 코드로 움직이면 서로 싸운다.
 
-## 오른쪽에 크게 띄울 일러스트. 비워두면 GameState.PORTRAITS에서 fallback_character의 그림을 대신 쓴다
-@export var illustration: Texture2D
-## illustration을 비워뒀을 때 대신 보여줄 캐릭터 이름
-@export var fallback_character: String = "주정뱅이"
-## 그림 크기에 상관없이 화면에서 이 높이(px)가 되도록 자동으로 배율을 맞춘다
-@export var illust_height: float = 560.0
+## 그림 원본 크기에 상관없이 화면에서 이 높이(px)가 되도록 배율을 자동으로 맞춘다
+@export var illust_height: float = 620.0
+## 화면에서 일러스트의 한가운데가 놓일 자리
+@export var illust_center: Vector2 = Vector2(950, 380)
 
-@export_group("일러스트 움직임")
-## 위아래로 숨쉬듯 움직이는 폭(px)
-@export var sway_bob: float = 14.0
-## 좌우로 흔들리는 폭(px)
-@export var sway_side: float = 8.0
-## 기울어지는 최대 각도(도)
-@export var sway_tilt_deg: float = 1.6
-## 한 번 왕복하는 데 걸리는 시간(초). 클수록 느긋하다
-@export var sway_period: float = 4.5
-
-@onready var _illust: Sprite2D = $Illust
-
-var _time: float = 0.0
-var _illust_rest: Vector2
+@onready var _illust: MenuIllust = $Illust
 
 func _ready() -> void:
-	_illust_rest = _illust.position
-	_setup_illustration()
+	_place_illustration()
 	# 키보드/패드로 바로 위아래 이동이 되도록 첫 버튼에 포커스를 준다
 	$LeftPanel/Buttons/StoryButton.grab_focus()
 
-## 지정된 그림이 없으면 캐릭터 초상화로 대신 채우고, 어떤 크기의 그림이든 illust_height에 맞춘다
-func _setup_illustration() -> void:
-	if illustration == null:
-		var path: String = GameState.PORTRAITS.get(fallback_character, "")
-		if path != "" and ResourceLoader.exists(path):
-			illustration = load(path)
-	_illust.texture = illustration
-	if illustration == null:
+## 파츠들은 원본 캔버스 좌표(왼쪽 위가 0,0)로 그려지므로, 가운데가 illust_center에 오도록 밀어준다
+func _place_illustration() -> void:
+	var size: Vector2 = _illust.get_image_size()
+	if size.y <= 0.0:
 		return
-	var height: float = float(illustration.get_height())
-	if height > 0.0:
-		_illust.scale = Vector2.ONE * (illust_height / height)
-
-func _process(delta: float) -> void:
-	if _illust.texture == null:
-		return
-	_time += delta
-	var w: float = TAU / maxf(sway_period, 0.01)
-	# 위아래·좌우·기울기의 주기를 서로 다르게 줘서 같은 자리로 딱딱 돌아오지 않게 한다
-	_illust.position = _illust_rest + Vector2(
-		sin(_time * w * 0.7) * sway_side,
-		sin(_time * w) * sway_bob)
-	_illust.rotation = deg_to_rad(sway_tilt_deg) * sin(_time * w * 0.5)
+	var factor: float = illust_height / size.y
+	_illust.scale = Vector2.ONE * factor
+	_illust.position = illust_center - size * factor * 0.5
 
 ## 스토리 모드 — 라운드 수·시간제한이 고정이고 진행도를 처음부터 다시 시작한다
 func _on_story_pressed() -> void:
