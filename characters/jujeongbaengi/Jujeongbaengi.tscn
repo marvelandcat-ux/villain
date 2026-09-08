@@ -42,6 +42,7 @@ shape = SubResource("CapsuleShape2D_body")
 [node name="BasicAttack" type="Node" parent="." unique_id=1370111561]
 script = ExtResource("3")
 windup = 0.16
+cooldown = 0.3
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]
 monitoring = false

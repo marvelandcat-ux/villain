@@ -1,140 +1,106 @@
 class_name ComboMeleeAttack
 extends MeleeAttack
 
-## 히트 확인식 3타 기본 콤보.
-## 규칙(단순): 기본공격이 "맞으면" 쿨타임 없이 곧바로 다음 타가 나간다(최대 3타). 헛치면 짧은 쿨타임이 붙는다.
+## 딜레이 없는 3타 기본 콤보 (입력 기반).
+## 누르면 곧바로 평타가 나가고, 짧은 이어치기 창(chain_window) 안에 다시 누르면 쿨타임 없이 2타→3타로 이어진다.
+## 맞았는지와 무관하게 이어진다 — 허공을 쳐도(훈련장) 3타까지 나간다.
+## 3타를 다 쓰거나, 창이 지나 콤보가 끊기면 그때만 회복 쿨타임(cooldown)이 붙는다.
+## 훈련장은 모든 스킬 cooldown을 0으로 만들므로(_disable_cooldowns) 거기선 딜레이가 완전히 사라진다.
 ##
-## 손맛의 핵심은 두 가지:
-##  1) 잠금(lock)을 쓰지 않는다 — 스윙 중에도 다음 입력이 막히지 않는다.
-##  2) 입력 버퍼링 — 스윙이 끝나기 전에 눌러도 그 입력을 기억해뒀다가, 그 타가 명중하면 즉시 다음 타를 낸다.
-##     (연타로 1→2→3타가 자연스럽게 이어지게 하는 부분)
-##
-## 부모 MeleeAttack의 range/active_duration/windup/hitbox는 그대로 쓰고, damage/knockback/팝업만
-## 타별 배열로 덮어쓴다.
+## 타마다 데미지·넉백·팝업·스윙 모션이 다르다 (1·2타는 붙잡아두고, 3타는 크게 날린다).
 
-## 타별 데미지 (총 3타). 앞 두 타는 약하게, 마무리를 세게
+## 타별 데미지 (총 3타)
 @export var combo_damage: Array[int] = [3, 4, 7]
-## 타별 넉백. 1·2타는 상대를 붙잡아두려고 살짝만, 마무리(3타)는 크게 날린다
+## 타별 넉백. 1·2타는 살짝만, 마무리(3타)는 크게
 @export var combo_knockback: Array[Vector2] = [
-	Vector2(130, 0),
-	Vector2(150, 0),
-	Vector2(400, -180),
+	Vector2(220, -90),
+	Vector2(220, -90),
+	Vector2(220, -90),
 ]
-## 타별로 상대를 위로 띄우는 힘(px/s). 0이면 지상 유지, 음수면 기본 팝업.
-## 앞 두 타는 안 띄워야(0) 상대가 콤보 사거리 안에 머문다
-@export var combo_pop: Array[float] = [0.0, 0.0, -1.0]
-## 한 타가 명중한 뒤, 버퍼된 입력이 없을 때 다음 타를 눌러 이어갈 수 있는 여유 시간(초).
-## 이 안에 안 누르면 콤보가 조용히 끝난다(맞췄으니 쿨타임 없음)
-@export var chain_grace: float = 0.5
-## 마지막 3타까지 다 낸 뒤의 짧은 회복 쿨타임(초)
-@export var finish_cooldown: float = 0.3
-## 헛쳤을 때 붙는 짧은 쿨타임(초) — 잽 난사만 막을 정도로 가볍게
-@export var whiff_cooldown: float = 0.35
+## 타별로 상대를 위로 띄우는 힘(px/s). 0=지상 유지, 음수=기본 팝업(데미지 비례로 위로 붕 뜬다).
+## 전부 -1로 두면 원래 평타처럼 매 타 상대가 튕겨 날아간다
+@export var combo_pop: Array[float] = [-1.0, -1.0, -1.0]
+## 한 타를 낸 뒤 다음 타를 눌러 이어갈 수 있는 시간(초). 이 안에 다시 누르면 쿨 없이 다음 타.
+## 넉넉히 줘서 또박또박 눌러도(0.5~0.9초) 이어지게 한다
+@export var chain_window: float = 1.0
 
-## 다음에 나갈 타 (0=1타, 1=2타, 2=3타)
+## 지금 낼 타 (0=1타, 1=2타, 2=3타)
 var _step: int = 0
-## 지금 스윙이 진행 중인지 (windup~active 동안 true). 이 동안 들어온 입력은 버퍼된다
-var _swinging: bool = false
-## 스윙 중에 다음 타 입력이 들어왔는지 (명중하면 즉시 다음 타로 소모)
-var _buffered: bool = false
-## 명중 후 다음 입력을 기다리는 여유 시간
-var _window_left: float = 0.0
-var _fighter: Fighter = null
+## 다음 타를 이어칠 수 있는 남은 시간
+var _chain_left: float = 0.0
+## 켜둔 히트박스를 끄기까지 남은 시간 (await 없이 타이머로 처리해 연타 시 겹침을 피한다)
+var _active_left: float = 0.0
+## 스윙마다 증가하는 번호 — windup 대기 중 다음 타가 나가면 옛 스윙을 접는 데 쓴다
+var _swing_id: int = 0
 
-## 스윙 중이거나(버퍼용) 이어가기 여유가 있거나 쿨이 없으면 입력을 받아준다.
-## Fighter.use_basic_attack이 이 값으로 입력을 스킬까지 전달할지 정하므로, 스윙 중에도 true여야 버퍼링이 된다
+## 회복 쿨타임만 아니면 언제든 누를 수 있다 (이어치기 자체엔 쿨이 없다)
 func can_use() -> bool:
-	return _swinging or _window_left > 0.0 or cooldown_left <= 0.0
+	return cooldown_left <= 0.0
 
 func use(fighter: Fighter) -> void:
-	_fighter = fighter
-	# 스윙이 진행 중이면 지금 입력을 기억해뒀다가, 그 타가 맞으면 곧바로 다음 타를 낸다
-	if _swinging:
-		_buffered = true
-		return
 	if not can_use():
 		return
-	# 이어가기 여유가 없었다면(=새 콤보) 1타부터
-	if _window_left <= 0.0:
+	# 이어치기 창이 지났으면 새 콤보이므로 1타부터
+	if _chain_left <= 0.0:
 		_step = 0
-	_window_left = 0.0
-	_start_swing(fighter)
+	var step: int = _step
+	_fire(fighter, step)
+	# 곧바로 다음 타 준비 — 마지막(3타)을 냈으면 콤보를 리셋하고 그때만 회복 쿨을 준다
+	if step >= combo_damage.size() - 1:
+		_step = 0
+		_chain_left = 0.0
+		cooldown_left = cooldown   # 훈련장에선 cooldown=0이라 딜레이 없음
+	else:
+		_step = step + 1
+		_chain_left = chain_window
 
-## 스킬 클래시에서 밀렸을 때 — 콤보를 끊고 짧은 쿨만 소모
+## 스킬 클래시에서 밀렸을 때 — 콤보를 끊고 회복 쿨만 소모
 func cancel_use() -> void:
-	_reset(whiff_cooldown)
+	_reset()
 
 ## 이 스킬이 타별 스윙을 직접 재생하므로 Fighter는 기본 스윙을 덧대지 않는다
 func handles_own_visual() -> bool:
 	return true
 
 func _process(delta: float) -> void:
-	super._process(delta)  # 쿨타임 감소
-	if _window_left > 0.0 and not _swinging:
-		_window_left = maxf(_window_left - delta, 0.0)
-		if _window_left <= 0.0:
-			# 이어가기 여유를 놓쳤다 — 맞췄으니 쿨 없이 조용히 콤보만 리셋
-			_reset(0.0)
+	super._process(delta)  # 회복 쿨타임 감소
+	# 켜둔 히트박스를 active_duration 뒤에 끈다
+	if _active_left > 0.0:
+		_active_left = maxf(_active_left - delta, 0.0)
+		if _active_left <= 0.0:
+			hitbox.monitoring = false
+			hitbox.monitorable = false
+	# 이어치기 창이 지나 콤보가 끊기면 리셋(+회복 쿨). 마지막 타에서 이미 _step=0이면 안 걸린다
+	if _chain_left > 0.0:
+		_chain_left = maxf(_chain_left - delta, 0.0)
+		if _chain_left <= 0.0 and _step > 0:
+			_reset()
 
-## 현재 _step의 타를 실제로 휘두른다
-func _start_swing(fighter: Fighter) -> void:
-	_swinging = true
-	_buffered = false
-	_window_left = 0.0
-	_do_combo_hit(fighter, _step)
-
-## 한 타를 휘두르고, 명중 여부에 따라 다음 타로 이을지 결정한다
-func _do_combo_hit(fighter: Fighter, step: int) -> void:
-	var dmg: int = combo_damage[step]
-	var kb: Vector2 = combo_knockback[step]
-	# 타별 스윙 모션 (0=내려찍기, 1=후려치기, 2=올려치기)
+## 한 타를 즉시 휘두른다 (windup만큼만 판정을 늦춘다 — 입력→다음 입력 사이엔 딜레이 없음)
+func _fire(fighter: Fighter, step: int) -> void:
 	var visual := fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_attack_swing"):
 		visual.play_attack_swing(step)
+	_swing_id += 1
+	var my_id: int = _swing_id
 	if windup > 0.0:
 		await get_tree().create_timer(windup).timeout
-		if not is_instance_valid(fighter):
-			_swinging = false
-			return
-	hitbox.damage = fighter.compute_damage(dmg)
-	hitbox.knockback = Vector2(kb.x * fighter.facing, kb.y)
+		if not is_instance_valid(fighter) or my_id != _swing_id:
+			return  # 그 사이 다음 타가 나갔으면 이 스윙은 접는다
+	hitbox.damage = fighter.compute_damage(combo_damage[step])
+	hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing, combo_knockback[step].y)
 	hitbox.pop_override = combo_pop[step]
 	hitbox.source_fighter = fighter
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
-	var landed := [false]
-	var on_hit := func(_victim): landed[0] = true
-	hitbox.connected.connect(on_hit)
-	hitbox.monitoring = true
-	hitbox.monitorable = true
-	await get_tree().create_timer(active_duration).timeout
+	# 이미 겹쳐 있는 상대도 이번 타에 다시 맞도록 잠깐 껐다 켜서 area_entered가 새로 발생하게 한다
 	hitbox.monitoring = false
 	hitbox.monitorable = false
-	if hitbox.connected.is_connected(on_hit):
-		hitbox.connected.disconnect(on_hit)
-	_swinging = false
-	_resolve_swing(landed[0], step)
+	hitbox.clear_repeat_state()
+	hitbox.monitoring = true
+	hitbox.monitorable = true
+	_active_left = active_duration
 
-## 스윙이 끝난 뒤: 맞았으면 다음 타로(버퍼돼 있으면 즉시, 아니면 잠깐 기다림), 헛쳤으면 짧은 쿨과 함께 리셋
-func _resolve_swing(landed: bool, step: int) -> void:
-	if landed:
-		if step < combo_damage.size() - 1:
-			_step = step + 1
-			cooldown_left = 0.0
-			if _buffered:
-				# 스윙 중에 미리 눌러둔 입력이 있으면 곧바로 다음 타
-				_start_swing(_fighter)
-			else:
-				# 살짝 늦게 눌러도 이어지도록 잠깐 창을 연다
-				_window_left = chain_grace
-			return
-		# 3타까지 다 맞춤 → 짧은 회복 후 리셋
-		_reset(finish_cooldown)
-	else:
-		# 헛침 → 짧은 쿨타임
-		_reset(whiff_cooldown)
-
-func _reset(cd: float) -> void:
+func _reset() -> void:
 	_step = 0
-	_buffered = false
-	_window_left = 0.0
-	cooldown_left = cd
+	_chain_left = 0.0
+	cooldown_left = cooldown
