@@ -19,6 +19,8 @@ const GRID_HALF_WIDTH: float = 1000.0
 const FALL_LIMIT_Y: float = 900.0
 
 var _fighter: Fighter
+## 스킬 데미지·넉백을 확인할 고정 타겟(샌드백) — 가만히 서서 맞아주기만 한다
+var _dummy: Fighter
 ## 이동속도 배수 (stats.move_speed에 곱해진다)
 var _speed_scale: float = 1.0
 
@@ -38,12 +40,14 @@ var _readout_label: Label
 var _gravity_slider: HSlider
 var _jump_slider: HSlider
 var _speed_slider: HSlider
+var _dummy_hp_label: Label
 
 func _ready() -> void:
 	# 훈련장에서도 궁극기 컷인을 확인할 수 있게 같이 심는다
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
 	_build_ui()
 	_spawn_character(GameState.p1_character_path)
+	_spawn_dummy()
 
 func _process(delta: float) -> void:
 	if not (_fighter and is_instance_valid(_fighter)):
@@ -104,6 +108,24 @@ func _spawn_character(character_path: String) -> void:
 	_disable_cooldowns()
 	_apply_speed_scale()
 	_reset_measurements()
+
+## 스킬을 실제로 맞춰볼 고정 타겟(샌드백)을 스폰한다. HP가 매우 커서 실전처럼 죽지 않고,
+## DummyController가 붙어서 가만히 서 있기만 한다(입력도, AI 판단도 없음)
+func _spawn_dummy() -> void:
+	var scene: PackedScene = load("res://characters/dummy/TrainingDummy.tscn")
+	_dummy = scene.instantiate()
+	add_child(_dummy)
+	_dummy.global_position = $DummySpawn.global_position
+	_dummy.add_child(DummyController.new())
+
+## 더미를 원래 자리로 되돌리고 HP를 최대로 채운다 (계속 때리다 보면 넉백으로 멀리 밀려나므로)
+func _reset_dummy() -> void:
+	if not (_dummy and is_instance_valid(_dummy)):
+		return
+	_dummy.global_position = $DummySpawn.global_position
+	_dummy.velocity = Vector2.ZERO
+	_dummy.current_hp = _dummy.stats.max_hp
+	_dummy.health_changed.emit(_dummy.current_hp, _dummy.stats.max_hp)
 
 ## 훈련장에서는 스킬 쿨타임을 없앤다 — 값을 마음껏 시험해볼 수 있게 모든 스킬 노드의 cooldown을 0으로 만든다
 func _disable_cooldowns() -> void:
@@ -193,6 +215,14 @@ func _build_ui() -> void:
 	respawn_button.pressed.connect(_respawn)
 	box.add_child(respawn_button)
 
+	_dummy_hp_label = Label.new()
+	box.add_child(_dummy_hp_label)
+
+	var dummy_reset_button := Button.new()
+	dummy_reset_button.text = "더미 리셋 (위치+HP)"
+	dummy_reset_button.pressed.connect(_reset_dummy)
+	box.add_child(dummy_reset_button)
+
 	var reset_button := Button.new()
 	reset_button.text = "기본값으로 되돌리기"
 	reset_button.pressed.connect(_on_reset_pressed)
@@ -250,3 +280,5 @@ func _update_readout() -> void:
 	_speed_label.text = "이동속도 배수: %.2f  →  %d px/s" % [_speed_scale, int(move_speed)]
 	_readout_label.text = "현재 속도: %d px/s\n마지막 점프 — 높이 %d px / 체공 %.2f초 / 이동 %d px" % [
 		int(speed), int(_last_height), _last_air_time, int(_last_distance)]
+	if _dummy and is_instance_valid(_dummy):
+		_dummy_hp_label.text = "더미 HP: %d" % _dummy.current_hp

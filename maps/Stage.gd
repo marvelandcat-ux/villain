@@ -13,6 +13,8 @@ extends Node2D
 var _p1: Fighter
 var _p2: Fighter
 var _round_over: bool = false
+## "3, 2, 1, FIGHT!" 카운트다운이 끝날 때까지 true — HP/링아웃 판정과 제한시간 감소를 같이 멈춰둔다
+var _countdown_active: bool = true
 ## 이번 라운드 남은 시간 (GameState.time_limit_seconds가 0이면 시간 제한 없음)
 var _round_time_left: float = 0.0
 var _combat_hud: CombatHUD
@@ -27,6 +29,10 @@ func _ready() -> void:
 	# 로컬 대전(pvp)은 P2도 사람이 직접 조작하고, 스토리 모드는 정해진 상대를 AI가 조작한다
 	var p2_is_ai: bool = GameState.game_mode == "story"
 	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", p2_is_ai, 2)
+	# 컨트롤러가 붙자마자 바로 얼려서, 아래 await로 프레임이 넘어가는 순간에도
+	# 입력을 못 받게 한다 (여기서 안 얼리면 그 한 프레임 동안 is_active 기본값(true)이라
+	# 카운트다운이 뜨기도 전에 스킬이 나가버리는 틈이 생겼었다)
+	_freeze_controllers()
 
 	# 스폰된 Fighter들의 _ready()가 끝날 때까지 한 프레임 기다렸다가 연결한다
 	await get_tree().process_frame
@@ -36,18 +42,17 @@ func _ready() -> void:
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 
-	# "3, 2, 1, FIGHT!" 카운트다운이 끝날 때까지 양쪽 다 움직이거나 공격할 수 없게 막는다
-	_freeze_controllers()
 	var round_start: RoundStart = load("res://ui/RoundStart.tscn").instantiate()
 	add_child(round_start)
 	await round_start.finished
+	_countdown_active = false
 	_unfreeze_controllers()
 
 ## died 시그널에 즉시 반응하지 않고 매 프레임 HP를 직접 확인한다.
 ## 신호에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 순서에 따라
 ## 이미 죽은 쪽이 승자로 판정되는 문제가 있어서, 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정한다
 func _process(delta: float) -> void:
-	if _round_over:
+	if _round_over or _countdown_active:
 		return
 	for f in [_p1, _p2]:
 		if f and is_instance_valid(f) and f.global_position.y > ring_out_y:
@@ -105,10 +110,12 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 	var winner_name: String = _p1.stats.character_name if p1_won else _p2.stats.character_name
 	result_screen.show_result(p1_won, winner_name)
 
-## ESC(ui_cancel)를 누르면 언제든 대전을 중단하고 메인 메뉴로 나갈 수 있다
+## ESC(ui_cancel)를 누르면 일시정지 메뉴를 띄운다. 이 함수 자체가 get_tree().paused일 때는
+## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
+## 메뉴가 떠 있는 동안 다시 ESC를 눌러도 여기서 중복으로 또 띄우는 일은 없다
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+		add_child(load("res://ui/PauseMenu.tscn").instantiate())
 
 ## player_index는 사람이 조작할 때 어느 쪽 키(1P: A/D/W/F/G/H/R, 2P: 방향키/L/K/J/P)를 읽을지 정한다
 func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool, player_index: int) -> Fighter:

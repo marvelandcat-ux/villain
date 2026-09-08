@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" path="res://sprite/dummy/더미머리.png" id="2_head"]
+
+[node name="BodyRig" instance=ExtResource("1_rig")]
+
+[node name="Head" parent="." index="6"]
+position = Vector2(-2, -32.8)
+scale = Vector2(0.1375, 0.1375)
+texture = ExtResource("2_head")

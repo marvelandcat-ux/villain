@@ -134,6 +134,18 @@ extends Node2D
 ## 반동이 원래대로 돌아오는 속도(클수록 빨리 회복)
 @export var gun_recoil_recover: float = 9.0
 
+## --- 백 서플렉스(헬스장 죽돌이 스킬2): 손을 뻗어 잡고, 들어올려 버티다가, 등 뒤로 넘겨 꽂는다 ---
+## 잡을 때 두 손이 함께 모이는 목표 위치(리그 원점 기준) — 옆으로, 머리 높이 정도로 뻗어서 겹쳐 잡는다
+@export var grab_reach_target: Vector2 = Vector2(45, -28)
+## 겹쳐 잡을 때 두 손이 위아래로 벌어지는 간격(px) — 오른손이 위 절반, 왼손이 아래 절반
+@export var grab_hand_gap: float = 12.0
+## 등 뒤로 넘겨 꽂는 순간 몸이 뒤로 젖혀지는 각도(도) — 잡고 들어올리는 동안은 몸을 안 기울이고,
+## 마지막에 던지는 그 순간에만 확 젖혔다가 동작이 끝나면 제자리로 스냅
+@export var grab_slam_deg: float = -32.0
+## 넘겨 꽂는 순간 두 손이 잡은 지점(grab_reach_target)에서 추가로 더 이동하는 거리(px) — 위·뒤로
+## 뿌리치듯 던지는 손짓
+@export var grab_slam_hand_offset: Vector2 = Vector2(-14, -18)
+
 ## 토하기 스킬을 쓸 때 잠깐 이 얼굴(토하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(주정뱅이만 지정)
 @export var vomit_head_texture: Texture2D
 ## 토하는 얼굴을 보여주는 시간(초)
@@ -208,6 +220,12 @@ var _gun_time: float = 0.0
 var _gun_duration: float = 0.5
 ## 발사 반동 세기 0~1 — 쏠 때마다 1로 튀었다가 서서히 0으로 줄어든다
 var _recoil: float = 0.0
+## 파일드라이버 동작에 남은 시간(초). 0보다 크면 잡기~내리꽂기 동작 중이다
+var _grab_time: float = 0.0
+var _grab_duration: float = 1.0
+## 전체 동작 중 "뻗어서 잡기"가 끝나는 지점, "들고 버티기"가 끝나는 지점(그 뒤는 내리꽂기)의 진행도 비율
+var _grab_reach_ratio: float = 0.2
+var _grab_slam_ratio: float = 0.8
 ## 토하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 토하는 표정이다
 var _vomit_time: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
@@ -267,6 +285,10 @@ func _process(delta: float) -> void:
 	# 발사 반동은 매 프레임 서서히 잦아든다
 	if _recoil > 0.0:
 		_recoil = maxf(_recoil - delta * gun_recoil_recover, 0.0)
+	if _grab_time > 0.0:
+		_grab_time = maxf(_grab_time - delta, 0.0)
+		if is_zero_approx(_grab_time):
+			rotation = 0.0   # 내리꽂기가 끝나면 뒤로/앞으로 기울였던 몸을 원래대로
 
 	# 공중이면 점프 자세로, 바닥이면 원래 자세로 서서히 옮겨간다
 	var air_target: float = 0.0 if on_floor else 1.0
@@ -277,7 +299,7 @@ func _process(delta: float) -> void:
 	_fall_blend = move_toward(_fall_blend, 1.0 if falling else 0.0, delta * fall_blend_speed)
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
-	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0
+	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -392,6 +414,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 총을 겨누는 중이면 두 손을 모아 총을 잡은 자세로 덮어쓴다 (걷기·공격보다 우선한다)
 	if _gun_time > 0.0:
 		_pose_gun()
+
+	# 파일드라이버 중이면 오른손과 몸 전체 기울기를 잡기~내리꽂기 자세로 덮어쓴다
+	if _grab_time > 0.0:
+		_pose_grab()
 
 	# 가만히 있을 때는 왼손으로 머리를 긁는다 (idle 생동감). 왼손만 건드려서 다른 동작과 안 겹친다
 	if _scratch_time > 0.0:
@@ -576,6 +602,50 @@ func play_gun_motion(duration: float) -> void:
 ## 한 발 쏠 때마다 반동을 준다 — BBGunSkill이 총알을 발사한 순간 호출한다
 func gun_recoil() -> void:
 	_recoil = 1.0
+
+## 백 서플렉스 동작 시작 — 손을 뻗어 잡고, 뒤로 젖히며 들어올려, 등 뒤로 넘겨 꽂는다.
+## BackSuplexSkill이 잡기가 성립한 순간 세 구간(뻗기/들어올리기/넘겨꽂기)의 길이를 넘겨서 호출한다
+func play_grab_motion(reach_duration: float, hold_duration: float, slam_duration: float) -> void:
+	_grab_duration = maxf(reach_duration + hold_duration + slam_duration, 0.05)
+	_grab_reach_ratio = clampf(reach_duration / _grab_duration, 0.01, 0.98)
+	_grab_slam_ratio = clampf((reach_duration + hold_duration) / _grab_duration, _grab_reach_ratio + 0.01, 0.99)
+	_grab_time = _grab_duration
+
+## 백 서플렉스 진행도에 따라 두 손과 몸 전체 기울기를 잡는다 (걷기·공격보다 우선한다).
+## 두 손을 옆으로 뻗어 위아래로 겹쳐 잡는다(오른손 위/왼손 아래) — 한 손이 아니라 두 손으로
+## 붙잡는 그림이라 왼손도 오른손과 같은 목표로 모은다
+func _pose_grab() -> void:
+	var progress: float = 1.0 - _grab_time / _grab_duration
+	var hand_gap := Vector2(0, grab_hand_gap * 0.5)
+	if progress < _grab_reach_ratio:
+		# ① 두 손을 옆으로 뻗어 겹쳐 잡는다
+		var p: float = progress / _grab_reach_ratio
+		if _hand_r:
+			_hand_r.position = _rest_positions[_hand_r].lerp(grab_reach_target - hand_gap, p)
+		if _hand_l:
+			_hand_l.position = _rest_positions[_hand_l].lerp(grab_reach_target + hand_gap, p)
+		rotation = 0.0
+	elif progress < _grab_slam_ratio:
+		# ② 잡은 채로 들어올려 버틴다 — 몸은 안 기울이고 곧게 선 채 유지(손만 겹쳐 잡은 자세)
+		if _hand_r:
+			_hand_r.position = grab_reach_target - hand_gap
+		if _hand_l:
+			_hand_l.position = grab_reach_target + hand_gap
+		rotation = 0.0
+	else:
+		# ③ 던지는 이 순간에만 몸을 뒤로 확 젖히며 상대를 등 뒤로 넘겨 꽂는다
+		# (동작이 끝나면 _process가 제자리로 스냅)
+		var p: float = (progress - _grab_slam_ratio) / (1.0 - _grab_slam_ratio)
+		var target: Vector2 = grab_reach_target + grab_slam_hand_offset * p
+		if _hand_r:
+			_hand_r.position = target - hand_gap
+		if _hand_l:
+			_hand_l.position = target + hand_gap
+		rotation = deg_to_rad(grab_slam_deg) * p
+	if _hand_r:
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.rotation = 0.0
 
 ## 토하기 동작 — 잠깐 토하는 표정으로 머리를 바꾼다. VomitSkill이 토한 순간 호출한다.
 ## vomit_head_texture가 비어 있으면(주정뱅이 외 캐릭터) 아무 일도 안 한다
