@@ -17,10 +17,10 @@ extends Control
 
 @export_group("화면 전환")
 ## 켜질 때 검은 화면이 걷히는 시간(초)
-@export var enter_fade: float = 0.6
+@export var enter_fade: float = 0.9
 ## 키를 누른 뒤 어두워지며 메인 메뉴로 넘어가기까지의 시간(초).
-## 클릭 소리가 들릴 만큼은 줘야 한다
-@export var exit_fade: float = 1.0
+## 클릭 소리가 2.2초짜리라 1.4초면 앞부분이 충분히 들리고, 나머지는 어두워지며 자연스럽게 잘린다
+@export var exit_fade: float = 1.4
 ## 어두워지는 동안 브금이 잦아드는 정도 (1이면 완전히 무음까지)
 @export_range(0.0, 1.0, 0.05) var bgm_fade_out: float = 1.0
 

@@ -7,6 +7,16 @@
 [ext_resource type="PackedScene" path="res://ui/JaemminIllust.tscn" id="5_jaemmin"]
 [ext_resource type="Texture2D" uid="uid://bingatelixb7q" path="res://sprite/메인메뉴/일러스트/잼민이/잼민이일러스트배경.png" id="6_jaembg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="7_blur"]
+[ext_resource type="Texture2D" path="res://sprite/UI/메뉴사선_임시.png" id="8_slant"]
+[ext_resource type="Shader" path="res://ui/outline.gdshader" id="9_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+shader = ExtResource("9_outline")
+shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_width = 2.0
+shader_parameter/line_alpha = 0.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_nofocus"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("7_blur")
@@ -66,53 +76,197 @@ scale = Vector2(0.5137, 0.5137)
 position = Vector2(657.6401, 111)
 scale = Vector2(0.485133, 0.485133)
 
-[node name="LeftPanel" type="VBoxContainer" parent="." unique_id=1250460285]
+[node name="TitleLabel" type="Label" parent="."]
 layout_mode = 0
-anchor_top = 0.5
-anchor_bottom = 0.5
 offset_left = 96.0
-offset_top = -226.0
-offset_right = 500.0
-offset_bottom = 226.0
-theme_override_constants/separation = 22
-
-[node name="TitleLabel" type="Label" parent="LeftPanel" unique_id=2100060565]
-layout_mode = 2
+offset_top = 92.0
+offset_right = 760.0
+offset_bottom = 158.0
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 46
 text = "트러블 메이커"
 
-[node name="Buttons" type="VBoxContainer" parent="LeftPanel" unique_id=1387658188]
-layout_mode = 2
-theme_override_constants/separation = 14
+[node name="Menu" type="Control" parent="."]
+layout_mode = 0
+offset_right = 700.0
+offset_bottom = 720.0
+mouse_filter = 2
 
-[node name="StoryButton" type="Button" parent="LeftPanel/Buttons" unique_id=814908068]
-custom_minimum_size = Vector2(360, 62)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
+[node name="StoryItem" type="Button" parent="Menu"]
+layout_mode = 0
+offset_left = -80.0
+offset_top = 196.0
+offset_right = 460.0
+offset_bottom = 280.0
+flat = true
+theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
+
+[node name="Slide" type="Control" parent="Menu/StoryItem"]
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Shape" type="TextureRect" parent="Menu/StoryItem/Slide"]
+material = SubResource("ShaderMaterial_outline")
+modulate = Color(0.09, 0.07, 0.13, 0.82)
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_slant")
+
+[node name="Text" type="Label" parent="Menu/StoryItem/Slide"]
+layout_mode = 0
+offset_left = 176.0
+offset_right = 510.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 30
 text = "스토리 모드"
-alignment = 0
+vertical_alignment = 1
 
-[node name="VersusButton" type="Button" parent="LeftPanel/Buttons" unique_id=1488190412]
-custom_minimum_size = Vector2(360, 62)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
+[node name="VersusItem" type="Button" parent="Menu"]
+layout_mode = 0
+offset_left = -80.0
+offset_top = 294.0
+offset_right = 460.0
+offset_bottom = 378.0
+flat = true
+theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
+
+[node name="Slide" type="Control" parent="Menu/VersusItem"]
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Shape" type="TextureRect" parent="Menu/VersusItem/Slide"]
+material = SubResource("ShaderMaterial_outline")
+modulate = Color(0.09, 0.07, 0.13, 0.82)
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_slant")
+
+[node name="Text" type="Label" parent="Menu/VersusItem/Slide"]
+layout_mode = 0
+offset_left = 176.0
+offset_right = 510.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 30
 text = "대전 모드"
-alignment = 0
+vertical_alignment = 1
 
-[node name="HowToButton" type="Button" parent="LeftPanel/Buttons" unique_id=1684320262]
-custom_minimum_size = Vector2(360, 62)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
+[node name="TrainingItem" type="Button" parent="Menu"]
+layout_mode = 0
+offset_left = -80.0
+offset_top = 392.0
+offset_right = 460.0
+offset_bottom = 476.0
+flat = true
+theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
+
+[node name="Slide" type="Control" parent="Menu/TrainingItem"]
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Shape" type="TextureRect" parent="Menu/TrainingItem/Slide"]
+material = SubResource("ShaderMaterial_outline")
+modulate = Color(0.09, 0.07, 0.13, 0.82)
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_slant")
+
+[node name="Text" type="Label" parent="Menu/TrainingItem/Slide"]
+layout_mode = 0
+offset_left = 176.0
+offset_right = 510.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 30
+text = "훈련장"
+vertical_alignment = 1
+
+[node name="HowToItem" type="Button" parent="Menu"]
+layout_mode = 0
+offset_left = -80.0
+offset_top = 490.0
+offset_right = 460.0
+offset_bottom = 574.0
+flat = true
+theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
+
+[node name="Slide" type="Control" parent="Menu/HowToItem"]
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Shape" type="TextureRect" parent="Menu/HowToItem/Slide"]
+material = SubResource("ShaderMaterial_outline")
+modulate = Color(0.09, 0.07, 0.13, 0.82)
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_slant")
+
+[node name="Text" type="Label" parent="Menu/HowToItem/Slide"]
+layout_mode = 0
+offset_left = 176.0
+offset_right = 510.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 30
 text = "조작 방법"
-alignment = 0
+vertical_alignment = 1
 
-[node name="SettingsButton" type="Button" parent="LeftPanel/Buttons" unique_id=429601943]
-custom_minimum_size = Vector2(360, 62)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
+[node name="SettingsItem" type="Button" parent="Menu"]
+layout_mode = 0
+offset_left = -80.0
+offset_top = 588.0
+offset_right = 460.0
+offset_bottom = 672.0
+flat = true
+theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
+
+[node name="Slide" type="Control" parent="Menu/SettingsItem"]
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Shape" type="TextureRect" parent="Menu/SettingsItem/Slide"]
+material = SubResource("ShaderMaterial_outline")
+modulate = Color(0.09, 0.07, 0.13, 0.82)
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_slant")
+
+[node name="Text" type="Label" parent="Menu/SettingsItem/Slide"]
+layout_mode = 0
+offset_left = 176.0
+offset_right = 510.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 30
 text = "설정"
-alignment = 0
+vertical_alignment = 1
 
 [node name="HintLabel" type="Label" parent="." unique_id=1813239225]
 visible = false
@@ -131,7 +285,10 @@ text = "방향키/마우스로 선택 · ESC로 타이틀로"
 visible = false
 anchors_preset = 0
 
-[connection signal="pressed" from="LeftPanel/Buttons/StoryButton" to="." method="_on_story_pressed"]
-[connection signal="pressed" from="LeftPanel/Buttons/VersusButton" to="." method="_on_versus_pressed"]
-[connection signal="pressed" from="LeftPanel/Buttons/HowToButton" to="." method="_on_how_to_pressed"]
-[connection signal="pressed" from="LeftPanel/Buttons/SettingsButton" to="." method="_on_settings_pressed"]
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
