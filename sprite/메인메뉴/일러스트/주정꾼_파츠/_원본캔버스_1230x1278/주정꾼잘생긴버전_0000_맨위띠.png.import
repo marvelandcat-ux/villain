@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3fqxmldao3pa"
-path="res://.godot/imported/주정꾼잘생긴버전_0003_머리.png-e2c7a4c08dca312b252f799fb036abf5.ctex"
+uid="uid://22wxhbaje1v3"
+path="res://.godot/imported/주정꾼잘생긴버전_0000_맨위띠.png-a67e05965452cadd19cf2e7e0b163e09.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0003_머리.png"
-dest_files=["res://.godot/imported/주정꾼잘생긴버전_0003_머리.png-e2c7a4c08dca312b252f799fb036abf5.ctex"]
+source_file="res://sprite/메인메뉴/일러스트/주정꾼_파츠/_원본캔버스_1230x1278/주정꾼잘생긴버전_0000_맨위띠.png"
+dest_files=["res://.godot/imported/주정꾼잘생긴버전_0000_맨위띠.png-a67e05965452cadd19cf2e7e0b163e09.ctex"]
 
 [params]
 

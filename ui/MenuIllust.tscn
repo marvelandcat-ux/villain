@@ -16,7 +16,7 @@ position = Vector2(750, 1276)
 
 [node name="Sprite" type="Sprite2D" parent="Body"]
 centered = false
-position = Vector2(-750, -1276)
+position = Vector2(-750, -1426)
 texture = ExtResource("2_body")
 
 [node name="LowerCloth" type="Node2D" parent="."]
@@ -24,7 +24,7 @@ position = Vector2(800, 690)
 
 [node name="Sprite" type="Sprite2D" parent="LowerCloth"]
 centered = false
-position = Vector2(-800, -690)
+position = Vector2(-800, -840)
 texture = ExtResource("3_lowercloth")
 
 [node name="Head" type="Node2D" parent="."]
@@ -32,7 +32,7 @@ position = Vector2(790, 636)
 
 [node name="Sprite" type="Sprite2D" parent="Head"]
 centered = false
-position = Vector2(-790, -636)
+position = Vector2(-790, -786)
 texture = ExtResource("4_head")
 
 [node name="RibbonBottom" type="Node2D" parent="."]
@@ -40,7 +40,7 @@ position = Vector2(486, 334)
 
 [node name="Sprite" type="Sprite2D" parent="RibbonBottom"]
 centered = false
-position = Vector2(-486, -334)
+position = Vector2(-486, -484)
 texture = ExtResource("5_ribbonbottom")
 
 [node name="RibbonMiddle" type="Node2D" parent="."]
@@ -48,7 +48,7 @@ position = Vector2(386, 256)
 
 [node name="Sprite" type="Sprite2D" parent="RibbonMiddle"]
 centered = false
-position = Vector2(-386, -256)
+position = Vector2(-386, -406)
 texture = ExtResource("6_ribbonmiddle")
 
 [node name="RibbonTop" type="Node2D" parent="."]
@@ -56,5 +56,5 @@ position = Vector2(504, 302)
 
 [node name="Sprite" type="Sprite2D" parent="RibbonTop"]
 centered = false
-position = Vector2(-504, -302)
+position = Vector2(-504, -452)
 texture = ExtResource("7_ribbontop")

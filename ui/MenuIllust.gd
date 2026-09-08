@@ -3,7 +3,7 @@ extends Node2D
 
 ## 메인 메뉴 오른쪽에 서 있는 캐릭터 일러스트. 포토샵에서 나눈 파츠를 코드로 따로 움직인다.
 ##
-## 파츠는 전부 **원본 캔버스 크기 그대로** 내보낸 그림이라, 각 Sprite2D는 centered = false에
+## 파츠는 전부 **같은 캔버스 크기(1230x1428)** 로 내보낸 그림이라, 각 Sprite2D는 centered = false에
 ## position = -축좌표로 두면 원본과 픽셀 단위로 같은 자리에 그려진다.
 ## 그 Sprite2D를 감싼 Node2D(= 축)를 돌리면 원하는 지점을 중심으로 회전한다.
 ##  - 몸통: 두 발 사이를 축으로 세로로만 아주 살짝 늘었다 줄었다 (숨쉬기). 발이 안 뜬다
@@ -55,7 +55,7 @@ func _ready() -> void:
 ## 원본 그림 한 장의 크기. 메인 메뉴가 이걸 보고 배율·위치를 계산한다
 func get_image_size() -> Vector2:
 	var sprite: Sprite2D = $Body/Sprite
-	return sprite.texture.get_size() if sprite.texture else Vector2(1230, 1278)
+	return sprite.texture.get_size() if sprite.texture else Vector2(1230, 1428)
 
 func _process(delta: float) -> void:
 	_time += delta

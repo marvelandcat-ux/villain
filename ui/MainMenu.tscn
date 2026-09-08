@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://0s1twbhkoyrh"]
+[gd_scene format=3 uid="uid://c8mm3c2nkh56x"]
 
 [ext_resource type="Script" uid="uid://dot451lndensg" path="res://ui/MainMenu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/MenuIllust.tscn" id="2_illust"]
@@ -44,6 +44,8 @@ texture = SubResource("GradientTexture2D_left")
 expand_mode = 1
 
 [node name="Illust" parent="." unique_id=1203593728 instance=ExtResource("2_illust")]
+position = Vector2(657.6401, 111)
+scale = Vector2(0.485133, 0.485133)
 
 [node name="LeftPanel" type="VBoxContainer" parent="." unique_id=1250460285]
 layout_mode = 0
@@ -59,7 +61,7 @@ theme_override_constants/separation = 22
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 46
-text = "빌런 파이터즈"
+text = "트러블 메이커"
 
 [node name="Buttons" type="VBoxContainer" parent="LeftPanel" unique_id=1387658188]
 layout_mode = 2
@@ -94,6 +96,7 @@ text = "설정"
 alignment = 0
 
 [node name="HintLabel" type="Label" parent="." unique_id=1813239225]
+visible = false
 layout_mode = 0
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -106,6 +109,7 @@ theme_override_font_sizes/font_size = 18
 text = "방향키/마우스로 선택 · ESC로 타이틀로"
 
 [node name="ConfirmPopup" parent="." unique_id=511114147 instance=ExtResource("4_confirm")]
+visible = false
 anchors_preset = 0
 
 [connection signal="pressed" from="LeftPanel/Buttons/StoryButton" to="." method="_on_story_pressed"]

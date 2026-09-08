@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3fqxmldao3pa"
-path="res://.godot/imported/주정꾼잘생긴버전_0003_머리.png-e2c7a4c08dca312b252f799fb036abf5.ctex"
+uid="uid://ri2wbf754vlr"
+path="res://.godot/imported/말썽꾸러기미남파츠모음_0003_레이어-1.png-271aeacf9baada436dd966115fa68b98.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0003_머리.png"
-dest_files=["res://.godot/imported/주정꾼잘생긴버전_0003_머리.png-e2c7a4c08dca312b252f799fb036abf5.ctex"]
+source_file="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남파츠모음_0003_레이어-1.png"
+dest_files=["res://.godot/imported/말썽꾸러기미남파츠모음_0003_레이어-1.png-271aeacf9baada436dd966115fa68b98.ctex"]
 
 [params]
 
