@@ -2,20 +2,20 @@
 
 [ext_resource type="Script" uid="uid://co7j0mkhanpwb" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/JujeongbaengiStats.tres" id="2"]
-[ext_resource type="Script" path="res://skills/ComboMeleeAttack.gd" id="3"]
+[ext_resource type="Script" uid="uid://cgqw8ohid720h" path="res://skills/ComboMeleeAttack.gd" id="3"]
 [ext_resource type="Script" uid="uid://e5ogygpslhbn" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" uid="uid://dxpabj3yhils" path="res://combat/Hurtbox.gd" id="5"]
-[ext_resource type="Script" uid="uid://cky2qdirbbk6y" path="res://skills/DrinkSkill.gd" id="6"]
-[ext_resource type="Script" uid="uid://bx30dg5kos2jw" path="res://skills/VomitSkill.gd" id="7"]
+[ext_resource type="Script" uid="uid://ccr1vsfw6pevy" path="res://skills/DrinkSkill.gd" id="6"]
+[ext_resource type="Script" uid="uid://dvy267vj623ct" path="res://skills/VomitSkill.gd" id="7"]
 [ext_resource type="PackedScene" path="res://skills/VomitBeam.tscn" id="8"]
 [ext_resource type="Script" uid="uid://bobv36heqjoap" path="res://skills/ScreamConeUltimate.gd" id="9"]
 [ext_resource type="PackedScene" uid="uid://5whlo20oxk51" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://skills/ScreamCone.tscn" id="11"]
 [ext_resource type="Script" uid="uid://cpik24gbnnkkt" path="res://characters/SkillRangePreview.gd" id="12"]
-[ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/1번.png" id="13"]
-[ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/2번.png" id="14"]
-[ext_resource type="Texture2D" path="res://sprite/주정뱅이/스킬로고/궁극기.png" id="15"]
-[ext_resource type="PackedScene" path="res://combat/GlassShard.tscn" id="16"]
+[ext_resource type="Texture2D" uid="uid://xdq54maoshqt" path="res://sprite/주정뱅이/스킬로고/1번.png" id="13"]
+[ext_resource type="Texture2D" uid="uid://cy8uehv248537" path="res://sprite/주정뱅이/스킬로고/2번.png" id="14"]
+[ext_resource type="Texture2D" uid="uid://bjmtkm7ybrv0t" path="res://sprite/주정뱅이/스킬로고/궁극기.png" id="15"]
+[ext_resource type="PackedScene" uid="uid://cq8shardgl0ss" path="res://combat/GlassShard.tscn" id="16"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -32,6 +32,7 @@ stats = ExtResource("2")
 shape = SubResource("CapsuleShape2D_body")
 
 [node name="Visual" parent="." unique_id=616763307 instance=ExtResource("10")]
+position = Vector2(1, 0)
 
 [node name="Hurtbox" type="Area2D" parent="." unique_id=357524194]
 script = ExtResource("5")
@@ -41,9 +42,9 @@ shape = SubResource("CapsuleShape2D_body")
 
 [node name="BasicAttack" type="Node" parent="." unique_id=1370111561]
 script = ExtResource("3")
+miss_cooldown = 1.0
 windup = 0.16
 cooldown = 0.3
-miss_cooldown = 1.0
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]
 monitoring = false
@@ -56,25 +57,46 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="." unique_id=837593308]
 script = ExtResource("6")
-lock_duration = 1.1
 cooldown = 3.0
+lock_duration = 1.1
 icon = ExtResource("13")
 
 [node name="Skill2" type="Node" parent="." unique_id=556174220]
 script = ExtResource("7")
-lock_duration = 0.6
 beam_scene = ExtResource("8")
 mouth_offset = Vector2(18, -15)
 cooldown = 4.0
+lock_duration = 0.6
 icon = ExtResource("14")
 
 [node name="SkillUltimate" type="Node" parent="." unique_id=2025535014]
 script = ExtResource("9")
-lock_duration = 0.5
 cone_scene = ExtResource("11")
 mouth_offset = Vector2(18, -17)
 cooldown = 20.0
+lock_duration = 0.5
 icon = ExtResource("15")
 
 [node name="SkillRangePreview" type="Node2D" parent="." unique_id=1400754697]
 script = ExtResource("12")
+
+[node name="토하기0" type="Node2D" parent="SkillRangePreview" unique_id=1345666781]
+visible = false
+position = Vector2(1.89, -10.83)
+scale = Vector2(0.83, 0.83)
+
+[node name="토하기1" type="Node2D" parent="SkillRangePreview" unique_id=1500255325]
+position = Vector2(-8.235, -16.62)
+scale = Vector2(0.45, 0.45)
+
+[node name="토하기2" type="Node2D" parent="SkillRangePreview" unique_id=410238674]
+visible = false
+
+[node name="토하기3" type="Node2D" parent="SkillRangePreview" unique_id=107924155]
+visible = false
+
+[node name="괴성" type="Node2D" parent="SkillRangePreview" unique_id=1168439230]
+visible = false
+
+[node name="토하는얼굴" type="Node2D" parent="SkillRangePreview" unique_id=885874450]
+position = Vector2(2, 0)

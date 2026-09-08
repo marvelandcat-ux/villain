@@ -37,6 +37,22 @@ extends Hitbox
 ## 스택별 그림이 없을 때 쓰는 예전 방식 — 그림 한 장에서 여백을 뺀 영역을 통째로 늘린다
 const FALLBACK_REGION := Rect2(15, 42, 783, 159)
 
+## 인스펙터 배열이 비어 있을 때 쓰는 기본값. 씬에 안 걸려 있어도 무지개 기둥이 나오도록 코드에 박아둔다
+## (파일 이름의 1~4가 게임 스택 0~3에 대응한다)
+const DEFAULT_TEXTURES: Array[Texture2D] = [
+	preload("res://sprite/주정뱅이/토사물모음/1스택.png"),
+	preload("res://sprite/주정뱅이/토사물모음/2스택.png"),
+	preload("res://sprite/주정뱅이/토사물모음/3스택.png"),
+	preload("res://sprite/주정뱅이/토사물모음/4스택.png"),
+]
+## 위 그림들에서 기둥 몸통이 차지하는 영역 (세로 중앙선을 훑어 실측한 값)
+const DEFAULT_BODY_RECTS: Array[Rect2] = [
+	Rect2(877, 280, 254, 126),
+	Rect2(520, 284, 1027, 104),
+	Rect2(53, 264, 1960, 155),
+	Rect2(61, 268, 1947, 174),
+]
+
 var _facing: float = 1.0
 
 @onready var _collision: CollisionShape2D = $Collision
@@ -44,13 +60,13 @@ var _facing: float = 1.0
 
 ## 뻗는 방향(1 또는 -1), 기둥 길이/두께(px), 최종 데미지, 시전자, 술 스택 수를 지정하고 판정·연출을 시작한다.
 ## 맵에 add_child로 붙이고 global_position을 입 위치로 잡은 다음에 호출할 것
-func setup(direction: float, length: float, height: float, beam_damage: int, spitter: Fighter, stacks: int = -1) -> void:
+func setup(direction: float, length: float, height: float, beam_damage: int, spitter: Fighter, stacks: int = -1, visual_offset: Vector2 = Vector2.ZERO) -> void:
 	_facing = signf(direction) if direction != 0.0 else 1.0
 	damage = beam_damage
 	source_fighter = spitter
 	knockback = Vector2(knockback_force.x * _facing, knockback_force.y)
 
-	_build_beam(length, height, stacks)
+	_build_beam(length, height, stacks, visual_offset)
 	_play_burst()
 	_run_lifetime()
 
@@ -72,7 +88,7 @@ func _clip_to_wall(length: float) -> float:
 
 ## 판정 사각형과 그림을 같은 자리에 만든다 — 보이는 기둥 = 맞는 기둥.
 ## 벽에 막히면 **그림을 눌러 줄이지 않고 잘라낸다** (고정 그림이라 누르면 찌그러진다)
-func _build_beam(length: float, height: float, stacks: int) -> void:
+func _build_beam(length: float, height: float, stacks: int, visual_offset: Vector2 = Vector2.ZERO) -> void:
 	var clipped: float = _clip_to_wall(length)
 
 	var rect := RectangleShape2D.new()
@@ -92,7 +108,11 @@ func _build_beam(length: float, height: float, stacks: int) -> void:
 	var sy: float = height / maxf(body.size.y, 1.0)
 	_visual.centered = false
 	_visual.scale = Vector2(sx, sy)
-	_visual.position = Vector2(-body.position.x * sx, -height * 0.5 - body.position.y * sy)
+	# visual_offset은 **그림만** 밀어낸다 (판정은 그대로) — 스택별로 그림 여백이 달라서 미세 조정용이다.
+	# x는 바라보는 방향으로 뒤집어서 "앞으로/뒤로"가 항상 같은 뜻이 되게 한다
+	_visual.position = Vector2(
+		-body.position.x * sx + visual_offset.x * _facing,
+		-height * 0.5 - body.position.y * sy + visual_offset.y)
 
 	# 벽에 막힌 만큼 그림을 오른쪽에서 잘라낸다. 영역 시작을 (0,0)으로 둬야 위 좌표 계산이 그대로 맞는다
 	_visual.region_enabled = true
@@ -100,19 +120,26 @@ func _build_beam(length: float, height: float, stacks: int) -> void:
 	var cut: float = body.position.x + body.size.x * (clipped / maxf(length, 0.001))
 	_visual.region_rect = Rect2(0.0, 0.0, minf(cut, tex_size.x), tex_size.y)
 
-## 스택에 맞는 그림. 없으면 씬에 원래 박혀 있던 그림을 그대로 쓴다
+## 스택에 맞는 그림. 인스펙터 배열 -> 코드 기본값 -> 씬에 박힌 그림 순으로 찾는다
 func _texture_for(stacks: int) -> Texture2D:
-	if stacks >= 0 and stacks < stack_textures.size() and stack_textures[stacks]:
+	if stacks < 0:
+		return _visual.texture
+	if stacks < stack_textures.size() and stack_textures[stacks]:
 		return stack_textures[stacks]
+	if stacks < DEFAULT_TEXTURES.size():
+		return DEFAULT_TEXTURES[stacks]
 	return _visual.texture
 
-## 스택에 맞는 몸통 영역. 적어둔 게 없으면 예전 방식대로 그림 전체(여백 뺀 영역)를 몸통으로 친다
+## 스택에 맞는 몸통 영역. 그림을 어디서 가져왔는지와 짝이 맞아야 하므로 같은 순서로 찾는다
 func _body_rect_for(stacks: int, texture: Texture2D) -> Rect2:
-	if stacks >= 0 and stacks < stack_body_rects.size() and stack_body_rects[stacks].size.x > 0.0:
-		return stack_body_rects[stacks]
-	if texture and stack_textures.is_empty():
+	if stacks >= 0:
+		if stacks < stack_body_rects.size() and stack_body_rects[stacks].size.x > 0.0:
+			return stack_body_rects[stacks]
+		if stacks < DEFAULT_BODY_RECTS.size() and texture == DEFAULT_TEXTURES[stacks]:
+			return DEFAULT_BODY_RECTS[stacks]
+	if texture == null or texture == _visual.texture:
 		return FALLBACK_REGION
-	return Rect2(Vector2.ZERO, texture.get_size() if texture else FALLBACK_REGION.size)
+	return Rect2(Vector2.ZERO, texture.get_size())
 
 ## 판정은 처음부터 제 크기지만, 그림만 얇은 선에서 제 두께로 벌어지게 해서 "확 뻗는" 느낌을 준다
 func _play_burst() -> void:
@@ -121,9 +148,9 @@ func _play_burst() -> void:
 	create_tween().tween_property(_visual, "scale", full_scale, burst_time).set_ease(Tween.EASE_OUT)
 
 ## 에디터 미리보기용 — 판정도 타이머도 없이 기둥 모양만 만든다 (characters/SkillRangePreview.gd가 호출)
-func build_preview(direction: float, length: float, height: float, stacks: int = -1) -> void:
+func build_preview(direction: float, length: float, height: float, stacks: int = -1, visual_offset: Vector2 = Vector2.ZERO) -> void:
 	_facing = signf(direction) if direction != 0.0 else 1.0
-	_build_beam(length, height, stacks)
+	_build_beam(length, height, stacks, visual_offset)
 
 func _run_lifetime() -> void:
 	monitoring = true

@@ -1,12 +1,18 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://skills/VomitBeam.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://c6j8nyu4wqg0b" path="res://sprite/주정뱅이/토프로토.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/토사물모음/1스택.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/토사물모음/2스택.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/토사물모음/3스택.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/토사물모음/4스택.png" id="6"]
 
 [node name="VomitBeam" type="Area2D"]
 monitoring = false
 monitorable = false
 script = ExtResource("1")
+stack_textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
+stack_body_rects = Array[Rect2]([Rect2(877, 280, 254, 126), Rect2(520, 284, 1027, 104), Rect2(53, 264, 1960, 155), Rect2(61, 268, 1947, 174)])
 
 [node name="Collision" type="CollisionShape2D" parent="."]
 

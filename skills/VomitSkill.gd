@@ -15,11 +15,16 @@ extends Skill
 ## 스택당 늘어나는 기둥 길이(px)
 @export var range_per_stack: float = 310.0
 ## 0스택일 때 기둥 두께(px)
-@export var base_height: float = 28.0
+@export var base_height: float = 24.0
 ## 스택당 늘어나는 기둥 두께(px)
-@export var height_per_stack: float = 8.0
+@export var height_per_stack: float = 16.0
 ## 캐릭터 원점에서 입까지의 거리 — x는 바라보는 방향으로 자동 반전되고, y는 음수가 위쪽
 @export var mouth_offset: Vector2 = Vector2(18.0, -24.0)
+## 스택별로 **그림만** 밀어내는 미세 조정값 (index = 술 스택 수). 판정은 안 움직인다.
+## 그림마다 앞뒤 터짐 크기가 달라서, 예를 들어 3스택의 왼쪽 폭발이 얼굴을 가리면 여기서 앞으로 밀면 된다.
+## x는 바라보는 방향 기준이라 양수가 항상 "앞쪽"이다.
+## 캐릭터 씬을 열어놓고 이 값을 만지면 미리보기가 그 자리에서 같이 움직인다
+@export var stack_visual_offsets: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
 
 func _execute(fighter: Fighter) -> void:
 	# 토하는 표정으로 잠깐 얼굴을 바꾼다. 그 메서드가 없는 비주얼(임시 사각형 등)은 그냥 넘어간다
@@ -43,4 +48,10 @@ func _execute(fighter: Fighter) -> void:
 	var beam: VomitBeam = beam_scene.instantiate()
 	fighter.get_parent().add_child(beam)
 	beam.global_position = fighter.global_position + Vector2(mouth_offset.x * fighter.facing, mouth_offset.y)
-	beam.setup(fighter.facing, length, height, fighter.compute_damage(damage), fighter)
+	beam.setup(fighter.facing, length, height, fighter.compute_damage(damage), fighter, stacks, visual_offset_for(stacks))
+
+## 그 스택의 그림 조정값 (안 적어뒀으면 0)
+func visual_offset_for(stacks: int) -> Vector2:
+	if stacks >= 0 and stacks < stack_visual_offsets.size():
+		return stack_visual_offsets[stacks]
+	return Vector2.ZERO
