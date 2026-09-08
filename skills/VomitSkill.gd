@@ -15,9 +15,9 @@ extends Skill
 ## 스택당 늘어나는 기둥 길이(px)
 @export var range_per_stack: float = 310.0
 ## 0스택일 때 기둥 두께(px)
-@export var base_height: float = 14.0
+@export var base_height: float = 28.0
 ## 스택당 늘어나는 기둥 두께(px)
-@export var height_per_stack: float = 4.0
+@export var height_per_stack: float = 8.0
 ## 캐릭터 원점에서 입까지의 거리 — x는 바라보는 방향으로 자동 반전되고, y는 음수가 위쪽
 @export var mouth_offset: Vector2 = Vector2(18.0, -24.0)
 
