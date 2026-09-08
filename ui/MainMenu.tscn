@@ -4,8 +4,6 @@
 [ext_resource type="PackedScene" path="res://ui/MenuIllust.tscn" id="2_illust"]
 [ext_resource type="Texture2D" uid="uid://cci2cn5fu7kqf" path="res://sprite/메인메뉴/배경프로토.png" id="3_bg"]
 [ext_resource type="PackedScene" path="res://ui/ConfirmPopup.tscn" id="4_confirm"]
-[ext_resource type="Texture2D" uid="uid://7qh3ts3ndfkm" path="res://sprite/메인메뉴/일러스트/팔내리고있는주정꾼.png" id="5_frame1"]
-[ext_resource type="Texture2D" uid="uid://c3qahq3pcn3hu" path="res://sprite/메인메뉴/일러스트/앞에소주든주정꾼.png" id="6_frame2"]
 
 [sub_resource type="Gradient" id="Gradient_left"]
 offsets = PackedFloat32Array(0, 0.5, 1)
@@ -46,16 +44,6 @@ texture = SubResource("GradientTexture2D_left")
 expand_mode = 1
 
 [node name="Illust" parent="." unique_id=1203593728 instance=ExtResource("2_illust")]
-
-[node name="EntranceFrame1" type="Sprite2D" parent="." unique_id=975663645]
-position = Vector2(985, 406.00003)
-scale = Vector2(0.12770735, 0.12770349)
-texture = ExtResource("5_frame1")
-
-[node name="EntranceFrame2" type="Sprite2D" parent="." unique_id=188307080]
-position = Vector2(1132.5745, 470.3588)
-scale = Vector2(0.2231063, 0.21522589)
-texture = ExtResource("6_frame2")
 
 [node name="LeftPanel" type="VBoxContainer" parent="." unique_id=1250460285]
 layout_mode = 0
