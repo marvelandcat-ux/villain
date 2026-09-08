@@ -110,10 +110,12 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 	var winner_name: String = _p1.stats.character_name if p1_won else _p2.stats.character_name
 	result_screen.show_result(p1_won, winner_name)
 
-## ESC(ui_cancel)를 누르면 언제든 대전을 중단하고 메인 메뉴로 나갈 수 있다
+## ESC(ui_cancel)를 누르면 일시정지 메뉴를 띄운다. 이 함수 자체가 get_tree().paused일 때는
+## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
+## 메뉴가 떠 있는 동안 다시 ESC를 눌러도 여기서 중복으로 또 띄우는 일은 없다
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+		add_child(load("res://ui/PauseMenu.tscn").instantiate())
 
 ## player_index는 사람이 조작할 때 어느 쪽 키(1P: A/D/W/F/G/H/R, 2P: 방향키/L/K/J/P)를 읽을지 정한다
 func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool, player_index: int) -> Fighter:
