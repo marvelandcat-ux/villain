@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://maps/FallingPot.gd" id="1"]
 [ext_resource type="Texture2D" path="res://sprite/맵/놀이터/화분.png" id="2"]
+[ext_resource type="PackedScene" uid="uid://cq8shardgl0ss" path="res://combat/GlassShard.tscn" id="3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pot"]
 size = Vector2(36, 30)
@@ -11,6 +12,7 @@ script = ExtResource("1")
 damage = 10
 knockback = Vector2(0, -140)
 floor_y = 262.0
+shard_scene = ExtResource("3")
 
 [node name="PotCollision" type="CollisionShape2D" parent="."]
 position = Vector2(0, 4)
