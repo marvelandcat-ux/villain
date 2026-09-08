@@ -101,8 +101,11 @@ func _resolve(hit: bool) -> void:
 	_resolved = true
 	_swinging = false
 	_active_left = 0.0
-	hitbox.monitoring = false
-	hitbox.monitorable = false
+	# 명중 시그널(area_entered) 콜백 안에서 호출될 수 있는데, 그때 monitoring을 바로 끄면
+	# Godot이 물리 연산 중이라 막아버려 히트박스가 켜진 채 남는다(그 자리를 지나가면 계속 맞는 버그).
+	# set_deferred로 물리 스텝이 끝난 뒤에 안전하게 끈다
+	hitbox.set_deferred("monitoring", false)
+	hitbox.set_deferred("monitorable", false)
 	if hit:
 		if _swing_step < combo_damage.size() - 1:
 			_step = _swing_step + 1
