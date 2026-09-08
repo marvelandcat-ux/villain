@@ -10,6 +10,9 @@ extends Node2D
 ##  - 아래쪽옷: 몸에 붙는 윗변을 축으로 살랑거림
 ##  - 머리: 목을 축으로 살짝 갸웃 + 숨결에 맞춰 미세하게 오르내림
 ##  - 띠 3조각: 묶인 지점을 축으로, 조각마다 시간차를 두고 흔들려 물결처럼 이어진다
+##
+## 등장 연출(작은 그림부터 순서대로 커지는 3프레임)은 MainMenu가 맡는다.
+## 이 노드는 그 마지막 3번째 프레임에 해당하고, 화면에 나타난 뒤부터 아래 숨쉬기를 돈다.
 
 ## 한 호흡에 걸리는 시간(초). 모든 움직임이 이 주기를 공유한다
 @export var period: float = 3.6
@@ -54,6 +57,10 @@ func _ready() -> void:
 func get_image_size() -> Vector2:
 	var sprite: Sprite2D = $Body/Sprite
 	return sprite.texture.get_size() if sprite.texture else Vector2(1230, 1278)
+
+## 등장 연출이 끝나고 화면에 나타난 순간 호출한다. 숨결을 처음부터 다시 센다
+func restart_breathing() -> void:
+	_time = 0.0
 
 func _process(delta: float) -> void:
 	_time += delta

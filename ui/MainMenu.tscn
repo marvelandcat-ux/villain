@@ -1,8 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://c8mm3c2nkh56x"]
 
-[ext_resource type="Script" path="res://ui/MainMenu.gd" id="1"]
+[ext_resource type="Script" uid="uid://dot451lndensg" path="res://ui/MainMenu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/MenuIllust.tscn" id="2_illust"]
 [ext_resource type="Texture2D" uid="uid://cci2cn5fu7kqf" path="res://sprite/메인메뉴/배경프로토.png" id="3_bg"]
+[ext_resource type="PackedScene" path="res://ui/ConfirmPopup.tscn" id="4_confirm"]
+[ext_resource type="Texture2D" uid="uid://7qh3ts3ndfkm" path="res://sprite/메인메뉴/일러스트/팔내리고있는주정꾼.png" id="5_frame1"]
+[ext_resource type="Texture2D" uid="uid://c3qahq3pcn3hu" path="res://sprite/메인메뉴/일러스트/앞에소주든주정꾼.png" id="6_frame2"]
 
 [sub_resource type="Gradient" id="Gradient_left"]
 offsets = PackedFloat32Array(0, 0.5, 1)
@@ -12,38 +15,50 @@ colors = PackedColorArray(0.03, 0.02, 0.06, 0.94, 0.03, 0.02, 0.06, 0.82, 0.03, 
 gradient = SubResource("Gradient_left")
 width = 256
 height = 1
-fill_to = Vector2(1, 0)
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=1303680159]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1")
-illust_height = 620.0
 
-[node name="Background" type="TextureRect" parent="."]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
+[node name="Background" type="Sprite2D" parent="." unique_id=2066197465]
+position = Vector2(717, 312)
+scale = Vector2(0.86, 0.86)
 texture = ExtResource("3_bg")
-expand_mode = 1
-stretch_mode = 6
 
-[node name="Scrim" type="ColorRect" parent="."]
+[node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.04, 0.03, 0.07, 0.45)
 
-[node name="LeftFade" type="TextureRect" parent="."]
+[node name="LeftFade" type="TextureRect" parent="." unique_id=1820606133]
+layout_mode = 0
 anchor_right = 0.56
 anchor_bottom = 1.0
 mouse_filter = 2
 texture = SubResource("GradientTexture2D_left")
 expand_mode = 1
 
-[node name="Illust" parent="." instance=ExtResource("2_illust")]
+[node name="Illust" parent="." unique_id=1203593728 instance=ExtResource("2_illust")]
 
-[node name="LeftPanel" type="VBoxContainer" parent="."]
+[node name="EntranceFrame1" type="Sprite2D" parent="." unique_id=975663645]
+position = Vector2(985, 406.00003)
+scale = Vector2(0.12770735, 0.12770349)
+texture = ExtResource("5_frame1")
+
+[node name="EntranceFrame2" type="Sprite2D" parent="." unique_id=188307080]
+position = Vector2(1132.5745, 470.3588)
+scale = Vector2(0.2231063, 0.21522589)
+texture = ExtResource("6_frame2")
+
+[node name="LeftPanel" type="VBoxContainer" parent="." unique_id=1250460285]
+layout_mode = 0
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 96.0
@@ -52,45 +67,46 @@ offset_right = 500.0
 offset_bottom = 226.0
 theme_override_constants/separation = 22
 
-[node name="TitleLabel" type="Label" parent="LeftPanel"]
+[node name="TitleLabel" type="Label" parent="LeftPanel" unique_id=2100060565]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 46
 text = "빌런 파이터즈"
 
-[node name="Buttons" type="VBoxContainer" parent="LeftPanel"]
+[node name="Buttons" type="VBoxContainer" parent="LeftPanel" unique_id=1387658188]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="StoryButton" type="Button" parent="LeftPanel/Buttons"]
+[node name="StoryButton" type="Button" parent="LeftPanel/Buttons" unique_id=814908068]
 custom_minimum_size = Vector2(360, 62)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "스토리 모드"
 alignment = 0
 
-[node name="VersusButton" type="Button" parent="LeftPanel/Buttons"]
+[node name="VersusButton" type="Button" parent="LeftPanel/Buttons" unique_id=1488190412]
 custom_minimum_size = Vector2(360, 62)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "대전 모드"
 alignment = 0
 
-[node name="HowToButton" type="Button" parent="LeftPanel/Buttons"]
+[node name="HowToButton" type="Button" parent="LeftPanel/Buttons" unique_id=1684320262]
 custom_minimum_size = Vector2(360, 62)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "조작 방법"
 alignment = 0
 
-[node name="SettingsButton" type="Button" parent="LeftPanel/Buttons"]
+[node name="SettingsButton" type="Button" parent="LeftPanel/Buttons" unique_id=429601943]
 custom_minimum_size = Vector2(360, 62)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "설정"
 alignment = 0
 
-[node name="HintLabel" type="Label" parent="."]
+[node name="HintLabel" type="Label" parent="." unique_id=1813239225]
+layout_mode = 0
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 96.0
@@ -101,10 +117,10 @@ theme_override_colors/font_color = Color(0.55, 0.5, 0.62, 1)
 theme_override_font_sizes/font_size = 18
 text = "방향키/마우스로 선택 · ESC로 타이틀로"
 
+[node name="ConfirmPopup" parent="." unique_id=511114147 instance=ExtResource("4_confirm")]
+anchors_preset = 0
+
 [connection signal="pressed" from="LeftPanel/Buttons/StoryButton" to="." method="_on_story_pressed"]
-
 [connection signal="pressed" from="LeftPanel/Buttons/VersusButton" to="." method="_on_versus_pressed"]
-
 [connection signal="pressed" from="LeftPanel/Buttons/HowToButton" to="." method="_on_how_to_pressed"]
-
 [connection signal="pressed" from="LeftPanel/Buttons/SettingsButton" to="." method="_on_settings_pressed"]
