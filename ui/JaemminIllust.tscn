@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://ui/JaemminIllust.gd" id="1"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남_몸통.png" id="2_body"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남파츠모음_0002_오른쪽다리.png" id="3_leg"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남파츠모음_0001_머리.png" id="4_head"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남파츠모음_0000_총과왼팔.png" id="5_arm"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남_눈감음.png" id="6_eye"]
 
 [node name="JaemminIllust" type="Node2D"]
 script = ExtResource("1")
@@ -33,10 +34,17 @@ centered = false
 position = Vector2(-555, -368)
 texture = ExtResource("4_head")
 
+[node name="EyeClosed" type="Sprite2D" parent="Head"]
+visible = false
+centered = false
+position = Vector2(-555, -368)
+texture = ExtResource("6_eye")
+
 [node name="GunArm" type="Node2D" parent="."]
-position = Vector2(695, 538)
+position = Vector2(430, 510)
+rotation = -0.10472
 
 [node name="Sprite" type="Sprite2D" parent="GunArm"]
 centered = false
-position = Vector2(-695, -538)
+position = Vector2(-430, -510)
 texture = ExtResource("5_arm")

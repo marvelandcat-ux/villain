@@ -57,6 +57,10 @@ func get_image_size() -> Vector2:
 	var sprite: Sprite2D = $Body/Sprite
 	return sprite.texture.get_size() if sprite.texture else Vector2(1230, 1428)
 
+## 다른 일러스트에서 넘어와 화면에 나타난 순간 호출한다. 숨결을 처음부터 다시 센다
+func restart() -> void:
+	_time = 0.0
+
 func _process(delta: float) -> void:
 	_time += delta
 	var w: float = TAU / maxf(period, 0.01)
