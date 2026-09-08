@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="CharacterStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CharacterStats" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://stats/CharacterStats.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/cutin/ChokbeopsonyeonCutIn.tscn" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,3 +9,4 @@ character_name = "촉법소년"
 max_hp = 100
 move_speed = 200.0
 attack_multiplier = 1.0
+ultimate_cutin_scene = ExtResource("2")
