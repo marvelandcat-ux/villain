@@ -41,6 +41,6 @@ theme_override_constants/v_separation = 14
 
 [node name="BackButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
-text = "모드 선택으로 (ESC)"
+text = "메인 메뉴로 (ESC)"
 
 [connection signal="pressed" from="Center/VBox/BackButton" to="." method="_on_back_pressed"]

@@ -164,11 +164,18 @@
 
 `GameState.gd`(프로젝트 루트, 오토로드 싱글턴)가 화면 사이에서 선택값을 들고 다닙니다.
 
-**로컬 대전(PvP) 흐름:** `ui/MainMenu.tscn`(시작) → `ui/ModeSelect.tscn`("로컬 대전" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+**첫 화면 구성(2026-09-01 개편):** 게임을 켜면 `ui/TitleScreen.tscn`(게임 제목 + "아무 키나 누르세요")이 뜨고, 아무 키나 누르면 `ui/MainMenu.tscn`으로 넘어간다. 메인 메뉴는 **왼쪽에 버튼 4개(스토리 모드 / 대전 모드 / 조작 방법 / 설정), 오른쪽에 캐릭터 일러스트**가 숨쉬듯 흔들리는 구성이다.
 
-**스토리 모드 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해짐) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+- **일러스트는 Control이 아니라 `Sprite2D`다.** Control은 앵커 레이아웃이 매 프레임 `position`을 되돌려놔서 코드로 흔들면 서로 싸운다. Node2D 계열은 레이아웃을 안 받으므로 좌표를 그대로 쓸 수 있다
+- 일러스트를 안 넣어두면 `GameState.PORTRAITS[fallback_character]`(기본 주정뱅이)로 자동으로 채워지고, **어떤 크기의 그림이든 `illust_height`(560px)에 맞춰 배율이 자동 계산**된다 — 나중에 제대로 된 일러스트가 오면 `MainMenu` 인스펙터의 `Illustration`에 넣기만 하면 된다
+- `ui/HowToPlay.tscn`(조작 방법)은 키를 고정 문자열로 적어두지 않고 **`InputMap`에서 읽어온다** — 설정에서 키를 재배정하면 표시도 같이 바뀐다. 읽기 전용이고, 바꾸는 건 설정 > 조작 탭
+- **`ui/ModeSelect.tscn`은 이 개편으로 안 쓰이게 됐다.** 모드 분기 로직은 `MainMenu.gd`로, 훈련장 입구는 `HowToPlay.gd`로 옮겼다. 파일은 남겨뒀으니 필요 없으면 지워도 된다
 
-**훈련장 흐름:** `ui/MainMenu.tscn` → `ui/ModeSelect.tscn`("훈련장" 선택) → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
+**로컬 대전(PvP) 흐름:** `ui/TitleScreen.tscn`(아무 키) → `ui/MainMenu.tscn`("대전 모드" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+
+**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해짐) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+
+**훈련장 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("조작 방법") → `ui/HowToPlay.tscn`("훈련장에서 해보기") → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
 - 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음

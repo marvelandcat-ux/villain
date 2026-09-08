@@ -2,6 +2,11 @@ class_name Hitbox
 extends Area2D
 
 ## 공격 판정 — 겹친 Hurtbox에게 데미지를 주고, 실제로 맞았으면 히트 이펙트를 띄운다
+
+## 실제로 명중한 순간 알린다 — 공격자 쪽 스킬이 "맞았으니 콤보 다음 타로 진행" 같은 히트 확인에 쓴다.
+## victim은 맞은 Fighter (없을 수도 있어 Node로 받는다)
+signal connected(victim: Node)
+
 @export var damage: int = 10
 @export var knockback: Vector2 = Vector2.ZERO
 ## true면 knockback을 그대로 쓰지 않고, 맞는 순간 "공격자 쪽으로" 방향을 계산해서 끌어당긴다 (청소기 흡입 등)
@@ -15,6 +20,9 @@ extends Area2D
 @export var debris_scene: PackedScene
 ## 명중 시 카메라를 흔드는 세기 = damage × 이 값 (0이면 안 흔든다). 데미지가 클수록 크게·오래 흔들린다
 @export var shake_per_damage: float = 0.04
+## 맞은 상대를 위로 띄우는 힘(px/s). 음수(기본)면 데미지 비례 기본 팝업, 0이면 안 띄운다(지상 유지).
+## 콤보 앞 타격이 상대를 공중에 날려버려 다음 타가 헛치는 걸 막을 때 0으로 둔다
+@export var pop_override: float = -1.0
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -66,7 +74,7 @@ func _try_hit(area: Area2D) -> bool:
 	if not (area is Hurtbox):
 		return false
 	var kb: Vector2 = _compute_knockback(area)
-	if not area.take_hit(damage, kb, source_fighter):
+	if not area.take_hit(damage, kb, source_fighter, pop_override):
 		return false
 	_spawn_spark(area.global_position, kb)
 	if debris_scene != null:
@@ -78,6 +86,7 @@ func _try_hit(area: Area2D) -> bool:
 	if victim and victim.has_method("get_combo_count"):
 		combo = victim.get_combo_count()
 	_spawn_damage_number(area.global_position, damage, combo)
+	connected.emit(victim)
 	return true
 
 ## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)

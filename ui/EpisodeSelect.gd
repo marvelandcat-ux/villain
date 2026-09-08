@@ -99,7 +99,7 @@ func _on_episode_picked(index: int) -> void:
 	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://ui/ModeSelect.tscn")
+	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

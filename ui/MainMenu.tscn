@@ -1,61 +1,82 @@
-[gd_scene format=3 uid="uid://0s1twbhkoyrh"]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://dot451lndensg" path="res://ui/MainMenu.gd" id="1"]
+[ext_resource type="Script" path="res://ui/MainMenu.gd" id="1"]
 
-[node name="MainMenu" type="Control" unique_id=786627499]
-layout_mode = 3
-anchors_preset = 15
+[node name="MainMenu" type="Control"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="." unique_id=1354606853]
-layout_mode = 1
-anchors_preset = 15
+[node name="Background" type="ColorRect" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 1.0
-offset_top = -6.0
-offset_right = 1.0
-offset_bottom = -6.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.09, 0.09, 0.11, 1)
+color = Color(0.06, 0.05, 0.09, 1)
 
-[node name="VBox" type="VBoxContainer" parent="." unique_id=1694547429]
-layout_mode = 0
-anchor_left = 0.5
+[node name="Illust" type="Sprite2D" parent="."]
+position = Vector2(920, 372)
+
+[node name="LeftPanel" type="VBoxContainer" parent="."]
 anchor_top = 0.5
-anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -70.0
-offset_right = 160.0
-offset_bottom = 70.0
-alignment = 1
+offset_left = 96.0
+offset_top = -226.0
+offset_right = 500.0
+offset_bottom = 226.0
+theme_override_constants/separation = 22
 
-[node name="TitleLabel" type="Label" parent="VBox" unique_id=1341277949]
+[node name="TitleLabel" type="Label" parent="LeftPanel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
+theme_override_font_sizes/font_size = 46
 text = "빌런 파이터즈"
-horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="VBox" unique_id=1062873645]
+[node name="Buttons" type="VBoxContainer" parent="LeftPanel"]
 layout_mode = 2
-text = "일상 속 빌런들의 밉상 배틀"
-horizontal_alignment = 1
+theme_override_constants/separation = 14
 
-[node name="StartButton" type="Button" parent="VBox" unique_id=1708744386]
-custom_minimum_size = Vector2(0, 40)
+[node name="StoryButton" type="Button" parent="LeftPanel/Buttons"]
+custom_minimum_size = Vector2(360, 62)
 layout_mode = 2
-text = "시작"
+theme_override_font_sizes/font_size = 28
+text = "스토리 모드"
+alignment = 0
 
-[node name="SettingsButton" type="Button" parent="VBox" unique_id=1156763019]
-custom_minimum_size = Vector2(0, 40)
+[node name="VersusButton" type="Button" parent="LeftPanel/Buttons"]
+custom_minimum_size = Vector2(360, 62)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "대전 모드"
+alignment = 0
+
+[node name="HowToButton" type="Button" parent="LeftPanel/Buttons"]
+custom_minimum_size = Vector2(360, 62)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "조작 방법"
+alignment = 0
+
+[node name="SettingsButton" type="Button" parent="LeftPanel/Buttons"]
+custom_minimum_size = Vector2(360, 62)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "설정"
+alignment = 0
 
-[connection signal="pressed" from="VBox/StartButton" to="." method="_on_start_pressed"]
-[connection signal="pressed" from="VBox/SettingsButton" to="." method="_on_settings_pressed"]
+[node name="HintLabel" type="Label" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 96.0
+offset_top = -56.0
+offset_right = 600.0
+offset_bottom = -24.0
+theme_override_colors/font_color = Color(0.55, 0.5, 0.62, 1)
+theme_override_font_sizes/font_size = 18
+text = "방향키/마우스로 선택 · ESC로 타이틀로"
+
+[connection signal="pressed" from="LeftPanel/Buttons/StoryButton" to="." method="_on_story_pressed"]
+
+[connection signal="pressed" from="LeftPanel/Buttons/VersusButton" to="." method="_on_versus_pressed"]
+
+[connection signal="pressed" from="LeftPanel/Buttons/HowToButton" to="." method="_on_how_to_pressed"]
+
+[connection signal="pressed" from="LeftPanel/Buttons/SettingsButton" to="." method="_on_settings_pressed"]

@@ -133,7 +133,9 @@ const COMBO_WINDOW := 1.5
 
 ## 데미지를 받는다. damage_reduction이 있으면 경감하고, 경감분은 custom_data["guard_absorbed"]에 누적된다.
 ## is_invincible이 true면 아예 무시한다
-func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
+## pop_override: 위로 띄우는 힘(px/s)을 직접 지정한다. 음수(기본)면 데미지에 비례한 기본 팝업을 쓰고,
+## 0이면 전혀 안 띄운다(지상 유지 — 콤보 앞 타격이 상대를 붙잡아두게). 콤보 마무리만 기본 팝업으로 크게 날린다
+func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
 	if is_invincible:
 		return
 	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction)))
@@ -147,9 +149,11 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO) -> void:
 		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
 		velocity.x += kb_x
 		velocity.y += knockback.y
-		# 살짝 공중으로 떠오르게 (이미 그보다 크게 위로 뜨는 넉백은 그대로 둔다)
-		var pop: float = clampf(HIT_POP_BASE + amount * HIT_POP_PER_DAMAGE, 0.0, HIT_POP_MAX)
-		velocity.y = minf(velocity.y, -pop)
+		# 살짝 공중으로 떠오르게 (이미 그보다 크게 위로 뜨는 넉백은 그대로 둔다).
+		# pop_override가 0 이상이면 그 값을 쓴다 — 0이면 안 띄워서 지상에 붙잡아둔다
+		var pop: float = pop_override if pop_override >= 0.0 else clampf(HIT_POP_BASE + amount * HIT_POP_PER_DAMAGE, 0.0, HIT_POP_MAX)
+		if pop > 0.0:
+			velocity.y = minf(velocity.y, -pop)
 		# 경직: 이 동안 조작으로 velocity.x를 못 덮어써서 넉백이 실려 미끄러진다.
 		# 길이 = 마찰이 넉백 속도를 멈추는 데 걸리는 시간이라, 미끄러져 멈추는 순간 조작이 돌아온다
 		_hitstun_time = clampf(absf(kb_x) / HITSTUN_FRICTION, HITSTUN_MIN, HITSTUN_MAX)
@@ -400,7 +404,9 @@ func use_basic_attack() -> void:
 
 func _fire_basic_attack() -> void:
 	basic_attack.use(self)
-	_play_visual_attack()
+	# 콤보 평타처럼 스킬이 타별 스윙을 직접 재생하는 경우엔 여기서 기본 스윙을 덧대지 않는다
+	if not basic_attack.handles_own_visual():
+		_play_visual_attack()
 
 ## 공격 모션을 가진 비주얼(BodyRig 등)에 휘두르라고 알린다.
 ## 아직 임시 사각형(Polygon2D)을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다

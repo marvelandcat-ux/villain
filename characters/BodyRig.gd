@@ -198,6 +198,8 @@ var _scratch_time: float = 0.0
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
 var _attack_time: float = 0.0
+## 지금 재생 중인 스윙 종류 (콤보 평타의 타 번호). 0=기본 내려찍기, 1=앞으로 후려치기, 2=크게 올려치기
+var _attack_variant: int = 0
 ## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
 var _drink_time: float = 0.0
 ## 총 조준 동작에 남은 시간(초). 0보다 크면 총을 겨누는 중이다
@@ -432,8 +434,9 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 
 ## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
 ## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
-func play_attack_swing() -> void:
+func play_attack_swing(variant: int = 0) -> void:
 	_attack_time = attack_duration
+	_attack_variant = variant
 
 ## 예비동작이 끝나고 실제로 내리치기 시작하는 시점 (전체 시간 대비 비율)
 const ATTACK_STRIKE_START: float = 0.4
@@ -444,33 +447,69 @@ const ATTACK_STRIKE_END: float = 0.62
 ## 각도는 음수가 반시계 방향(무기가 위로 올라감), 양수가 시계 방향(아래로 내리침)이다
 func _pose_attack_hand() -> void:
 	var progress: float = 1.0 - _attack_time / attack_duration
+	# 타별로 감는 각도·내려치는 각도·손 이동 경로가 달라진다 (콤보 1·2·3타 스윙 변주)
+	var v: Dictionary = _attack_variant_params()
+	var raise_deg: float = v["raise_deg"]
+	var swing_deg: float = v["swing_deg"]
+	var raise_off: Vector2 = v["raise_off"]
+	var slam_off: Vector2 = v["slam_off"]
 	var angle: float
 	var offset: Vector2
 	if progress < ATTACK_STRIKE_START:
-		# ① 손을 머리 뒤쪽 위까지 크게 넘긴다 (끝으로 갈수록 느려지게)
+		# ① 예비동작 — 손을 감는다 (끝으로 갈수록 느려지게)
 		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
-		angle = lerpf(0.0, -attack_raise_deg, p)
-		offset = Vector2.ZERO.lerp(attack_raise_offset, p)
+		angle = lerpf(0.0, -raise_deg, p)
+		offset = Vector2.ZERO.lerp(raise_off, p)
 	elif progress < ATTACK_STRIKE_END:
-		# ② 앞쪽 아래로 빠르게 내려찍는다 (실제로 때리는 구간)
+		# ② 빠르게 후려친다 (실제로 때리는 구간)
 		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
-		angle = lerpf(-attack_raise_deg, attack_swing_deg, p * p)
-		offset = attack_raise_offset.lerp(attack_slam_offset, p * p) + _swing_arc(p * p)
+		angle = lerpf(-raise_deg, swing_deg, p * p)
+		offset = raise_off.lerp(slam_off, p * p) + _swing_arc(p * p, raise_off, slam_off)
 	else:
 		# ③ 원래 자세로 복귀
 		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
-		angle = lerpf(attack_swing_deg, 0.0, p)
-		offset = attack_slam_offset.lerp(Vector2.ZERO, p)
+		angle = lerpf(swing_deg, 0.0, p)
+		offset = slam_off.lerp(Vector2.ZERO, p)
 	_hand_r.rotation = deg_to_rad(angle)
 	_hand_r.position = _rest_positions[_hand_r] + offset
 	_pose_grip_hand(progress)
 
+## 스윙 타 번호(_attack_variant)에 따른 감기 각도/후리기 각도/손 경로.
+## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
+## 각도 부호: 음수=반시계(무기가 위로), 양수=시계(아래로)
+func _attack_variant_params() -> Dictionary:
+	match _attack_variant:
+		1:
+			# 2타 — 앞쪽으로 낮고 빠르게 후려치기 (내려찍기와 다른 궤적: 감기 작게, 앞으로 길게)
+			return {
+				"raise_deg": attack_raise_deg * 0.45,
+				"swing_deg": attack_swing_deg * 0.8,
+				"raise_off": Vector2(attack_raise_offset.x * 0.3, -6.0),
+				"slam_off": Vector2(attack_slam_offset.x * 1.6, 0.0),
+			}
+		2:
+			# 3타 — 아래로 감았다가 크게 올려친다 (마무리 타). 후리기 각도가 음수라 무기가 위로 솟는다
+			return {
+				"raise_deg": -attack_raise_deg * 0.6,
+				"swing_deg": -attack_swing_deg * 1.05,
+				"raise_off": Vector2(attack_raise_offset.x * 0.2, 24.0),
+				"slam_off": Vector2(attack_slam_offset.x * 0.7, -42.0),
+			}
+		_:
+			# 1타 — 기존 내려찍기 (씬 export 값 그대로)
+			return {
+				"raise_deg": attack_raise_deg,
+				"swing_deg": attack_swing_deg,
+				"raise_off": attack_raise_offset,
+				"slam_off": attack_slam_offset,
+			}
+
 ## 후려치는 동안 손이 지나가는 길을 아래로 부풀린다. 예비동작 위치에서 내려찍는 위치로 가는
 ## 직선의 수직(아래쪽) 방향으로 밀어내며, sin이라 출발·도착에서는 0이라 튀지 않는다
-func _swing_arc(t: float) -> Vector2:
+func _swing_arc(t: float, raise_off: Vector2, slam_off: Vector2) -> Vector2:
 	if is_zero_approx(attack_swing_arc):
 		return Vector2.ZERO
-	var travel: Vector2 = attack_slam_offset - attack_raise_offset
+	var travel: Vector2 = slam_off - raise_off
 	if travel.length() < 0.001:
 		return Vector2.ZERO
 	return Vector2(-travel.y, travel.x).normalized() * attack_swing_arc * sin(t * PI)

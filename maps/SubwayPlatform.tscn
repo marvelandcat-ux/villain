@@ -289,5 +289,6 @@ position = Vector2(0, 150)
 script = ExtResource("3")
 min_y = 80.0
 max_y = 190.0
+max_close_zoom = 1.35
 
 [node name="CombatHUD" parent="." unique_id=732218673 instance=ExtResource("2")]
