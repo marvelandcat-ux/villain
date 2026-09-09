@@ -37,6 +37,13 @@ func _physics_process(delta: float) -> void:
 	if global_position.y >= floor_y:
 		_break()
 
+## 놀이터의 왕은 화분을 맞아도 데미지를 안 받는다.
+## 데미지만 건너뛰고 _on_pot_hit은 그대로 돌게 둬서, 화분은 왕에게 부딪혀 깨지는 모습은 보여준다
+func _on_area_entered(area: Area2D) -> void:
+	if area is Hurtbox and Crown.is_king(area.fighter):
+		return
+	super(area)
+
 ## 누군가를 맞혔으면 그 자리에서 깨진다 (데미지 자체는 Hitbox가 이미 처리했다).
 ## "pot_shelter" 그룹(놀이터 미끄럼틀 지붕 등)에 닿아도 깨진다 — 지붕 밑은 안전지대가 된다
 func _on_pot_hit(area: Area2D) -> void:
