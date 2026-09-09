@@ -1,10 +1,43 @@
 class_name MouseGrab
 extends Node2D
 
-## 유선 마우스를 던져 상대를 잡아 끌어오는 그랩 (악플러 스킬1, 임시 도형 버전).
-## 마우스(회색 도형)가 앞으로 날아가다 상대에 닿으면 "잡고", 유선(Line2D)으로 이어진 채
-## 상대를 악플러 쪽으로 수평으로 끌어당긴다. 다 끌어오거나 빗나가면 사라진다.
+## 유선 마우스를 던져 상대를 잡아 끌어오는 그랩 (악플러 스킬1).
+## 세 단계로 진행된다 — ① 손에 쥔 채 어깨 뒤로 젖히기 ② 앞으로 날아가기 ③ 잡아서 끌어오기.
+## 유선의 시작점은 고정 좌표가 아니라 리그의 **실제 오른손 위치**라, 팔을 젖히고 뿌리는 동안
+## 줄이 손에 붙어서 같이 움직인다(손으로 잡고 있는 느낌).
+## 던지는 동안은 `마우스 선.png`(마우스 몸통 + 뒤로 늘어지는 유선), 잡은 뒤에는
+## `묶인거.png`(상대 몸에 감긴 케이블 + 악플러 손까지 이어지는 유선)를 그린다.
+## 두 그림 모두 "케이블이 왼쪽으로 뻗고 물체가 오른쪽"이라, 왼쪽을 볼 때는 scale.x 부호를 뒤집는다.
 ## 상대를 끌어올 때는 상대의 movement_override를 잡아 수평 이동을 가로챈다(DashSkill과 같은 덕타이핑).
+
+## 진행 단계 — 손에 쥐고 젖히는 중 / 날아가는 중 / 끌어오는 중
+const STATE_WINDUP := 0
+const STATE_FLY := 1
+const STATE_REEL := 2
+
+const MOUSE_TEXTURE_PATH := "res://sprite/악플러/몸/마우스 선.png"
+const BOUND_TEXTURE_PATH := "res://sprite/악플러/몸/묶인거.png"
+
+## 그림에서 잘라 쓰는 영역 — 유선과 물체를 따로 떼어야 유선만 늘릴 수 있다(물체까지 늘어나면 찌그러진다)
+const MOUSE_CORD_REGION := Rect2(0, 333, 1751, 72)
+const MOUSE_BODY_REGION := Rect2(1751, 259, 383, 174)
+const BOUND_CORD_REGION := Rect2(0, 474, 722, 134)
+const BOUND_COIL_REGION := Rect2(722, 292, 644, 491)
+## 각 조각에서 "케이블 중심선"이 영역 위쪽에서 몇 px 아래인지 — 조각끼리 이어 붙이는 기준점
+const MOUSE_CORD_AXIS := 35.0
+const MOUSE_BODY_AXIS := 109.0
+const BOUND_CORD_AXIS := 52.0
+const BOUND_COIL_AXIS := 234.0
+## 감긴 케이블 그림의 한가운데(이 점을 상대 몸 중심에 맞춘다)
+const BOUND_COIL_CENTER := Vector2(322.0, 245.5)
+
+## 마우스 몸통의 화면상 길이(px). 배율은 이 값에서 역산한다
+var mouse_length: float = 30.0
+## 상대 몸에 감긴 케이블 뭉치의 화면상 폭(px)
+var coil_width: float = 50.0
+## 마우스를 손에 쥔 채 젖히고 있는 시간(초). 이 시간이 지나야 손을 떠나 날아간다.
+## 던지는 팔 동작(BodyRig.play_cast_motion)의 젖히는 구간과 같은 값이라야 손과 맞아떨어진다
+var windup_time: float = 0.14
 
 var _source: Fighter
 var _opponent: Fighter
@@ -21,10 +54,17 @@ var _release_dist: float = 44.0
 var _hand_offset: Vector2 = Vector2(22, -6)
 
 var _mouse_pos: Vector2
-## 0 = 던지는 중, 1 = 끌어오는 중
-var _state: int = 0
-var _wire: Line2D
-var _mouse: Polygon2D
+var _state: int = STATE_WINDUP
+## 젖히는 단계에 남은 시간(초)
+var _windup_left: float = 0.0
+## 캐릭터의 몸(BodyRig) — 실제 손 위치를 물어보고, 당기는 자세를 켜고 끈다
+var _rig: Node2D
+## 잡은 순간의 좌우 관계(상대가 악플러의 어느 쪽인지) — 끌어오는 내내 고정
+var _bind_dir: float = 1.0
+var _throw_cord: Sprite2D
+var _mouse: Sprite2D
+var _bound_cord: Sprite2D
+var _coil: Sprite2D
 
 func setup(source: Fighter, throw_speed: float, max_range: float, reel_speed: float, damage: int) -> void:
 	_source = source
@@ -34,31 +74,42 @@ func setup(source: Fighter, throw_speed: float, max_range: float, reel_speed: fl
 	_reel_speed = reel_speed
 	_damage = damage
 	_opponent = source.find_opponent()
+	_rig = source.get_node_or_null("Visual") as Node2D
+	_windup_left = maxf(windup_time, 0.0)
+	_state = STATE_WINDUP if _windup_left > 0.0 else STATE_FLY
 	_mouse_pos = _hand_world()
 	_build_shapes()
 
+## 유선이 시작되는 지점 — 리그가 있으면 실제 오른손을 따라가고, 없으면 고정 좌표로 대충 맞춘다
 func _hand_world() -> Vector2:
+	if _rig and is_instance_valid(_rig) and _rig.has_method("get_hand_position"):
+		return _rig.get_hand_position()
 	return _source.global_position + Vector2(_hand_offset.x * _dir, _hand_offset.y)
 
-## 도형으로 마우스 몸통 + 유선을 만든다 (임시 — 나중에 그림으로 교체)
+## 그림 두 장을 네 조각(던지는 유선/마우스 몸통, 감긴 유선/케이블 뭉치)으로 잘라 만든다
 func _build_shapes() -> void:
 	z_index = 20
-	_wire = Line2D.new()
-	_wire.width = 2.0
-	_wire.default_color = Color(0.25, 0.25, 0.28)
-	add_child(_wire)
-	_mouse = Polygon2D.new()
-	_mouse.color = Color(0.82, 0.82, 0.88)
-	# 둥근 사각형 흉내낸 8각형 마우스 몸통
-	_mouse.polygon = PackedVector2Array([
-		Vector2(-7, -11), Vector2(7, -11), Vector2(9, -3), Vector2(9, 9),
-		Vector2(5, 13), Vector2(-5, 13), Vector2(-9, 9), Vector2(-9, -3)])
-	add_child(_mouse)
-	# 버튼 분할선 느낌의 어두운 세로 막대
-	var button := Polygon2D.new()
-	button.color = Color(0.45, 0.45, 0.5)
-	button.polygon = PackedVector2Array([Vector2(-1, -11), Vector2(1, -11), Vector2(1, -3), Vector2(-1, -3)])
-	_mouse.add_child(button)
+	var mouse_tex: Texture2D = load(MOUSE_TEXTURE_PATH)
+	var bound_tex: Texture2D = load(BOUND_TEXTURE_PATH)
+	if mouse_tex == null or bound_tex == null:
+		push_warning("MouseGrab: 마우스 그림을 못 찾았다 — %s / %s" % [MOUSE_TEXTURE_PATH, BOUND_TEXTURE_PATH])
+		return
+	# 유선은 중심선이 시작점에 오도록 offset을 주고 늘린다(_stretch_cord 참고)
+	_throw_cord = _make_piece(mouse_tex, MOUSE_CORD_REGION, Vector2(0, -MOUSE_CORD_AXIS))
+	_mouse = _make_piece(mouse_tex, MOUSE_BODY_REGION, Vector2.ZERO)
+	_bound_cord = _make_piece(bound_tex, BOUND_CORD_REGION, Vector2(0, -BOUND_CORD_AXIS))
+	_coil = _make_piece(bound_tex, BOUND_COIL_REGION, Vector2.ZERO)
+
+func _make_piece(tex: Texture2D, region: Rect2, offset: Vector2) -> Sprite2D:
+	var piece := Sprite2D.new()
+	piece.texture = tex
+	piece.region_enabled = true
+	piece.region_rect = region
+	piece.centered = false
+	piece.offset = offset
+	piece.visible = false
+	add_child(piece)
+	return piece
 
 func _physics_process(delta: float) -> void:
 	if not (_source and is_instance_valid(_source)):
@@ -66,32 +117,88 @@ func _physics_process(delta: float) -> void:
 		return
 	var hand: Vector2 = _hand_world()
 
-	if _state == 0:
-		# 앞으로 날아간다
+	if _state == STATE_WINDUP:
+		# 아직 손에 쥔 채 뒤로 젖히는 중 — 마우스가 손을 따라다닌다
+		_windup_left = maxf(_windup_left - delta, 0.0)
+		# 마우스 몸통 가운데가 손에 오도록 앞끝을 반 칸 앞에 둔다 —
+		# 날아가는 그리기와 같은 식이라 손을 떠나는 순간 유선 길이가 안 튄다
+		_mouse_pos = hand + Vector2(_dir * mouse_length * 0.5, 0.0)
+		if is_zero_approx(_windup_left):
+			_state = STATE_FLY
+	elif _state == STATE_FLY:
+		# 손을 떠나 앞으로 날아간다
 		_mouse_pos.x += _dir * _throw_speed * delta
 		if _opponent and is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < _catch_radius:
 			_grab()
 		elif absf(_mouse_pos.x - hand.x) >= _max_range:
 			_release()  # 빗나감 → 사라진다
 			return
-	elif _state == 1:
-		# 잡은 상대를 끌어온다 (마우스는 상대 몸에 붙어있다)
+	elif _state == STATE_REEL:
+		# 잡은 상대를 끌어온다 (케이블이 상대 몸에 감겨 있다)
 		if not (_opponent and is_instance_valid(_opponent)):
 			_release()
 			return
-		_mouse_pos = _opponent.global_position
 		if absf(_opponent.global_position.x - _source.global_position.x) <= _release_dist:
 			_release()  # 다 끌어옴 → 놓아준다
 			return
 
-	# 유선·마우스 위치 갱신 (월드좌표를 로컬로 변환)
-	_wire.points = PackedVector2Array([to_local(hand), to_local(_mouse_pos)])
-	_mouse.position = to_local(_mouse_pos)
-	_mouse.scale.x = _dir
+	if _state == STATE_REEL:
+		_draw_bound(hand)
+	else:
+		_draw_throw(hand)
+
+## 손에 쥔 동안 + 날아가는 동안 — 마우스 몸통을 앞끝 자리에 놓고, 손에서 몸통 뒤끝까지 유선을 잇는다.
+## 쥐고 있을 때는 앞끝이 손보다 반 칸 앞이라 몸통이 손에 얹히고 유선은 주먹 뒤로 짧게 남는다
+func _draw_throw(hand: Vector2) -> void:
+	if _mouse == null:
+		return
+	_bound_cord.visible = false
+	_coil.visible = false
+	var s: float = mouse_length / MOUSE_BODY_REGION.size.x
+	# 유선이 붙는 쪽(몸통의 뒤끝)은 날아가는 방향의 반대편이다
+	var tail := Vector2(_mouse_pos.x - _dir * MOUSE_BODY_REGION.size.x * s, _mouse_pos.y)
+	_mouse.visible = true
+	_mouse.position = Vector2(tail.x, tail.y - MOUSE_BODY_AXIS * s)
+	_mouse.scale = Vector2(_dir * s, s)
+	_stretch_cord(_throw_cord, hand, tail, MOUSE_CORD_REGION.size.x, s)
+
+## 잡은 뒤 — 상대 몸에 케이블 뭉치를 씌우고, 거기서 악플러 손까지 유선을 잇는다
+func _draw_bound(hand: Vector2) -> void:
+	if _coil == null:
+		return
+	_throw_cord.visible = false
+	_mouse.visible = false
+	var s: float = coil_width / BOUND_COIL_REGION.size.x
+	var opponent_pos: Vector2 = _opponent.global_position
+	_coil.visible = true
+	_coil.position = Vector2(
+		opponent_pos.x - _bind_dir * BOUND_COIL_CENTER.x * s,
+		opponent_pos.y - BOUND_COIL_CENTER.y * s)
+	_coil.scale = Vector2(_bind_dir * s, s)
+	# 케이블이 뭉치에서 빠져나오는 지점(그림 왼쪽 변) — 좌우 반전해도 이 x는 그대로다
+	var knot := Vector2(_coil.position.x, _coil.position.y + BOUND_COIL_AXIS * s)
+	_stretch_cord(_bound_cord, hand, knot, BOUND_CORD_REGION.size.x, s)
+
+## 유선 조각을 두 점 사이에 걸친다 — 굵기는 그대로 두고 길이만 늘린 뒤 두 점을 잇는 각도로 돌린다
+func _stretch_cord(cord: Sprite2D, from: Vector2, to: Vector2, texture_length: float, thickness: float) -> void:
+	if cord == null:
+		return
+	var delta: Vector2 = to - from
+	var dist: float = delta.length()
+	cord.visible = dist > 1.0
+	if not cord.visible:
+		return
+	cord.position = from
+	cord.rotation = delta.angle()
+	cord.scale = Vector2(dist / texture_length, thickness)
 
 ## 잡는 순간 — 데미지를 조금 주고, 상대 수평 이동을 잡아채 끌어오기 시작한다
 func _grab() -> void:
-	_state = 1
+	_state = STATE_REEL
+	_set_reeling(true)
+	_bind_dir = signf(_opponent.global_position.x - _source.global_position.x)
+	if _bind_dir == 0.0:
+		_bind_dir = _dir
 	if _damage > 0:
 		_opponent.take_damage(_damage)
 	if _opponent.movement_override == null:
@@ -108,11 +215,18 @@ func after_physics(_fighter: Fighter, _delta: float) -> void:
 
 ## 끝날 때 상대에게 걸어둔 movement_override를 반드시 해제한다 — 안 그러면 해제된 self를 참조하다 에러난다
 func _release() -> void:
+	_set_reeling(false)
 	if _opponent and is_instance_valid(_opponent) and _opponent.movement_override == self:
 		_opponent.movement_override = null
 	queue_free()
 
+## 줄을 당기는 팔 자세를 켜고 끈다 (리그가 없는 임시 사각형 캐릭터면 그냥 넘어간다)
+func _set_reeling(on: bool) -> void:
+	if _rig and is_instance_valid(_rig) and _rig.has_method("set_reeling"):
+		_rig.set_reeling(on)
+
 ## 어떤 경로로 트리에서 빠지든(라운드 리로드 등) 상대 override를 반드시 풀어준다
 func _exit_tree() -> void:
+	_set_reeling(false)
 	if _opponent and is_instance_valid(_opponent) and _opponent.movement_override == self:
 		_opponent.movement_override = null
