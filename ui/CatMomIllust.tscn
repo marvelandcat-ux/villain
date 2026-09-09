@@ -1,10 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/CatMomIllust.gd" id="1"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘_몸통.png" id="2_body"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘일러스트_0003_오른쪽팔.png" id="3_arm"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘일러스트_0002_치마.png" id="4_skirt"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘일러스트_0001_머리.png" id="5_head"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘_머리_턱채움.png" id="5_head"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘_머리_눈감음.png" id="6_eye"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/입덮은캣맘.png" id="7_pre"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘일러스트_0000_하트.png" id="8_heart"]
@@ -43,17 +43,17 @@ position = Vector2(-652, -545)
 texture = ExtResource("4_skirt")
 
 [node name="Head" type="Node2D" parent="Rig/Body/Post"]
-position = Vector2(-36, -1040)
+position = Vector2(-40, -1034)
 
 [node name="Sprite" type="Sprite2D" parent="Rig/Body/Post/Head"]
 centered = false
-position = Vector2(-549, -332)
+position = Vector2(-545, -338)
 texture = ExtResource("5_head")
 
 [node name="EyeClosed" type="Sprite2D" parent="Rig/Body/Post/Head"]
 visible = false
 centered = false
-position = Vector2(-549, -332)
+position = Vector2(-545, -338)
 texture = ExtResource("6_eye")
 
 [node name="PreSpit" type="Sprite2D" parent="Rig/Body"]

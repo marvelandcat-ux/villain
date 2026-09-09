@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bq8f85qhvpx50"
-path="res://.godot/imported/캣맘일러스트_0001_머리.png-4f72f1b646a33c8e84f89c57120f66fc.ctex"
+uid="uid://ctfy0te5q3y1q"
+path="res://.godot/imported/턱채운캣맘.png-3a126c0f3f120a488179f523360799d4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/캣맘/캣맘일러스트_0001_머리.png"
-dest_files=["res://.godot/imported/캣맘일러스트_0001_머리.png-4f72f1b646a33c8e84f89c57120f66fc.ctex"]
+source_file="res://sprite/메인메뉴/일러스트/캣맘/턱채운캣맘.png"
+dest_files=["res://.godot/imported/턱채운캣맘.png-3a126c0f3f120a488179f523360799d4.ctex"]
 
 [params]
 

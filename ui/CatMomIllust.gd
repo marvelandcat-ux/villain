@@ -62,8 +62,10 @@ extends Node2D
 @export var arm_period: float = 2.4
 
 @export_group("하트 내뱉기")
-## 나타난 뒤 몇 초 만에 입을 가린 손을 떼고 하트를 내뱉는지
-@export var spit_at: float = 1.4
+## 나타난 뒤 몇 초 만에 입을 가린 손을 떼고 하트를 내뱉는지.
+## 일러스트가 한 번에 10초(`MainMenu.illust_swap_seconds`)만 보이므로,
+## 이 값 + `heart_rise`(0.55초) 뒤에도 하트를 감상할 시간이 남아야 한다 — 3초면 뒤에 6초 넘게 남는다
+@export var spit_at: float = 3.0
 ## 내뱉기 전/후 그림이 겹치며 바뀌는 시간(초). 짧아야 "톡" 하고 바뀐 느낌이 난다
 @export var spit_fade: float = 0.14
 ## 하트가 튀어나와 제자리에 앉기까지 걸리는 시간(초)
