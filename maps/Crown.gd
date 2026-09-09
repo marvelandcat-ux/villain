@@ -40,26 +40,45 @@ const KING_KEY := "playground_king"
 @export_range(1.0, 2.0, 0.05) var king_damage_multiplier: float = 1.3
 
 @export_group("떨어뜨리기")
-## 왕이 맞았을 때 왕관이 튕겨 나가는 초기 속도. x는 넉백 방향으로 부호가 붙고, y는 음수가 위쪽
-@export var drop_velocity: Vector2 = Vector2(180.0, -420.0)
+## 왕이 맞았을 때 왕관이 튕겨 나가는 초기 속도. x는 넉백 방향으로 부호가 붙고, y는 음수가 위쪽.
+## **x를 0으로 둔 이유(실측):** 예전엔 (180, -420)이라 왕관이 넉백 방향으로 151px 날아갔는데,
+## 정작 맞은 왕은 36px밖에 안 밀린다(넉백 253 / 마찰 900). 그래서 왕관이 **맞은 사람 너머**에 떨어져
+## 경직(0.3초)이 풀린 왕이 0.74초에, 때린 쪽이 0.82초에 도착 — **때려도 맞은 쪽이 도로 줍는** 상태였다.
+## 지금은 맞은 자리에 그대로 떨어져서, 밀려나지도 경직되지도 않은 때린 쪽이 조금 유리한 진짜 달리기 싸움이 된다.
+## y도 -420에서 낮췄다 — 너무 높이 뜨면 내려올 때까지 둘 다 밑에서 기다리느라 달리기가 성립하지 않는다
+@export var drop_velocity: Vector2 = Vector2(0.0, -300.0)
 ## 떨어진 뒤 다시 주울 수 있게 되기까지의 시간(초).
 ## **0으로 두면 안 된다** — 때린 쪽이 밀착해 있으면 떨어지자마자 그대로 회수해서
 ## "때리면 뺏김"이 되어 버린다. 잠깐 잠가야 둘 다 달려드는 쟁탈전이 생긴다
-@export var pickup_delay: float = 0.6
+@export var pickup_delay: float = 0.35
 ## 못 줍는 동안 왕관이 깜빡이는 속도(초당 횟수). 0이면 안 깜빡인다
 @export var lock_blink_speed: float = 6.0
+## **주운 직후 이 시간(초) 동안은 맞아도 안 벗겨진다.**
+## 이게 없으면 원거리 캐릭터(BB탄·토하기)가 맵 반대편에서 툭툭 치는 것만으로 왕관을 무한히 봉쇄한다 —
+## 접근 리스크를 안 지고 왕을 무력화할 수 있어서 이 맵에서만 원거리가 압도적이 된다.
+## "원거리인지"로 거르는 건 지금 수치로 불가능하다(BB탄/토하기 데미지 6·넉백 200 vs 기본공격 6·220으로 사실상 같다).
+## 대신 **뺏기는 빈도에 상한**을 둬서 같은 문제를 푼다. 왕이 도망칠 시간을 주는 효과도 같이 난다
+@export var drop_grace: float = 1.0
+## 이 값 이상의 피해에만 왕관이 벗겨진다. **기본 0 = 끄기.**
+## 0보다 크게 두면 원거리 견제를 걸러낼 것 같지만, 기본공격 데미지가 4~8이라
+## 문턱을 8로 잡는 순간 **근접 기본공격까지 같이 막혀서** "쫓아가서 때려 떨어뜨린다"는 핵심 루프가 죽는다.
+## 나중에 원거리 데미지를 따로 낮추면 그때 켤 것
+@export var drop_min_damage: int = 0
 
 @export_group("떨어진 왕관의 물리")
-## 낙하 가속도(px/s²)
-@export var gravity: float = 1150.0
+## 낙하 가속도(px/s²).
+## **`gravity`라는 이름을 쓰면 안 된다** — Area2D에 같은 이름의 내장 프로퍼티가 이미 있어서
+## `The member "gravity" already exists in parent class Area2D` 컴파일 에러가 난다
+@export var fall_gravity: float = 1150.0
 ## 바닥에 닿았다고 볼 y좌표 — 왕관 **중심**이 이 높이에 멈춘다 (놀이터 지면 윗면 280 - 왕관 반높이 17)
 @export var ground_y: float = 263.0
 ## 바닥에 튕길 때 남는 속도 비율. 0이면 안 튄다
 @export_range(0.0, 0.8, 0.05) var bounce: float = 0.35
 ## 바닥에 닿았을 때 가로 속도가 줄어드는 비율(초당). 클수록 빨리 멈춘다
 @export var ground_friction: float = 3.0
-## 왕관이 나갈 수 없는 좌우 한계(중심 기준). 놀이터 벽 안쪽이 ±700이다
-@export var bounds_x: float = 690.0
+## 왕관이 나갈 수 없는 좌우 **중심** 한계.
+## 놀이터 벽 안쪽 면이 ±700이고 왕관 폭이 56이라, 중심은 ±672까지만 가야 벽에 안 파고든다
+@export var bounds_x: float = 672.0
 
 @export_group("들고 있을 때")
 ## 왕의 원점(발밑)에서 왕관까지의 거리. 캐릭터 키가 60px이라 머리 위가 대략 -70이다
@@ -79,6 +98,8 @@ var _lock_left: float = 0.0
 ## **시작할 때 true여야 한다** — false로 두면 씬에 놓아둔 꼭대기 발판 자리에서
 ## 라운드 시작과 동시에 바닥으로 굴러떨어진다(발판을 통과하므로 아무 데도 안 걸린다)
 var _grounded: bool = true
+## 주운 뒤 안 벗겨지는 남은 시간(초)
+var _grace_left: float = 0.0
 ## 이번 라운드에 컷인을 이미 틀었는지
 var _cutin_played: bool = false
 ## 버프를 걸 때 쓰는 내 고유 번호 — 다른 효과가 건 배수를 안 지우도록 id로 구분한다
@@ -106,6 +127,9 @@ func get_holder() -> Fighter:
 ## 신호(area_entered) 대신 매 프레임 겹친 목록을 훑는다 — 라운드 리셋이나 순간이동으로
 ## 신호가 안 오는 경우가 있어서, 이 프로젝트의 다른 판정들(SandPit·SpringJumpPad)도 같은 방식이다
 func _physics_process(delta: float) -> void:
+	# 들고 있는 동안 흘러야 하는 값이라 아래 early return보다 먼저 깎는다
+	if _grace_left > 0.0:
+		_grace_left -= delta
 	if is_instance_valid(_holder):
 		# 들고 있는 동안은 머리 위에 따라다닌다
 		global_position = _holder.global_position + head_offset
@@ -131,7 +155,7 @@ func _fall(delta: float) -> void:
 	if _grounded:
 		return
 	var pos: Vector2 = global_position
-	_velocity.y += gravity * delta
+	_velocity.y += fall_gravity * delta
 	pos += _velocity * delta
 	# 좌우 벽에 부딪히면 튕겨 돌아온다
 	if absf(pos.x) > bounds_x:
@@ -156,18 +180,28 @@ func _blink_while_locked() -> void:
 		return
 	modulate.a = 0.45 + 0.55 * absf(sin(_lock_left * lock_blink_speed * PI))
 
+## 겹친 사람 중 **왕관에 가장 가까운 쪽**이 줍는다.
+## 목록 순서대로 첫 번째를 집으면 둘이 동시에 달려들었을 때 늘 같은 플레이어가 이겨서
+## 쟁탈전이 자리 싸움이 아니라 고정된 결과가 되어 버린다
 func _try_pickup() -> void:
+	var winner: Fighter = null
+	var best: float = INF
 	for area in get_overlapping_areas():
 		if not (area is Hurtbox):
 			continue
 		var fighter: Fighter = area.fighter
 		if fighter == null or not is_instance_valid(fighter) or fighter.current_hp <= 0:
 			continue
-		_give_crown(fighter)
-		return
+		var d: float = global_position.distance_squared_to(fighter.global_position)
+		if d < best:
+			best = d
+			winner = fighter
+	if winner:
+		_give_crown(winner)
 
 func _give_crown(fighter: Fighter) -> void:
 	_holder = fighter
+	_grace_left = drop_grace
 	_velocity = Vector2.ZERO
 	modulate.a = 1.0
 	fighter.custom_data[KING_KEY] = true
@@ -179,7 +213,17 @@ func _give_crown(fighter: Fighter) -> void:
 	crowned.emit(fighter)
 	_play_cutin(fighter)
 
-func _on_holder_damaged(_amount: int, knockback: Vector2) -> void:
+## **넉백이 있는 피해(진짜 타격)에만 반응한다.**
+## `Fighter.apply_dot()`·`MouseGrab`·`HazardPlatform`은 넉백 없이 `take_damage()`를 부르는데,
+## 그것까지 받아주면 독 틱 한 번에 왕관이 벗겨지고(때린 사람도 없는데) 튀는 방향도 엉뚱해진다 —
+## 넉백이 0이라 바라보는 방향의 반대로 날아가 버린다
+func _on_holder_damaged(amount: int, knockback: Vector2) -> void:
+	if knockback == Vector2.ZERO:
+		return
+	if _grace_left > 0.0:
+		return
+	if amount < drop_min_damage:
+		return
 	_drop(knockback)
 
 ## 왕관을 머리에서 떼어내 튕겨 보낸다.
@@ -195,6 +239,7 @@ func _drop(knockback: Vector2) -> void:
 		if loser.damaged.is_connected(_on_holder_damaged):
 			loser.damaged.disconnect(_on_holder_damaged)
 	_holder = null
+	# 수직으로만 맞은 타격(넉백 x가 0)이면 맞은 쪽의 뒤쪽으로 흘린다
 	var dir: float = signf(knockback.x)
 	if dir == 0.0:
 		dir = -loser.facing if is_instance_valid(loser) else 1.0
