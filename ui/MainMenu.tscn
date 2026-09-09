@@ -11,6 +11,8 @@
 [ext_resource type="Shader" uid="uid://dh555gjrhuuq2" path="res://ui/outline.gdshader" id="9_outline"]
 [ext_resource type="PackedScene" path="res://ui/CatMomIllust.tscn" id="10_catmom"]
 [ext_resource type="Texture2D" uid="uid://bnhkpr66dqxtp" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘찐배경.png" id="11_catbg"]
+[ext_resource type="PackedScene" path="res://ui/SubwayIllust.tscn" id="12_subway"]
+[ext_resource type="Texture2D" uid="uid://eqbyc2uejeay" path="res://sprite/메인메뉴/일러스트/지하철아저씨/지하철아저씨일러스트배경.png" id="13_subbg"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("7_blur")
@@ -50,21 +52,27 @@ scale = Vector2(0.86, 0.86)
 texture = ExtResource("6_jaembg")
 
 [node name="Background" type="Sprite2D" parent="." unique_id=2066197465]
-visible = false
 material = SubResource("ShaderMaterial_bgblur")
 position = Vector2(717, 312)
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("3_bg")
 
 [node name="BackgroundCatMom" type="Sprite2D" parent="." unique_id=793572797]
+visible = false
 material = SubResource("ShaderMaterial_bgblur")
 position = Vector2(721, 312)
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("11_catbg")
 flip_h = true
 
-[node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
+[node name="BackgroundSubway" type="Sprite2D" parent="." unique_id=1822898172]
 visible = false
+material = SubResource("ShaderMaterial_bgblur")
+position = Vector2(955, 312)
+scale = Vector2(0.86, 0.86)
+texture = ExtResource("13_subbg")
+
+[node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -72,7 +80,6 @@ mouse_filter = 2
 color = Color(0.04, 0.03, 0.07, 0.45)
 
 [node name="LeftFade" type="TextureRect" parent="." unique_id=1820606133]
-visible = false
 layout_mode = 0
 anchor_right = 0.56
 anchor_bottom = 1.0
@@ -86,34 +93,38 @@ position = Vector2(596.00006, 77)
 scale = Vector2(0.5137, 0.5137)
 
 [node name="Illust" parent="." unique_id=1203593728 instance=ExtResource("2_illust")]
-visible = false
-position = Vector2(657.6401, 111)
-scale = Vector2(0.485133, 0.485133)
+position = Vector2(657.64, 124)
+scale = Vector2(0.46, 0.46)
 
 [node name="IllustCatMom" parent="." unique_id=1897642658 instance=ExtResource("10_catmom")]
+visible = false
 position = Vector2(641, 19.37)
 scale = Vector2(0.502, 0.502)
 
-[node name="TitleLabel" type="Label" parent="." unique_id=1857719501]
+[node name="IllustSubway" parent="." unique_id=1547897417 instance=ExtResource("12_subway")]
 visible = false
+position = Vector2(657, -23)
+scale = Vector2(0.538, 0.538)
+
+[node name="TitleLabel" type="Label" parent="." unique_id=1857719501]
 layout_mode = 0
 offset_left = 96.0
-offset_top = 92.0
+offset_top = 40.0
 offset_right = 760.0
-offset_bottom = 158.0
+offset_bottom = 106.0
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 46
 text = "트러블 메이커"
 
 [node name="Menu" type="Control" parent="." unique_id=2020288339]
-visible = false
 anchors_preset = 0
-offset_right = 700.0
-offset_bottom = 720.0
+offset_left = 4.0
+offset_top = -40.0
+offset_right = 704.0
+offset_bottom = 680.0
 mouse_filter = 2
 
 [node name="StoryItem" type="Button" parent="Menu" unique_id=754996950]
-visible = false
 layout_mode = 0
 offset_left = -80.0
 offset_top = 196.0
@@ -123,14 +134,12 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
 [node name="Slide" type="Control" parent="Menu/StoryItem" unique_id=1682893372]
-visible = false
 anchors_preset = 0
 offset_right = 540.0
 offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/StoryItem/Slide" unique_id=1538559751]
-visible = false
 modulate = Color(0.09, 0.07, 0.13, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
@@ -140,7 +149,6 @@ mouse_filter = 2
 texture = ExtResource("8_slant")
 
 [node name="Text" type="Label" parent="Menu/StoryItem/Slide" unique_id=408630285]
-visible = false
 layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
@@ -151,7 +159,6 @@ text = "스토리 모드"
 vertical_alignment = 1
 
 [node name="VersusItem" type="Button" parent="Menu" unique_id=2117940289]
-visible = false
 layout_mode = 0
 offset_left = -80.0
 offset_top = 294.0
@@ -161,14 +168,12 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
 [node name="Slide" type="Control" parent="Menu/VersusItem" unique_id=2054275391]
-visible = false
 anchors_preset = 0
 offset_right = 540.0
 offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/VersusItem/Slide" unique_id=1663399616]
-visible = false
 modulate = Color(0.09, 0.07, 0.13, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
@@ -178,7 +183,6 @@ mouse_filter = 2
 texture = ExtResource("8_slant")
 
 [node name="Text" type="Label" parent="Menu/VersusItem/Slide" unique_id=186455639]
-visible = false
 layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
@@ -189,7 +193,6 @@ text = "대전 모드"
 vertical_alignment = 1
 
 [node name="TrainingItem" type="Button" parent="Menu" unique_id=246798908]
-visible = false
 layout_mode = 0
 offset_left = -80.0
 offset_top = 392.0
@@ -199,14 +202,12 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
 [node name="Slide" type="Control" parent="Menu/TrainingItem" unique_id=408004265]
-visible = false
 anchors_preset = 0
 offset_right = 540.0
 offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/TrainingItem/Slide" unique_id=523956260]
-visible = false
 modulate = Color(0.09, 0.07, 0.13, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
@@ -216,7 +217,6 @@ mouse_filter = 2
 texture = ExtResource("8_slant")
 
 [node name="Text" type="Label" parent="Menu/TrainingItem/Slide" unique_id=1062246360]
-visible = false
 layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
@@ -227,7 +227,6 @@ text = "훈련장"
 vertical_alignment = 1
 
 [node name="HowToItem" type="Button" parent="Menu" unique_id=157335987]
-visible = false
 layout_mode = 0
 offset_left = -80.0
 offset_top = 490.0
@@ -237,14 +236,12 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
 [node name="Slide" type="Control" parent="Menu/HowToItem" unique_id=1883684170]
-visible = false
 anchors_preset = 0
 offset_right = 540.0
 offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/HowToItem/Slide" unique_id=1505815246]
-visible = false
 modulate = Color(0.09, 0.07, 0.13, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
@@ -254,7 +251,6 @@ mouse_filter = 2
 texture = ExtResource("8_slant")
 
 [node name="Text" type="Label" parent="Menu/HowToItem/Slide" unique_id=1707034281]
-visible = false
 layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
@@ -265,7 +261,6 @@ text = "조작 방법"
 vertical_alignment = 1
 
 [node name="SettingsItem" type="Button" parent="Menu" unique_id=1973460666]
-visible = false
 layout_mode = 0
 offset_left = -80.0
 offset_top = 588.0
@@ -275,14 +270,12 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
 [node name="Slide" type="Control" parent="Menu/SettingsItem" unique_id=687409964]
-visible = false
 anchors_preset = 0
 offset_right = 540.0
 offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/SettingsItem/Slide" unique_id=324492272]
-visible = false
 modulate = Color(0.09, 0.07, 0.13, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
@@ -292,7 +285,6 @@ mouse_filter = 2
 texture = ExtResource("8_slant")
 
 [node name="Text" type="Label" parent="Menu/SettingsItem/Slide" unique_id=1584066783]
-visible = false
 layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
@@ -303,7 +295,6 @@ text = "설정"
 vertical_alignment = 1
 
 [node name="HintLabel" type="Label" parent="." unique_id=1813239225]
-visible = false
 layout_mode = 0
 anchor_top = 1.0
 anchor_bottom = 1.0
