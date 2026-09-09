@@ -9,6 +9,7 @@
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="7_blur"]
 [ext_resource type="Texture2D" path="res://sprite/UI/메뉴사선_임시.png" id="8_slant"]
 [ext_resource type="Shader" path="res://ui/outline.gdshader" id="9_outline"]
+[ext_resource type="PackedScene" path="res://ui/CatMomIllust.tscn" id="10_catmom"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("9_outline")
@@ -53,6 +54,13 @@ position = Vector2(717, 312)
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("3_bg")
 
+[node name="BackgroundCatMom" type="Sprite2D" parent="."]
+visible = false
+material = SubResource("ShaderMaterial_bgblur")
+position = Vector2(717, 312)
+scale = Vector2(0.86, 0.86)
+texture = ExtResource("3_bg")
+
 [node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
 layout_mode = 0
 anchor_right = 1.0
@@ -75,6 +83,11 @@ scale = Vector2(0.5137, 0.5137)
 [node name="Illust" parent="." unique_id=1203593728 instance=ExtResource("2_illust")]
 position = Vector2(657.6401, 111)
 scale = Vector2(0.485133, 0.485133)
+
+[node name="IllustCatMom" parent="." instance=ExtResource("10_catmom")]
+visible = false
+position = Vector2(659, 107)
+scale = Vector2(0.5022, 0.5022)
 
 [node name="TitleLabel" type="Label" parent="."]
 layout_mode = 0
