@@ -10,3 +10,7 @@ max_hp = 100
 move_speed = 270.0
 attack_multiplier = 1.0
 ultimate_cutin_scene = ExtResource("2")
+attack_rating = 4
+hp_rating = 2
+speed_rating = 3
+description = "마실수록 강해지는 근접 딜러. 술을 마셔 스택을 쌓고, 쌓인 만큼 토하기 사거리가 길어진다. 궁극기는 앞으로 퍼지는 부채꼴 괴성."
