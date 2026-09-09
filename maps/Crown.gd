@@ -75,6 +75,10 @@ var _holder: Fighter
 var _velocity: Vector2 = Vector2.ZERO
 ## 아직 못 줍는 남은 시간(초)
 var _lock_left: float = 0.0
+## 어딘가에 얹혀 가만히 있는 상태인가.
+## **시작할 때 true여야 한다** — false로 두면 씬에 놓아둔 꼭대기 발판 자리에서
+## 라운드 시작과 동시에 바닥으로 굴러떨어진다(발판을 통과하므로 아무 데도 안 걸린다)
+var _grounded: bool = true
 ## 이번 라운드에 컷인을 이미 틀었는지
 var _cutin_played: bool = false
 ## 버프를 걸 때 쓰는 내 고유 번호 — 다른 효과가 건 배수를 안 지우도록 id로 구분한다
@@ -88,6 +92,16 @@ static func is_king(fighter: Fighter) -> bool:
 
 func _ready() -> void:
 	_modifier_id = get_instance_id()
+	# AI가 맵에 왕관이 있는지 찾을 때 쓰는 표식 (controllers/AIController.gd)
+	add_to_group("crown")
+
+## 지금 바닥에 떨어져 있어서 주울 수 있는 상태인가
+func is_available() -> bool:
+	return not is_instance_valid(_holder) and _lock_left <= 0.0
+
+## 지금 왕관을 쓰고 있는 쪽 (없으면 null)
+func get_holder() -> Fighter:
+	return _holder if is_instance_valid(_holder) else null
 
 ## 신호(area_entered) 대신 매 프레임 겹친 목록을 훑는다 — 라운드 리셋이나 순간이동으로
 ## 신호가 안 오는 경우가 있어서, 이 프로젝트의 다른 판정들(SandPit·SpringJumpPad)도 같은 방식이다
@@ -112,20 +126,29 @@ func _physics_process(delta: float) -> void:
 ## 떨어진 왕관을 직접 굴린다. Area2D라 물리 엔진이 안 밀어주므로 손으로 계산한다 —
 ## 바닥·벽만 신경 쓰면 되는 단순한 포물선이라 RigidBody2D를 붙일 이유가 없다
 func _fall(delta: float) -> void:
-	var resting: bool = position.y >= ground_y and absf(_velocity.y) < 1.0
-	if resting and absf(_velocity.x) < 1.0:
-		_velocity = Vector2.ZERO
+	# ground_y / bounds_x는 전역 좌표 기준이다. 들고 있을 때 머리 위치도 global_position으로 잡으므로
+	# 여기서도 전역으로 통일한다 — 섞어 쓰면 맵 루트가 조금이라도 움직이는 순간 어긋난다
+	if _grounded:
 		return
+	var pos: Vector2 = global_position
 	_velocity.y += gravity * delta
-	position += _velocity * delta
+	pos += _velocity * delta
 	# 좌우 벽에 부딪히면 튕겨 돌아온다
-	if absf(position.x) > bounds_x:
-		position.x = clampf(position.x, -bounds_x, bounds_x)
+	if absf(pos.x) > bounds_x:
+		pos.x = clampf(pos.x, -bounds_x, bounds_x)
 		_velocity.x = -_velocity.x * bounce
-	if position.y >= ground_y:
-		position.y = ground_y
-		_velocity.y = -_velocity.y * bounce if absf(_velocity.y) > 60.0 else 0.0
-		_velocity.x = move_toward(_velocity.x, 0.0, absf(_velocity.x) * ground_friction * delta)
+	if pos.y >= ground_y:
+		pos.y = ground_y
+		if absf(_velocity.y) > 60.0:
+			_velocity.y = -_velocity.y * bounce   # 아직 튈 힘이 남았다
+		else:
+			# 다 튀었으니 미끄러지다가 멈춘다
+			_velocity.y = 0.0
+			_velocity.x = move_toward(_velocity.x, 0.0, absf(_velocity.x) * ground_friction * delta)
+			if absf(_velocity.x) < 1.0:
+				_velocity = Vector2.ZERO
+				_grounded = true
+	global_position = pos
 
 ## 못 줍는 동안 깜빡여서 "아직 안 된다"를 눈으로 알린다
 func _blink_while_locked() -> void:
@@ -176,6 +199,7 @@ func _drop(knockback: Vector2) -> void:
 	if dir == 0.0:
 		dir = -loser.facing if is_instance_valid(loser) else 1.0
 	_velocity = Vector2(drop_velocity.x * dir, drop_velocity.y)
+	_grounded = false
 	_lock_left = pickup_delay
 	dropped.emit(loser)
 
