@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://ui/CatMomIllust.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/입덮은캣맘.png" id="2_pre"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘_하트뺀판.png" id="3_post"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘_하트뺀판_눈감음.png" id="4_eye"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘일러스트_0000_하트.png" id="5_heart"]
+
+[node name="CatMomIllust" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Body" type="Node2D" parent="."]
+position = Vector2(585, 1372)
+
+[node name="PreSpit" type="Sprite2D" parent="Body"]
+centered = false
+position = Vector2(-585, -1372)
+texture = ExtResource("2_pre")
+
+[node name="PostSpit" type="Sprite2D" parent="Body"]
+visible = false
+modulate = Color(1, 1, 1, 0)
+centered = false
+position = Vector2(-585, -1372)
+texture = ExtResource("3_post")
+
+[node name="EyeClosed" type="Sprite2D" parent="Body"]
+visible = false
+centered = false
+position = Vector2(-585, -1372)
+texture = ExtResource("4_eye")
+
+[node name="Heart" type="Node2D" parent="."]
+position = Vector2(316, 250)
+
+[node name="Sprite" type="Sprite2D" parent="Heart"]
+centered = false
+position = Vector2(-316, -250)
+texture = ExtResource("5_heart")
