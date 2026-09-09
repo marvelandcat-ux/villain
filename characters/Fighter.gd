@@ -10,6 +10,11 @@ signal health_changed(current: int, max: int)
 signal died
 ## 기본공격을 실제로 발동시켰을 때 알린다 (분신이 기본공격을 따라 하는 스킬 등이 듣는다)
 signal basic_attack_used
+## 실제로 피해를 입은 순간 알린다 — 경감 후 깎인 양과 그때의 넉백을 같이 넘긴다.
+## "맞으면 풀리는" 효과가 쓴다(놀이터 왕관이 몸에서 떨어져 나가는 처리).
+## **health_changed로 대신하면 안 된다** — 회복할 때도 같이 날아오고, 넉백 방향을 알 수 없다.
+## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
+signal damaged(amount: int, knockback: Vector2)
 
 ## 캐릭터 고정 수치
 @export var stats: CharacterStats
@@ -198,6 +203,9 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	else:
 		velocity += knockback
 	health_changed.emit(current_hp, stats.max_hp)
+	# 실제로 깎였을 때만 — 가드로 전부 막았으면 "맞았다"고 치지 않는다
+	if reduced_amount > 0:
+		damaged.emit(reduced_amount, knockback)
 	if current_hp <= 0:
 		died.emit()
 

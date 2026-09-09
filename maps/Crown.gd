@@ -1,72 +1,189 @@
 class_name Crown
 extends Area2D
 
-## 놀이터 꼭대기의 왕관. 먼저 닿은 쪽이 "놀이터의 왕"이 된다.
+## 놀이터의 핵심 기믹 — **왕관 훔쳐서 달아나기**.
 ##
-## 왕이 되면:
-##  - 떨어지는 화분에 데미지를 안 받는다 (maps/FallingPot.gd가 확인)
-##  - 모래사장에서 안 느려진다 (maps/SandPit.gd가 확인)
+## 흐름: 꼭대기에 놓인 왕관을 주우면 "놀이터의 왕"이 되어 버프를 받는다.
+## 왕이 한 대라도 맞으면 **왕관이 머리에서 튕겨 나가 바닥에 떨어지고**, 잠깐 뒤부터 다시 아무나 주울 수 있다.
+## 그래서 왕은 들고 도망치고, 상대는 쫓아가서 때려 떨어뜨린 뒤 먼저 주워야 한다.
 ##
-## 왕 표시는 Fighter.custom_data에 남긴다 — 맵이 캐릭터를 건드리지 않고 상태만 붙이는 방식이라,
+## **승리 조건은 건드리지 않는다.** 왕관을 오래 들고 있어도 라운드가 끝나지 않는다 —
+## 승패는 `maps/Stage.gd`가 여전히 HP와 링아웃으로만 판정한다.
+## 왕관은 어디까지나 강한 버프라서, 이 맵만 다른 게임이 되지 않고 격투 골격이 그대로 유지된다.
+##
+## 왕이 받는 것:
+##  - 이동속도 x `king_speed_multiplier` (도망칠 수 있게)
+##  - 공격력 x `king_damage_multiplier`
+##  - 모래사장에서 안 느려진다 (`maps/SandPit.gd`가 `is_king()`을 확인한다)
+##
+## 왕 표시는 `Fighter.custom_data`에 남긴다 — 맵이 캐릭터를 건드리지 않고 상태만 붙이는 방식이라,
 ## 라운드가 리셋되면 캐릭터가 새로 생기면서 표시도 같이 사라진다.
-## 획득 연출(ui/CrownCutIn.tscn)은 "crown_cutin" 그룹으로 찾아서 재생한다 —
+##
+## 획득 연출(`ui/CrownCutIn.tscn`)은 "crown_cutin" 그룹으로 찾아 재생한다 —
 ## 궁극기 컷인이 "ultimate_cutin" 그룹을 쓰는 것과 같은 방식이라, 맵에 연출 노드가 없으면 그냥 넘어간다.
+## **연출이 1.8초짜리라 뺏을 때마다 틀면 경기가 끊긴다.** 그래서 `cutin_once`가 켜져 있으면 그 라운드 첫 획득에만 튼다.
 
 ## 누군가 왕관을 차지한 순간 (연출을 붙일 자리)
 signal crowned(king: Fighter)
+## 왕이 맞아서 왕관을 떨어뜨린 순간
+signal dropped(loser: Fighter)
 
 ## Fighter.custom_data에 왕 표시를 남길 때 쓰는 키
 const KING_KEY := "playground_king"
 
-## 왕관을 먹은 뒤에도 왕관이 다시 나타나서 뺏을 수 있는지.
-## false면 한 번 정해진 왕이 그 라운드 끝까지 간다
-@export var retakeable: bool = false
-## retakeable일 때 왕관이 다시 나타나기까지 걸리는 시간(초)
-@export var respawn_time: float = 12.0
+@export_group("왕 버프")
+## 왕의 이동속도 배수. 도망이 성립하려면 1보다 커야 한다
+@export_range(1.0, 2.0, 0.05) var king_speed_multiplier: float = 1.25
+## 왕의 공격력 배수.
+## Fighter 쪽 프로퍼티 이름이 `attack_debuff_multiplier`라 디버프 전용처럼 보이지만,
+## `compute_damage()`가 그대로 곱하는 값이라 1보다 크게 주면 버프가 된다
+@export_range(1.0, 2.0, 0.05) var king_damage_multiplier: float = 1.3
 
-## 지금 왕관을 쓰고 있는 쪽 (없으면 null)
-var _king: Fighter
+@export_group("떨어뜨리기")
+## 왕이 맞았을 때 왕관이 튕겨 나가는 초기 속도. x는 넉백 방향으로 부호가 붙고, y는 음수가 위쪽
+@export var drop_velocity: Vector2 = Vector2(180.0, -420.0)
+## 떨어진 뒤 다시 주울 수 있게 되기까지의 시간(초).
+## **0으로 두면 안 된다** — 때린 쪽이 밀착해 있으면 떨어지자마자 그대로 회수해서
+## "때리면 뺏김"이 되어 버린다. 잠깐 잠가야 둘 다 달려드는 쟁탈전이 생긴다
+@export var pickup_delay: float = 0.6
+## 못 줍는 동안 왕관이 깜빡이는 속도(초당 횟수). 0이면 안 깜빡인다
+@export var lock_blink_speed: float = 6.0
 
-## 이 캐릭터가 놀이터의 왕인가. 화분·모래 쪽에서 이걸 보고 판단한다
+@export_group("떨어진 왕관의 물리")
+## 낙하 가속도(px/s²)
+@export var gravity: float = 1150.0
+## 바닥에 닿았다고 볼 y좌표 — 왕관 **중심**이 이 높이에 멈춘다 (놀이터 지면 윗면 280 - 왕관 반높이 17)
+@export var ground_y: float = 263.0
+## 바닥에 튕길 때 남는 속도 비율. 0이면 안 튄다
+@export_range(0.0, 0.8, 0.05) var bounce: float = 0.35
+## 바닥에 닿았을 때 가로 속도가 줄어드는 비율(초당). 클수록 빨리 멈춘다
+@export var ground_friction: float = 3.0
+## 왕관이 나갈 수 없는 좌우 한계(중심 기준). 놀이터 벽 안쪽이 ±700이다
+@export var bounds_x: float = 690.0
+
+@export_group("들고 있을 때")
+## 왕의 원점(발밑)에서 왕관까지의 거리. 캐릭터 키가 60px이라 머리 위가 대략 -70이다
+@export var head_offset: Vector2 = Vector2(0.0, -70.0)
+
+@export_group("연출")
+## true면 획득 컷인을 그 라운드 **첫 획득에만** 재생한다. false면 뺏을 때마다 재생
+@export var cutin_once: bool = true
+
+## 지금 왕관을 쓰고 있는 쪽 (없으면 바닥에 떨어져 있다는 뜻)
+var _holder: Fighter
+## 바닥에 있을 때의 낙하 속도
+var _velocity: Vector2 = Vector2.ZERO
+## 아직 못 줍는 남은 시간(초)
+var _lock_left: float = 0.0
+## 이번 라운드에 컷인을 이미 틀었는지
+var _cutin_played: bool = false
+## 버프를 걸 때 쓰는 내 고유 번호 — 다른 효과가 건 배수를 안 지우도록 id로 구분한다
+var _modifier_id: int = 0
+
+## 이 캐릭터가 놀이터의 왕인가. 모래사장 쪽에서 이걸 보고 판단한다
 static func is_king(fighter: Fighter) -> bool:
 	if fighter == null or not is_instance_valid(fighter):
 		return false
 	return fighter.custom_data.get(KING_KEY, false)
 
 func _ready() -> void:
-	area_entered.connect(_on_area_entered)
+	_modifier_id = get_instance_id()
 
-func _on_area_entered(area: Area2D) -> void:
-	if not visible or not (area is Hurtbox):
+## 신호(area_entered) 대신 매 프레임 겹친 목록을 훑는다 — 라운드 리셋이나 순간이동으로
+## 신호가 안 오는 경우가 있어서, 이 프로젝트의 다른 판정들(SandPit·SpringJumpPad)도 같은 방식이다
+func _physics_process(delta: float) -> void:
+	if is_instance_valid(_holder):
+		# 들고 있는 동안은 머리 위에 따라다닌다
+		global_position = _holder.global_position + head_offset
 		return
-	var fighter: Fighter = area.fighter
-	if fighter == null or not is_instance_valid(fighter) or fighter == _king:
+	# 왕이 사라졌는데(라운드 리셋·링아웃) 표시가 남아 있으면 정리한다
+	if _holder != null:
+		_holder = null
+
+	if _lock_left > 0.0:
+		_lock_left -= delta
+		if _lock_left <= 0.0:
+			modulate.a = 1.0
+	_fall(delta)
+	_blink_while_locked()
+	if _lock_left <= 0.0:
+		_try_pickup()
+
+## 떨어진 왕관을 직접 굴린다. Area2D라 물리 엔진이 안 밀어주므로 손으로 계산한다 —
+## 바닥·벽만 신경 쓰면 되는 단순한 포물선이라 RigidBody2D를 붙일 이유가 없다
+func _fall(delta: float) -> void:
+	var resting: bool = position.y >= ground_y and absf(_velocity.y) < 1.0
+	if resting and absf(_velocity.x) < 1.0:
+		_velocity = Vector2.ZERO
 		return
-	_give_crown(fighter)
+	_velocity.y += gravity * delta
+	position += _velocity * delta
+	# 좌우 벽에 부딪히면 튕겨 돌아온다
+	if absf(position.x) > bounds_x:
+		position.x = clampf(position.x, -bounds_x, bounds_x)
+		_velocity.x = -_velocity.x * bounce
+	if position.y >= ground_y:
+		position.y = ground_y
+		_velocity.y = -_velocity.y * bounce if absf(_velocity.y) > 60.0 else 0.0
+		_velocity.x = move_toward(_velocity.x, 0.0, absf(_velocity.x) * ground_friction * delta)
+
+## 못 줍는 동안 깜빡여서 "아직 안 된다"를 눈으로 알린다
+func _blink_while_locked() -> void:
+	if _lock_left <= 0.0 or lock_blink_speed <= 0.0:
+		return
+	modulate.a = 0.45 + 0.55 * absf(sin(_lock_left * lock_blink_speed * PI))
+
+func _try_pickup() -> void:
+	for area in get_overlapping_areas():
+		if not (area is Hurtbox):
+			continue
+		var fighter: Fighter = area.fighter
+		if fighter == null or not is_instance_valid(fighter) or fighter.current_hp <= 0:
+			continue
+		_give_crown(fighter)
+		return
 
 func _give_crown(fighter: Fighter) -> void:
-	# 왕은 한 명뿐이라 이전 왕의 표시는 지운다
-	if is_instance_valid(_king):
-		_king.custom_data.erase(KING_KEY)
-	_king = fighter
+	_holder = fighter
+	_velocity = Vector2.ZERO
+	modulate.a = 1.0
 	fighter.custom_data[KING_KEY] = true
-	hide()
+	fighter.set_modifier("move_speed_multiplier", _modifier_id, king_speed_multiplier)
+	fighter.set_modifier("attack_debuff_multiplier", _modifier_id, king_damage_multiplier)
+	# 이 왕이 맞으면 바로 떨어뜨린다. 왕이 바뀔 때마다 연결/해제하므로 중복 연결되지 않는다
+	if not fighter.damaged.is_connected(_on_holder_damaged):
+		fighter.damaged.connect(_on_holder_damaged)
 	crowned.emit(fighter)
+	_play_cutin(fighter)
 
-	# 연출 노드가 심어져 있으면 재생한다 (없는 맵에서는 조용히 넘어간다)
-	var cutin: Node = get_tree().get_first_node_in_group("crown_cutin")
-	if cutin and cutin.has_method("play"):
-		cutin.play(fighter)
+func _on_holder_damaged(_amount: int, knockback: Vector2) -> void:
+	_drop(knockback)
 
-	if not retakeable:
+## 왕관을 머리에서 떼어내 튕겨 보낸다.
+## 가로 방향은 넉백을 따라간다 — 맞은 쪽이 날아가는 방향이라, 때린 사람이 자동으로 줍게 되지 않는다.
+## (때리자마자 회수되면 사용자가 원한 "떨어진 걸 주워야 한다"가 성립하지 않는다)
+func _drop(knockback: Vector2) -> void:
+	var loser: Fighter = _holder
+	if is_instance_valid(loser):
+		global_position = loser.global_position + head_offset
+		loser.custom_data.erase(KING_KEY)
+		loser.clear_modifier("move_speed_multiplier", _modifier_id)
+		loser.clear_modifier("attack_debuff_multiplier", _modifier_id)
+		if loser.damaged.is_connected(_on_holder_damaged):
+			loser.damaged.disconnect(_on_holder_damaged)
+	_holder = null
+	var dir: float = signf(knockback.x)
+	if dir == 0.0:
+		dir = -loser.facing if is_instance_valid(loser) else 1.0
+	_velocity = Vector2(drop_velocity.x * dir, drop_velocity.y)
+	_lock_left = pickup_delay
+	dropped.emit(loser)
+
+func _play_cutin(fighter: Fighter) -> void:
+	if cutin_once and _cutin_played:
 		return
-	# 자식 Timer를 쓴다 — 라운드가 끝나 맵이 먼저 정리되면 이 왕관도 같이 사라져 콜백이 안 돈다
-	var timer := Timer.new()
-	timer.wait_time = respawn_time
-	timer.one_shot = true
-	add_child(timer)
-	timer.timeout.connect(func():
-		show()
-		timer.queue_free()
-	)
-	timer.start()
+	var cutin: Node = get_tree().get_first_node_in_group("crown_cutin")
+	if cutin == null or not cutin.has_method("play"):
+		return
+	_cutin_played = true
+	cutin.play(fighter)
