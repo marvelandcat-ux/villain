@@ -5,7 +5,7 @@ extends Skill
 ## 이 노드는 던지는 팔 동작만 시키고, 실제 동작(날아가기·잡기·끌어오기)과 그림은 MouseGrab이 처리한다.
 @export var throw_speed: float = 700.0
 ## 마우스가 날아가는 최대 거리(px). 이 안에 상대가 없으면 빗나가 사라진다
-@export var max_range: float = 260.0
+@export var max_range: float = 400.0
 ## 잡은 상대를 끌어오는 속도(px/초)
 @export var reel_speed: float = 320.0
 ## 잡는 순간 주는 데미지
