@@ -1,0 +1,42 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/CrownCutIn.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://f3m1p7t7ipqi" path="res://sprite/맵/놀이터/왕관.png" id="2_crown"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
+[ext_resource type="Texture2D" uid="uid://bag0a6mqiys2y" path="res://sprite/맵/놀이터/대관식.png" id="4_bg"]
+
+[node name="CrownCutIn" type="CanvasLayer"]
+layer = 9
+process_mode = 3
+script = ExtResource("1")
+
+[node name="Background" type="TextureRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("4_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Holder" type="Node2D" parent="."]
+
+[node name="Spectators" type="Node2D" parent="Holder"]
+
+[node name="HandL" type="Sprite2D" parent="Holder"]
+position = Vector2(-470, 30)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("3_hand")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="Holder"]
+position = Vector2(470, 30)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("3_hand")
+
+[node name="Face" type="Sprite2D" parent="Holder"]
+position = Vector2(0, 70)
+
+[node name="Crown" type="Sprite2D" parent="Holder"]
+position = Vector2(0, -172)
+scale = Vector2(0.296, 0.296)
+texture = ExtResource("2_crown")

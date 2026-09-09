@@ -1,7 +1,8 @@
 class_name SandPit
 extends Area2D
 
-## 발이 푹푹 빠지는 모래사장 — 모래 위에 서 있는 동안만 이동속도가 느려진다 (놀이터 맵 가운데).
+## 발이 푹푹 빠지는 모래사장 — 모래 위에 서 있는 동안만 이동속도가 느려진다 (놀이터 정자 양옆).
+## 단 '놀이터의 왕'(왕관을 먹은 쪽)은 모래를 그냥 걸어 다닌다.
 ##
 ## 판정을 발치 높이(지면 바로 위)에만 둬서, 모래를 걸어서 지나가면 느려지고
 ## 점프해서 뛰어넘으면 걸리지 않는다 — 느린 구간을 감수하고 걷느냐, 점프로 넘느냐의 선택이 된다.
@@ -29,6 +30,9 @@ func _physics_process(_delta: float) -> void:
 			continue
 		var fighter: Fighter = area.fighter
 		if fighter == null or not is_instance_valid(fighter):
+			continue
+		# 놀이터의 왕은 모래에 안 빠진다. now에 안 넣으면 아래 정리 루프가 알아서 둔화를 풀어준다
+		if Crown.is_king(fighter):
 			continue
 		now[fighter] = true
 		# 이미 걸려 있는 캐릭터에 매 프레임 다시 걸 필요는 없다

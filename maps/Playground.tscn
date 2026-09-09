@@ -1,13 +1,32 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" path="res://maps/CameraRig.gd" id="3"]
 [ext_resource type="PackedScene" path="res://maps/SpringRide.tscn" id="4"]
-[ext_resource type="Script" path="res://maps/PotSpawner.gd" id="5"]
-[ext_resource type="PackedScene" path="res://maps/FallingPot.tscn" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/왕관.png" id="5"]
 [ext_resource type="Texture2D" path="res://sprite/맵/놀이터/파란시소.png" id="7"]
 [ext_resource type="Script" path="res://maps/SandPit.gd" id="8"]
+[ext_resource type="Script" path="res://maps/Crown.gd" id="9"]
+[ext_resource type="PackedScene" path="res://ui/CrownCutIn.tscn" id="10"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformLowLeft"]
+size = Vector2(240, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformLowRight"]
+size = Vector2(240, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformMidLeft"]
+size = Vector2(300, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformMidRight"]
+size = Vector2(300, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_PlatformTop"]
+size = Vector2(420, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_crown"]
+size = Vector2(56, 34)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(1440, 40)
@@ -15,11 +34,8 @@ size = Vector2(1440, 40)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 400)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_deck"]
-size = Vector2(190, 20)
-
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_sand"]
-size = Vector2(520, 40)
+size = Vector2(240, 40)
 
 [node name="Playground" type="Node2D"]
 script = ExtResource("1")
@@ -37,57 +53,94 @@ color = Color(0.42, 0.3, 0.19, 1)
 polygon = PackedVector2Array(-1600, 280, 1600, 280, 1600, 800, -1600, 800)
 
 [node name="Sun" type="Polygon2D" parent="DecoSky"]
-position = Vector2(360, -230)
+position = Vector2(430, -420)
 color = Color(1, 0.93, 0.55, 1)
 polygon = PackedVector2Array(40, 0, 28.3, 28.3, 0, 40, -28.3, 28.3, -40, 0, -28.3, -28.3, 0, -40, 28.3, -28.3)
 
-[node name="SlideRoof" type="Polygon2D" parent="."]
-color = Color(0.82, 0.32, 0.28, 1)
-polygon = PackedVector2Array(-605, 55, -713, 163, -497, 163)
+[node name="PavilionRoof" type="Polygon2D" parent="."]
+color = Color(0.72, 0.28, 0.24, 1)
+polygon = PackedVector2Array(0, 150, -190, 215, 190, 215)
 
-[node name="RoofShelter" type="Area2D" parent="." groups=["pot_shelter"]]
-
-[node name="RoofShelterCollision" type="CollisionPolygon2D" parent="RoofShelter"]
-polygon = PackedVector2Array(-605, 55, -713, 163, -497, 163)
-
-[node name="SlideWindow" type="Polygon2D" parent="."]
-position = Vector2(-605, 123)
-color = Color(0.97, 0.96, 0.86, 1)
-polygon = PackedVector2Array(18, 0, 12.7, 12.7, 0, 18, -12.7, 12.7, -18, 0, -12.7, -12.7, 0, -18, 12.7, -12.7)
-
-[node name="SlidePostLeft" type="Polygon2D" parent="."]
+[node name="PavilionPostLeft" type="Polygon2D" parent="."]
 color = Color(0.55, 0.38, 0.22, 1)
-polygon = PackedVector2Array(-691, 163, -675, 163, -675, 282, -691, 282)
+polygon = PackedVector2Array(-158, 214, -142, 214, -142, 280, -158, 280)
 
-[node name="SlidePostRight" type="Polygon2D" parent="."]
+[node name="PavilionPostRight" type="Polygon2D" parent="."]
 color = Color(0.55, 0.38, 0.22, 1)
-polygon = PackedVector2Array(-531, 163, -515, 163, -515, 282, -531, 282)
+polygon = PackedVector2Array(142, 214, 158, 214, 158, 280, 142, 280)
 
-[node name="SlideDeck" type="StaticBody2D" parent="."]
-position = Vector2(-605, 170)
+[node name="PlatformLowLeft" type="StaticBody2D" parent="."]
+position = Vector2(-510, 70)
 
-[node name="SlideDeckCollision" type="CollisionShape2D" parent="SlideDeck"]
-shape = SubResource("RectangleShape2D_deck")
+[node name="Collision" type="CollisionShape2D" parent="PlatformLowLeft"]
+shape = SubResource("RectangleShape2D_PlatformLowLeft")
 one_way_collision = true
 
-[node name="SlideDeckVisual" type="Polygon2D" parent="SlideDeck"]
+[node name="Visual" type="Polygon2D" parent="PlatformLowLeft"]
 color = Color(0.65, 0.48, 0.3, 1)
-polygon = PackedVector2Array(-95, -10, 95, -10, 95, 10, -95, 10)
+polygon = PackedVector2Array(-120, -10, 120, -10, 120, 10, -120, 10)
 
-[node name="Slide" type="StaticBody2D" parent="."]
+[node name="PlatformLowRight" type="StaticBody2D" parent="."]
+position = Vector2(510, 70)
 
-[node name="SlideCollision" type="CollisionPolygon2D" parent="Slide"]
-polygon = PackedVector2Array(-530, 160, -510, 160, -403, 280, -423, 280)
+[node name="Collision" type="CollisionShape2D" parent="PlatformLowRight"]
+shape = SubResource("RectangleShape2D_PlatformLowRight")
+one_way_collision = true
 
-[node name="SlideVisual" type="Polygon2D" parent="Slide"]
-color = Color(0.76, 0.77, 0.83, 1)
-polygon = PackedVector2Array(-530, 160, -510, 160, -403, 280, -423, 280)
+[node name="Visual" type="Polygon2D" parent="PlatformLowRight"]
+color = Color(0.65, 0.48, 0.3, 1)
+polygon = PackedVector2Array(-120, -10, 120, -10, 120, 10, -120, 10)
+
+[node name="PlatformMidLeft" type="StaticBody2D" parent="."]
+position = Vector2(-300, -100)
+
+[node name="Collision" type="CollisionShape2D" parent="PlatformMidLeft"]
+shape = SubResource("RectangleShape2D_PlatformMidLeft")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="PlatformMidLeft"]
+color = Color(0.65, 0.48, 0.3, 1)
+polygon = PackedVector2Array(-150, -10, 150, -10, 150, 10, -150, 10)
+
+[node name="PlatformMidRight" type="StaticBody2D" parent="."]
+position = Vector2(300, -100)
+
+[node name="Collision" type="CollisionShape2D" parent="PlatformMidRight"]
+shape = SubResource("RectangleShape2D_PlatformMidRight")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="PlatformMidRight"]
+color = Color(0.65, 0.48, 0.3, 1)
+polygon = PackedVector2Array(-150, -10, 150, -10, 150, 10, -150, 10)
+
+[node name="PlatformTop" type="StaticBody2D" parent="."]
+position = Vector2(0, -270)
+
+[node name="Collision" type="CollisionShape2D" parent="PlatformTop"]
+shape = SubResource("RectangleShape2D_PlatformTop")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="PlatformTop"]
+color = Color(0.65, 0.48, 0.3, 1)
+polygon = PackedVector2Array(-210, -10, 210, -10, 210, 10, -210, 10)
+
+[node name="Crown" type="Area2D" parent="."]
+z_index = 20
+position = Vector2(0, -308)
+script = ExtResource("9")
+
+[node name="CrownCollision" type="CollisionShape2D" parent="Crown"]
+shape = SubResource("RectangleShape2D_crown")
+
+[node name="CrownVisual" type="Sprite2D" parent="Crown"]
+scale = Vector2(0.0487, 0.0487)
+texture = ExtResource("5")
 
 [node name="SpringRideLeft" parent="." instance=ExtResource("4")]
-position = Vector2(400, 0)
+position = Vector2(-570, 0)
 
 [node name="SpringRideRight" parent="." instance=ExtResource("4")]
-position = Vector2(560, 0)
+position = Vector2(570, 0)
 
 [node name="Sprite" parent="SpringRideRight/Visual" index="0"]
 position = Vector2(-28.29, -81.16)
@@ -109,15 +162,26 @@ polygon = PackedVector2Array(-720, -20, 720, -20, 720, 20, -720, 20)
 color = Color(0.45, 0.68, 0.33, 1)
 polygon = PackedVector2Array(-720, -20, 720, -20, 720, -10, -720, -10)
 
-[node name="SandVisual" type="Polygon2D" parent="Ground"]
+[node name="SandPitLeftVisual" type="Polygon2D" parent="Ground"]
 color = Color(0.9, 0.82, 0.6, 1)
-polygon = PackedVector2Array(-260, -20, 260, -20, 260, -4, -260, -4)
+polygon = PackedVector2Array(-430, -20, -190, -20, -190, -4, -430, -4)
 
-[node name="SandPit" type="Area2D" parent="."]
-position = Vector2(0, 276)
+[node name="SandPitRightVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.9, 0.82, 0.6, 1)
+polygon = PackedVector2Array(190, -20, 430, -20, 430, -4, 190, -4)
+
+[node name="SandPitLeft" type="Area2D" parent="."]
+position = Vector2(-310, 276)
 script = ExtResource("8")
 
-[node name="SandPitCollision" type="CollisionShape2D" parent="SandPit"]
+[node name="Collision" type="CollisionShape2D" parent="SandPitLeft"]
+shape = SubResource("RectangleShape2D_sand")
+
+[node name="SandPitRight" type="Area2D" parent="."]
+position = Vector2(310, 276)
+script = ExtResource("8")
+
+[node name="Collision" type="CollisionShape2D" parent="SandPitRight"]
 shape = SubResource("RectangleShape2D_sand")
 
 [node name="LeftWall" type="StaticBody2D" parent="."]
@@ -140,22 +204,18 @@ shape = SubResource("RectangleShape2D_wall")
 color = Color(0.38, 0.5, 0.32, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 
-[node name="PotSpawner" type="Node2D" parent="."]
-script = ExtResource("5")
-pot_scene = ExtResource("6")
-spawn_y = -360.0
-spawn_half_width = 680.0
-
 [node name="PlayerSpawn1" type="Marker2D" parent="."]
-position = Vector2(-300, 240)
+position = Vector2(-520, 240)
 
 [node name="PlayerSpawn2" type="Marker2D" parent="."]
-position = Vector2(620, 240)
+position = Vector2(520, 240)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, 20)
 script = ExtResource("3")
-min_y = -80.0
+min_y = -170.0
 max_y = 20.0
 
 [node name="CombatHUD" parent="." instance=ExtResource("2")]
+
+[node name="CrownCutIn" parent="." instance=ExtResource("10")]

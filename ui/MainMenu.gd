@@ -185,7 +185,8 @@ func _animate_menu(delta: float) -> void:
 			var target: Color = menu_text_color_focus if focused else menu_text_color
 			text.add_theme_color_override("font_color", text.get_theme_color("font_color").lerp(target, t))
 
-## 이름이 "Illust"/"Background"로 시작하는 자식을 트리 순서대로 모으고, 첫 짝만 남기고 숨긴다
+## 이름이 "Illust"/"Background"로 시작하는 자식을 트리 순서대로 모으고, 첫 짝만 남기고 숨긴다.
+## "Fx"로 시작하는 효과판은 여기서 안 모은다 — 트리 순서가 아니라 이름으로 짝짓는다(_pair_effect 참고)
 func _collect_illustrations() -> void:
 	for child in get_children():
 		if child is Node2D and child.name.begins_with("Illust"):
@@ -205,27 +206,34 @@ func _collect_illustrations() -> void:
 func _pair_background(i: int) -> Node2D:
 	return _backgrounds[i] if i < _backgrounds.size() else null
 
+## i번째 일러스트와 그 짝 효과판 (없으면 null).
+## 배경은 트리 순서(index)로 짝짓지만 **효과판은 이름으로 짝짓는다** —
+## 캐릭터 하나에만 붙는 경우가 많아서, index로 맞추려면 빈 노드를 앞에 줄줄이 넣어야 하기 때문이다.
+## `IllustSubway` <-> `FxSubway` 처럼 "Illust"를 "Fx"로 바꾼 이름을 찾는다
+func _pair_effect(i: int) -> Node2D:
+	return get_node_or_null("Fx" + _illusts[i].name.trim_prefix("Illust")) as Node2D
+
 func _show_pair(i: int, alpha: float) -> void:
 	_illusts[i].visible = true
 	_illusts[i].modulate.a = alpha
-	var bg: Node2D = _pair_background(i)
-	if bg:
-		bg.visible = true
-		bg.modulate.a = alpha
+	for node in [_pair_background(i), _pair_effect(i)]:
+		if node:
+			node.visible = true
+			node.modulate.a = alpha
 
 func _hide_pair(i: int) -> void:
 	_illusts[i].visible = false
 	_illusts[i].modulate.a = 1.0
-	var bg: Node2D = _pair_background(i)
-	if bg:
-		bg.visible = false
-		bg.modulate.a = 1.0
+	for node in [_pair_background(i), _pair_effect(i)]:
+		if node:
+			node.visible = false
+			node.modulate.a = 1.0
 
 func _set_pair_alpha(i: int, alpha: float) -> void:
 	_illusts[i].modulate.a = alpha
-	var bg: Node2D = _pair_background(i)
-	if bg:
-		bg.modulate.a = alpha
+	for node in [_pair_background(i), _pair_effect(i)]:
+		if node:
+			node.modulate.a = alpha
 
 func _process(delta: float) -> void:
 	# 켜질 때: 타이틀에서 넘어온 검은 판이 서서히 걷힌다
@@ -257,10 +265,11 @@ func _process(delta: float) -> void:
 	_fading = true
 	_fade_time = 0.0
 	_show_pair(_next_index, 0.0)
-	# 나타나는 순간부터 동작을 처음부터 돌린다 (그런 함수가 있는 일러스트만)
-	var next: Node2D = _illusts[_next_index]
-	if next.has_method("restart"):
-		next.restart()
+	# 나타나는 순간부터 동작을 처음부터 돌린다 (그런 함수가 있는 노드만).
+	# 효과판도 같이 다시 터뜨려야 등장할 때마다 집중선이 조여든다
+	for node in [_illusts[_next_index], _pair_effect(_next_index)]:
+		if node and node.has_method("restart"):
+			node.restart()
 
 ## 파츠들은 원본 캔버스 좌표(왼쪽 위가 0,0)로 그려지므로, 가운데가 illust_center에 오도록 밀어준다.
 ## auto_place_illustration을 켰을 때만 돈다 — 평소엔 씬에 저장된 위치·크기가 그대로 쓰인다
