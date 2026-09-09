@@ -175,6 +175,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + (amount - reduced_amount)
 	current_hp = max(current_hp - reduced_amount, 0)
 	_flash_hit()
+	_play_hurt_face()
 	# 실제 타격(넉백이 있는 피해)에만 히트 리액션 — 공포·틱 데미지 같은 넉백 없는 피해엔 적용 안 한다
 	if knockback != Vector2.ZERO:
 		# 수평 넉백을 키워 콤보처럼 넉백 방향으로 멀리 날린다 (수직은 팝업이 담당)
@@ -217,6 +218,12 @@ func _play_hit_reaction(knockback: Vector2, amount: int) -> void:
 	var tween := create_tween()
 	tween.tween_property(visual, "rotation", deg_to_rad(dir * lean_deg), 0.05)
 	tween.tween_property(visual, "rotation", 0.0, 0.22)
+
+## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
+func _play_hurt_face() -> void:
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("play_hurt_face"):
+		visual.play_hurt_face()
 
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:

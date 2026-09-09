@@ -7,10 +7,12 @@
 [ext_resource type="Texture2D" uid="uid://dvtebq6yqbyxj" path="res://sprite/축법소년/자전거.png" id="5_bike"]
 [ext_resource type="Texture2D" uid="uid://d3r2vpysgqom8" path="res://sprite/축법소년/총.png" id="6_gun"]
 [ext_resource type="Texture2D" uid="uid://c3rrljta7b1s3" path="res://sprite/축법소년/달리는 축법소년 표정.png" id="7_dashface"]
+[ext_resource type="Texture2D" uid="uid://gk66bpxkxs4d" path="res://sprite/축법소년/축법소년 다치다.png" id="8_hurtface"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 action_head_texture = ExtResource("7_dashface")
 action_head_scale = Vector2(0.052, 0.052)
+hurt_head_texture = ExtResource("8_hurtface")
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
 visible = false

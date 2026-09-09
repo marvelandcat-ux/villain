@@ -36,6 +36,14 @@ extends Node2D
 ## 열차 도착 음악(옛날 지하철 도착 음악). 비워두면 소리 없이 경고등만 깜빡인다
 @export var arrival_music: AudioStream
 
+## --- 객실 창문 불빛 ---
+## 창문 빛의 세기 (0이면 안 켜진다). 그림에 이미 세게 구워져 있으니 여기서 줄여 쓰면 된다
+@export var window_glow: float = 1.0
+## 형광등이 미세하게 떨리는 폭 (0이면 일정하게 켜져 있다)
+@export var window_flicker: float = 0.09
+## 떨리는 빠르기
+@export var window_flicker_speed: float = 16.0
+
 ## 진행 중인 상태
 enum State { WAITING, WARNING, RUNNING }
 
@@ -43,6 +51,8 @@ enum State { WAITING, WARNING, RUNNING }
 @onready var hitbox: Hitbox = $Body/Hitbox
 @onready var warning_light: Node2D = $WarningLight
 @onready var music: AudioStreamPlayer = $Music
+## 창문만 밝게 구워둔 그림을 가산 블렌드로 열차 위에 얹은 스프라이트 (Body의 자식이라 열차와 같이 움직이고 같이 숨는다)
+@onready var window_light: Sprite2D = $Body/WindowGlow
 
 var _state: int = State.WAITING
 ## 다음 열차가 도착하기까지 남은 시간. 열차가 출발하는 순간 interval로 다시 채워지므로
@@ -50,6 +60,8 @@ var _state: int = State.WAITING
 var _timer: float = 0.0
 ## 1이면 왼쪽 → 오른쪽, -1이면 오른쪽 → 왼쪽
 var _direction: int = 1
+## 창문 불빛이 떨리는 위상 — 계속 커지며 sin()으로 미세한 흔들림을 만든다
+var _glow_phase: float = 0.0
 
 func _ready() -> void:
 	# AIController가 "ai_danger_zone" 그룹으로 찾아서 is_dangerous()를 물어보고 피신 여부를 판단한다
@@ -61,6 +73,8 @@ func _ready() -> void:
 	_set_hitbox_active(false)
 	_park_body()
 	warning_light.visible = false
+	if window_light:
+		window_light.modulate.a = window_glow
 
 ## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
 func is_dangerous() -> bool:
@@ -79,6 +93,7 @@ func _process(delta: float) -> void:
 				_begin_run()
 		State.RUNNING:
 			body.position.x += speed * _direction * delta
+			_update_window_light(delta)
 			if absf(body.position.x) >= travel_x:
 				_finish_run()
 
@@ -106,6 +121,16 @@ func _finish_run() -> void:
 	if alternate_direction:
 		_direction = -_direction
 	_state = State.WAITING
+
+## 객실 창문 불빛 — 형광등처럼 아주 미세하게 떨린다.
+## 어디가 창문인지는 그림(열차창문빛.png)에 이미 구워져 있고 가산 블렌드로 얹히므로, 여기서는 세기만 조절한다.
+## 주기가 다른 두 sin을 곱해서 규칙적인 깜빡임으로 안 보이게 한다
+func _update_window_light(delta: float) -> void:
+	if window_light == null:
+		return
+	_glow_phase += delta * window_flicker_speed
+	var wobble: float = sin(_glow_phase) * sin(_glow_phase * 0.37 + 1.3)
+	window_light.modulate.a = maxf(window_glow * (1.0 - window_flicker * (0.5 + 0.5 * wobble)), 0.0)
 
 ## 대기 중에는 열차를 화면 밖에 세워둔다
 func _park_body() -> void:

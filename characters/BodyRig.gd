@@ -189,6 +189,15 @@ extends Node2D
 ## 토하는 얼굴일 때 머리 위치 보정(px) — 입이 게워내는 위치에 안 맞으면 조정
 @export var vomit_head_offset: Vector2 = Vector2.ZERO
 
+## 맞았을 때 잠깐 이 얼굴(아파하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(촉법소년만 지정)
+@export var hurt_head_texture: Texture2D
+## 아파하는 얼굴을 보여주는 시간(초)
+@export var hurt_face_duration: float = 0.45
+## 아파하는 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var hurt_head_scale: Vector2 = Vector2.ZERO
+## 아파하는 얼굴일 때 머리 위치 보정(px) — 원본 여백이 달라 얼굴이 어긋날 때만 조정
+@export var hurt_head_offset: Vector2 = Vector2.ZERO
+
 ## 술 스택이 남아있는 동안(몸이 빨간 동안) 머리를 이 얼굴(술 머금은 표정)로 유지한다. 비어 있으면 안 바꾼다
 @export var drunk_head_texture: Texture2D
 ## 술 머금은 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
@@ -272,6 +281,8 @@ var _reel_target: float = 0.0
 var _reel_phase: float = 0.0
 ## 토하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 토하는 표정이다
 var _vomit_time: float = 0.0
+## 아파하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 피격 표정이다
+var _hurt_time: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
@@ -324,6 +335,10 @@ func _process(delta: float) -> void:
 		# 시간이 다 되면 원래 얼굴로 되돌린다
 		if is_zero_approx(_vomit_time):
 			_restore_head()
+	if _hurt_time > 0.0:
+		_hurt_time = maxf(_hurt_time - delta, 0.0)
+		if is_zero_approx(_hurt_time):
+			_restore_head()
 	# 총 조준 시간 카운트다운 — 끝나면 총을 다시 숨긴다
 	if _gun_time > 0.0:
 		_gun_time = maxf(_gun_time - delta, 0.0)
@@ -354,7 +369,7 @@ func _process(delta: float) -> void:
 	_fall_blend = move_toward(_fall_blend, 1.0 if falling else 0.0, delta * fall_blend_speed)
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
-	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _reel_blend <= 0.01
+	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -443,8 +458,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _head:
 		# 하강 중이면 고개를 아래로 숙인다 (마시기 동작이 있으면 아래에서 덮어써서 그쪽이 우선한다)
 		_head.rotation = deg_to_rad(fall_head_tilt_deg) * _fall_blend
-		# 토하는 얼굴일 때는 입 위치를 맞추기 위한 보정만 더한다(누적되지 않게 절대 위치로 잡는다)
-		if _vomit_time > 0.0:
+		# 표정이 바뀐 동안에는 얼굴 위치를 맞추기 위한 보정만 더한다(누적되지 않게 절대 위치로 잡는다)
+		if _hurt_time > 0.0:
+			_head.position = _rest_positions[_head] + Vector2(0.0, bob) + hurt_head_offset
+		elif _vomit_time > 0.0:
 			_head.position = _rest_positions[_head] + Vector2(0.0, bob) + vomit_head_offset
 	if _hand_l:
 		_hand_l.rotation = 0.0
@@ -786,8 +803,32 @@ func play_vomit_face() -> void:
 		_head.scale = vomit_head_scale
 	_vomit_time = vomit_face_duration
 
-## 토하는 표정이 끝나면 현재 상태(취함/맨정신)에 맞는 기본 머리로 돌아간다
+## 피격 표정 — 맞은 순간 잠깐 아파하는 얼굴로 바꾼다. Fighter.take_damage가 호출한다.
+## hurt_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
+func play_hurt_face() -> void:
+	if _head == null or hurt_head_texture == null:
+		return
+	_head.texture = hurt_head_texture
+	if hurt_head_scale != Vector2.ZERO:
+		_head.scale = hurt_head_scale
+	_hurt_time = hurt_face_duration
+
+## 잠깐 바뀌었던 표정이 끝났을 때 — 아직 남아있는 다른 표정이 있으면 그쪽으로,
+## 없으면 현재 상태(액션/취함/맨정신)에 맞는 기본 머리로 돌아간다.
+## 피격 > 토하기 순으로 우선한다(맞는 게 더 급한 상황이라)
 func _restore_head() -> void:
+	if _head == null:
+		return
+	if _hurt_time > 0.0 and hurt_head_texture != null:
+		_head.texture = hurt_head_texture
+		if hurt_head_scale != Vector2.ZERO:
+			_head.scale = hurt_head_scale
+		return
+	if _vomit_time > 0.0 and vomit_head_texture != null:
+		_head.texture = vomit_head_texture
+		if vomit_head_scale != Vector2.ZERO:
+			_head.scale = vomit_head_scale
+		return
 	_apply_base_head()
 
 ## 술 스택 유무에 따라 "기본 머리"를 정한다 (맨정신=원래 얼굴 / 취함=술 머금은 얼굴).
@@ -795,7 +836,7 @@ func _restore_head() -> void:
 ## 그 표정이 끝나면 _restore_head가 여기서 정한 기본 머리로 돌아간다
 func set_drunk_head(on: bool) -> void:
 	_drunk_head_on = on
-	if _vomit_time <= 0.0:
+	if _vomit_time <= 0.0 and _hurt_time <= 0.0:
 		_apply_base_head()
 
 ## 스킬(자전거 돌진·총 쏘기)을 쓰는 동안 액션 표정으로 머리를 바꾼다. on=false면 원래 상태로 되돌린다.
@@ -804,7 +845,7 @@ func set_action_face(on: bool) -> void:
 	if _head == null or action_head_texture == null:
 		return
 	_action_face_on = on
-	if _vomit_time <= 0.0:   # 토하는 표정이 떠 있으면 그게 끝난 뒤 반영된다
+	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
 ## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선)
