@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://maps/PotSpawner.gd" id="5"]
 [ext_resource type="PackedScene" path="res://maps/FallingPot.tscn" id="6"]
 [ext_resource type="Texture2D" path="res://sprite/맵/놀이터/파란시소.png" id="7"]
+[ext_resource type="Script" path="res://maps/SandPit.gd" id="8"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(1440, 40)
@@ -16,6 +17,9 @@ size = Vector2(40, 400)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_deck"]
 size = Vector2(190, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sand"]
+size = Vector2(520, 40)
 
 [node name="Playground" type="Node2D"]
 script = ExtResource("1")
@@ -104,6 +108,17 @@ polygon = PackedVector2Array(-720, -20, 720, -20, 720, 20, -720, 20)
 [node name="GrassVisual" type="Polygon2D" parent="Ground"]
 color = Color(0.45, 0.68, 0.33, 1)
 polygon = PackedVector2Array(-720, -20, 720, -20, 720, -10, -720, -10)
+
+[node name="SandVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.9, 0.82, 0.6, 1)
+polygon = PackedVector2Array(-260, -20, 260, -20, 260, -4, -260, -4)
+
+[node name="SandPit" type="Area2D" parent="."]
+position = Vector2(0, 276)
+script = ExtResource("8")
+
+[node name="SandPitCollision" type="CollisionShape2D" parent="SandPit"]
+shape = SubResource("RectangleShape2D_sand")
 
 [node name="LeftWall" type="StaticBody2D" parent="."]
 position = Vector2(-720, 100)

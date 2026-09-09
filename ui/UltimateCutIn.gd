@@ -15,7 +15,8 @@ extends CanvasLayer
 
 ## 카메라가 시전자에게 빨려들어가는 시간(초)
 @export var zoom_in_time: float = 0.25
-## 컷인 장면을 보여주는 시간(초)
+## 컷인 장면을 보여주는 기본 시간(초).
+## 컷인 장면이 cutin_duration을 들고 있으면 그 값이 우선한다(잼민이 컷인은 2.4초짜리다)
 @export var hold_time: float = 1.0
 ## 원래 화면으로 돌아오는 시간(초)
 @export var zoom_out_time: float = 0.25
@@ -40,6 +41,8 @@ var _fire_position: Vector2
 var _fire_facing: float
 ## 이번 연출에서 띄운 컷인 장면 (연출이 끝나면 지운다)
 var _cutin: Node2D
+## 이번 연출에서 실제로 쓰는 컷인 표시 시간 — 장면이 cutin_duration을 들고 있으면 그 값으로 바뀐다
+var _hold: float = 1.0
 
 func _ready() -> void:
 	add_to_group("ultimate_cutin")
@@ -58,6 +61,8 @@ func play(fighter: Fighter) -> void:
 		_camera_from_zoom = _camera.zoom
 
 	_name_label.text = "%s\n궁극기" % (fighter.stats.character_name if fighter.stats else "")
+	# 장면마다 필요한 길이가 다르므로 기본값을 깔아두고 _spawn_cutin이 덮어쓰게 한다
+	_hold = hold_time
 	_spawn_cutin(fighter)
 
 	visible = true
@@ -92,7 +97,7 @@ func _update_zoom_in() -> void:
 ## 컷인 장면이 스스로 돌아가는 동안(떨림이 점점 심해진다) 기다린다
 func _update_cutin() -> void:
 	_dim.color.a = 0.55
-	if _elapsed >= hold_time:
+	if _elapsed >= _hold:
 		_phase = Phase.ZOOM_OUT
 		_elapsed = 0.0
 
@@ -125,10 +130,13 @@ func _spawn_cutin(fighter: Fighter) -> void:
 	_holder.position = get_viewport().get_visible_rect().size / 2.0
 	# 컷인 장면 안의 애니메이션도 멈춤 상태에서 돌아야 한다
 	_cutin.process_mode = Node.PROCESS_MODE_ALWAYS
+	# 장면이 자기 길이를 들고 있으면 그 길이만큼 보여준다 (잼민이 3프레임 컷인처럼 긴 장면용)
+	if "cutin_duration" in _cutin and _cutin.cutin_duration > 0.0:
+		_hold = _cutin.cutin_duration
 	if _cutin.has_method("play"):
 		# 떨림이 커지는 시간을 컷인 표시 시간과 맞춘다
 		if "ramp_time" in _cutin:
-			_cutin.ramp_time = hold_time
+			_cutin.ramp_time = _hold
 		_cutin.play()
 
 func _set_cutin_alpha(alpha: float) -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Script" path="res://skills/DashSkill.gd" id="2"]
@@ -10,6 +10,9 @@
 [ext_resource type="Script" path="res://skills/MeleeAttack.gd" id="7"]
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="8"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="9"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/잼민이G스킬.png" id="11"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/잼민이H스킬.png" id="12"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/버릇없는꼬마궁극기로고.png" id="13"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -49,12 +52,15 @@ shape = SubResource("RectangleShape2D_hitbox")
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("2")
 cooldown = 6.0
+icon = ExtResource("11")
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("4")
 cooldown = 5.0
 projectile_scene = ExtResource("5")
+icon = ExtResource("12")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")
 cooldown = 20.0
+icon = ExtResource("13")

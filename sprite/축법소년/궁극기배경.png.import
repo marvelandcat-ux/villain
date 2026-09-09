@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bhcj36aqvqd2e"
-path="res://.godot/imported/Metro! - 복사본.png-f3058753e86fddf9472934dc12ba6267.ctex"
+uid="uid://b8l6dxnfh023"
+path="res://.godot/imported/궁극기배경.png-35954a9a25a91bd048afae3ee797742c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/지하철역/Metro! - 복사본.png"
-dest_files=["res://.godot/imported/Metro! - 복사본.png-f3058753e86fddf9472934dc12ba6267.ctex"]
+source_file="res://sprite/축법소년/궁극기배경.png"
+dest_files=["res://.godot/imported/궁극기배경.png-35954a9a25a91bd048afae3ee797742c.ctex"]
 
 [params]
 

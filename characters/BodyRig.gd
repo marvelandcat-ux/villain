@@ -41,6 +41,10 @@ extends Node2D
 @export var jump_foot_deg: float = 60.0
 ## 점프 자세로 바뀌고 착지해서 풀리는 빠르기
 @export var jump_blend_speed: float = 12.0
+## Fighter 없이 리그만 띄워놓고(궁극기 컷인 등) 걷기/달리기를 강제로 돌리고 싶을 때 쓴다.
+## 0이면 가만히 서 있고 1이면 최고 속도로 달리는 것으로 친다. 음수(기본)면 예전처럼 가만히 서 있는다.
+## Fighter가 있으면 이 값은 무시된다 — 인게임 동작은 그대로다
+@export var manual_speed_ratio: float = -1.0
 ## 점프하는 순간 몸이 세로로 늘어나는 정도 (x가 작을수록 홀쭉, y가 클수록 길쭉). 세로 약 1.33배
 @export var jump_stretch: Vector2 = Vector2(0.75, 1.33)
 ## 착지하는 순간 몸이 납작해지는 정도 (x가 클수록 넓적, y가 작을수록 납작)
@@ -264,6 +268,9 @@ func _process(delta: float) -> void:
 		var max_speed: float = _fighter.stats.move_speed * _fighter.move_speed_multiplier
 		if max_speed > 0.0:
 			speed_ratio = clampf(absf(_fighter.velocity.x) / max_speed, 0.0, 1.0)
+	elif manual_speed_ratio >= 0.0:
+		# Fighter 없이 띄운 경우 — 바깥에서 넣어준 값으로 걷기 동작을 돌린다
+		speed_ratio = clampf(manual_speed_ratio, 0.0, 1.0)
 
 	# 숨쉬기 위상은 항상 진행 (가만히 서 있을 때만 화면에 반영된다)
 	_breathe_phase += delta * breathe_speed
