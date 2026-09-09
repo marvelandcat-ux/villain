@@ -57,6 +57,13 @@ position = Vector2(717, 312)
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("3_bg")
 
+[node name="BackgroundSubway" type="Sprite2D" parent="." unique_id=1822898172]
+visible = false
+material = SubResource("ShaderMaterial_bgblur")
+position = Vector2(955, 312)
+scale = Vector2(0.86, 0.86)
+texture = ExtResource("13_subbg")
+
 [node name="BackgroundCatMom" type="Sprite2D" parent="." unique_id=793572797]
 visible = false
 material = SubResource("ShaderMaterial_bgblur")
@@ -64,13 +71,6 @@ position = Vector2(721, 312)
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("11_catbg")
 flip_h = true
-
-[node name="BackgroundSubway" type="Sprite2D" parent="." unique_id=1822898172]
-visible = false
-material = SubResource("ShaderMaterial_bgblur")
-position = Vector2(955, 312)
-scale = Vector2(0.86, 0.86)
-texture = ExtResource("13_subbg")
 
 [node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
 layout_mode = 0
@@ -96,15 +96,15 @@ scale = Vector2(0.5137, 0.5137)
 position = Vector2(657.64, 124)
 scale = Vector2(0.46, 0.46)
 
-[node name="IllustCatMom" parent="." unique_id=1897642658 instance=ExtResource("10_catmom")]
-visible = false
-position = Vector2(641, 19.37)
-scale = Vector2(0.502, 0.502)
-
 [node name="IllustSubway" parent="." unique_id=1547897417 instance=ExtResource("12_subway")]
 visible = false
 position = Vector2(657, -23)
 scale = Vector2(0.538, 0.538)
+
+[node name="IllustCatMom" parent="." unique_id=1897642658 instance=ExtResource("10_catmom")]
+visible = false
+position = Vector2(641, 19.37)
+scale = Vector2(0.502, 0.502)
 
 [node name="TitleLabel" type="Label" parent="." unique_id=1857719501]
 layout_mode = 0
