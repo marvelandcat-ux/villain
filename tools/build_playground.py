@@ -76,25 +76,73 @@ CLOUDS = {
 }
 
 # --- 배경 아파트 단지 ---
-# (중심 x, 반폭, 지붕 y, 벽색, 창색, haze)
+# 그림 종류 -> (ExtResource id, 알파 bbox x, y, w, h)
+APT_SPRITES = {
+    "a1": ("19", 51, 38, 992, 1375),    # 아파트1동.png — 넓고 낮은 10층, "1동" 간판·현관 있음
+    "a2": ("20", 282, 9, 468, 1513),    # 아파트2동.png — 제일 좁고 높은 20층
+    "a3": ("21", 192, 12, 641, 1487),   # 아파트3동.png — 중간, 세로 줄무늬
+}
+# (그림 종류, 중심 x, 화면상 높이, haze)
 #
 # **지붕 높이를 구름 발판과 안 겹치게 고른 것이 핵심이다.** 구름 발판은 흰색 + 검은 테두리라
 # 밝은 베이지 벽면 위에 오면 대비가 죽는다. 그래서 구름과 가로로 겹치는 동은 지붕을 구름 **아래**로
-# 낮추고, 구름보다 높이 솟는 동은 구름이 없는 바깥쪽(|x| > 750)에만 뒀다.
+# 낮추고, 구름보다 높이 솟는 동은 구름이 없는 바깥쪽에만 뒀다. 아래 `check_apartments()`가 매번 검산한다.
 #   중간 구름: 왼쪽 x -425~-83 / 오른쪽 x 167~509, 세로 y -256~-167
 #   꼭대기 구름: x -155~200, 세로 y -402~-340
+#
+# **`a1`은 딱 한 동만 쓴다.** 그림에 "1동" 간판이 박혀 있어서 여러 번 쓰면 단지 안에 1동이 세 채가 된다.
+# 나머지는 간판 없는 `a2`/`a3`로 채운다
 APARTMENTS = [
-    (-1090, 185, -480, "0.80, 0.82, 0.86", "0.68, 0.75, 0.82", 0.34),
-    (-840, 150, -350, "0.88, 0.85, 0.78", "0.60, 0.70, 0.78", 0.22),
-    (-600, 145, -255, "0.84, 0.86, 0.87", "0.58, 0.69, 0.77", 0.17),
-    (-300, 160, -150, "0.90, 0.87, 0.79", "0.62, 0.72, 0.79", 0.10),   # 중간 구름L 아래
-    (20, 175, -172, "0.86, 0.83, 0.77", "0.57, 0.68, 0.76", 0.10),     # 꼭대기 구름 훨씬 아래
-    (330, 165, -148, "0.89, 0.88, 0.84", "0.60, 0.71, 0.78", 0.10),    # 중간 구름R 아래
-    (650, 140, -265, "0.85, 0.81, 0.74", "0.58, 0.69, 0.77", 0.16),
-    (940, 150, -390, "0.83, 0.85, 0.88", "0.62, 0.72, 0.80", 0.24),
-    (1180, 180, -470, "0.80, 0.81, 0.85", "0.66, 0.74, 0.81", 0.33),
+    ("a2", -1120, 700, 0.30),
+    ("a3", -860, 560, 0.24),
+    ("a3", -580, 430, 0.16),
+    ("a2", -300, 410, 0.10),   # 중간 구름L 아래
+    ("a1", 40, 400, 0.10),     # 꼭대기 구름 아래 — 유일한 "1동"
+    ("a3", 340, 420, 0.10),    # 중간 구름R 아래
+    ("a2", 700, 500, 0.16),
+    ("a3", 990, 660, 0.24),
+    ("a2", 1230, 580, 0.30),
 ]
 SKY_COLOR = "0.63, 0.81, 0.95, 1"
+## 구름 발판이 차지하는 가로/세로 범위 (검산용)
+CLOUD_ZONES = [(-425.0, -83.0, -167.0), (167.0, 509.0, -167.0), (-155.0, 200.0, -340.0)]
+
+# --- 울타리 그림(`덜촘촘한울타리.png`) ---
+## **이음매가 맞는 한 칸**. 그림 안에 기둥이 5개 있고 중심이 40 / 554 / 1085 / 1615 / 2136인데,
+## **양 끝 기둥은 캔버스에 잘려 있어서**(폭 71, 안쪽 기둥은 73) 중심값을 믿을 수가 없다 —
+## 그래서 온전히 찍힌 **안쪽 기둥 554와 1615**를 기준으로 자른다. 그 사이가 1061 = 530.5 x 2칸이다.
+## 양 끝이 기둥 한가운데를 지나므로, 이어붙이면 반쪽 + 반쪽이 온전한 기둥 하나가 된다.
+## **캔버스 통째로(0~2171) 붙이면 안 된다** — 잘린 기둥끼리 만나서 간격이 틀어진다
+FENCE_REGION = (554, 54, 1061, 588)
+## 화면에 그려질 울타리 높이(px). 캐릭터 키가 60px이라 그보다 조금 높게 잡아야 울타리로 읽힌다
+FENCE_H = 84.0
+## 울타리 아랫변이 놓일 y (지면과 같게)
+FENCE_BOTTOM = GROUND
+## 좌우로 이만큼까지 깔아둔다. 벽이 ±960이지만 카메라가 더 바깥까지 비출 수 있어 넉넉히 잡는다
+FENCE_SPAN = 1360.0
+
+def check_apartments():
+    """아파트 지붕이 구름 발판을 가리지 않는지 검산한다.
+
+    구름은 흰색 + 검은 테두리라 밝은 벽면 위에 오면 테두리만 남고 뭉개진다.
+    높이를 손으로 고르는 값이라, 한 번 어긋나면 눈으로는 잘 안 보이면서 발판만 안 읽히게 된다
+    """
+    bad = []
+    for kind, cx, vis_h, _haze in APARTMENTS:
+        _id, _bx, _by, bw, bh = APT_SPRITES[kind]
+        half = bw * (vis_h / bh) * 0.5
+        roof = GROUND - vis_h
+        for zx0, zx1, floor_y in CLOUD_ZONES:
+            if cx - half < zx1 and cx + half > zx0 and roof < floor_y:
+                bad.append("  x=%g(폭 %.0f) 지붕 %.0f 이 구름구역 %g~%g(아랫변 %g)을 침범"
+                           % (cx, half * 2, roof, zx0, zx1, floor_y))
+    if bad:
+        print("!! 아파트가 구름 발판을 가림:")
+        for line in bad:
+            print(line)
+    else:
+        print("  아파트 9동 전부 구름 발판을 안 가림 (검산 통과)")
+
 
 subs, plats = [], []
 
@@ -145,14 +193,23 @@ header = (
     '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/구름3.png" id="14"]\n'
     '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/모래사장 (2).png" id="15"]\n'
     '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/정자.png" id="16"]\n'
-    '[ext_resource type="Shader" path="res://maps/apartment.gdshader" id="17"]\n\n')
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/덜촘촘한울타리.png" id="18"]\n'
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트1동.png" id="19"]\n'
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트2동.png" id="20"]\n'
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트3동.png" id="21"]\n\n')
 
 subs.append('[sub_resource type="RectangleShape2D" id="Shape_ground"]\nsize = Vector2(%g, 40)\n' % (HALF * 2))
 subs.append('[sub_resource type="RectangleShape2D" id="Shape_wall"]\nsize = Vector2(40, 400)\n')
 subs.append('[sub_resource type="RectangleShape2D" id="Shape_sand"]\nsize = Vector2(220, 40)\n')
 subs.append('[sub_resource type="RectangleShape2D" id="Shape_crown"]\nsize = Vector2(56, 34)\n')
 
-b = '[node name="Playground" type="Node2D"]\nscript = ExtResource("1")\nstage_width = %g\n\n' % (HALF * 2)
+# texture_filter = 4 는 "Linear with Mipmaps".
+# **이걸 안 켜면 그림에 밉맵을 만들어놔도 안 쓴다** — 캔버스 기본 필터는 밉맵을 안 보기 때문이다.
+# 이 맵의 그림은 전부 1000~2000px 원본을 84~700px로 줄여 그려서(울타리는 0.14배!),
+# 밉맵 없이는 카메라가 조금만 움직여도 철망·창문 격자가 프레임마다 지글거린다.
+# 루트에 걸어두면 CanvasItem 자식들이 전부 물려받는다(HUD·컷인은 CanvasLayer라 안 물려받고 기본값 유지)
+b = ('[node name="Playground" type="Node2D"]\ntexture_filter = 4\n'
+     'script = ExtResource("1")\nstage_width = %g\n\n' % (HALF * 2))
 b += '[node name="DecoSky" type="Node2D" parent="."]\nz_index = -10\n\n'
 b += pnode("Sky", "DecoSky", "0.63, 0.81, 0.95, 1", rect(-2200, -900, 2200, 285))
 b += pnode("Dirt", "DecoSky", "0.42, 0.3, 0.19, 1", rect(-2200, 280, 2200, 900))
@@ -161,41 +218,26 @@ b += pnode("Sun", "DecoSky", "1, 0.93, 0.55, 1", ellipse(760, -560, 44, 44, 10))
 # 아파트는 하늘(-10)보다 앞, 구름·나무·울타리(-8)보다 뒤.
 # 장식 구름이 아파트 앞으로 지나가야 "구름이 더 멀리 있다"가 아니라 "아파트가 저 멀리 서 있다"로 읽힌다
 b += '[node name="DecoCity" type="Node2D" parent="."]\nz_index = -9\n\n'
-for i, (cx, half, roof, wall, win, haze) in enumerate(APARTMENTS):
-    w, h = half * 2.0, GROUND - roof
-    subs.append('[sub_resource type="ShaderMaterial" id="Mat_apt%d"]\nshader = ExtResource("17")\n'
-                'shader_parameter/wall_color = Color(%s, 1)\n'
-                'shader_parameter/window_color = Color(%s, 1)\n'
-                'shader_parameter/ledge_color = Color(%s, 1)\n'
-                'shader_parameter/column_w_px = %g\n'
-                'shader_parameter/floor_h_px = 46.0\n'
-                'shader_parameter/window_fill = Vector2(0.52, 0.42)\n'
-                'shader_parameter/window_center_y = 0.44\n'
-                'shader_parameter/ledge_h = 0.13\n'
-                'shader_parameter/body_size = Vector2(%g, %g)\n'
-                'shader_parameter/side_shade_w = 0.1\n'
-                'shader_parameter/side_shade = 0.9\n'
-                'shader_parameter/haze = %g\n'
-                'shader_parameter/haze_color = Color(%s)\n'
-                % (i, wall, win, wall, w / round(w / 62.0), w, h, haze, SKY_COLOR))
-    # 폴리곤 로컬 좌표를 (0,0)~(w,h)로 두면 셰이더가 받는 좌표가 곧 "지붕 왼쪽 위에서 몇 px"이 된다
-    b += ('[node name="Tower%d" type="Polygon2D" parent="DecoCity"]\nposition = Vector2(%g, %g)\n'
-          'material = SubResource("Mat_apt%d")\ncolor = Color(1, 1, 1, 1)\npolygon = %s\n\n'
-          % (i, cx - half, roof, i, rect(0, 0, w, h)))
-    # 옥상 슬래브 + 물탱크. 이건 동마다 하나씩이라 폴리곤으로 찍어도 부담이 없다
-    slab = "%s, 1" % wall
-    b += pnode("Roof%d" % i, "DecoCity", slab, rect(cx - half - 9, roof - 11, cx + half + 9, roof))
-    b += pnode("Tank%d" % i, "DecoCity", slab, rect(cx - 34, roof - 40, cx + 26, roof - 11))
+for i, (kind, cx, vis_h, haze) in enumerate(APARTMENTS):
+    ext_id, bx, by, bw, bh = APT_SPRITES[kind]
+    sc = vis_h / bh
+    vis_w = bw * sc
+    roof = GROUND - vis_h
+    b += ('[node name="Tower%d" type="Sprite2D" parent="DecoCity"]\nposition = Vector2(%g, %.1f)\n'
+          'scale = Vector2(%.6f, %.6f)\ntexture = ExtResource("%s")\n'
+          'region_enabled = true\nregion_rect = Rect2(%g, %g, %g, %g)\n\n'
+          % (i, cx, roof + vis_h * 0.5, sc, sc, ext_id, bx, by, bw, bh))
+    # **원경 흐리기.** modulate는 곱셈이라 그림을 밝게(하늘색 쪽으로) 못 만든다.
+    # 대신 하늘과 **똑같은 색** 판을 그 동 위에만 덮는다 — 하늘 위에서는 같은 색이라 안 보이고,
+    # 건물 위에서만 색이 옅어져서 멀리 있는 것처럼 물러난다
+    if haze > 0.0:
+        b += pnode("Haze%d" % i, "DecoCity", "%s, %g" % (SKY_COLOR.rsplit(",", 1)[0], haze),
+                   rect(cx - vis_w * 0.5, roof, cx + vis_w * 0.5, GROUND))
 
-# 단지 화단(생울타리). **흰 울타리를 살리려고 넣은 층이다** — 아파트 벽이 밝은 베이지라
-# 그 위에 흰 울타리를 얹으면 그냥 묻혀서 안 보인다. 사이에 어두운 초록 띠를 깔아 대비를 만들고,
-# 겸사겸사 동 밑동을 가려서 "건물이 저 뒤에 서 있다"는 깊이도 생긴다
-j, x = 0, -1260
-while x < 1260:
-    b += pnode("Hedge%d" % j, "DecoCity", "0.20, 0.40, 0.23, 1", ellipse(x, 250, 64, 46, 12))
-    x += 88
-    j += 1
-b += pnode("HedgeBase", "DecoCity", "0.20, 0.40, 0.23, 1", rect(-1300, 248, 1300, 285))
+# **생울타리는 2026-09-10에 뺐다.** 원래는 흰 울타리가 밝은 아파트 벽에 묻혀서, 사이에 어두운 초록 띠를
+# 깔아 대비를 만들려고 넣은 층이었다. 그런데 울타리를 초록 철망 그림(`울타리.png`)으로 바꾸고 나니
+# **철망이 뚫려 있어서 뒤의 생울타리가 그대로 비쳐, 울타리 전체가 초록 판때기로 보였다.**
+# 이제 울타리 자체가 어두운 초록이라 대비도 필요 없다 — 철망 너머로 아파트가 보이는 게 맞는 그림이다
 
 b += '[node name="DecoBack" type="Node2D" parent="."]\nz_index = -8\n\n'
 for i, (cx, cy, sc) in enumerate([(-700, -520, 0.9), (-330, -620, 0.7), (430, -560, 1.0), (830, -430, 0.65)]):
@@ -207,12 +249,18 @@ for i, x in enumerate([-934, -868, 880, 940]):
     leaf = "0.29, 0.55, 0.27, 1" if i % 2 == 0 else "0.34, 0.62, 0.31, 1"
     for j, (dx, dy, r) in enumerate([(-34, -6, 44), (0, -46, 50), (34, -2, 42)]):
         b += pnode("TreeLeaf%d_%d" % (i, j), "DecoBack", leaf, ellipse(x + dx, -150 + dy, r, r, 12))
-b += pnode("FenceRailTop", "DecoBack", "0.86, 0.88, 0.84, 1", rect(-940, 214, 940, 224))
-b += pnode("FenceRailBottom", "DecoBack", "0.86, 0.88, 0.84, 1", rect(-940, 250, 940, 260))
-i, x = 0, -936
-while x < 940:
-    b += pnode("FencePost%d" % i, "DecoBack", "0.86, 0.88, 0.84, 1", rect(x, 204, x + 11, 280))
-    x += 58
+# 초록 철망 울타리. 한 칸(기둥 4칸)씩 잘라 옆으로 이어붙인다
+frx, fry, frw, frh = FENCE_REGION
+fence_scale = FENCE_H / frh
+tile_w = frw * fence_scale
+i, x = 0, -FENCE_SPAN
+while x < FENCE_SPAN:
+    b += ('[node name="FenceTile%d" type="Sprite2D" parent="DecoBack"]\nposition = Vector2(%.2f, %.2f)\n'
+          'scale = Vector2(%.6f, %.6f)\ntexture = ExtResource("18")\n'
+          'region_enabled = true\nregion_rect = Rect2(%g, %g, %g, %g)\n\n'
+          % (i, x + tile_w * 0.5, FENCE_BOTTOM - FENCE_H * 0.5,
+             fence_scale, fence_scale, frx, fry, frw, frh))
+    x += tile_w
     i += 1
 
 def pavilion_sprites(parent, cx):
@@ -320,7 +368,8 @@ b += ('[node name="PlayerSpawn1" type="Marker2D" parent="."]\nposition = Vector2
       '[node name="CombatHUD" parent="." instance=ExtResource("2")]\n\n'
       '[node name="CrownCutIn" parent="." instance=ExtResource("10")]\n')
 
-header = header.replace("SUBCOUNT", str(17 + len(subs)))
+check_apartments()
+header = header.replace("SUBCOUNT", str(21 + len(subs)))
 io.open("maps/Playground.tscn", "w", encoding="utf-8").write(header + "".join(subs) + "\n" + b)
 print("OK Playground.tscn rebuilt")
 print("  roof y=%g x=%g..%g / mid cloud y=%g / top cloud y=%g" % (
