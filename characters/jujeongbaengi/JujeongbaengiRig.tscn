@@ -7,12 +7,16 @@
 [ext_resource type="Texture2D" uid="uid://hkpwwfwymm6i" path="res://sprite/주정뱅이/몸/주정뱅이 머리 (1).png" id="5_head"]
 [ext_resource type="Texture2D" uid="uid://dyqubq5eqhwo2" path="res://sprite/주정뱅이/몸/술주정뱅이 토하는 버전 (2).png" id="6_vomit"]
 [ext_resource type="Texture2D" uid="uid://31maiebxb81g" path="res://sprite/주정뱅이/몸/주정뱅이 머리 술 머금은 (2).png" id="7_drunk"]
+[ext_resource type="Texture2D" uid="uid://dyaovekhbgxoh" path="res://sprite/주정뱅이/몸/주정뱅이 피격.png" id="8_hurtface"]
+[ext_resource type="Texture2D" uid="uid://bd2f5r2ngmf8c" path="res://sprite/주정뱅이/몸/주정뱅이 힘듬.png" id="9_wearyface"]
 
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
 vomit_head_texture = ExtResource("6_vomit")
 vomit_head_scale = Vector2(0.05, 0.05)
 drunk_head_texture = ExtResource("7_drunk")
 drunk_head_scale = Vector2(0.051, 0.051)
+hurt_head_texture = ExtResource("8_hurtface")
+weary_head_texture = ExtResource("9_wearyface")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")
