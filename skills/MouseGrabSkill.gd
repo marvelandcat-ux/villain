@@ -23,8 +23,12 @@ extends Skill
 ## 손을 떠날 때 위로 뜨는 초기 속도(px/초). 0으로 두면 예전처럼 수평으로 곧게 날아간다
 @export var throw_lift: float = 260.0
 ## 날아가는 마우스에 걸리는 중력(px/초^2). 이 값 때문에 떴다가 떨어지는 포물선이 된다.
-## 기본값 260/900은 최대 사거리(400px)에 닿는 순간 마우스가 던진 높이로 다시 내려오도록 잡은 값이다
-@export var throw_gravity: float = 900.0
+## **키울수록 무겁게 뚝 떨어지는 대신 바닥에 먼저 닿아서 실제 사거리가 짧아진다** —
+## 1500이면 max_range(400px)에 닿기 전인 약 296px 지점에서 발밑 높이에 도달해 되감기 시작한다.
+## 사거리를 되찾고 싶으면 throw_speed를 올려서 같은 시간에 더 멀리 가게 할 것
+@export var throw_gravity: float = 1500.0
+## 던진 사람의 중심에서 이만큼 아래로 떨어지면 땅에 닿은 것으로 보고 되감는다(px). 캐릭터 발밑 높이(30)
+@export var floor_drop: float = 30.0
 ## 최대 비행 시간(초). 사거리보다 이쪽이 먼저 끝나면 그 자리에서 되감기 시작한다
 @export var flight_time: float = 0.75
 ## 빗나간 마우스가 손으로 되감기는 속도(px/초). 던지는 속도보다 빨라야 질질 끌리지 않는다
@@ -42,6 +46,7 @@ func _execute(fighter: Fighter) -> void:
 	grab.windup_time = throw_windup
 	grab.throw_lift = throw_lift
 	grab.throw_gravity = throw_gravity
+	grab.floor_drop = floor_drop
 	grab.flight_time = flight_time
 	grab.return_speed = return_speed
 	fighter.get_parent().add_child(grab)

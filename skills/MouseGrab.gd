@@ -45,12 +45,16 @@ var coil_width: float = 50.0
 var windup_time: float = 0.14
 ## 손을 떠날 때 위로 뜨는 초기 속도(px/초). 0이면 예전처럼 수평으로 곧게 날아간다
 var throw_lift: float = 260.0
-## 날아가는 마우스에 걸리는 중력(px/초^2). 이것 때문에 위로 떴다가 떨어지는 포물선이 된다
-var throw_gravity: float = 900.0
+## 날아가는 마우스에 걸리는 중력(px/초^2). 이것 때문에 위로 떴다가 떨어지는 포물선이 된다.
+## 키울수록 무겁게 뚝 떨어지고, 그만큼 바닥에 먼저 닿아서 실제로 날아가는 거리가 짧아진다
+var throw_gravity: float = 1500.0
 ## 되감을 때 손 쪽으로 당겨지는 속도(px/초)
 var return_speed: float = 900.0
 ## 최대 비행 시간(초). 사거리보다 이쪽이 먼저 끝나면 그때 되감기 시작한다
 var flight_time: float = 0.75
+## 던진 사람의 중심에서 이만큼 아래로 떨어지면 "땅에 닿았다"고 보고 그 자리에서 되감기 시작한다(px).
+## 캐릭터 캡슐 반높이(30)라 발밑 높이다 — 중력을 키워도 마우스가 바닥을 뚫고 내려가지 않는다
+var floor_drop: float = 30.0
 
 var _source: Fighter
 var _opponent: Fighter
@@ -69,6 +73,8 @@ var _hand_offset: Vector2 = Vector2(22, -6)
 var _mouse_pos: Vector2
 ## 날아가는 동안의 속도 — 매 프레임 중력이 더해져서 포물선이 된다
 var _mouse_vel: Vector2 = Vector2.ZERO
+## 던진 순간에 계산해둔 바닥선(월드 y). 점프 중에 던졌으면 그때 발밑 높이가 기준이 된다
+var _floor_y: float = 0.0
 var _state: int = STATE_WINDUP
 ## 젖히는 단계에 남은 시간(초)
 var _windup_left: float = 0.0
@@ -105,6 +111,7 @@ func _start_fly() -> void:
 	_state = STATE_FLY
 	_fly_left = maxf(flight_time, 0.05)
 	_mouse_vel = Vector2(_dir * _throw_speed, -throw_lift)
+	_floor_y = _source.global_position.y + floor_drop
 
 ## 유선이 시작되는 지점 — 리그가 있으면 실제 오른손을 따라가고, 없으면 고정 좌표로 대충 맞춘다
 func _hand_world() -> Vector2:
@@ -158,8 +165,12 @@ func _physics_process(delta: float) -> void:
 		_fly_left = maxf(_fly_left - delta, 0.0)
 		if _opponent and is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < _catch_radius:
 			_grab()
-		elif is_zero_approx(_fly_left) or absf(_mouse_pos.x - hand.x) >= _max_range:
-			_start_return()  # 빗나감 → 그 자리에서 손으로 되감는다
+		elif is_zero_approx(_fly_left) or absf(_mouse_pos.x - hand.x) >= _max_range or _mouse_pos.y >= _floor_y:
+			# 시간·사거리·바닥 중 뭐든 먼저 걸리면 빗나간 것으로 보고 그 자리에서 되감는다.
+			# **바닥 조건이 없으면 중력을 키웠을 때 마우스가 땅 밑으로 가라앉는다** — 사거리(400px)까지
+			# 날아가는 동안 1500이면 발밑보다 훨씬 아래로 내려가기 때문
+			_mouse_pos.y = minf(_mouse_pos.y, _floor_y)
+			_start_return()
 	elif _state == STATE_REEL:
 		# 잡은 상대를 끌어온다 (케이블이 상대 몸에 감겨 있다)
 		if not (_opponent and is_instance_valid(_opponent)):
