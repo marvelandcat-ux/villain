@@ -24,4 +24,5 @@ func _shockwave(source: Fighter) -> void:
 		if f == source or not is_instance_valid(f):
 			continue
 		if f.global_position.distance_to(source.global_position) <= radius:
-			f.take_damage(damage, Vector2(0, -150))
+			# 맵 기믹이라 방어로 못 막는다 (마지막 인자 ignore_guard)
+			f.take_damage(damage, Vector2(0, -150), -1.0, true)

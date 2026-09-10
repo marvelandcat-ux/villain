@@ -6,6 +6,9 @@ extends Node2D
 
 ## 이 데미지 이상이면 숫자가 가장 크고 빨갛게 표시된다 (그 미만은 데미지에 비례해 작고 흰색 쪽)
 @export var big_hit_damage: float = 25.0
+## 방어로 막았을 때 뜨는 "BLOCK" 글자 크기·색 (데미지 숫자와 달리 세기에 안 비례한다)
+@export var block_font_size: int = 28
+@export var block_color: Color = Color(0.55, 0.8, 1.0)
 ## 떠오르는 높이(px)와 전체 지속시간(초)
 @export var rise_height: float = 34.0
 @export var duration: float = 0.6
@@ -34,6 +37,19 @@ func setup(damage: int, combo: int = 0) -> void:
 	else:
 		_combo.visible = false
 
+	_animate()
+
+## 방어로 막혔을 때 — 숫자 대신 "BLOCK"을 띄운다. 실제로 깎인 HP가 0이라 숫자를 띄우면
+## 막았는데도 데미지가 들어간 것처럼 보인다. 크기·색은 데미지와 무관하게 고정이다
+func setup_block() -> void:
+	z_index = 100
+	for lbl in [_damage, _combo]:
+		lbl.add_theme_constant_override("outline_size", 6)
+		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	_damage.text = "BLOCK"
+	_damage.add_theme_font_size_override("font_size", block_font_size)
+	_damage.add_theme_color_override("font_color", block_color)
+	_combo.visible = false
 	_animate()
 
 func _animate() -> void:

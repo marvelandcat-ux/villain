@@ -74,34 +74,57 @@ func _try_hit(area: Area2D) -> bool:
 	if not (area is Hurtbox):
 		return false
 	var kb: Vector2 = _compute_knockback(area)
+	# 이 한 방이 방어에 막히는지 먼저 판정해서 팝업·무기 깜빡임에 같이 쓴다
+	var blocked: bool = _is_blocked_by_guard(area)
 	if not area.take_hit(damage, kb, source_fighter, pop_override):
 		return false
-	_notify_blocked_by_guard(area)
+	if blocked:
+		_notify_blocked_by_guard()
 	_spawn_spark(area.global_position, kb)
 	if debris_scene != null:
 		_spawn_debris(area.global_position)
 	_shake_camera()
-	# 피격 지점에 데미지 숫자(+콤보) 팝업
-	var combo: int = 0
 	var victim: Node = area.fighter
-	if victim and victim.has_method("get_combo_count"):
-		combo = victim.get_combo_count()
-	_spawn_damage_number(area.global_position, damage, combo)
+	if blocked:
+		# 막았으면 HP가 하나도 안 깎였으므로 숫자 대신 "BLOCK"을 띄운다
+		_spawn_block_popup(area.global_position)
+	else:
+		# 피격 지점에 데미지 숫자(+콤보) 팝업
+		var combo: int = 0
+		if victim and victim.has_method("get_combo_count"):
+			combo = victim.get_combo_count()
+		_spawn_damage_number(area.global_position, damage, combo)
 	connected.emit(victim)
 	return true
 
-## 맞은 쪽이 방어 중이었으면 때린 쪽에게 알린다 — 손에 든 무기가 잠깐 빨갛게 깜빡인다.
-## **기본공격이 막혔을 때만이라** 이 히트박스가 공격자의 basic_attack 소속인지 확인한다
-## (스킬 히트박스나 주인 없는 맵 기믹은 그냥 넘어간다)
-func _notify_blocked_by_guard(hurtbox: Hurtbox) -> void:
-	if not _has_source or not is_instance_valid(_source_fighter):
-		return
+## 이 한 방이 상대 방어에 막히는지. **주인 없는 히트박스(맵 기믹)는 방어를 뚫으므로 false다** —
+## Hurtbox.take_hit이 source_fighter가 null이면 ignore_guard로 넘기는 것과 같은 규칙이라야
+## "BLOCK이 떴는데 HP가 깎였다" 같은 어긋남이 안 생긴다
+func _is_blocked_by_guard(hurtbox: Hurtbox) -> bool:
+	if not _has_source:
+		return false
 	var victim: Fighter = hurtbox.fighter
-	if victim == null or not victim.is_guarding:
+	return victim != null and victim.is_guarding
+
+## 막혔을 때 때린 쪽에게 알린다 — 때린 손과 거기 든 무기가 잠깐 빨갛게 깜빡이고
+## 그 동안 기본공격이 안 나간다. **기본공격이 막혔을 때만이라** 이 히트박스가
+## 공격자의 basic_attack 소속인지 확인한다 (스킬 히트박스는 그냥 넘어간다)
+func _notify_blocked_by_guard() -> void:
+	if not is_instance_valid(_source_fighter):
 		return
 	if _source_fighter.basic_attack == null or get_parent() != _source_fighter.basic_attack:
 		return
 	_source_fighter.play_weapon_blocked()
+
+## 막은 지점에 "BLOCK" 팝업을 띄운다 (데미지 숫자와 같은 장면을 다른 모드로 쓴다)
+func _spawn_block_popup(pos: Vector2) -> void:
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	var popup: Node2D = load("res://combat/DamagePopup.tscn").instantiate()
+	scene_root.add_child(popup)
+	popup.global_position = pos
+	popup.setup_block()
 
 ## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)
 func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:

@@ -43,6 +43,9 @@ const DASH_TRAIL_INTERVAL: float = 0.04
 const DEFAULT_GUARD_DURATION: float = 1.2
 ## 방어가 끝나고 다음 방어까지 기다리는 시간(초)
 const DEFAULT_GUARD_COOLDOWN: float = 5.0
+## 기본공격이 상대 방어에 막혔을 때 기본공격이 잠기는 시간(초).
+## 무기가 빨갛게 깜빡이는 시간과 같은 값이라 "빨간 동안엔 못 때린다"가 눈으로 읽힌다
+const DEFAULT_BLOCKED_ATTACK_LOCK: float = 3.0
 ## 방어할 때 몸을 감싸는 원형 보호막
 const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
 
@@ -64,6 +67,7 @@ static var dash_duration: float = DEFAULT_DASH_DURATION
 static var dash_cooldown: float = DEFAULT_DASH_COOLDOWN
 static var guard_duration: float = DEFAULT_GUARD_DURATION
 static var guard_cooldown: float = DEFAULT_GUARD_COOLDOWN
+static var blocked_attack_lock: float = DEFAULT_BLOCKED_ATTACK_LOCK
 
 var current_hp: int = 0
 var facing: float = 1.0
@@ -79,6 +83,8 @@ var is_guarding: bool = false
 ## 방어가 유지되는 남은 시간 / 다음 방어까지 남은 쿨타임
 var _guard_time: float = 0.0
 var _guard_cooldown_left: float = 0.0
+## 기본공격이 막혀서 기본공격이 잠겨 있는 남은 시간(초)
+var _blocked_attack_left: float = 0.0
 ## 방어 중에 몸을 감싸는 원형 보호막 (처음 방어할 때 만든다).
 ## 타입을 안 붙인 이유 — GuardShield는 preload로 가져오는 새 class_name이라, 타입을 붙이면
 ## 전역 클래스 캐시가 갱신되기 전에는 set_active()를 못 찾는다고 파싱 에러가 난다
@@ -212,12 +218,13 @@ const COMBO_WINDOW := 1.5
 ## is_invincible이 true면 아예 무시한다
 ## pop_override: 위로 띄우는 힘(px/s)을 직접 지정한다. 음수(기본)면 데미지에 비례한 기본 팝업을 쓰고,
 ## 0이면 전혀 안 띄운다(지상 유지 — 콤보 앞 타격이 상대를 붙잡아두게). 콤보 마무리만 기본 팝업으로 크게 날린다
-func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
+func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0, ignore_guard: bool = false) -> void:
 	if is_invincible:
 		return
-	# 방어 중엔 어떤 공격도 통하지 않는다 — 데미지도 넉백도 없다(무적과 같은 취급).
+	# 방어 중엔 캐릭터의 공격이 통하지 않는다 — 데미지도 넉백도 없다(무적과 같은 취급).
+	# **단 맵 기믹(지나가는 열차·화분 등)은 방어로 못 막는다** — ignore_guard로 그냥 통과한다.
 	# 막아낸 양은 얼마나 잘 막았는지 볼 수 있게 누적해둔다
-	if is_guarding:
+	if is_guarding and not ignore_guard:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + amount
 		return
 	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction)))
@@ -411,12 +418,19 @@ func cancel_guard(refund: bool = false) -> void:
 		_shield.set_active(false)
 	_set_visual_guard(false)
 
-## 내 기본공격이 상대 방어에 막혔을 때 — 때린 오른손과 거기 든 무기를 잠깐 빨갛게 깜빡이게 한다.
-## 그 연출이 없는 비주얼(임시 사각형)이면 그냥 넘어간다. Hitbox가 막힌 걸 확인하고 부른다
+## 내 기본공격이 상대 방어에 막혔을 때 — blocked_attack_lock(3초) 동안 기본공격이 잠기고,
+## 때린 오른손과 거기 든 무기가 같은 시간만큼 빨갛게 깜빡인다("빨간 동안엔 못 때린다").
+## **잠금 시간을 몸에 넘겨줘서** 인스펙터에서 한쪽만 고쳐 둘이 어긋나는 일이 없게 한다.
+## 그 연출이 없는 비주얼(임시 사각형)이면 잠금만 걸리고 그림은 안 바뀐다
 func play_weapon_blocked() -> void:
+	_blocked_attack_left = blocked_attack_lock
 	var visual: Node = get_node_or_null("Visual")
 	if visual and visual.has_method("play_weapon_blocked"):
-		visual.play_weapon_blocked()
+		visual.play_weapon_blocked(blocked_attack_lock)
+
+## 지금 기본공격이 막혀서 잠겨 있는지 (방어에 막힌 뒤 blocked_attack_lock 동안)
+func is_basic_attack_locked() -> bool:
+	return _blocked_attack_left > 0.0
 
 ## 몸(BodyRig)에 막는 자세를 켜고 끈다. 그 메서드가 없는 비주얼이면 그냥 넘어간다
 func _set_visual_guard(on: bool) -> void:
@@ -619,7 +633,8 @@ func fire_ultimate_now() -> void:
 ## 기본공격은 스킬 클래시(연타 미니게임)에 태우지 않는다 — 스킬1/2/궁극기보다 훨씬 자주 나가는 잽이라,
 ## 여기까지 클래시로 걸리면 마주칠 때마다 화면이 멈추고 연타 게임이 뜨는 꼴이 된다. 항상 바로 나간다
 func use_basic_attack() -> void:
-	if basic_attack == null or is_feared or is_grabbed or is_guarding or is_busy() or not basic_attack.can_use():
+	# 방어에 막힌 직후엔 무기가 빨간 동안(blocked_attack_lock) 기본공격이 안 나간다
+	if basic_attack == null or is_feared or is_grabbed or is_guarding or is_busy() or is_basic_attack_locked() or not basic_attack.can_use():
 		return
 	_fire_basic_attack()
 
@@ -701,6 +716,9 @@ func apply_physics(delta: float) -> void:
 		velocity.y += g * delta
 	# 방어 — 정해진 시간이 지나면 저절로 꺼지고 그때부터 쿨타임이 돈다.
 	# 켜져 있는 동안엔 제자리에 버틴다(이동·점프·공격은 각 함수에서 막는다)
+	# 방어에 막혀서 잠긴 기본공격 — 시간이 지나면 저절로 풀린다(무기 깜빡임도 같이 끝난다)
+	if _blocked_attack_left > 0.0:
+		_blocked_attack_left = maxf(_blocked_attack_left - delta, 0.0)
 	if _guard_cooldown_left > 0.0:
 		_guard_cooldown_left = maxf(_guard_cooldown_left - delta, 0.0)
 	if _guard_time > 0.0:

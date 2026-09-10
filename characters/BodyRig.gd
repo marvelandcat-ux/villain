@@ -244,7 +244,9 @@ extends Node2D
 @export var hurt_head_texture: Texture2D
 ## 아파하는 얼굴을 보여주는 시간(초)
 ## --- 방어에 막혔을 때 때린 손·무기가 빨갛게 깜빡이는 연출 ---
-## 상대 방어에 기본공격이 막히면 때린 오른손과 거기 든 무기가 이 시간(초) 동안 깜빡인다
+## 깜빡임 길이(초) — **평소엔 안 쓰인다.** 실제 길이는 Fighter가 기본공격 잠금 시간
+## (Fighter.blocked_attack_lock)을 넘겨주므로, 시간을 바꾸려면 그쪽을 고칠 것.
+## 이 값은 Fighter 없이 몸만 띄웠을 때(미리보기 도구)의 예비값이다
 @export var blocked_flash_duration: float = 3.0
 ## 깜빡일 때 가장 진해지는 색. modulate라 원래 그림 색에 곱해진다
 @export var blocked_flash_color: Color = Color(1.0, 0.2, 0.2)
@@ -362,6 +364,8 @@ var _vomit_time: float = 0.0
 var _hurt_time: float = 0.0
 ## 방어에 막힌 뒤 무기가 깜빡이는 데 남은 시간(초)
 var _blocked_flash_left: float = 0.0
+## 이번 깜빡임의 전체 길이(초) — Fighter가 넘겨준 잠금 시간이 들어온다
+var _blocked_flash_span: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
 var _guard_target: float = 0.0
@@ -991,11 +995,13 @@ func play_vomit_face() -> void:
 		_head.scale = vomit_head_scale
 	_vomit_time = vomit_face_duration
 
-## 상대 방어에 기본공격이 막혔을 때 — 때린 오른손과 거기 든 무기를 blocked_flash_duration 동안
-## 빨갛게 깜빡이게 한다. Fighter.play_weapon_blocked()가 호출한다.
+## 상대 방어에 기본공격이 막혔을 때 — 때린 오른손과 거기 든 무기를 빨갛게 깜빡이게 한다.
+## Fighter.play_weapon_blocked()가 **기본공격이 잠기는 시간을 그대로 넘겨주므로**
+## "빨간 동안엔 못 때린다"가 항상 맞아떨어진다. 인자를 안 주면 이 노드의 export 값을 쓴다.
 ## 손은 모든 캐릭터에 있으므로 무기가 없는 캐릭터(고양이 아주머니 등)도 눈에 보인다
-func play_weapon_blocked() -> void:
-	_blocked_flash_left = blocked_flash_duration
+func play_weapon_blocked(duration: float = -1.0) -> void:
+	_blocked_flash_span = duration if duration > 0.0 else blocked_flash_duration
+	_blocked_flash_left = _blocked_flash_span
 
 ## 깜빡임을 매 프레임 갱신한다. 원래색(흰색 modulate) <-> blocked_flash_color를 오가면서
 ## 투명도도 같이 오르내린다 — 색이 진해질 때 가장 옅어져서 "지지직거리는" 느낌이 난다.
@@ -1008,8 +1014,8 @@ func _update_blocked_flash(delta: float) -> void:
 	var tint: Color = Color.WHITE   # 끝났으면 원래 색으로 되돌린다
 	if not is_zero_approx(_blocked_flash_left):
 		# 0(원래색) -> 1(빨강) -> 0 을 blocked_flash_cycles번 왕복. cos이라 양 끝에서 부드럽게 멈춘다
-		var elapsed: float = blocked_flash_duration - _blocked_flash_left
-		var span: float = maxf(blocked_flash_duration, 0.001)
+		var elapsed: float = _blocked_flash_span - _blocked_flash_left
+		var span: float = maxf(_blocked_flash_span, 0.001)
 		var wave: float = 0.5 - 0.5 * cos(elapsed / span * TAU * blocked_flash_cycles)
 		tint = Color.WHITE.lerp(blocked_flash_color, wave)
 		tint.a = lerpf(1.0, blocked_flash_min_alpha, wave)
