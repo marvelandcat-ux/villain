@@ -21,6 +21,13 @@
   - **충돌 레이어를 바꾸지 않은 이유:** 레이어를 건드리면 바닥·벽·발판까지 같이 영향을 받는다. 예외 처리로 빼는 건 몸(`CharacterBody2D`)끼리의 충돌뿐이고, 공격 판정(`Hitbox`/`Hurtbox`)은 Area2D라 그대로 서로를 감지한다 — 헤드리스로 기본공격 데미지·발판 착지가 그대로인 것까지 확인함
   - 대신 두 캐릭터가 같은 자리에 겹쳐 설 수 있게 됐다(스매시브라더스류와 같은 방식). 서로 밀어내는 처리가 필요하면 따로 넣어야 한다
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
+- **쿨타임 덮어쓰기 `Skill.cooldown_override`(2026-09-10)**: 0보다 크면 `cooldown` 대신 이 값이 쓰인다. 버프가 쿨타임을 **"몇 배 빠르게"가 아니라 "몇 초로"** 고정하고 싶을 때 쓰는 절대값 손잡이다(악플러 열등감이 기본공격 쿨을 0.3초로 묶는 용도). 버프가 끝나면 0으로 되돌리면 원래 `cooldown`으로 돌아간다
+  - 쿨을 새로 채우는 자리는 전부 `effective_cooldown()`을 거친다 — `Skill.use()`/`cancel_use()`, `ComboMeleeAttack._resolve()`의 콤보 마무리·헛발 리셋, HUD의 물높이(`SkillCooldownIcon`). **한 군데라도 `cooldown`을 직접 읽으면 그 경로만 덮어쓰기가 안 먹는다**
+  - **헛발 쿨(`miss_cooldown`)도 같이 묶어야 한다.** 악플러 기본공격은 원래 콤보 마무리 0.3초 / 헛발 1초라, 헛발만 예외로 두면 "쿨 0.3초 고정"을 켜고도 한 번 헛치는 순간 1초를 쉬게 돼서 버프가 전혀 체감되지 않는다(`ComboMeleeAttack._effective_miss_cooldown()`)
+  - 배수 방식(`Fighter.attack_speed_multiplier` — `Skill._process`가 기본공격 쿨타임이 도는 속도에 곱한다)은 그대로 남아 있다. 둘을 같이 켜면 곱해져서 더 빨라진다
+- `skills/RageBuffSkill.gd` (악플러 스킬2 "열등감 느끼기"): `duration`(6초) 동안 기본공격 쿨타임을 `basic_attack_cooldown`(0.3초)으로 고정하고, 붉은 오라(`set_tint`)와 분노한 표정(`set_action_face(true)` → `action_head_texture`)을 켠다. 되돌리는 건 **이 노드의 자식 `Timer`** 라 캐릭터가 사라지면 콜백도 같이 사라진다(`get_tree().create_timer`를 쓰면 안 되는 이유는 아래 "Lambda capture" 항목 참고)
+  - 발동할 때 **이미 돌고 있던 쿨도 `minf`로 0.3초까지 깎아준다** — 안 그러면 버튼을 누르고도 남은 1초를 그대로 기다려야 해서 빨라진 게 늦게 느껴진다
+  - 예전에는 `attack_speed_multiplier`(1.5배) 방식이었다. export로 남겨뒀지만 기본값이 1.0이라 꺼져 있다
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
 - `skills/ComboMeleeAttack.gd`: **기본공격 3타 콤보 — 기본공격이 있는 캐릭터 6명 전원이 쓴다**(`MeleeAttack`을 상속). 맞아야만 다음 타로 이어지는 히트 확인식이라, 헛치면 예약 입력이 버려지고 `miss_cooldown`(1초)이 돌며 1타로 리셋된다. 3타를 다 맞추면 `cooldown`(0.3초) 마무리 회복. 타별 데미지·넉백은 `combo_damage`/`combo_knockback` 배열이라 `damage` 프로퍼티는 안 쓴다(씬에서 지워야 한다). 기본공격이 아예 없는 지하철 아저씨(`vault_jump`)만 예외
   - **주의(실제로 겪음): 이 4명(악플러·고양이 아주머니·촉법소년·층간소음)의 콤보 적용이 커밋 안 되고 GitHub Desktop이 만든 stash에 들어가 있어서 "콤보가 사라졌다"가 된 적이 있다.** 브랜치를 옮길 때 GitHub Desktop이 작업 내용을 stash로 치워두므로, 뭔가 없어졌으면 `git stash list`부터 볼 것
@@ -122,10 +129,16 @@
 - **마우스 던지기/줄 당기기 모션(악플러 스킬1)**: `play_cast_motion(젖히는 시간, 돌아오는 시간)`이 오른손을 어깨 뒤로 당겼다가(`cast_windup_offset`) 앞으로 뿌리고(`cast_release_offset`) 제자리로 돌린다. `set_reeling(true/false)`는 두 손을 줄에 모아(`reel_hand_offset`/`reel_hand_l_offset`) `reel_tug_speed` 박자로 당겼다 놓는 자세를 켜고 끈다 — `_reel_blend`로 섞으므로 켜지고 꺼질 때 툭 끊기지 않는다
   - **`cast_windup_offset`의 y를 -6보다 위로 올리지 말 것.** 이 리그는 머리가 55x55라 손 제자리(27,3) 기준으로 y=-6 위는 전부 얼굴이고, 마우스는 맵에 붙어 `z_index 20`으로 그려지므로 **머리 위에 얹힌 것처럼 보인다**(실제로 -20으로 잡았다가 고쳤다). 지금은 (-8,-2)
   - `cast_hides_held_item`(기본 꺼짐)을 켜면 던지고 당기는 동안 `HandRHold`가 숨는다 — 악플러는 같은 오른손에 키보드를 들고 있어서 안 숨기면 키보드와 마우스가 겹친다. `AkpeulleoRig.tscn`에서만 켜져 있다
-- **피격 표정(`hurt_head_texture`, 2026-09-09)**: 맞으면 `Fighter.take_damage`가 `Visual.play_hurt_face()`를 불러 `hurt_face_duration`(0.45초) 동안 아파하는 얼굴로 바꾼다. 그림이 비어 있는 캐릭터는 그냥 넘어가므로 **지금은 촉법소년만 적용**(`sprite/축법소년/축법소년 다치다.png`). 새 캐릭터는 그림만 `hurt_head_texture`에 넣으면 된다
+- **피격 표정(`hurt_head_texture`, 2026-09-09)**: 맞으면 `Fighter.take_damage`가 `Visual.play_hurt_face()`를 불러 `hurt_face_duration`(0.45초) 동안 아파하는 얼굴로 바꾼다. 그림이 비어 있는 캐릭터는 그냥 넘어가므로 **지금은 촉법소년(`sprite/축법소년/축법소년 다치다.png`)과 악플러(`sprite/악플러/몸/악플러 피격.png`)에만 적용**. 새 캐릭터는 그림만 `hurt_head_texture`에 넣으면 된다
   - 잠깐 바뀌는 표정이 **피격 > 토하기 > (액션/취함/맨정신)** 순으로 우선한다. `set_action_face`/`set_drunk_head`는 잠깐 바뀐 표정이 떠 있는 동안 적용을 미루고, 그 표정이 끝날 때 `_restore_head()`가 아직 남아있는 표정 → 없으면 기본 머리 순으로 되돌린다
   - **촉법소년은 두 그림의 캔버스·유효영역이 사실상 같아서(909x962 vs 909x961) 배율·위치 보정을 안 넣었다.** 여백이 다른 그림을 쓸 때만 `hurt_head_scale`/`hurt_head_offset`을 잡으면 된다
   - **주의: `sprite/축법소년/축법소년 머리.png`(기본 머리)가 폴더에도 git에도 없이 임포트 캐시(`.godot/imported/*.ctex`)로만 살아있던 적이 있다.** 게임은 멀쩡히 돌아서 눈치채기 어렵고, 캐시를 지우거나 새로 클론하면 머리가 사라진다. 이때는 `.ctex`(GST2 헤더 + offset 56부터 무손실 WebP)에서 원본을 그대로 뽑아낼 수 있다 — `.import`를 그대로 두면 uid도 유지돼서 씬 참조가 안 깨진다
+- **지친 표정(`weary_head_texture`, 2026-09-10)**: 피격 표정처럼 잠깐 바뀌는 게 아니라 **HP가 얼마 안 남아 있는 동안 계속 걸려 있는 상태 표정**이다. `weary_hp_ratio`(기본 0.3 = 30%) 이하로 떨어지면 지친 얼굴이 되고, 회복해서 그 위로 올라가면 원래 얼굴로 돌아온다. 지금은 촉법소년(`sprite/축법소년/힘든 축법소년.png`)과 악플러(`sprite/악플러/악플러 힘듬.png`)에 적용
+  - `Fighter._update_hp_face()`가 `take_damage`/`heal`/`ring_out` **세 군데 전부**에서 `Visual.update_hp_ratio(비율)`을 부른다. 하나라도 빠뜨리면 "회복했는데 계속 지쳐 보인다" 같은 어긋남이 생긴다
+  - 기본 머리 우선순위는 **액션 표정 > 지침 > 취함 > 맨정신**(`BodyRig._apply_base_head()`). 그 위에 잠깐 바뀌는 표정(피격 > 토하기)이 덮이는 2층 구조다 — 즉 악플러가 빈사 상태에서 맞으면 0.45초 동안 피격 얼굴이었다가 다시 지친 얼굴로 돌아온다
+  - **`weary_head_texture`가 비어 있는 캐릭터는 그냥 넘어간다.** 새 캐릭터는 그림만 리그에 넣으면 되고, 캔버스 여백이 다르면 `weary_head_scale`을 잡는다(악플러는 기본 머리 1400x1123 vs 새 얼굴 3장 1374x1145로 2% 차이라 안 잡았다)
+- **악플러 얼굴 3종(2026-09-10)**: `악플러 피격.png`(맞았을 때) / `악플러 분노.png`(열등감 스킬 발동 중, `action_head_texture`) / `악플러 힘듬.png`(HP 30% 이하). 셋 다 `AkpeulleoRig.tscn`에 배율 보정 없이 걸려 있다
+  - **주의: 악플러 기본 머리 `sprite/악플러/몸/악플러머리.png`도 촉법소년과 똑같이 폴더·git에 없이 임포트 캐시로만 살아있다**(`몸통.png`도 마찬가지). 위 3종은 전부 이 기본 머리로 되돌아가므로, 캐시가 날아가면 표정이 풀리는 순간 머리가 사라진다. 위의 `.ctex` 복원 방법을 그대로 쓸 것
 - **술 마시기 모션(주정뱅이 스킬1)**: `DrinkSkill`이 발동하면 `Visual.play_drink_motion()`을 호출한다(기본공격과 같은 방식 — 그 메서드가 없는 비주얼은 그냥 넘어감). 고개가 `drink_head_tilt_deg`(-22도, 음수가 얼굴이 위를 보는 방향)만큼 뒤로 젖혀지고, 오른손이 `drink_hand_offset`(-16, -34)만큼 얼굴 쪽으로 올라가면서 `drink_hand_deg`(-116도)만큼 돌아 술병 목이 입을 향한다. 다 올린 뒤에는 머리와 병이 **같은 `gulp` 값으로 함께** 위아래로 들썩여서(`drink_head_bob` 2.5px, `drink_gulp_count` 3회) 병이 입에서 떨어져 보이지 않는다. 전체 `drink_duration`(1.1초) 중 0~25%가 올리기, 25~75%가 마시기, 75~100%가 내리기
 - 마시기 모션은 `_pose_attack_hand()`와 같은 자리에서, **공격 다음에** 덮어쓴다(둘이 겹치면 마시기가 이김). 머리 회전은 걷기 코드가 건드리지 않으므로 손 회전과 똑같이 `_apply_pose`에서 매 프레임 0으로 되돌린 뒤 마시기가 덮어쓰는 방식 — 안 그러면 동작이 끝나도 고개가 젖혀진 채로 남는다
 - 술병(`JujeongbaengiRig.tscn`의 `HandRHold/Bottle`)의 제자리는 `position (6.868347, -10.263336)` / `rotation -2.708751`(-155도) — 병목을 아래로 내려 든, 이미 "붓는" 자세다. **한 번 (5,12)/-34도(병목을 위로 든 자세)로 바꿨다가 되돌렸으니 다시 건드리지 말 것.** 소주병 원본은 뚜껑이 위인 세로 그림이라, 회전 r일 때 병목 방향은 `(sin r, -cos r)`으로 계산한다

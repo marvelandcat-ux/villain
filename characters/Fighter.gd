@@ -206,6 +206,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	else:
 		velocity += knockback
 	health_changed.emit(current_hp, stats.max_hp)
+	_update_hp_face()
 	# 실제로 깎였을 때만 — 가드로 전부 막았으면 "맞았다"고 치지 않는다
 	if reduced_amount > 0:
 		damaged.emit(reduced_amount, knockback)
@@ -235,6 +236,14 @@ func _play_hurt_face() -> void:
 	if visual and visual.has_method("play_hurt_face"):
 		visual.play_hurt_face()
 
+## 남은 HP 비율을 몸에 알려준다 — HP가 얼마 안 남으면 지친 얼굴로 바뀐다.
+## 그 표정이 없는 캐릭터나 임시 사각형 비주얼이면 그냥 넘어간다. HP가 바뀔 때마다 부른다
+func _update_hp_face() -> void:
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("update_hp_ratio"):
+		var max_hp: int = stats.max_hp if stats else 0
+		visual.update_hp_ratio(float(current_hp) / float(max_hp) if max_hp > 0 else 1.0)
+
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
@@ -248,6 +257,7 @@ func _flash_hit() -> void:
 func heal(amount: int) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
+	_update_hp_face()
 
 ## 여러 상태이상 색조가 겹쳐도 서로 안 지우도록 관리하는 저장소. {id: Color} — 화면에는 가장 최근 것이 보이고,
 ## 그게 풀리면 그 전에 걸려있던 것으로 되돌아간다 (전부 사라지면 원래 색)
@@ -315,6 +325,7 @@ func ring_out() -> void:
 		return
 	current_hp = 0
 	health_changed.emit(current_hp, stats.max_hp)
+	_update_hp_face()
 	died.emit()
 
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다

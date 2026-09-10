@@ -208,6 +208,14 @@ extends Node2D
 ## 액션 표정일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var action_head_scale: Vector2 = Vector2.ZERO
 
+## HP가 얼마 안 남았을 때 이 얼굴(지친 표정)로 계속 유지한다. 비어 있으면 안 바꾼다.
+## 잠깐 바뀌는 표정(피격 등)과 달리 **HP가 회복될 때까지 계속 걸려 있는 상태 표정**이다
+@export var weary_head_texture: Texture2D
+## 지친 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var weary_head_scale: Vector2 = Vector2.ZERO
+## HP 비율이 이 값 이하로 떨어지면 지친 얼굴이 된다 (0.3 = 30% 이하). 회복하면 다시 원래 얼굴로 돌아온다
+@export_range(0.0, 1.0, 0.05) var weary_hp_ratio: float = 0.3
+
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
 @onready var _body: Sprite2D = get_node_or_null("Body")
@@ -287,6 +295,8 @@ var _hurt_time: float = 0.0
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
 var _action_face_on: bool = false
+## 지금 HP가 얼마 안 남아 지친 얼굴 상태인지 (weary_hp_ratio 이하로 떨어지면 true)
+var _weary_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
@@ -475,6 +485,13 @@ func _apply_pose(speed_ratio: float) -> void:
 		_hand_r.position.x = _rest_positions[_hand_r].x + arm
 		_hand_r.rotation = 0.0
 
+	# 줄을 당기는 중이면 두 손으로 줄을 잡은 자세를 잡는다.
+	# **다른 동작들보다 먼저 적용해서 일부러 우선순위를 가장 낮게 뒀다** — 줄을 되감는 도중에
+	# 공격이나 스킬을 쓰면 그 동작이 보여야 하기 때문이다(줄 자체는 자세와 상관없이 계속 감긴다).
+	# 예전에는 이 블록이 맨 아래라 당기는 자세가 모든 동작을 덮어써서, 되감는 동안 아무 모션도 안 나왔다
+	if _reel_blend > 0.001:
+		_pose_reel()
+
 	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
 	if _attack_time > 0.0:
 		_pose_attack_hand()
@@ -495,10 +512,6 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _cast_time > 0.0:
 		_pose_cast()
 
-	# 줄을 당기는 중이면 두 손으로 줄을 잡은 자세로 덮어쓴다 (던지기보다 나중이라 우선한다)
-	if _reel_blend > 0.001:
-		_pose_reel()
-
 	# 가만히 있을 때는 왼손으로 머리를 긁는다 (idle 생동감). 왼손만 건드려서 다른 동작과 안 겹친다
 	if _scratch_time > 0.0:
 		_pose_scratch()
@@ -517,7 +530,11 @@ func _apply_pose(speed_ratio: float) -> void:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
 		if cast_hides_held_item:
-			_hand_r_hold.visible = _cast_time <= 0.0 and _reel_blend <= 0.001
+			# 던지거나 줄을 당기는 동안엔 손에 든 물건(키보드)을 숨긴다 — 마우스와 겹치기 때문.
+			# 단 그 사이에 다른 동작이 자세를 가져갔으면 다시 보여준다. 안 그러면 되감는 중에
+			# 기본공격을 했을 때 안 보이는 키보드를 휘두르는 꼴이 된다
+			var other_pose: bool = _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _grab_time > 0.0
+			_hand_r_hold.visible = other_pose or (_cast_time <= 0.0 and _reel_blend <= 0.001)
 
 	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
 	if _squashing:
@@ -848,13 +865,31 @@ func set_action_face(on: bool) -> void:
 	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
-## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선)
+## HP 비율(0~1)을 알려준다 — Fighter가 HP가 바뀔 때마다 부른다.
+## weary_hp_ratio 이하면 지친 얼굴로, 회복해서 그 위로 올라가면 원래 얼굴로 돌아온다.
+## weary_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
+func update_hp_ratio(ratio: float) -> void:
+	if _head == null or weary_head_texture == null:
+		return
+	var weary: bool = ratio <= weary_hp_ratio
+	if weary == _weary_on:
+		return
+	_weary_on = weary
+	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
+		_apply_base_head()
+
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 지침 > 취함 > 맨정신 순 우선).
+## 액션 표정이 맨 위인 이유: 스킬을 쓰는 순간만큼은 그 표정이 보여야 한다.
+## 지금은 지침(악플러)과 취함(주정뱅이)을 같이 가진 캐릭터가 없어서 둘 사이 순서는 사실상 의미가 없다
 func _apply_base_head() -> void:
 	if _head == null:
 		return
 	if _action_face_on and action_head_texture != null:
 		_head.texture = action_head_texture
 		_head.scale = action_head_scale if action_head_scale != Vector2.ZERO else _head_rest_scale
+	elif _weary_on and weary_head_texture != null:
+		_head.texture = weary_head_texture
+		_head.scale = weary_head_scale if weary_head_scale != Vector2.ZERO else _head_rest_scale
 	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale

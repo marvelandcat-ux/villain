@@ -69,7 +69,7 @@ func use(fighter: Fighter) -> void:
 
 ## 스킬 클래시에서 밀렸을 때 — 콤보를 끊고 기본공격 쿨만 소모
 func cancel_use() -> void:
-	_reset(cooldown)
+	_reset(effective_cooldown())
 
 ## 이 스킬이 타별 스윙을 직접 재생하므로 Fighter는 기본 스윙을 덧대지 않는다
 func handles_own_visual() -> bool:
@@ -118,10 +118,18 @@ func _resolve(hit: bool) -> void:
 			else:
 				_chain_left = chain_window       # 늦게 눌러도 이어지도록 창을 연다
 		else:
-			_reset(cooldown)   # 3타까지 다 맞춤 → 마무리 회복 쿨
+			_reset(effective_cooldown())   # 3타까지 다 맞춤 → 마무리 회복 쿨
 	else:
 		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋 (예약 입력은 버림)
-		_reset(miss_cooldown if miss_cooldown >= 0.0 else cooldown)
+		_reset(_effective_miss_cooldown())
+
+## 헛발질했을 때 실제로 돌 쿨타임.
+## **쿨타임 덮어쓰기(악플러 열등감)가 걸려 있으면 헛쳐도 그 값으로 묶인다** — 안 그러면
+## "쿨 0.3초 고정" 버프를 켜고도 한 번 헛치는 순간 1초를 쉬게 돼서 버프가 체감되지 않는다
+func _effective_miss_cooldown() -> float:
+	if cooldown_override > 0.0:
+		return cooldown_override
+	return miss_cooldown if miss_cooldown >= 0.0 else cooldown
 
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:
