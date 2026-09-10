@@ -84,6 +84,7 @@ shape = SubResource("RectangleShape2D_vacuum")
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("8")
 cooldown = 24.0
+start_on_cooldown = true
 
 [node name="Hitbox" type="Area2D" parent="SkillUltimate"]
 monitoring = false

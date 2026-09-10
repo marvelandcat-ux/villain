@@ -58,3 +58,4 @@ lock_duration = 1.0
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")
 cooldown = 20.0
+start_on_cooldown = true

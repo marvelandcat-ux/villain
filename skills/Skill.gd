@@ -9,6 +9,12 @@ extends Node
 @export var lock_duration: float = 0.0
 ## HUD 쿨타임 슬롯에 뜨는 스킬 로고. 비워두면 로고 대신 캐릭터 색 사각형이 차오른다
 @export var icon: Texture2D
+## 켜면 라운드가 시작될 때 이 스킬이 **쿨타임을 물고 시작한다**(바로 못 쓴다).
+## 궁극기를 라운드 초반부터 던지지 못하게 하는 용도 — 전 캐릭터 궁극기에 켜져 있다.
+##
+## **라운드 시작과 게임 시작이 따로 필요 없는 이유:** 라운드가 바뀔 때 `Stage`가
+## `reload_current_scene()`으로 씬을 통째로 다시 만들어서 `_ready()`가 매 라운드 다시 돈다
+@export var start_on_cooldown: bool = false
 
 var cooldown_left: float = 0.0
 ## 0보다 크면 cooldown 대신 이 값이 쓰인다 — 버프가 잠깐 쿨타임을 **고정값으로** 덮어쓸 때 쓴다
@@ -19,6 +25,10 @@ var cooldown_override: float = 0.0
 ## 지금 실제로 쓸 쿨타임 — 덮어쓰기가 걸려 있으면 그 값, 아니면 원래 cooldown
 func effective_cooldown() -> float:
 	return cooldown_override if cooldown_override > 0.0 else cooldown
+
+func _ready() -> void:
+	if start_on_cooldown:
+		cooldown_left = effective_cooldown()
 
 func _process(delta: float) -> void:
 	if cooldown_left <= 0.0:

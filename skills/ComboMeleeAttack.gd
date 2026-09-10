@@ -43,6 +43,7 @@ var _active_left: float = 0.0
 var _fighter: Fighter = null
 
 func _ready() -> void:
+	super()   # start_on_cooldown 처리 (기본공격은 꺼져 있지만 규칙을 깨지 않는다)
 	# 명중하는 순간(스윙 진행 중이면) 곧바로 "맞음"으로 판정한다
 	hitbox.connected.connect(_on_hitbox_connected)
 

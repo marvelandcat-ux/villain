@@ -42,4 +42,5 @@ cooldown = 9.0
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("7")
 cooldown = 24.0
+start_on_cooldown = true
 plate_scene = ExtResource("8")

@@ -74,6 +74,7 @@ script = ExtResource("9")
 cone_scene = ExtResource("11")
 mouth_offset = Vector2(18, -17)
 cooldown = 20.0
+start_on_cooldown = true
 lock_duration = 0.5
 icon = ExtResource("15")
 

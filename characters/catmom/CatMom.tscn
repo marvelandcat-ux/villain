@@ -61,4 +61,5 @@ cat_scene = ExtResource("7")
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("9")
 cooldown = 22.0
+start_on_cooldown = true
 hut_scene = ExtResource("10")

@@ -58,3 +58,4 @@ cooldown = 10.0
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("8")
 cooldown = 25.0
+start_on_cooldown = true

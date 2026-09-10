@@ -64,5 +64,6 @@ icon = ExtResource("12")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")
-cooldown = 20.0
+cooldown = 50.0
+start_on_cooldown = true
 icon = ExtResource("13")
