@@ -825,7 +825,18 @@ func _pose_grip_hand() -> void:
 
 ## 점프하는 순간 몸을 세로로 늘린다 (squash & stretch). Fighter.jump()이 호출한다
 func play_jump_stretch() -> void:
-	_squash = jump_stretch
+	play_squash(jump_stretch)
+
+## 몸 전체를 잠깐 늘렸다/눌렀다 원래대로 돌린다 (x=가로 배율, y=세로 배율).
+## **스킬 연출에서 캐릭터 크기를 건드릴 때는 반드시 이걸 쓸 것.**
+##
+## 스킬이 `Visual.scale`을 직접 트윈하면 **좌우 반전이 깨진다** — 이 리그는 왼쪽을 볼 때
+## `scale.x`를 음수로 두는데, 트윈이 양수 목표값으로 끌고 가면서 0을 지나 오른쪽으로 뒤집힌다.
+## (열등감·촉법소년 궁에서 실제로 겪었다: "쓰면 자꾸 오른쪽 돌아본다")
+## 여기서는 리그가 매 프레임 `_squash`에 방향 부호를 곱해 적용하므로 보는 방향이 안 바뀐다.
+## 원래 크기로 돌아오는 속도는 `squash_recover_speed`(2.5/초)를 그대로 쓴다
+func play_squash(amount: Vector2) -> void:
+	_squash = amount
 	_squashing = true
 
 ## 스킬 클래시 대치 자세를 켜고 끈다 (SkillClashPopup이 부른다).

@@ -9,10 +9,8 @@ func _execute(fighter: Fighter) -> void:
 	# 소리지르는 순간 스스로 부르르 떤다
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual:
-		var tween := fighter.create_tween()
-		tween.set_loops(4)
-		tween.tween_property(visual, "scale", Vector2(1.15, 0.9), 0.06)
-		tween.tween_property(visual, "scale", Vector2(1, 1), 0.06)
+		if visual.has_method("play_squash"):
+			visual.play_squash(Vector2(1.15, 0.9))   # Visual.scale 직접 트윈 금지 — 좌우 반전이 깨진다
 
 	var opponent := fighter.find_opponent()
 	if opponent:

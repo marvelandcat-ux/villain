@@ -28,15 +28,16 @@ func _execute(fighter: Fighter) -> void:
 	cone.area_entered.connect(_on_cone_hit.bind(fighter))
 	cone.setup(fighter.facing, fighter.compute_damage(damage), fighter)
 
+## 지르는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작해진다). (1,1)이면 연출 없음
+@export var shout_squash: Vector2 = Vector2(1.15, 0.9)
+
 ## 지르는 순간 스스로 부르르 떤다
 func _play_shout_motion(fighter: Fighter) -> void:
+	# **Visual.scale을 직접 트윈하면 안 된다** — 좌우 반전이 scale.x 부호로 되어 있어서
+	# 왼쪽을 보던 캐릭터가 오른쪽으로 뒤집힌다. 리그의 play_squash는 부호를 지켜준다
 	var visual: Node2D = fighter.get_node_or_null("Visual")
-	if visual == null:
-		return
-	var tween := fighter.create_tween()
-	tween.set_loops(4)
-	tween.tween_property(visual, "scale", Vector2(1.15, 0.9), 0.06)
-	tween.tween_property(visual, "scale", Vector2(1, 1), 0.06)
+	if visual and visual.has_method("play_squash"):
+		visual.play_squash(shout_squash)
 
 ## 데미지·넉백은 Hitbox가 알아서 주고, 여기서는 점프력 디버프만 얹는다
 func _on_cone_hit(area: Area2D, screamer: Fighter) -> void:

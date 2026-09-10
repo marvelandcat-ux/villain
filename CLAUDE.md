@@ -32,8 +32,11 @@
   - **헛발 쿨(`miss_cooldown`)도 같이 묶어야 한다.** 악플러 기본공격은 원래 콤보 마무리 0.3초 / 헛발 1초라, 헛발만 예외로 두면 "쿨 0.3초 고정"을 켜고도 한 번 헛치는 순간 1초를 쉬게 돼서 버프가 전혀 체감되지 않는다(`ComboMeleeAttack._effective_miss_cooldown()`)
   - 배수 방식(`Fighter.attack_speed_multiplier` — `Skill._process`가 기본공격 쿨타임이 도는 속도에 곱한다)은 그대로 남아 있다. 둘을 같이 켜면 곱해져서 더 빨라진다
 - `skills/RageBuffSkill.gd` (악플러 스킬2 "열등감 느끼기"): `duration`(6초) 동안 기본공격 쿨타임을 `basic_attack_cooldown`(0.3초)으로 고정하고, 붉은 오라(`set_tint`)와 분노한 표정(`set_action_face(true)` → `action_head_texture`)을 켠다. 되돌리는 건 **이 노드의 자식 `Timer`** 라 캐릭터가 사라지면 콜백도 같이 사라진다(`get_tree().create_timer`를 쓰면 안 되는 이유는 아래 "Lambda capture" 항목 참고)
-  - **⚠️ 스킬에서 `Visual.scale`을 트윈하지 말 것(2026-09-10에 겪음).** 열등감이 몸을 `(1.12, 1.12)`로 부풀렸다 줄이는 트윈을 쓰고 있었는데, `BodyRig`는 좌우 반전을 **`scale.x` 부호**로 하기 때문에 왼쪽을 보던 캐릭터가 트윈을 따라 0을 지나 **오른쪽으로 뒤집혔다**("열등감 쓰면 자꾸 오른쪽 돌아본다"). 게다가 `_face_moving_direction()`이 매 프레임 부호를 되돌리려 해서 둘이 싸우기까지 했다. 트윈은 삭제했고, 색조(`set_tint`)와 분노 표정만 남겼다
-  - **같은 지뢰가 아직 `HealSkill`·`ScreamConeUltimate`·`JumpDebuffUltimate`에도 남아 있다** — 전부 `Visual.scale`을 양수로 트윈한다. 궁극기라 컷인 뒤에 나가서 덜 눈에 띌 뿐이다. 크기 연출이 필요하면 트윈 대신 **부호를 지키는 전용 연출을 리그 쪽에 만들 것**(`play_jump_stretch()`의 `_squash`가 `sgn`을 곱해 쓰는 방식이 본보기다)
+  - **⚠️ 스킬에서 `Visual.scale`을 직접 트윈하지 말 것 — 대신 `BodyRig.play_squash(배율)`을 쓸 것(2026-09-10).** 이 리그는 왼쪽을 볼 때 `scale.x`를 음수로 두는데, 트윈이 양수 목표값(예: `(1.12, 1.12)`)으로 끌고 가면 **0을 지나면서 오른쪽으로 뒤집힌다.** 게다가 `_face_moving_direction()`이 매 프레임 부호를 되돌리려 해서 둘이 싸우기까지 한다. 열등감·촉법소년 궁·주정뱅이 궁에서 전부 "쓰면 자꾸 오른쪽 돌아본다"로 나타났다
+    - `play_squash()`는 점프/착지 스쿼시가 쓰던 `_squash` 장치를 그대로 쓴다 — 리그가 매 프레임 **방향 부호를 곱해서** 적용하므로 보는 방향이 안 바뀌고, `squash_recover_speed`(2.5/초)로 저절로 원래 크기로 돌아온다
+    - 지금 이 방식을 쓰는 곳: `HealSkill.heal_pop`(1.25배 부풀기), `ScreamConeUltimate.shout_squash`(1.15 x 0.9 눌림), `JumpDebuffUltimate`(고아 파일이지만 되살릴 때를 위해 같이 고쳐뒀다). 열등감은 크기 연출 자체를 뺐다
+    - 실측(왼쪽을 본 채 발동): `scale.x`가 40프레임 내내 음수를 유지하고, 연출은 촉법소년 -1.22/1.22, 주정뱅이 -1.12/0.92까지 정상적으로 들어간다
+    - **`FirePlate`처럼 자기 자식 스프라이트를 트윈하는 건 상관없다** — 문제가 되는 건 캐릭터의 `Visual`(BodyRig)뿐이다
   - 발동할 때 **이미 돌고 있던 쿨도 `minf`로 0.3초까지 깎아준다** — 안 그러면 버튼을 누르고도 남은 1초를 그대로 기다려야 해서 빨라진 게 늦게 느껴진다
   - 예전에는 `attack_speed_multiplier`(1.5배) 방식이었다. export로 남겨뒀지만 기본값이 1.0이라 꺼져 있다
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
