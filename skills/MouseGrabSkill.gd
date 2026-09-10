@@ -18,6 +18,20 @@ extends Skill
 @export var throw_windup: float = 0.14
 ## 뿌린 손이 제자리로 돌아오는 데 걸리는 시간(초)
 @export var throw_recover: float = 0.22
+## 날아가는 마우스가 아래로 처지기 시작하는 지점 — 사거리의 몇 %를 지났을 때인지.
+## 0.5면 "절반 지점부터" 중력을 받는다. 1이면 끝까지 곧게 날아간다(예전 동작)
+@export_range(0.0, 1.0, 0.05) var throw_drop_after: float = 0.5
+## 처지기 시작한 뒤 받는 중력(px/초²). 지금 값(사거리 400·속도 700)에서는
+## 뒤쪽 절반 0.29초 동안 약 144px 내려앉는다 — 곡선이 길게 보여서 포물선으로 읽힌다
+@export var throw_gravity: float = 3400.0
+## 떨어지다 지면·발판에 닿으면 거기서 사라질지. 끄면 사거리를 다 채울 때까지 땅속으로 들어간다.
+## 켜두면 평지에서 실효 사거리가 약 288px이 되고, 점프해서 던지면 그만큼 더 멀리 간다
+@export var throw_stop_on_ground: bool = true
+## 빗나간 뒤 유선에 딸려 손으로 되감기는 속도(px/초). 0에 가까우면 하염없이 끌려온다
+@export var throw_return_speed: float = 1100.0
+## 마우스가 상대 중심에서 이만큼 안에 들어오면 "잡았다"고 본다(px).
+## 상대 몸(캡슐 20x60)보다 좁으니 너무 줄이면 스치기만 하고 안 잡힌다
+@export var catch_radius: float = 30.0
 
 func _execute(fighter: Fighter) -> void:
 	# 팔 동작과 마우스가 같은 시점에 손을 떠나도록 젖히는 시간을 양쪽에 똑같이 넘긴다
@@ -29,5 +43,10 @@ func _execute(fighter: Fighter) -> void:
 	grab.mouse_length = mouse_length
 	grab.coil_width = coil_width
 	grab.windup_time = throw_windup
+	grab.drop_after = throw_drop_after
+	grab.gravity = throw_gravity
+	grab.stop_on_ground = throw_stop_on_ground
+	grab.return_speed = throw_return_speed
+	grab.catch_radius = catch_radius
 	fighter.get_parent().add_child(grab)
 	grab.setup(fighter, throw_speed, max_range, reel_speed, damage)

@@ -19,8 +19,18 @@ func _ready() -> void:
 	for suffix in ROWS:
 		_p1_column.add_child(_make_key_row("p1_" + suffix, ACTION_LABELS[suffix]))
 		_p2_column.add_child(_make_key_row("p2_" + suffix, ACTION_LABELS[suffix]))
+	# 대시는 전용 키가 없고 이동키를 두 번 누르는 조작이라 InputMap에서 읽을 게 없다 — 문구를 직접 만든다
+	_p1_column.add_child(_make_row("대시", "이동키 2번"))
+	_p2_column.add_child(_make_row("대시", "이동키 2번"))
+	# 방어는 "아래로"와 같은 키지만 누르는 순간 발동하는 별개 조작이라 따로 한 줄 보여준다
+	_p1_column.add_child(_make_row("방어(1.2초)", _key_display_text("p1_down")))
+	_p2_column.add_child(_make_row("방어(1.2초)", _key_display_text("p2_down")))
 
 func _make_key_row(action: String, label_text: String) -> HBoxContainer:
+	return _make_row(label_text, _key_display_text(action))
+
+## 왼쪽에 조작 이름, 오른쪽에 키 문구를 놓은 한 줄
+func _make_row(label_text: String, key_text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 
@@ -30,7 +40,7 @@ func _make_key_row(action: String, label_text: String) -> HBoxContainer:
 	row.add_child(name_label)
 
 	var key_label := Label.new()
-	key_label.text = _key_display_text(action)
+	key_label.text = key_text
 	key_label.custom_minimum_size = Vector2(110, 0)
 	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	key_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))

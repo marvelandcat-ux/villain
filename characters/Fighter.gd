@@ -23,6 +23,24 @@ const DEFAULT_JUMP_VELOCITY: float = -430.0
 ## 의자를 이 높이에 둔 이유는 의자에 올라선 캐릭터가 열차 지붕(y=195)보다 확실히 위에 있어야 하기 때문
 const DEFAULT_AIR_JUMP_VELOCITY: float = -510.0
 
+## --- 방향키 두 번 대시 (전 캐릭터 공용, 스킬이 아니라 기본 조작이다) ---
+## 대시하는 동안의 수평 속도(px/초). 걷기(240~270)의 두 배 반쯤
+const DEFAULT_DASH_SPEED: float = 700.0
+## 대시가 유지되는 시간(초). 속도 x 시간이 곧 이동 거리라 기본값은 126px = 몸통 폭의 약 4배
+const DEFAULT_DASH_DURATION: float = 0.18
+## 다음 대시까지 기다리는 시간(초)
+const DEFAULT_DASH_COOLDOWN: float = 3.0
+## 대시 중 잔상을 남기는 간격(초)
+const DASH_TRAIL_INTERVAL: float = 0.04
+
+## --- 아래 키 방어 (전 캐릭터 공용) ---
+## 아래 키를 누른 순간 켜져서 이 시간(초) 동안 유지된다. 누르고 있는 게 아니라 한 번 눌러 발동하는 방식
+const DEFAULT_GUARD_DURATION: float = 1.2
+## 방어가 끝나고 다음 방어까지 기다리는 시간(초)
+const DEFAULT_GUARD_COOLDOWN: float = 5.0
+## 방어할 때 몸을 감싸는 원형 보호막
+const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
+
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
 const DROP_THROUGH_DURATION: float = 0.35
@@ -35,11 +53,31 @@ static var jump_velocity: float = DEFAULT_JUMP_VELOCITY
 static var air_jump_velocity: float = DEFAULT_AIR_JUMP_VELOCITY
 ## 바닥에서 뛴 뒤 공중에서 추가로 뛸 수 있는 횟수. 1이면 이단 점프, 0이면 예전처럼 바닥에서만 점프
 static var max_air_jumps: int = 1
+## 대시 값도 중력·점프력과 같이 전 캐릭터가 공유하고 훈련장에서 바로 바꿔볼 수 있게 static var로 둔다
+static var dash_speed: float = DEFAULT_DASH_SPEED
+static var dash_duration: float = DEFAULT_DASH_DURATION
+static var dash_cooldown: float = DEFAULT_DASH_COOLDOWN
+static var guard_duration: float = DEFAULT_GUARD_DURATION
+static var guard_cooldown: float = DEFAULT_GUARD_COOLDOWN
 
 var current_hp: int = 0
 var facing: float = 1.0
 ## 지금 공중에서 몇 번 더 뛸 수 있는지. 바닥에 닿을 때마다 max_air_jumps로 다시 채워진다
 var _air_jumps_left: int = 0
+## 대시가 남은 시간 / 대시 방향 / 다음 대시까지 남은 쿨타임 / 다음 잔상까지 남은 시간
+var _dash_time: float = 0.0
+var _dash_dir: float = 0.0
+var _dash_cooldown_left: float = 0.0
+var _dash_trail_timer: float = 0.0
+## 방어(보호막)가 켜져 있는지. 이 동안은 어떤 공격도 데미지·넉백이 전부 0이다
+var is_guarding: bool = false
+## 방어가 유지되는 남은 시간 / 다음 방어까지 남은 쿨타임
+var _guard_time: float = 0.0
+var _guard_cooldown_left: float = 0.0
+## 방어 중에 몸을 감싸는 원형 보호막 (처음 방어할 때 만든다).
+## 타입을 안 붙인 이유 — GuardShield는 preload로 가져오는 새 class_name이라, 타입을 붙이면
+## 전역 클래스 캐시가 갱신되기 전에는 set_active()를 못 찾는다고 파싱 에러가 난다
+var _shield = null
 
 ## 자식 노드 이름(Skill1/Skill2/SkillUltimate/BasicAttack)으로 자동 연결되는 스킬 슬롯.
 ## 스탠스 전환처럼 특수한 캐릭터는 직접 다시 할당해서 바꿀 수 있다
@@ -169,6 +207,11 @@ const COMBO_WINDOW := 1.5
 ## 0이면 전혀 안 띄운다(지상 유지 — 콤보 앞 타격이 상대를 붙잡아두게). 콤보 마무리만 기본 팝업으로 크게 날린다
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
 	if is_invincible:
+		return
+	# 방어 중엔 어떤 공격도 통하지 않는다 — 데미지도 넉백도 없다(무적과 같은 취급).
+	# 막아낸 양은 얼마나 잘 막았는지 볼 수 있게 누적해둔다
+	if is_guarding:
+		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + amount
 		return
 	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction)))
 	if damage_reduction > 0.0:
@@ -302,9 +345,108 @@ func ring_out() -> void:
 func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
+## 지금 방어를 켤 수 있는지. 쿨타임이 남았거나 이미 방어 중이거나,
+## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다
+func can_guard() -> bool:
+	if _guard_cooldown_left > 0.0 or _guard_time > 0.0:
+		return false
+	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
+
+## 아래 키를 **누른 순간** 호출한다 — guard_duration(1.2초) 동안 보호막이 켜지고
+## 그 사이에 들어오는 공격은 전부 무효가 된다. 실제로 켜졌으면 true.
+## 공중에서도 켜지고, 켜져 있는 동안엔 이동·점프·공격·스킬이 전부 막힌다(무적의 대가)
+func start_guard() -> bool:
+	if not can_guard():
+		return false
+	is_guarding = true
+	_guard_time = guard_duration
+	velocity.x = 0.0
+	if _shield == null:
+		_shield = GUARD_SHIELD_SCRIPT.new()
+		add_child(_shield)
+	_shield.set_active(true)
+	_shield.set_remain(1.0)
+	_set_visual_guard(true)
+	return true
+
+## 방어를 끈다. refund가 true면 쿨타임을 물리지 않는다 —
+## "아래키를 누르자마자 점프"(발판 통과)처럼 방어할 의도가 아니었던 경우에 쓴다
+func cancel_guard(refund: bool = false) -> void:
+	if not is_guarding:
+		return
+	is_guarding = false
+	_guard_time = 0.0
+	_guard_cooldown_left = 0.0 if refund else guard_cooldown
+	if _shield:
+		_shield.set_active(false)
+	_set_visual_guard(false)
+
+## 몸(BodyRig)에 막는 자세를 켜고 끈다. 그 메서드가 없는 비주얼이면 그냥 넘어간다
+func _set_visual_guard(on: bool) -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual and visual.has_method("set_guarding"):
+		visual.set_guarding(on)
+
+## 방어 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
+func guard_cooldown_ratio() -> float:
+	if guard_cooldown <= 0.0:
+		return 0.0
+	return clampf(_guard_cooldown_left / guard_cooldown, 0.0, 1.0)
+
+## 지금 대시를 쓸 수 있는지. 쿨타임이 남았거나, 경직·붙잡힘 상태거나,
+## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다
+func can_dash() -> bool:
+	if _dash_cooldown_left > 0.0 or _dash_time > 0.0:
+		return false
+	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null
+
+## 방향키를 두 번 눌렀을 때 그 방향으로 짧게 미끄러진다. 실제로 나갔으면 true.
+## 스킬이 아니라 기본 조작이라 스킬 클래시·is_busy()와 무관하게 동작한다
+func dash(direction: float) -> bool:
+	if is_zero_approx(direction) or not can_dash():
+		return false
+	_dash_dir = signf(direction)
+	facing = _dash_dir
+	_dash_time = dash_duration
+	_dash_cooldown_left = dash_cooldown
+	_dash_trail_timer = 0.0
+	_spawn_dash_afterimage()
+	return true
+
+## 대시 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
+func dash_cooldown_ratio() -> float:
+	if dash_cooldown <= 0.0:
+		return 0.0
+	return clampf(_dash_cooldown_left / dash_cooldown, 0.0, 1.0)
+
+## 대시 잔상 — Visual을 그 순간 모습 그대로 복제해 뒤에 남기고 서서히 지운다.
+## DashSkill._spawn_afterimage()와 같은 방식이라 임시 사각형이든 스프라이트 몸이든 그대로 동작한다.
+## 복제본의 스크립트를 떼는 게 핵심 — 안 떼면 BodyRig의 매 프레임 자세 계산이 잔상에서도 돌아 같이 움직인다
+func _spawn_dash_afterimage() -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	var parent: Node = get_parent()
+	if visual == null or parent == null:
+		return
+	var ghost := visual.duplicate() as Node2D
+	if ghost == null:
+		return
+	ghost.set_script(null)
+	parent.add_child(ghost)
+	ghost.z_index = -2   # 본체(0)와 그 손(1)보다 확실히 뒤로
+	ghost.global_position = visual.global_position
+	ghost.scale = visual.scale
+	ghost.modulate = Color(0.7, 0.82, 1.0, 0.42)
+	var tween := ghost.create_tween()
+	tween.tween_property(ghost, "modulate:a", 0.0, 0.22)
+	tween.tween_callback(ghost.queue_free)
+
 func move(direction: float) -> void:
 	# 피격 경직 중엔 조작으로 넉백 속도를 덮어쓰지 않는다 (그래야 넉백 방향으로 날아간다)
 	if _hitstun_time > 0.0 or is_grabbed:
+		return
+	# 방어는 제자리에 버티는 자세다 — 움직이면서 절반만 맞으면 안 지킬 이유가 없어진다
+	if is_guarding:
+		velocity.x = 0.0
 		return
 	if direction != 0.0:
 		facing = signf(direction)
@@ -313,8 +455,8 @@ func move(direction: float) -> void:
 ## 바닥에서는 보통 점프, 공중에서는 남은 횟수만큼 이단 점프.
 ## 이단 점프는 지금까지의 낙하 속도를 무시하고 속도를 새로 덮어써서, 떨어지는 중에 눌러도 제대로 뜬다
 func jump() -> void:
-	# 경직 중엔 점프로 넉백을 못 벗어난다
-	if _hitstun_time > 0.0 or is_grabbed:
+	# 경직 중엔 점프로 넉백을 못 벗어난다. 방어 중에도 못 뛴다(1.2초를 버티기로 한 대가)
+	if _hitstun_time > 0.0 or is_grabbed or is_guarding:
 		return
 	if is_on_floor():
 		velocity.y = jump_velocity * jump_multiplier
@@ -393,7 +535,7 @@ func _get_clash_manager() -> Node:
 	return get_tree().get_first_node_in_group("skill_clash_manager")
 
 func use_skill_1() -> void:
-	if skill_1 == null or is_feared or is_grabbed or is_busy() or not skill_1.can_use():
+	if skill_1 == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_1.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
@@ -402,7 +544,7 @@ func use_skill_1() -> void:
 		skill_1.use(self)
 
 func use_skill_2() -> void:
-	if skill_2 == null or is_feared or is_grabbed or is_busy() or not skill_2.can_use():
+	if skill_2 == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_2.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
@@ -414,7 +556,7 @@ func use_skill_2() -> void:
 ## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다.
 ## 상대와 같은 타이밍에 궁극기를 함께 쓰면(클래시) 진 쪽은 컷인조차 뜨지 않고 쿨타임만 소모된다
 func use_ultimate() -> void:
-	if skill_ultimate == null or is_feared or is_grabbed or is_busy() or not skill_ultimate.can_use():
+	if skill_ultimate == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_ultimate.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
@@ -437,7 +579,7 @@ func fire_ultimate_now() -> void:
 ## 기본공격은 스킬 클래시(연타 미니게임)에 태우지 않는다 — 스킬1/2/궁극기보다 훨씬 자주 나가는 잽이라,
 ## 여기까지 클래시로 걸리면 마주칠 때마다 화면이 멈추고 연타 게임이 뜨는 꼴이 된다. 항상 바로 나간다
 func use_basic_attack() -> void:
-	if basic_attack == null or is_feared or is_grabbed or is_busy() or not basic_attack.can_use():
+	if basic_attack == null or is_feared or is_grabbed or is_guarding or is_busy() or not basic_attack.can_use():
 		return
 	_fire_basic_attack()
 
@@ -517,6 +659,37 @@ func apply_physics(delta: float) -> void:
 		if _hitstun_time > 0.0:
 			g *= HIT_LAUNCH_GRAVITY_SCALE
 		velocity.y += g * delta
+	# 방어 — 정해진 시간이 지나면 저절로 꺼지고 그때부터 쿨타임이 돈다.
+	# 켜져 있는 동안엔 제자리에 버틴다(이동·점프·공격은 각 함수에서 막는다)
+	if _guard_cooldown_left > 0.0:
+		_guard_cooldown_left = maxf(_guard_cooldown_left - delta, 0.0)
+	if _guard_time > 0.0:
+		_guard_time = maxf(_guard_time - delta, 0.0)
+		velocity.x = 0.0
+		if _shield:
+			_shield.set_remain(_guard_time / maxf(guard_duration, 0.001))
+		if is_zero_approx(_guard_time):
+			is_guarding = false
+			_guard_cooldown_left = guard_cooldown
+			if _shield:
+				_shield.set_active(false)
+			_set_visual_guard(false)
+
+	# 대시 — 짧은 시간 동안 입력보다 우선해서 수평 속도를 덮어쓴다.
+	# 맞으면 그 자리에서 끊긴다(넉백이 대시를 이겨야 콤보가 성립한다)
+	if _dash_cooldown_left > 0.0:
+		_dash_cooldown_left = maxf(_dash_cooldown_left - delta, 0.0)
+	if _dash_time > 0.0:
+		if _hitstun_time > 0.0 or is_grabbed:
+			_dash_time = 0.0
+		else:
+			_dash_time = maxf(_dash_time - delta, 0.0)
+			velocity.x = _dash_dir * dash_speed
+			_dash_trail_timer -= delta
+			if _dash_trail_timer <= 0.0:
+				_dash_trail_timer = DASH_TRAIL_INTERVAL
+				_spawn_dash_afterimage()
+	# 돌진 스킬 등이 이동을 가로챘으면 그쪽이 최종 결정권을 갖는다 (대시보다 뒤에 둔 이유)
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
 	move_and_slide()

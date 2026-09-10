@@ -14,6 +14,22 @@ extends Node
 @export var jump_chance: float = 0.006
 @export var target: Fighter
 
+## --- 대시 (쿨타임 3초라 조건만 맞으면 매번 시도해도 알아서 드문드문 나간다) ---
+## 상대가 이만큼 넘게 떨어져 있으면 대시로 단숨에 붙는다
+@export var dash_approach_distance: float = 200.0
+## 열차 등을 피해 안전지대로 갈 때, 남은 거리가 이만큼 넘으면 대시로 서두른다
+@export var dash_dodge_distance: float = 80.0
+
+## --- 방어 (아래 키 가드 — 1.2초 무적 / 쿨타임 5초는 Fighter가 관리한다) ---
+## 상대가 이 거리 안에 있으면 "위협받는 중"으로 보고 방어를 고려한다
+@export var guard_threat_distance: float = 70.0
+## 위협 거리 안에 있을 때 매 물리 프레임 방어를 켤 확률.
+## 쿨타임 5초가 Fighter 쪽에서 막아주므로, 높게 잡아도 5초에 한 번을 넘지 않는다
+@export var guard_start_chance: float = 0.06
+## HP가 최대치의 이 비율 밑이면 방어 확률이 guard_low_hp_multiplier배로 오른다
+@export var guard_low_hp_ratio: float = 0.3
+@export var guard_low_hp_multiplier: float = 2.5
+
 ## false면 아무 판단도 안 한다(대전 시작 카운트다운 등) — 그래도 중력·바닥 착지는 계속 처리한다
 var is_active: bool = true
 
@@ -21,6 +37,8 @@ var _is_ranged: bool = false
 var _retreat_timer: float = 0.0
 ## 안전지대로 피신할 때 이단 점프 진행 단계: 0=아직 안 뜀, 1=1단 뛰고 정점 기다리는 중, 2=2단까지 다 씀
 var _dodge_jump_stage: int = 0
+## 바깥에서 방어 확률에 곱하는 배수 — ClaudeAIController가 전략(공격적/수비적)에 따라 바꾼다. 1이면 기본
+var guard_bias: float = 1.0
 
 @onready var fighter: Fighter = get_parent()
 
@@ -45,6 +63,14 @@ func _physics_process(delta: float) -> void:
 		fighter.apply_physics(delta)
 		return
 
+	# 방어는 이동·공격을 다 막으므로 제일 먼저 정한다.
+	# 막고 있는 동안엔 다른 판단을 아예 건너뛴다 (어차피 Fighter가 전부 막는다)
+	_try_guard()
+	if fighter.is_guarding:
+		fighter.move(0.0)
+		fighter.apply_physics(delta)
+		return
+
 	if fighter.movement_override == null:
 		if not _try_dodge_hazard():
 			_decide_movement(delta)
@@ -52,17 +78,35 @@ func _physics_process(delta: float) -> void:
 
 	fighter.apply_physics(delta)
 
+## 방어(1.2초 무적)를 켤지 정한다. 유지·해제·쿨타임은 전부 Fighter가 알아서 하므로
+## 여기서는 "지금 켤까"만 판단하면 된다.
+## 상대가 가까울 때만 확률로 켠다 — 쿨타임 5초가 있어서 아무리 자주 굴려도 남발되지 않는다.
+## **열차 같은 맵 기믹이 오는 중엔 안 켠다** — 기믹은 방어로 막히지 않는데 막는 동안 피하지도 못해서 순수한 손해다
+func _try_guard() -> void:
+	if fighter.is_guarding or not fighter.can_guard() or _hazard_active():
+		return
+	if absf(target.global_position.x - fighter.global_position.x) > guard_threat_distance:
+		return
+	var chance: float = guard_start_chance * guard_bias
+	# 몰렸을 때 더 자주 막는다
+	if fighter.stats and fighter.current_hp <= fighter.stats.max_hp * guard_low_hp_ratio:
+		chance *= guard_low_hp_multiplier
+	if randf() < chance:
+		fighter.start_guard()
+
+## "ai_danger_zone" 그룹에 지금 위험한 기믹이 하나라도 있는지
+func _hazard_active() -> bool:
+	for hazard in get_tree().get_nodes_in_group("ai_danger_zone"):
+		if hazard.has_method("is_dangerous") and hazard.is_dangerous():
+			return true
+	return false
+
 ## 맵 기믹(지나가는 열차 등)이 위험한 상태면 싸움을 잠깐 멈추고 가장 가까운 안전지대(ai_safe_spot)로 피신한다.
 ## "ai_danger_zone" 그룹의 노드 중 하나라도 is_dangerous()가 true면 위험하다고 본다.
 ## 실제로 피신 판단을 했으면 true를 돌려줘서 평소 이동 판단(_decide_movement)을 건너뛰게 한다.
 ## 위험한 맵이 아니면(ai_danger_zone/ai_safe_spot가 씬에 하나도 없으면) 항상 false라 기존 동작 그대로다
 func _try_dodge_hazard() -> bool:
-	var danger := false
-	for hazard in get_tree().get_nodes_in_group("ai_danger_zone"):
-		if hazard.has_method("is_dangerous") and hazard.is_dangerous():
-			danger = true
-			break
-	if not danger:
+	if not _hazard_active():
 		return false
 
 	var spot: Node2D = _nearest_safe_spot()
@@ -85,6 +129,9 @@ func _try_dodge_hazard() -> bool:
 	var dx: float = spot.global_position.x - fighter.global_position.x
 	if absf(dx) > 16.0:
 		fighter.move(signf(dx))
+		# 열차가 오는데 아직 멀면 대시로 서두른다 (쿨이 3초라 한 주기에 한 번쯤 나간다)
+		if absf(dx) > dash_dodge_distance:
+			fighter.dash(signf(dx))
 		_dodge_jump_stage = 0
 	else:
 		fighter.move(0.0)
@@ -118,19 +165,28 @@ func _decide_movement(delta: float) -> void:
 	if _retreat_timer > 0.0:
 		_retreat_timer -= delta
 		fighter.move(-dir)
-		fighter.facing = dir  # 뒤로 빠지면서도 상대 쪽을 계속 바라본다(스킬이 반대 방향으로 나가지 않도록)
+		# 쿨을 벌려고 빠지는 중이니 대시로 단숨에 벌린다
+		fighter.dash(-dir)
+		# 뒤로 빠지면서도 상대 쪽을 계속 바라본다(스킬이 반대 방향으로 나가지 않도록).
+		# move()와 dash()가 둘 다 facing을 이동 방향으로 돌리므로 여기서 다시 잡아야 한다
+		fighter.facing = dir
 		return
 
 	var preferred_range: float = ranged_distance if _is_ranged else attack_range
 
 	if dist > preferred_range + 20.0:
 		fighter.move(dir)
+		# 많이 멀면 대시로 단숨에 붙는다
+		if dist > dash_approach_distance:
+			fighter.dash(dir)
 		# 벽이나 낮은 장애물에 막히면 뛰어넘는다 (아파트 단지 놀이터의 모래통 등)
 		if fighter.is_on_wall():
 			fighter.jump()
 	elif _is_ranged and dist < preferred_range - 20.0:
 		# 원거리 캐릭터는 상대가 너무 가까이 오면 거리를 벌리되, 계속 상대를 바라보며 견제한다
 		fighter.move(-dir)
+		# 파고든 상대에게서 단숨에 빠져나온다 (대시도 facing을 돌리므로 아래에서 되돌린다)
+		fighter.dash(-dir)
 		fighter.facing = dir
 	else:
 		fighter.move(0.0)

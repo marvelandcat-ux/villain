@@ -8,11 +8,22 @@
 [ext_resource type="Texture2D" uid="uid://d3r2vpysgqom8" path="res://sprite/축법소년/총.png" id="6_gun"]
 [ext_resource type="Texture2D" uid="uid://c3rrljta7b1s3" path="res://sprite/축법소년/달리는 축법소년 표정.png" id="7_dashface"]
 [ext_resource type="Texture2D" uid="uid://gk66bpxkxs4d" path="res://sprite/축법소년/축법소년 다치다.png" id="8_hurtface"]
+[ext_resource type="Texture2D" uid="uid://c6k234qtqgk5a" path="res://sprite/축법소년/막대 사탕.png" id="9_candy"]
+[ext_resource type="Texture2D" uid="uid://vx1uoqskg6c8" path="res://sprite/축법소년/힘든 축법소년.png" id="10_lowhp"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 action_head_texture = ExtResource("7_dashface")
 action_head_scale = Vector2(0.052, 0.052)
 hurt_head_texture = ExtResource("8_hurtface")
+low_hp_head_texture = ExtResource("10_lowhp")
+low_hp_threshold = 20
+attack_raise_deg = -20.0
+attack_swing_deg = 45.0
+attack_raise_offset = Vector2(-8, 6)
+attack_slam_offset = Vector2(14, 2)
+attack_duration = 0.35
+attack_thrust = true
+gun_hides_held_item = true
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
 visible = false
@@ -36,6 +47,12 @@ position = Vector2(-27, 4)
 
 [node name="HandR" parent="." index="5" unique_id=1459708461]
 z_index = 1
+
+[node name="Candy" type="Sprite2D" parent="HandRHold" index="0"]
+position = Vector2(9.6891, -9.6743)
+rotation = 0.785398
+scale = Vector2(0.021, 0.021)
+texture = ExtResource("9_candy")
 
 [node name="Head" parent="." index="7" unique_id=1394957076]
 position = Vector2(1.5, -32.6)

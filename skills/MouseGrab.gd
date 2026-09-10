@@ -3,6 +3,10 @@ extends Node2D
 
 ## 유선 마우스를 던져 상대를 잡아 끌어오는 그랩 (악플러 스킬1).
 ## 세 단계로 진행된다 — ① 손에 쥔 채 어깨 뒤로 젖히기 ② 앞으로 날아가기 ③ 잡아서 끌어오기.
+## ②는 곧게 날아가다가 사거리의 drop_after 지점(기본 50%)을 지나면 중력을 받아 아래로 처진다 —
+## "힘이 빠져 떨어지는" 느낌이라, 끝까지 곧게 가던 예전보다 던진 거리가 눈에 읽힌다.
+## 떨어지다 지면·발판에 닿으면 사거리가 남아 있어도 거기서 멈춘다(stop_on_ground).
+## 빗나가면 그 자리에서 사라지지 않고 **유선에 딸려 손으로 되감긴 뒤** 사라진다(④ 되감기).
 ## 유선의 시작점은 고정 좌표가 아니라 리그의 **실제 오른손 위치**라, 팔을 젖히고 뿌리는 동안
 ## 줄이 손에 붙어서 같이 움직인다(손으로 잡고 있는 느낌).
 ## 던지는 동안은 `마우스 선.png`(마우스 몸통 + 뒤로 늘어지는 유선), 잡은 뒤에는
@@ -14,6 +18,8 @@ extends Node2D
 const STATE_WINDUP := 0
 const STATE_FLY := 1
 const STATE_REEL := 2
+## 빗나가고 손으로 되감기는 중
+const STATE_RETURN := 3
 
 const MOUSE_TEXTURE_PATH := "res://sprite/악플러/몸/마우스 선.png"
 const BOUND_TEXTURE_PATH := "res://sprite/악플러/몸/묶인거.png"
@@ -38,6 +44,15 @@ var coil_width: float = 50.0
 ## 마우스를 손에 쥔 채 젖히고 있는 시간(초). 이 시간이 지나야 손을 떠나 날아간다.
 ## 던지는 팔 동작(BodyRig.play_cast_motion)의 젖히는 구간과 같은 값이라야 손과 맞아떨어진다
 var windup_time: float = 0.14
+## 사거리의 몇 %를 지났을 때부터 아래로 처지기 시작하는지 (0.5 = 절반 지점부터). 1이면 안 처진다
+var drop_after: float = 0.5
+## 처지기 시작한 뒤 받는 중력(px/초²)
+var gravity: float = 3400.0
+## 떨어지다 지면·발판에 닿으면 거기서 멈출지. 손 높이가 지면에서 27px뿐이라
+## 이게 없으면 마우스가 땅에 박힌 채 미끄러져 간다
+var stop_on_ground: bool = true
+## 빗나간 뒤 손으로 되감기는 속도(px/초). 던질 때보다 빨라야 "탁 감긴다"는 느낌이 난다
+var return_speed: float = 1100.0
 
 var _source: Fighter
 var _opponent: Fighter
@@ -46,14 +61,17 @@ var _throw_speed: float = 700.0
 var _max_range: float = 260.0
 var _reel_speed: float = 320.0
 var _damage: int = 4
-## 마우스가 상대 몸에 이만큼 가까워지면 "잡았다"고 본다
-var _catch_radius: float = 24.0
+## 마우스가 상대 중심에서 이만큼 안에 들어오면 "잡았다"고 본다.
+## 스킬 노드가 setup() 전에 덮어쓴다(상대 몸은 캡슐 20x60이라 이 값이 몸보다 좁다)
+var catch_radius: float = 30.0
 ## 상대를 악플러에게서 이 거리까지 끌어오면 놓아준다
 var _release_dist: float = 44.0
 ## 유선이 시작되는 손 위치(악플러 원점 기준). x는 바라보는 방향으로 반전된다
 var _hand_offset: Vector2 = Vector2(22, -6)
 
 var _mouse_pos: Vector2
+## 처지기 시작한 뒤 쌓이는 낙하 속도(px/초). 손을 떠날 때 0에서 시작한다
+var _fall_speed: float = 0.0
 var _state: int = STATE_WINDUP
 ## 젖히는 단계에 남은 시간(초)
 var _windup_left: float = 0.0
@@ -126,13 +144,29 @@ func _physics_process(delta: float) -> void:
 		if is_zero_approx(_windup_left):
 			_state = STATE_FLY
 	elif _state == STATE_FLY:
-		# 손을 떠나 앞으로 날아간다
+		# 손을 떠나 앞으로 날아간다. 수평 속도는 끝까지 그대로고, 사거리의 drop_after를 지난
+		# 뒤부터만 아래로 가속이 붙는다 (거리로 재므로 던진 뒤 악플러가 걸어가도 판정이 같다)
+		var flown: float = absf(_mouse_pos.x - hand.x)
+		var was: Vector2 = _mouse_pos
+		if flown >= _max_range * drop_after:
+			_fall_speed += gravity * delta
+			_mouse_pos.y += _fall_speed * delta
 		_mouse_pos.x += _dir * _throw_speed * delta
-		if _opponent and is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < _catch_radius:
+		# 잡기 판정이 먼저다 — 상대 발밑에 떨어지는 프레임에서 착지가 먼저 걸리면
+		# 맞을 만했던 한 발이 그냥 사라진다. 떨어지는 중에도 판정은 계속 살아있다
+		if _opponent and is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < catch_radius:
 			_grab()
-		elif absf(_mouse_pos.x - hand.x) >= _max_range:
-			_release()  # 빗나감 → 사라진다
+		elif _hit_ground(was, _mouse_pos) or absf(_mouse_pos.x - hand.x) >= _max_range:
+			_state = STATE_RETURN   # 땅에 떨어졌거나 사거리 끝 → 줄을 당겨 되감는다
+	elif _state == STATE_RETURN:
+		# 유선에 딸려 손으로 되감긴다. 마우스 몸통 뒤끝이 손에 닿으면 회수 완료.
+		# 속도가 0 이하면 영영 안 돌아와 노드가 남으므로 그 경우는 바로 정리한다
+		var to_hand: Vector2 = hand - _mouse_pos
+		var gap: float = to_hand.length()
+		if gap <= mouse_length or return_speed <= 0.0:
+			_release()
 			return
+		_mouse_pos += to_hand / gap * minf(return_speed * delta, gap - mouse_length)
 	elif _state == STATE_REEL:
 		# 잡은 상대를 끌어온다 (케이블이 상대 몸에 감겨 있다)
 		if not (_opponent and is_instance_valid(_opponent)):
@@ -191,6 +225,24 @@ func _stretch_cord(cord: Sprite2D, from: Vector2, to: Vector2, texture_length: f
 	cord.position = from
 	cord.rotation = delta.angle()
 	cord.scale = Vector2(dist / texture_length, thickness)
+
+## 이번 프레임에 지나간 길이 지면·발판을 뚫었는지 — 뚫었으면 거기서 끝난다.
+## **윗면(법선이 위를 향하는 면)만 본다** — 벽은 통과시키려는 것이다. 벽까지 막으면
+## 벽 있는 맵에서 사거리가 맵 폭에 좌우돼서, 같은 스킬이 맵마다 다르게 느껴진다.
+## 캐릭터는 몸으로 막으면 안 되므로 fighters 그룹을 전부 레이캐스트에서 뺀다(VomitBeam과 같은 방식)
+func _hit_ground(from: Vector2, to: Vector2) -> bool:
+	if not stop_on_ground or to.y <= from.y:
+		return false   # 내려가는 중일 때만 검사한다
+	var query := PhysicsRayQueryParameters2D.create(from, to)
+	query.collide_with_areas = false
+	var excludes: Array[RID] = []
+	for f in get_tree().get_nodes_in_group("fighters"):
+		excludes.append(f.get_rid())
+	query.exclude = excludes
+	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return false
+	return hit["normal"].y < -0.5
 
 ## 잡는 순간 — 데미지를 조금 주고, 상대 수평 이동을 잡아채 끌어오기 시작한다
 func _grab() -> void:

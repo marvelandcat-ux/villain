@@ -5,6 +5,8 @@
 [ext_resource type="Texture2D" uid="uid://daj7hrn5nnjrj" path="res://sprite/악플러/몸/악플러몸통.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://d1y4eapyhiekr" path="res://sprite/악플러/몸/악플러발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://btx50km8m0yla" path="res://sprite/악플러/몸/악플러키보드.png" id="5_keyboard"]
+[ext_resource type="Texture2D" uid="uid://cqk2uvtbnq3w8" path="res://sprite/악플러/몸/분노 악플러.png" id="6_rageface"]
+[ext_resource type="Texture2D" uid="uid://dbfnehwd2apg3" path="res://sprite/악플러/몸/힘든 악플러.png" id="7_lowhp"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
 attack_raise_deg = 25.0
@@ -15,6 +17,9 @@ attack_duration = 0.45
 attack_swing_arc = 26.0
 attack_two_handed = true
 cast_hides_held_item = true
+action_head_texture = ExtResource("6_rageface")
+low_hp_head_texture = ExtResource("7_lowhp")
+low_hp_threshold = 20
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

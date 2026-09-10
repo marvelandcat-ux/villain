@@ -37,7 +37,7 @@ func _physics_process(delta: float) -> void:
 func _request_decision() -> void:
 	if target == null or not is_instance_valid(target):
 		return
-	var system_prompt := "너는 2D 사이드뷰 대전 격투 게임의 AI 상대다. 아래 상황을 보고 다음 행동 전략을 딱 하나의 JSON으로만 답해라. 다른 설명은 절대 쓰지 마라. 형식: {\"strategy\": \"aggressive\" 또는 \"defensive\" 또는 \"retreat\", \"use_skill\": 1, 2, 3 중 하나 또는 null}. use_skill은 지금 당장 그 스킬을 쓰고 싶으면 번호(1=스킬1, 2=스킬2, 3=궁극기), 아니면 null."
+	var system_prompt := "너는 2D 사이드뷰 대전 격투 게임의 AI 상대다. 아래 상황을 보고 다음 행동 전략을 딱 하나의 JSON으로만 답해라. 다른 설명은 절대 쓰지 마라. 형식: {\"strategy\": \"aggressive\" 또는 \"defensive\" 또는 \"retreat\", \"use_skill\": 1, 2, 3 중 하나 또는 null}. use_skill은 지금 당장 그 스킬을 쓰고 싶으면 번호(1=스킬1, 2=스킬2, 3=궁극기), 아니면 null. defensive를 고르면 상대가 가까울 때 보호막을 자주 켜서 받는 피해가 절반이 되지만 그 동안 움직이지도 때리지도 못한다. aggressive는 거의 안 막고 밀어붙인다."
 	var body := {
 		"model": MODEL,
 		"max_tokens": 60,
@@ -91,10 +91,15 @@ func _strip_code_fence(text: String) -> String:
 
 func _apply_decision(decision: Dictionary) -> void:
 	var strategy: String = decision.get("strategy", "")
+	# 전략은 "얼마나 자주 막느냐"로도 이어진다 — defensive가 예전엔 아무 일도 안 했다
 	if strategy == "retreat":
 		_retreat_timer = retreat_duration
+		guard_bias = 1.5
 	elif strategy == "aggressive":
 		_retreat_timer = 0.0
+		guard_bias = 0.4   # 밀어붙일 땐 거의 안 막는다
+	elif strategy == "defensive":
+		guard_bias = 3.0   # 붙어 있을 때 훨씬 자주 보호막을 켠다
 
 	var use_skill = decision.get("use_skill", null)
 	if use_skill == 1 and fighter.skill_1 and fighter.skill_1.can_use():

@@ -104,6 +104,21 @@ extends Node2D
 ## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
 ## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
 @export var attack_swing_arc: float = 0.0
+## 기본공격을 "휘두르기"가 아니라 "찌르기"로 바꾼다 (촉법소년 막대사탕).
+## 켜면 콤보 2·3타 변주가 위아래로 크게 후리는 대신, 각도는 거의 그대로 두고
+## 손이 뒤로 빠졌다가 앞으로 곧게 내질러진다. 기본은 꺼짐(다른 캐릭터 영향 없음)
+@export var attack_thrust: bool = false
+## 찌르기 캐릭터의 2타 — "아래에서 위로 올려치기". 1타 찌르기와 완전히 다른 궤적이어야
+## 세 타가 한 동작으로 안 보인다. 각도 부호는 위와 같다(양수 raise=무기가 위로 감김)
+@export var thrust2_raise_deg: float = -40.0
+@export var thrust2_swing_deg: float = -55.0
+@export var thrust2_raise_offset: Vector2 = Vector2(-10, 14)
+@export var thrust2_slam_offset: Vector2 = Vector2(14, -20)
+## 찌르기 캐릭터의 3타 — "머리 뒤로 크게 넘겼다가 바닥까지 내려찍기" (마무리 타)
+@export var thrust3_raise_deg: float = 100.0
+@export var thrust3_swing_deg: float = 130.0
+@export var thrust3_raise_offset: Vector2 = Vector2(-26, -22)
+@export var thrust3_slam_offset: Vector2 = Vector2(16, 6)
 
 ## 술 마시기 동작 전체 길이(초). 올리기 → 마시기 → 내리기가 이 안에서 다 일어난다
 @export var drink_duration: float = 1.1
@@ -137,6 +152,9 @@ extends Node2D
 @export var gun_recoil_kick: float = 6.0
 ## 반동이 원래대로 돌아오는 속도(클수록 빨리 회복)
 @export var gun_recoil_recover: float = 9.0
+## 총을 겨누는 동안 손에 든 물건(촉법소년 막대사탕 등)을 숨긴다 —
+## 같은 오른손으로 총을 잡기 때문에 그대로 두면 총과 겹친다. 기본은 꺼짐(다른 캐릭터 영향 없음)
+@export var gun_hides_held_item: bool = false
 
 ## --- 백 서플렉스(헬스장 죽돌이 스킬2): 손을 뻗어 잡고, 들어올려 버티다가, 등 뒤로 넘겨 꽂는다 ---
 ## 잡을 때 두 손이 함께 모이는 목표 위치(리그 원점 기준) — 옆으로, 머리 높이 정도로 뻗어서 겹쳐 잡는다
@@ -174,6 +192,24 @@ extends Node2D
 @export var reel_tug_speed: float = 11.0
 ## 당기는 자세로 옮겨가고 풀리는 빠르기 (클수록 뚝뚝 끊긴다)
 @export var reel_blend_speed: float = 12.0
+
+## --- 방어 자세 (아래 키 보호막) — 두 손을 몸 앞으로 올려 막고 살짝 움츠린다 ---
+## 방어할 때 오른손이 가는 자리(리그 원점 기준). 앞(+x)이 바라보는 쪽이다.
+## **x를 머리 오른쪽 끝(25)보다 더 안쪽으로 넣지 말 것** — 촉법소년은 손이 z_index 1이라 얼굴을 덮어버리고,
+## 나머지 캐릭터는 반대로 머리 뒤로 숨어버린다. "얼굴에 붙이고 싶으면 x가 아니라 y를 올릴 것"
+@export var guard_hand_r_pos: Vector2 = Vector2(29, -34)
+## 왼손 자리 — 오른손보다 낮고 안쪽을 막는다(권투 가드처럼 위아래로 어긋나게)
+@export var guard_hand_l_pos: Vector2 = Vector2(25, -17)
+## 막는 손이 돌아가는 각도(도). 왼손은 반대로 돌아가 서로 마주 보게 된다.
+## 음수(반시계)라야 손에 든 물건이 몸 쪽으로 눕는다 — 악플러는 키보드가 얼굴 앞에 가로로 서서
+## 그대로 방패가 되고, 양수로 주면 머리 위로 치솟아 우스워진다
+@export var guard_hand_deg: float = -45.0
+## 방어할 때 몸과 머리가 아래로 움츠러드는 거리(px)
+@export var guard_crouch: float = 5.0
+## 방어할 때 고개를 앞으로 숙이는 각도(도)
+@export var guard_head_deg: float = 6.0
+## 방어 자세가 켜지고 꺼지는 빠르기 (클수록 즉각적)
+@export var guard_blend_speed: float = 16.0
 ## 줄을 잡은 두 손이 돌아가는 각도(도)
 @export var reel_hand_deg: float = -22.0
 ## 마우스를 던지고 줄을 당기는 동안 손에 든 물건(악플러 키보드 등)을 숨긴다 —
@@ -207,6 +243,14 @@ extends Node2D
 @export var action_head_texture: Texture2D
 ## 액션 표정일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var action_head_scale: Vector2 = Vector2.ZERO
+
+## HP가 low_hp_threshold "미만"으로 떨어지면 기본 얼굴을 이 얼굴(지친 표정)로 바꾼다.
+## 회복해서 기준 위로 올라가면 저절로 원래 얼굴로 돌아온다. 비어 있으면 안 바꾼다(촉법소년만 지정)
+@export var low_hp_head_texture: Texture2D
+## 지친 얼굴로 바뀌는 HP 기준값 — 이 값보다 낮아지면 바뀐다
+@export var low_hp_threshold: int = 20
+## 지친 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var low_hp_head_scale: Vector2 = Vector2.ZERO
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -283,10 +327,15 @@ var _reel_phase: float = 0.0
 var _vomit_time: float = 0.0
 ## 아파하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 피격 표정이다
 var _hurt_time: float = 0.0
+## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
+var _guard_blend: float = 0.0
+var _guard_target: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
 var _action_face_on: bool = false
+## HP가 기준 밑으로 떨어져 지친 얼굴이어야 하는지
+var _low_hp_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
@@ -339,6 +388,8 @@ func _process(delta: float) -> void:
 		_hurt_time = maxf(_hurt_time - delta, 0.0)
 		if is_zero_approx(_hurt_time):
 			_restore_head()
+	# HP가 기준 밑으로 떨어지면(또는 회복해서 올라오면) 기본 얼굴을 바꾼다
+	_update_low_hp_face()
 	# 총 조준 시간 카운트다운 — 끝나면 총을 다시 숨긴다
 	if _gun_time > 0.0:
 		_gun_time = maxf(_gun_time - delta, 0.0)
@@ -355,6 +406,7 @@ func _process(delta: float) -> void:
 		_cast_time = maxf(_cast_time - delta, 0.0)
 	# 줄 당기는 자세는 목표로 서서히 오가고, 당기는 박자는 그 자세일 때만 진행된다
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
+	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
 	if _reel_blend > 0.001:
 		_reel_phase += delta * reel_tug_speed
 	else:
@@ -507,6 +559,11 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _lookback_time > 0.0:
 		_pose_lookback()
 
+	# 방어 중이면 두 손을 몸 앞으로 올려 막는다 (다른 자세보다 나중이라 우선한다 —
+	# 방어 중에는 이동·공격·스킬이 다 막히므로 실제로 겹칠 일도 거의 없다)
+	if _guard_blend > 0.001:
+		_pose_guard()
+
 	# 자전거를 타는 동안엔 두 발이 페달을 밟고, 두 손이 핸들바를 잡는다 (걷기 동작을 덮어쓴다)
 	if _bike and _ride_blend > 0.3:
 		_pose_pedal()
@@ -516,8 +573,13 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
-		if cast_hides_held_item:
-			_hand_r_hold.visible = _cast_time <= 0.0 and _reel_blend <= 0.001
+		if cast_hides_held_item or gun_hides_held_item:
+			var hide_held: bool = false
+			if cast_hides_held_item and (_cast_time > 0.0 or _reel_blend > 0.001):
+				hide_held = true
+			if gun_hides_held_item and _gun_time > 0.0:
+				hide_held = true
+			_hand_r_hold.visible = not hide_held
 
 	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
 	if _squashing:
@@ -586,6 +648,8 @@ func _pose_attack_hand() -> void:
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
 ## 각도 부호: 음수=반시계(무기가 위로), 양수=시계(아래로)
 func _attack_variant_params() -> Dictionary:
+	if attack_thrust:
+		return _thrust_variant_params()
 	match _attack_variant:
 		1:
 			# 2타 — 앞쪽으로 낮고 빠르게 후려치기 (내려찍기와 다른 궤적: 감기 작게, 앞으로 길게)
@@ -605,6 +669,33 @@ func _attack_variant_params() -> Dictionary:
 			}
 		_:
 			# 1타 — 기존 내려찍기 (씬 export 값 그대로)
+			return {
+				"raise_deg": attack_raise_deg,
+				"swing_deg": attack_swing_deg,
+				"raise_off": attack_raise_offset,
+				"slam_off": attack_slam_offset,
+			}
+
+## 찌르기(attack_thrust)일 때의 타별 동작. 세 타가 서로 다른 궤적이어야 한 동작을 세 번
+## 반복하는 것처럼 안 보이므로, 2·3타는 1타 값에서 파생시키지 않고 따로 지정한다.
+## 1타 앞으로 찌르기 → 2타 아래에서 위로 올려치기 → 3타 머리 뒤로 넘겨 바닥까지 내려찍기
+func _thrust_variant_params() -> Dictionary:
+	match _attack_variant:
+		1:
+			return {
+				"raise_deg": thrust2_raise_deg,
+				"swing_deg": thrust2_swing_deg,
+				"raise_off": thrust2_raise_offset,
+				"slam_off": thrust2_slam_offset,
+			}
+		2:
+			return {
+				"raise_deg": thrust3_raise_deg,
+				"swing_deg": thrust3_swing_deg,
+				"raise_off": thrust3_raise_offset,
+				"slam_off": thrust3_slam_offset,
+			}
+		_:
 			return {
 				"raise_deg": attack_raise_deg,
 				"swing_deg": attack_swing_deg,
@@ -848,7 +939,23 @@ func set_action_face(on: bool) -> void:
 	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
-## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선)
+## HP를 매 프레임 보고 지친 얼굴을 켜고 끈다. 스킬이 알려주는 다른 표정들과 달리
+## Fighter의 HP는 데미지·회복·라운드 리셋 등 여러 경로로 바뀌므로, 신호를 받는 대신
+## 여기서 직접 읽어 상태가 바뀐 순간에만 얼굴을 갈아끼운다
+func _update_low_hp_face() -> void:
+	if _head == null or low_hp_head_texture == null:
+		return
+	if _fighter == null or not is_instance_valid(_fighter):
+		return
+	var on: bool = _fighter.current_hp < low_hp_threshold
+	if on == _low_hp_on:
+		return
+	_low_hp_on = on
+	# 잠깐 바뀐 표정(피격·토하기)이 떠 있으면 그게 끝날 때 _restore_head가 반영해준다
+	if _vomit_time <= 0.0 and _hurt_time <= 0.0:
+		_apply_base_head()
+
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 빈사 > 멀쩡함 순 우선)
 func _apply_base_head() -> void:
 	if _head == null:
 		return
@@ -858,6 +965,9 @@ func _apply_base_head() -> void:
 	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
+	elif _low_hp_on and low_hp_head_texture != null:
+		_head.texture = low_hp_head_texture
+		_head.scale = low_hp_head_scale if low_hp_head_scale != Vector2.ZERO else _head_rest_scale
 	else:
 		_head.texture = _head_rest_texture
 		_head.scale = _head_rest_scale
@@ -953,6 +1063,28 @@ func _pose_lookback() -> void:
 	if _head == null:
 		return
 	_head.scale.x = _head.scale.y * (1.0 - 2.0 * _lookback_reach())
+
+## 방어 보호막이 켜지고 꺼질 때 Fighter가 호출한다. 자세는 _guard_blend로 서서히 섞인다
+func set_guarding(on: bool) -> void:
+	_guard_target = 1.0 if on else 0.0
+
+## 방어 자세 — 두 손을 몸 앞으로 올려 막고, 몸과 머리를 살짝 움츠린다.
+## 오른손은 얼굴 앞 높이, 왼손은 그보다 낮은 가슴 앞이라 권투 가드처럼 위아래로 어긋난다.
+## 지금 값에서 목표 자세로 lerp하므로, 걷다가 막아도 그 자리에서 자연스럽게 이어진다
+func _pose_guard() -> void:
+	var t: float = _guard_blend
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(guard_hand_r_pos, t)
+		_hand_r.rotation = lerpf(_hand_r.rotation, deg_to_rad(guard_hand_deg), t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(guard_hand_l_pos, t)
+		_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(-guard_hand_deg), t)
+	# 몸과 머리를 같이 내려서 움츠린 느낌을 준다 (머리만 내리면 목이 들어간 것처럼 보인다)
+	if _body:
+		_body.position.y = lerpf(_body.position.y, _rest_positions[_body].y + guard_crouch, t)
+	if _head:
+		_head.position.y = lerpf(_head.position.y, _rest_positions[_head].y + guard_crouch, t)
+		_head.rotation = lerpf(_head.rotation, deg_to_rad(guard_head_deg), t)
 
 ## 뒤돌아보기를 끝내고 머리를 앞 방향으로 되돌린다 (정상 종료·중단 공통).
 ## 세로 크기(scale.y)가 원래 크기이므로 가로를 거기에 양수로 맞춘다 — 끊겨도 머리가 뒤집힌 채 굳지 않는다

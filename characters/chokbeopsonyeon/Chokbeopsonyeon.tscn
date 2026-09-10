@@ -39,6 +39,7 @@ shape = SubResource("CapsuleShape2D_body")
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("7")
 range = 40.0
+windup = 0.14
 cooldown = 0.3
 miss_cooldown = 1.0
 
