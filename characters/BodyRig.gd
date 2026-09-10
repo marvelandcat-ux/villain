@@ -67,6 +67,21 @@ extends Node2D
 @export var ride_hand_l_pos: Vector2 = Vector2(19, -4)
 ## 자전거 탈 때 오른손이 가는 위치(핸들바 잡기)
 @export var ride_hand_r_pos: Vector2 = Vector2(25, -6)
+## --- 스킬 클래시 대치 자세 ---
+## 두 손을 앞으로 뻗어 상대 손과 맞대는 자리(리그 원점 기준). 오른손이 여기서 gap의 절반만큼 위,
+## 왼손이 절반만큼 아래로 간다
+@export var clash_hand_target: Vector2 = Vector2(27, -8)
+## 맞댄 두 손이 위아래로 벌어지는 간격(px)
+@export var clash_hand_gap: float = 13.0
+## 밀당에 따라 몸이 기우는 최대 각도(도). 밀어붙이면 앞으로, 밀리면 뒤로
+@export var clash_lean_deg: float = 15.0
+## 몸에 더해 고개가 추가로 꺾이는 각도(도). 밀리는 쪽 고개가 뒤로 젖혀지는 게 이 값이다
+@export var clash_head_deg: float = 12.0
+## 손이 앞뒤로 밀릴 때 몸통·머리가 따라가는 비율 (0이면 손만 움직인다)
+@export_range(0.0, 1.0, 0.05) var clash_body_follow: float = 0.5
+## 대치 자세로 들어가고 풀리는 빠르기
+@export var clash_blend_speed: float = 10.0
+
 ## 중력으로 떨어지는 동안(하강 중) 고개를 아래로 숙이는 각도(도). 양수가 아래를 보는 방향(마시기와 같은 규칙)
 @export var fall_head_tilt_deg: float = 18.0
 ## 하강 자세로 바뀌고 풀리는 빠르기
@@ -202,6 +217,14 @@ var _was_on_floor: bool = true
 ## 자전거를 탄(보이는) 정도 0~1. set_riding으로 목표를 정하고 서서히 오간다
 var _ride_blend: float = 0.0
 var _ride_target: float = 0.0
+## 대치 자세로 들어간 정도 0~1. set_clash로 목표를 정하고 서서히 오간다
+var _clash_blend: float = 0.0
+var _clash_target: float = 0.0
+## 밀당 상황 -1(완전히 밀림) ~ +1(완전히 밀어붙임). SkillClashPopup이 매 프레임 넣어준다
+var _clash_push: float = 0.0
+## 맞댄 손이 앞뒤로 밀고 밀리는 양(px). **화면(월드) 기준 가로 오프셋**이라 왼쪽을 보는 캐릭터는
+## 안에서 부호를 뒤집어 쓴다 — 두 캐릭터가 같은 값을 받아야 손이 같은 방향으로 함께 움직인다
+var _clash_shove: float = 0.0
 ## 페달 회전 각도 (계속 커짐)
 var _pedal_phase: float = 0.0
 ## 자전거의 "탄 위치"(씬에 저장된 제자리) — 여기서 뒤로 밀어 슬라이드 연출한다
@@ -349,6 +372,9 @@ func _process(delta: float) -> void:
 		else:
 			_bike.visible = false
 
+	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
+	_clash_blend = move_toward(_clash_blend, _clash_target, delta * clash_blend_speed)
+
 	if on_floor and speed_ratio > 0.05:
 		_phase += delta * step_speed * maxf(speed_ratio, 0.3)
 		_blend = minf(_blend + delta * blend_speed, 1.0)
@@ -438,6 +464,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _bike and _ride_blend > 0.3:
 		_pose_pedal()
 		_pose_ride_hands()
+
+	# 스킬 클래시 대치 자세 — 다른 모든 동작보다 우선한다(클래시 중엔 다른 동작이 나올 일이 없다)
+	if _clash_blend > 0.001:
+		_pose_clash()
 
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
@@ -567,6 +597,56 @@ func _pose_grip_hand(progress: float) -> void:
 func play_jump_stretch() -> void:
 	_squash = jump_stretch
 	_squashing = true
+
+## 스킬 클래시 대치 자세를 켜고 끈다 (SkillClashPopup이 부른다).
+## 두 손을 앞으로 뻗어 상대 손과 맞대고, 밀당에 따라 몸과 고개가 앞뒤로 기운다
+func set_clash(on: bool) -> void:
+	_clash_target = 1.0 if on else 0.0
+	if not on:
+		# 자세가 풀리는 동안 기울기·밀림이 남아 있으면 몸이 삐뚤어진 채로 서서히 돌아온다.
+		# 바로 0으로 지워서 "제자리 자세로 스르륵"만 남긴다
+		_clash_push = 0.0
+		_clash_shove = 0.0
+
+## 지금 밀당이 어느 쪽으로 기울었는지 넣어준다. -1이면 완전히 밀리는 중, +1이면 완전히 밀어붙이는 중
+func set_clash_push(push: float) -> void:
+	_clash_push = clampf(push, -1.0, 1.0)
+
+## 맞댄 손을 화면 가로 방향으로 이만큼(px) 밀어준다. **두 캐릭터에게 같은 값을 넣어야 한다** —
+## 서로 마주 본 상태라 각자 "앞으로"를 쓰면 손이 서로를 파고들어 버린다.
+## 화면 기준으로 받아서 캐릭터가 보는 방향에 맞춰 안에서 뒤집는다
+func set_clash_shove(world_dx: float) -> void:
+	_clash_shove = world_dx
+
+## 두 손을 앞으로 모아 상대와 맞대고, 밀당만큼 몸과 고개를 기울인다.
+##
+## **기울기에 facing 부호를 곱하는 이유:** 좌우 반전은 `scale.x = -1`로 하는데,
+## Node2D 변환이 `회전 * 크기` 순서라 x축은 뒤집혀도 회전 각도는 그대로 남는다.
+## 그래서 왼쪽을 보는 캐릭터에 같은 각도를 주면 "앞으로 기울기"가 아니라 "뒤로 넘어가기"가 된다
+func _pose_clash() -> void:
+	var t: float = _clash_blend
+	var sgn: float = signf(_fighter.facing) if (_fighter != null and is_instance_valid(_fighter)) else 1.0
+	if sgn == 0.0:
+		sgn = 1.0
+	# 화면 기준 오프셋을 이 캐릭터의 로컬 기준으로 바꾼다. 리그가 scale.x로 뒤집히므로
+	# 부호를 곱해두면 두 캐릭터의 손이 화면에서 같은 방향으로 함께 움직인다
+	var shove := Vector2(_clash_shove * sgn, 0.0)
+	var target: Vector2 = clash_hand_target + shove
+	var gap := Vector2(0.0, clash_hand_gap * 0.5)
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(target - gap, t)
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(target + gap, t)
+		_hand_l.rotation = 0.0
+	# 손만 움직이면 팔만 따로 노는 것처럼 보인다 — 몸도 절반쯤 같이 밀린다
+	if _body:
+		_body.position.x = _rest_positions[_body].x + shove.x * clash_body_follow * t
+	if _head:
+		_head.position.x = _rest_positions[_head].x + shove.x * clash_body_follow * t
+	rotation = deg_to_rad(clash_lean_deg) * _clash_push * t * sgn
+	if _head:
+		_head.rotation = deg_to_rad(clash_head_deg) * _clash_push * t * sgn
 
 ## 자전거를 탄다/내린다 (촉법소년 돌진). 자전거 노드가 없는 캐릭터에선 아무 일도 안 한다.
 ## DashSkill이 돌진 시작에 true, 끝에 false로 부른다

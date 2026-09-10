@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkaf5h08gtuj0"
-path="res://.godot/imported/기린시소.png-eb4f62eaa951502e07d06370e17b1d31.ctex"
+uid="uid://b04jlui52c1ii"
+path="res://.godot/imported/아파트2동.png-67f5e2d4f5ee56e41b233e98c40c20c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/놀이터/기린시소.png"
-dest_files=["res://.godot/imported/기린시소.png-eb4f62eaa951502e07d06370e17b1d31.ctex"]
+source_file="res://sprite/맵/놀이터/아파트2동.png"
+dest_files=["res://.godot/imported/아파트2동.png-67f5e2d4f5ee56e41b233e98c40c20c2.ctex"]
 
 [params]
 
