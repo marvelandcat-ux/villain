@@ -165,6 +165,36 @@ extends Node2D
 ## 뿌리치듯 던지는 손짓
 @export var grab_slam_hand_offset: Vector2 = Vector2(-14, -18)
 
+## --- 유선 마우스 던지기 (악플러 스킬1): 마우스를 어깨 뒤로 젖혀 들었다가 앞으로 뿌린다 ---
+## 젖혀 들었을 때 오른손 위치(리그 원점 기준) — 어깨 높이로 뒤로 당긴 자세.
+## y를 -6보다 위로 올리면 손과 마우스가 머리(55px)에 파묻히니 주의
+@export var cast_windup_offset: Vector2 = Vector2(-8, -2)
+## 뿌리는 순간 오른손이 뻗는 위치 — 앞으로 크게 내민다
+@export var cast_release_offset: Vector2 = Vector2(36, -6)
+## 젖혔을 때 손목이 뒤로 꺾이는 각도(도)
+@export var cast_windup_deg: float = -45.0
+## 뿌릴 때 손목이 앞으로 넘어가는 각도(도)
+@export var cast_release_deg: float = 50.0
+## 뿌린 뒤 손이 제자리로 돌아오기 시작하는 지점(뿌리는 구간 중 앞 몇 %가 실제로 뻗는 동작인지)
+@export var cast_snap_ratio: float = 0.4
+
+## --- 유선 마우스 끌어당기기: 두 손으로 줄을 잡고 박자에 맞춰 몸쪽으로 당긴다 ---
+## 줄을 잡은 오른손의 기준 위치(리그 원점 기준) — 앞으로 내밀어 줄을 쥔 자세
+@export var reel_hand_offset: Vector2 = Vector2(24, -6)
+## 왼손이 오른손에서 떨어져 잡는 거리 — 줄을 앞뒤로 나눠 잡은 것처럼 보이게
+@export var reel_hand_l_offset: Vector2 = Vector2(-12, 6)
+## 한 번 당길 때 두 손이 몸쪽으로 끌려오는 거리(px)
+@export var reel_tug_offset: Vector2 = Vector2(14, 4)
+## 당기는 박자(라디안/초) — 클수록 빠르게 여러 번 당긴다
+@export var reel_tug_speed: float = 11.0
+## 당기는 자세로 옮겨가고 풀리는 빠르기 (클수록 뚝뚝 끊긴다)
+@export var reel_blend_speed: float = 12.0
+## 줄을 잡은 두 손이 돌아가는 각도(도)
+@export var reel_hand_deg: float = -22.0
+## 마우스를 던지고 줄을 당기는 동안 손에 든 물건(악플러 키보드 등)을 숨긴다 —
+## 같은 오른손으로 던지기 때문에 그대로 두면 키보드와 마우스가 겹친다. 기본은 꺼짐(다른 캐릭터 영향 없음)
+@export var cast_hides_held_item: bool = false
+
 ## 토하기 스킬을 쓸 때 잠깐 이 얼굴(토하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(주정뱅이만 지정)
 @export var vomit_head_texture: Texture2D
 ## 토하는 얼굴을 보여주는 시간(초)
@@ -173,6 +203,15 @@ extends Node2D
 @export var vomit_head_scale: Vector2 = Vector2.ZERO
 ## 토하는 얼굴일 때 머리 위치 보정(px) — 입이 게워내는 위치에 안 맞으면 조정
 @export var vomit_head_offset: Vector2 = Vector2.ZERO
+
+## 맞았을 때 잠깐 이 얼굴(아파하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(촉법소년만 지정)
+@export var hurt_head_texture: Texture2D
+## 아파하는 얼굴을 보여주는 시간(초)
+@export var hurt_face_duration: float = 0.45
+## 아파하는 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
+@export var hurt_head_scale: Vector2 = Vector2.ZERO
+## 아파하는 얼굴일 때 머리 위치 보정(px) — 원본 여백이 달라 얼굴이 어긋날 때만 조정
+@export var hurt_head_offset: Vector2 = Vector2.ZERO
 
 ## 술 스택이 남아있는 동안(몸이 빨간 동안) 머리를 이 얼굴(술 머금은 표정)로 유지한다. 비어 있으면 안 바꾼다
 @export var drunk_head_texture: Texture2D
@@ -253,8 +292,20 @@ var _grab_duration: float = 1.0
 ## 전체 동작 중 "뻗어서 잡기"가 끝나는 지점, "들고 버티기"가 끝나는 지점(그 뒤는 내리꽂기)의 진행도 비율
 var _grab_reach_ratio: float = 0.2
 var _grab_slam_ratio: float = 0.8
+## 마우스 던지기 동작에 남은 시간(초). 0보다 크면 젖혔다 뿌리는 중이다
+var _cast_time: float = 0.0
+var _cast_duration: float = 0.34
+## 전체 던지기 동작 중 "뒤로 젖히는" 구간의 비율 (play_cast_motion이 두 시간에서 계산한다)
+var _cast_windup_ratio: float = 0.4
+## 줄을 당기는 자세 세기 0~1. set_reeling으로 목표를 정하고 서서히 오간다
+var _reel_blend: float = 0.0
+var _reel_target: float = 0.0
+## 줄을 당기는 박자 위상 — 계속 커지며 sin()으로 당겼다 놓는 왕복을 만든다
+var _reel_phase: float = 0.0
 ## 토하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 토하는 표정이다
 var _vomit_time: float = 0.0
+## 아파하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 피격 표정이다
+var _hurt_time: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
@@ -307,6 +358,10 @@ func _process(delta: float) -> void:
 		# 시간이 다 되면 원래 얼굴로 되돌린다
 		if is_zero_approx(_vomit_time):
 			_restore_head()
+	if _hurt_time > 0.0:
+		_hurt_time = maxf(_hurt_time - delta, 0.0)
+		if is_zero_approx(_hurt_time):
+			_restore_head()
 	# 총 조준 시간 카운트다운 — 끝나면 총을 다시 숨긴다
 	if _gun_time > 0.0:
 		_gun_time = maxf(_gun_time - delta, 0.0)
@@ -319,6 +374,14 @@ func _process(delta: float) -> void:
 		_grab_time = maxf(_grab_time - delta, 0.0)
 		if is_zero_approx(_grab_time):
 			rotation = 0.0   # 내리꽂기가 끝나면 뒤로/앞으로 기울였던 몸을 원래대로
+	if _cast_time > 0.0:
+		_cast_time = maxf(_cast_time - delta, 0.0)
+	# 줄 당기는 자세는 목표로 서서히 오가고, 당기는 박자는 그 자세일 때만 진행된다
+	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
+	if _reel_blend > 0.001:
+		_reel_phase += delta * reel_tug_speed
+	else:
+		_reel_phase = 0.0
 
 	# 공중이면 점프 자세로, 바닥이면 원래 자세로 서서히 옮겨간다
 	var air_target: float = 0.0 if on_floor else 1.0
@@ -329,7 +392,7 @@ func _process(delta: float) -> void:
 	_fall_blend = move_toward(_fall_blend, 1.0 if falling else 0.0, delta * fall_blend_speed)
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
-	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0
+	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -421,8 +484,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _head:
 		# 하강 중이면 고개를 아래로 숙인다 (마시기 동작이 있으면 아래에서 덮어써서 그쪽이 우선한다)
 		_head.rotation = deg_to_rad(fall_head_tilt_deg) * _fall_blend
-		# 토하는 얼굴일 때는 입 위치를 맞추기 위한 보정만 더한다(누적되지 않게 절대 위치로 잡는다)
-		if _vomit_time > 0.0:
+		# 표정이 바뀐 동안에는 얼굴 위치를 맞추기 위한 보정만 더한다(누적되지 않게 절대 위치로 잡는다)
+		if _hurt_time > 0.0:
+			_head.position = _rest_positions[_head] + Vector2(0.0, bob) + hurt_head_offset
+		elif _vomit_time > 0.0:
 			_head.position = _rest_positions[_head] + Vector2(0.0, bob) + vomit_head_offset
 	if _hand_l:
 		_hand_l.rotation = 0.0
@@ -452,6 +517,14 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _grab_time > 0.0:
 		_pose_grab()
 
+	# 마우스를 던지는 중이면 오른손을 젖혔다 뿌리는 자세로 덮어쓴다
+	if _cast_time > 0.0:
+		_pose_cast()
+
+	# 줄을 당기는 중이면 두 손으로 줄을 잡은 자세로 덮어쓴다 (던지기보다 나중이라 우선한다)
+	if _reel_blend > 0.001:
+		_pose_reel()
+
 	# 가만히 있을 때는 왼손으로 머리를 긁는다 (idle 생동감). 왼손만 건드려서 다른 동작과 안 겹친다
 	if _scratch_time > 0.0:
 		_pose_scratch()
@@ -473,6 +546,8 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
+		if cast_hides_held_item:
+			_hand_r_hold.visible = _cast_time <= 0.0 and _reel_blend <= 0.001
 
 	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
 	if _squashing:
@@ -734,6 +809,70 @@ func _pose_grab() -> void:
 	if _hand_l:
 		_hand_l.rotation = 0.0
 
+## 유선 마우스 던지기 동작 시작 — 어깨 뒤로 젖혀 들었다가 앞으로 뿌리고 제자리로 돌아온다.
+## MouseGrabSkill이 젖히는 시간과 뿌리고 돌아오는 시간을 나눠서 넘긴다.
+## 젖히는 시간은 마우스가 손을 떠나는 시점과 같아야 한다 — 그래야 "손에 들었다가 던진다"로 보인다
+func play_cast_motion(windup_duration: float, release_duration: float) -> void:
+	_cast_duration = maxf(windup_duration + release_duration, 0.05)
+	_cast_windup_ratio = clampf(windup_duration / _cast_duration, 0.05, 0.95)
+	_cast_time = _cast_duration
+
+## 줄을 당기는 자세를 켜고 끈다 — 마우스가 상대를 잡은 순간 true, 놓아줄 때 false (MouseGrab이 부른다)
+func set_reeling(on: bool) -> void:
+	_reel_target = 1.0 if on else 0.0
+
+## 오른손(물건을 드는 손)의 화면상 위치.
+## 손에서 뻗어나가는 연출(마우스 유선 등)이 팔을 그대로 따라가게 할 때 쓴다
+func get_hand_position() -> Vector2:
+	if _hand_r_hold:
+		return _hand_r_hold.global_position
+	if _hand_r:
+		return _hand_r.global_position
+	return global_position
+
+## 던지기 자세 — 뒤로 젖혀 들기(앞 _cast_windup_ratio) → 앞으로 뿌리기 → 제자리로 돌아오기
+func _pose_cast() -> void:
+	if _hand_r == null:
+		return
+	var rest: Vector2 = _rest_positions[_hand_r]
+	var progress: float = 1.0 - _cast_time / _cast_duration
+	var pos: Vector2
+	var deg: float
+	if progress < _cast_windup_ratio:
+		# ① 뒤로 당겨 든다 (이 동안 마우스는 아직 손에 쥐어져 있다)
+		var t: float = progress / _cast_windup_ratio
+		var ease: float = t * t * (3.0 - 2.0 * t)
+		pos = rest.lerp(cast_windup_offset, ease)
+		deg = cast_windup_deg * ease
+	else:
+		var t: float = (progress - _cast_windup_ratio) / (1.0 - _cast_windup_ratio)
+		if t < cast_snap_ratio:
+			# ② 앞으로 확 뿌린다
+			var f: float = t / maxf(cast_snap_ratio, 0.001)
+			pos = cast_windup_offset.lerp(cast_release_offset, f)
+			deg = lerpf(cast_windup_deg, cast_release_deg, f)
+		else:
+			# ③ 뻗은 손이 제자리로 돌아온다
+			var f: float = (t - cast_snap_ratio) / maxf(1.0 - cast_snap_ratio, 0.001)
+			pos = cast_release_offset.lerp(rest, f)
+			deg = lerpf(cast_release_deg, 0.0, f)
+	_hand_r.position = pos
+	_hand_r.rotation = deg_to_rad(deg)
+
+## 줄 당기기 자세 — 두 손으로 줄을 잡고 박자에 맞춰 몸쪽으로 당겼다 놓는다.
+## 걷기·던지기 자세에서 _reel_blend만큼 섞으므로 켜지고 꺼질 때 툭 끊기지 않는다
+func _pose_reel() -> void:
+	# sin을 0~1로 옮겨서, 한 박자에 한 번 몸쪽(-x)으로 당겼다가 다시 내민다
+	var tug: float = (sin(_reel_phase) + 1.0) * 0.5
+	var grip: Vector2 = reel_hand_offset - reel_tug_offset * tug
+	var deg: float = deg_to_rad(reel_hand_deg)
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(grip, _reel_blend)
+		_hand_r.rotation = lerpf(_hand_r.rotation, deg, _reel_blend)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(grip + reel_hand_l_offset, _reel_blend)
+		_hand_l.rotation = lerpf(_hand_l.rotation, deg, _reel_blend)
+
 ## 토하기 동작 — 잠깐 토하는 표정으로 머리를 바꾼다. VomitSkill이 토한 순간 호출한다.
 ## vomit_head_texture가 비어 있으면(주정뱅이 외 캐릭터) 아무 일도 안 한다
 func play_vomit_face() -> void:
@@ -744,8 +883,32 @@ func play_vomit_face() -> void:
 		_head.scale = vomit_head_scale
 	_vomit_time = vomit_face_duration
 
-## 토하는 표정이 끝나면 현재 상태(취함/맨정신)에 맞는 기본 머리로 돌아간다
+## 피격 표정 — 맞은 순간 잠깐 아파하는 얼굴로 바꾼다. Fighter.take_damage가 호출한다.
+## hurt_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
+func play_hurt_face() -> void:
+	if _head == null or hurt_head_texture == null:
+		return
+	_head.texture = hurt_head_texture
+	if hurt_head_scale != Vector2.ZERO:
+		_head.scale = hurt_head_scale
+	_hurt_time = hurt_face_duration
+
+## 잠깐 바뀌었던 표정이 끝났을 때 — 아직 남아있는 다른 표정이 있으면 그쪽으로,
+## 없으면 현재 상태(액션/취함/맨정신)에 맞는 기본 머리로 돌아간다.
+## 피격 > 토하기 순으로 우선한다(맞는 게 더 급한 상황이라)
 func _restore_head() -> void:
+	if _head == null:
+		return
+	if _hurt_time > 0.0 and hurt_head_texture != null:
+		_head.texture = hurt_head_texture
+		if hurt_head_scale != Vector2.ZERO:
+			_head.scale = hurt_head_scale
+		return
+	if _vomit_time > 0.0 and vomit_head_texture != null:
+		_head.texture = vomit_head_texture
+		if vomit_head_scale != Vector2.ZERO:
+			_head.scale = vomit_head_scale
+		return
 	_apply_base_head()
 
 ## 술 스택 유무에 따라 "기본 머리"를 정한다 (맨정신=원래 얼굴 / 취함=술 머금은 얼굴).
@@ -753,7 +916,7 @@ func _restore_head() -> void:
 ## 그 표정이 끝나면 _restore_head가 여기서 정한 기본 머리로 돌아간다
 func set_drunk_head(on: bool) -> void:
 	_drunk_head_on = on
-	if _vomit_time <= 0.0:
+	if _vomit_time <= 0.0 and _hurt_time <= 0.0:
 		_apply_base_head()
 
 ## 스킬(자전거 돌진·총 쏘기)을 쓰는 동안 액션 표정으로 머리를 바꾼다. on=false면 원래 상태로 되돌린다.
@@ -762,7 +925,7 @@ func set_action_face(on: bool) -> void:
 	if _head == null or action_head_texture == null:
 		return
 	_action_face_on = on
-	if _vomit_time <= 0.0:   # 토하는 표정이 떠 있으면 그게 끝난 뒤 반영된다
+	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
 ## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선)

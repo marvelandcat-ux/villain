@@ -1,11 +1,15 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://maps/SubwayTrain.gd" id="1"]
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="2"]
 [ext_resource type="Texture2D" path="res://sprite/맵/지하철역/Metro!.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/맵/지하철역/열차창문빛.png" id="4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_train"]
 size = Vector2(882.4, 105)
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_windowglow"]
+blend_mode = 1
 
 [node name="SubwayTrain" type="Node2D"]
 script = ExtResource("1")
@@ -17,6 +21,11 @@ scale = Vector2(0.42, 0.42)
 texture = ExtResource("3")
 region_enabled = true
 region_rect = Rect2(36, 221, 2101, 250)
+
+[node name="WindowGlow" type="Sprite2D" parent="Body"]
+material = SubResource("CanvasItemMaterial_windowglow")
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("4")
 
 [node name="Hitbox" type="Area2D" parent="Body"]
 monitoring = false

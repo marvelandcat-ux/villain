@@ -36,6 +36,35 @@ extends Node2D
 ## 열차 도착 음악(옛날 지하철 도착 음악). 비워두면 소리 없이 경고등만 깜빡인다
 @export var arrival_music: AudioStream
 
+## --- 객실 창문 불빛 ---
+## 창문 빛의 세기 (0이면 안 켜진다). 그림에 이미 세게 구워져 있으니 여기서 줄여 쓰면 된다
+@export var window_glow: float = 1.0
+## 형광등이 미세하게 떨리는 폭 (0이면 일정하게 켜져 있다)
+@export var window_flicker: float = 0.09
+## 떨리는 빠르기
+@export var window_flicker_speed: float = 16.0
+
+## --- 창문에서 쏟아지는 빛 (맵에 비치는 네모난 빛무리) ---
+## 창문 위로 뻗는 빛기둥의 길이(px). 벽에 창문 모양대로 빛이 훑고 지나간다
+@export var beam_up_length: float = 230.0
+## 창문 아래로 뻗는 빛의 길이(px). **기본값 0 — 이 맵에서는 열차가 선로 바닥에 딱 붙어 있어서
+## 아래로 가는 빛이 차체에 통째로 가려 안 보인다.** 열차가 공중에 뜬 맵을 만들면 그때 켜면 된다
+@export var beam_down_length: float = 0.0
+## 빛기둥이 멀어지면서 좌우로 벌어지는 정도 (길이 대비 비율, 한쪽 기준).
+## **크게 주면 안 된다** — 0.5로 했더니 옆 창문 빛과 X자로 겹쳐서 창문 모양이 뭉개지고 하얗게 떴다
+@export var beam_spread: float = 0.1
+## 창문 바로 앞에서의 빛 세기. 멀어질수록 0으로 사라진다
+@export var beam_alpha: float = 0.68
+## 빛기둥 길이가 창문마다 얼마나 들쭉날쭉한지 (0이면 전부 같은 길이, 0.35면 기준 길이의 65~135%).
+## **열차가 지나갈 때마다 다시 뽑으므로 매번 다른 모양이 된다**
+@export var beam_length_variance: float = 0.35
+## 빛기둥이 열차 바깥쪽으로 기우는 정도 (길이 대비 비율).
+## 열차 한가운데 창문은 곧게 서고, 앞뒤 끝으로 갈수록 바깥으로 눕는다 —
+## 빛이 열차에서 퍼져나가는 것처럼 보이게 하는 값. 0이면 전부 곧게 선다
+@export var beam_tilt: float = 0.35
+## 빛기둥 색 — window_glow와 마찬가지로 CanvasModulate를 통과할 것을 감안해 미리 따뜻하게 잡은 값
+@export var beam_color: Color = Color(1.0, 0.769, 0.361)
+
 ## 진행 중인 상태
 enum State { WAITING, WARNING, RUNNING }
 
@@ -43,6 +72,12 @@ enum State { WAITING, WARNING, RUNNING }
 @onready var hitbox: Hitbox = $Body/Hitbox
 @onready var warning_light: Node2D = $WarningLight
 @onready var music: AudioStreamPlayer = $Music
+## 창문만 밝게 구워둔 그림을 가산 블렌드로 열차 위에 얹은 스프라이트 (Body의 자식이라 열차와 같이 움직이고 같이 숨는다)
+@onready var window_light: Sprite2D = $Body/WindowGlow
+## 창문에서 뻗어나가는 빛기둥들을 담는 노드. _ready에서 WINDOW_RECTS를 보고 코드로 만들어 넣는다
+var window_beams: Node2D
+## 만들어둔 빛기둥들 — 길이를 다시 뽑을 때 각자 어느 창문/어느 방향이었는지 알아야 해서 같이 들고 있는다
+var _beams: Array[Dictionary] = []
 
 var _state: int = State.WAITING
 ## 다음 열차가 도착하기까지 남은 시간. 열차가 출발하는 순간 interval로 다시 채워지므로
@@ -50,6 +85,29 @@ var _state: int = State.WAITING
 var _timer: float = 0.0
 ## 1이면 왼쪽 → 오른쪽, -1이면 오른쪽 → 왼쪽
 var _direction: int = 1
+## 창문 불빛이 떨리는 위상 — 계속 커지며 sin()으로 미세한 흔들림을 만든다
+var _glow_phase: float = 0.0
+
+## 열차 그림(Metro!.png)에서 뽑아낸 창문 13개의 자리 — Body 로컬 좌표(=월드 px)로 미리 계산해뒀다.
+## 그림을 다시 그리면 이 표도 다시 뽑아야 한다 (region_rect 안에서 무채색 중간 밝기 덩어리를 골라 재는 방식)
+## 열차 그림의 화면상 반폭(px) — 창문이 앞/뒤 어느 쪽 끝에 가까운지 재는 기준 (2101 x 0.42 / 2)
+const TRAIN_HALF_WIDTH: float = 441.2
+
+const WINDOW_RECTS: Array[Rect2] = [
+	Rect2(-426.5, -32.8, 64.3, 40.3),   # 운전실 앞유리
+	Rect2(-332.0, -29.0, 60.5, 25.6),
+	Rect2(-234.6, -31.9, 12.6, 30.7),   # 출입문 창
+	Rect2(-201.0, -31.5, 13.0, 30.7),
+	Rect2(-142.2, -31.1, 68.0, 29.0),
+	Rect2(-33.0, -29.8, 13.0, 30.7),
+	Rect2(-0.2, -29.4, 12.6, 30.7),
+	Rect2(52.3, -28.1, 65.9, 29.0),
+	Rect2(158.1, -28.1, 12.6, 31.1),
+	Rect2(190.9, -27.3, 12.2, 30.7),
+	Rect2(242.1, -26.0, 65.9, 29.0),
+	Rect2(345.4, -26.5, 36.1, 30.2),
+	Rect2(391.2, -35.7, 32.3, 39.9),
+]
 
 func _ready() -> void:
 	# AIController가 "ai_danger_zone" 그룹으로 찾아서 is_dangerous()를 물어보고 피신 여부를 판단한다
@@ -59,8 +117,11 @@ func _ready() -> void:
 	hitbox.repeat_interval = hit_interval
 	music.stream = arrival_music
 	_set_hitbox_active(false)
+	_build_window_beams()
 	_park_body()
 	warning_light.visible = false
+	if window_light:
+		window_light.modulate.a = window_glow
 
 ## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
 func is_dangerous() -> bool:
@@ -79,6 +140,7 @@ func _process(delta: float) -> void:
 				_begin_run()
 		State.RUNNING:
 			body.position.x += speed * _direction * delta
+			_update_window_light(delta)
 			if absf(body.position.x) >= travel_x:
 				_finish_run()
 
@@ -97,6 +159,8 @@ func _begin_run() -> void:
 	_apply_direction()
 	# 열차가 가는 쪽으로 밀리면서 위로 튕긴다 — 옆에서 부딪히면 밀려나고, 지붕에 있으면 떨어져 나간다
 	hitbox.knockback = Vector2(knockback_push * _direction, -knockback_lift)
+	# 이번에 지나가는 열차의 빛기둥 높이를 새로 뽑는다 — 매번 같은 모양이면 눈에 익어버린다
+	_randomize_beam_heights()
 	_set_hitbox_active(true)
 
 func _finish_run() -> void:
@@ -106,6 +170,74 @@ func _finish_run() -> void:
 	if alternate_direction:
 		_direction = -_direction
 	_state = State.WAITING
+
+## 창문마다 위아래로 빛기둥을 하나씩 만들어 Body에 붙인다.
+## Car(열차 그림)보다 **앞 순서**로 옮겨서 빛이 열차 뒤(벽 쪽)로 깔리게 한다 —
+## 열차 위에 얹히면 차체를 덮어버려서 빛이 아니라 반투명 판때기로 보인다
+func _build_window_beams() -> void:
+	if beam_alpha <= 0.0:
+		return
+	window_beams = Node2D.new()
+	window_beams.name = "WindowBeams"
+	# 더하기 블렌드는 컨테이너에 걸고, 자식 폴리곤은 use_parent_material로 물려받는다
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	window_beams.material = mat
+	for rect in WINDOW_RECTS:
+		_add_beam(rect, true)
+		if beam_down_length > 0.0:
+			_add_beam(rect, false)
+	body.add_child(window_beams)
+	body.move_child(window_beams, 0)
+	_randomize_beam_heights()
+
+## 창문 하나에 빛기둥을 하나 만들어 붙인다. 실제 모양은 _shape_beam이 잡는다.
+## up이 true면 위로(벽 쪽), false면 아래로(선로 바닥 쪽)
+func _add_beam(rect: Rect2, up: bool) -> void:
+	var beam := Polygon2D.new()
+	beam.use_parent_material = true
+	# 창문 쪽 두 점만 밝고 끝쪽 두 점은 투명 — 멀어질수록 자연스럽게 사라진다
+	var near_color := Color(beam_color.r, beam_color.g, beam_color.b, beam_alpha)
+	var far_color := Color(beam_color.r, beam_color.g, beam_color.b, 0.0)
+	beam.vertex_colors = PackedColorArray([near_color, near_color, far_color, far_color])
+	window_beams.add_child(beam)
+	_beams.append({"node": beam, "rect": rect, "up": up})
+
+## 빛기둥 길이를 창문마다 새로 뽑는다 — 높이가 들쭉날쭉해서 훨씬 자연스럽다.
+## 열차가 출발할 때마다 부르므로 지나갈 때마다 모양이 달라진다
+func _randomize_beam_heights() -> void:
+	for beam in _beams:
+		var base: float = beam_up_length if beam["up"] else beam_down_length
+		_shape_beam(beam["node"], beam["rect"], beam["up"], base * (1.0 + randf_range(-beam_length_variance, beam_length_variance)))
+
+## 창문 변에서 시작해 멀어질수록 벌어지고 바깥으로 눕는 사다리꼴을 만든다.
+## 벌어짐(spread)·눕는 정도(tilt)가 길이에 비례하므로, 길이를 랜덤으로 줘도 모양이 자연스럽게 같이 변한다
+func _shape_beam(beam: Polygon2D, rect: Rect2, up: bool, length: float) -> void:
+	var spread: float = length * beam_spread
+	var near_y: float = rect.position.y if up else rect.position.y + rect.size.y
+	var far_y: float = near_y - length if up else near_y + length
+	var x1: float = rect.position.x
+	var x2: float = rect.position.x + rect.size.x
+	# 열차 중심에서 얼마나 떨어진 창문인지(-1=앞 끝, 0=한가운데, +1=뒤 끝)에 비례해 바깥으로 눕힌다
+	var side: float = clampf((rect.position.x + rect.size.x * 0.5) / TRAIN_HALF_WIDTH, -1.0, 1.0)
+	var lean: float = beam_tilt * length * side
+	beam.polygon = PackedVector2Array([
+		Vector2(x1, near_y), Vector2(x2, near_y),
+		Vector2(x2 + spread + lean, far_y), Vector2(x1 - spread + lean, far_y)])
+
+## 객실 창문 불빛 — 형광등처럼 아주 미세하게 떨린다.
+## 어디가 창문인지는 그림(열차창문빛.png)에 이미 구워져 있고 가산 블렌드로 얹히므로, 여기서는 세기만 조절한다.
+## 주기가 다른 두 sin을 곱해서 규칙적인 깜빡임으로 안 보이게 한다
+func _update_window_light(delta: float) -> void:
+	if window_light == null:
+		return
+	_glow_phase += delta * window_flicker_speed
+	var wobble: float = sin(_glow_phase) * sin(_glow_phase * 0.37 + 1.3)
+	var level: float = maxf(1.0 - window_flicker * (0.5 + 0.5 * wobble), 0.0)
+	window_light.modulate.a = window_glow * level
+	# 창문에서 쏟아지는 빛도 같은 박자로 떨려야 같은 조명으로 보인다
+	if window_beams:
+		window_beams.modulate.a = level
 
 ## 대기 중에는 열차를 화면 밖에 세워둔다
 func _park_body() -> void:
