@@ -93,9 +93,16 @@ func _apply_tile_style(button: Button, color: Color) -> void:
 		style.corner_radius_bottom_right = 6
 		button.add_theme_stylebox_override(state, style)
 
+## 주인공(GameState.PROTAGONIST_NAME)이 고정이라 P1을 고를 필요가 없어졌다 — CharacterSelect를
+## 거치지 않고 바로 P1/P2/맵을 확정해서 그 맵으로 넘어간다 (예전엔 여기서 CharacterSelect.tscn으로 보내
+## 플레이어가 P1을 직접 고르게 했었다)
 func _on_episode_picked(index: int) -> void:
 	GameState.story_index = index
-	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
+	GameState.p1_character_path = GameState.CHARACTERS[GameState.PROTAGONIST_NAME]
+	GameState.p2_character_path = GameState.STORY_OPPONENTS[index]
+	GameState.selected_map_path = GameState.STORY_MAPS[index]
+	GameState.reset_round_wins()
+	get_tree().change_scene_to_file(GameState.selected_map_path)
 
 func _on_back_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")

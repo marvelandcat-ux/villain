@@ -10,8 +10,15 @@ const CHARACTERS := {
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
-	"헬스장 죽돌이": "res://characters/gymbro/GymBro.tscn",  # 뼈대만 있는 스텁 — 스킬 내용 미구현(오픈 이슈)
+	"주인공": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로다 — 표시 이름만 바꿈. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
 }
+
+## 스토리 모드의 주인공(2026-09-10 확정, 표시 이름은 그날 안에 "헬스장 죽돌이"→"주인공"으로 다시 바뀜) —
+## 다른 6명은 스토리에서 맞서 싸우는 "빌런" 상대(STORY_OPPONENTS)고, 이 캐릭터만 플레이어가 조작하는 주인공이다.
+## 그래서 로컬 대전(PvP)의 캐릭터 선택에서는 빠진다(CharacterSelect.gd가 이 이름을 걸러낸다) — 대신
+## 스토리 모드에서는 고를 필요 없이 항상 이 캐릭터로 시작한다(EpisodeSelect.gd가 에피소드를 고르는 순간
+## 바로 이 캐릭터를 P1으로 확정한다). 훈련장은 로스터 전체를 다 테스트해봐야 하는 개발 도구라 이 제외 대상에서 예외다
+const PROTAGONIST_NAME := "주인공"
 
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
 ## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
@@ -22,7 +29,7 @@ const CHARACTER_COLORS := {
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
-	"헬스장 죽돌이": Color(0.55, 0.6, 0.65),
+	"주인공": Color(0.55, 0.6, 0.65),
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 

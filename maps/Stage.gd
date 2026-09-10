@@ -24,6 +24,12 @@ var _round_time_left: float = 0.0
 var _combat_hud: CombatHUD
 
 func _ready() -> void:
+	# 스토리 모드 한정: 캐릭터를 스폰하기도 전에 "주인공 VS 적" 매치업 화면부터 보여준다.
+	# GameState.p1/p2_character_path만으로 채우므로 Fighter가 없어도 상관없다
+	if GameState.game_mode == "story":
+		var versus: VersusIntro = load("res://ui/VersusIntro.tscn").instantiate()
+		add_child(versus)
+		await versus.finished
 	_round_time_left = GameState.time_limit_seconds
 	# 궁극기 컷인 연출 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())

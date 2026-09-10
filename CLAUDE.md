@@ -349,12 +349,17 @@
 
 **로컬 대전(PvP) 흐름:** `ui/TitleScreen.tscn`(아무 키) → `ui/MainMenu.tscn`("대전 모드" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
 
-**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해짐) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/EpisodeSelect.tscn`(어떤 상대와 붙을지 에피소드를 고름 — 고르는 즉시 `story_index`·`p1_character_path`(항상 `GameState.PROTAGONIST_NAME`)·`p2_character_path`(`STORY_OPPONENTS[story_index]`)·`selected_map_path`(`STORY_MAPS[story_index]`)를 전부 확정하고 바로 그 맵으로 전환 — **주인공이 고정이라 `ui/CharacterSelect.tscn`을 거치지 않는다**, 2026-09-10 변경) → 맵(`Stage.gd`, 진입 즉시 `ui/VersusIntro.tscn`으로 "주인공 VS 적" 매치업을 잠깐 보여준 뒤 스폰·카운트다운으로 이어짐 — 아래 항목 참고) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다.
+  - **`ui/StoryIntro.tscn`은 고아 파일이다** — `StoryIntro.gd`가 애초에 존재하지 않아서(스크립트 참조가 깨져 있음) 실제로는 아무 데서도 이 씬으로 넘어가지 않는다. 위 흐름(EpisodeSelect가 바로 맵으로 넘기는 방식)이 실제 동작이니 이 문서와 다른 걸 발견하면 코드가 맞다. 지우지 않고 남겨둔 이유는 확인하지 못해서일 뿐, 되살려 쓸 계획은 없다
+  - **`ui/VersusIntro.tscn` + `VersusIntro.gd`(2026-09-10 추가):** 스토리 모드에서만(`GameState.game_mode == "story"`) `Stage._ready()` 맨 앞, **캐릭터를 스폰하기도 전에** 뜨는 "주인공 VS 적" 매치업 화면. 아직 Fighter가 없는 시점이라 `GameState.p1_character_path`/`p2_character_path`만 보고 이름·색·초상화를 채운다(초상화 프레이밍은 `CharacterSelect`가 쓰던 것과 같은 `GameState.frame_portrait()`를 그대로 재사용). 양옆에서 상자가 미끄러져 들어오고 가운데 "VS" 글자가 팡 튀어나온 뒤, 잠깐 멈췄다가 전체가 페이드아웃되면 `finished`를 emit하고 `queue_free()`된다 — `Stage.gd`는 `await versus.finished`로 이 화면이 끝나길 기다렸다가 캐릭터 스폰 → 3,2,1,FIGHT 카운트다운으로 이어간다. `RoundStart.tscn`과 같은 "CanvasLayer + `finished` 시그널 + 끝나면 스스로 `queue_free()`" 패턴이다.
+    - **로컬 대전(pvp)에는 안 뜬다** — pvp는 `CharacterSelect.tscn`에서 이미 두 캐릭터를 직접 골라봤으므로 매치업을 또 보여줄 필요가 없다. 스토리 모드는 최근에 `CharacterSelect`를 건너뛰도록 바꿔서([[스토리 모드 흐름]] 참고) 그 "누구랑 붙는지 보여주는" 역할이 사라졌었는데, 이 화면이 그 역할을 대신한다
+    - **CanvasLayer는 `modulate`가 없다.** 페이드아웃을 걸려면 CanvasLayer가 아니라 그 밑의 `Control`(`Root`)에 걸어야 한다 — 처음에 CanvasLayer 자신에 `modulate:a`를 트윈하려다 프로퍼티가 없어서 안 먹혔다(실제로 겪음). 그래서 배경·좌우 상자·VS 글자를 전부 `Root` 밑에 두고 그 `Root`의 `modulate:a`만 페이드시킨다
+    - **`P1RoleLabel`(왼쪽 위 역할 표시)은 일부러 텍스트를 비워뒀다(2026-09-10).** 원래 "주인공"이라고 적어뒀는데, 캐릭터 이름 자체가 `GameState.PROTAGONIST_NAME = "주인공"`으로 바뀌면서 바로 아래 `P1NameLabel`도 "주인공"을 보여주게 돼 같은 글자가 두 줄로 겹쳐 보였다. `P2RoleLabel`("적")은 실제 상대 이름과 겹치지 않으니 그대로 둔다
 
 **훈련장 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("조작 방법") → `ui/HowToPlay.tscn`("훈련장에서 해보기") → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
-- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
+- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 에피소드 선택→메인 메뉴, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
 - **라운드제:** `Stage._process()`가 KO(HP 0) 또는 시간 초과(`GameState.time_limit_seconds`>0이고 다 됐을 때 — 그 순간 HP 높은 쪽이 라운드 승, 동률이면 무승부)를 감지하면 `_end_round(p1_won, is_draw)`를 부른다. 라운드 승수는 `GameState.p1_round_wins`/`p2_round_wins`에 누적되고, 둘 중 하나가 `rounds_to_win`에 도달하지 못했으면 `MatchResult.show_round_result()`로 점수 배너만 잠깐 보여준 뒤 `get_tree().reload_current_scene()`으로 같은 맵에서 다음 라운드를 새로 시작한다(HP/위치는 씬 리로드로 초기화되고, 라운드 승수는 `GameState`가 오토로드라 그대로 유지됨). 도달했으면 최종 결과(`MatchResult.show_result()`/`show_draw()`) 또는 스토리 모드 승리 시 `ReformCutscene`으로 분기
 - `CombatHUD`는 화면 중앙 상단에 **남은 시간 박스**(`TimerFrame` > `TimerBox` > `TimerLabel`)와 그 아래 라운드 점수(`RoundLabel`, `P1승 : P2승`)를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신한다. 시간 값은 방 설정에서 고른 `GameState.time_limit_seconds`를 `Stage`가 깎아 내려주는 것이라 HUD는 표시만 한다 — **시간 제한 없음(0)이면 `TimerFrame` 자체가 숨겨지고**, 10초 이하로 남으면 숫자가 빨개진다
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성한다. P1에는 항상 `PlayerController`를 붙이고, P2는 `GameState.game_mode`를 봐서 스토리 모드면 `ClaudeAIController`(정해진 상대를 AI가 조작), 로컬 대전(pvp)이면 `PlayerController`(사람이 직접 조작)를 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
@@ -650,13 +655,13 @@
 ```
 res://
   GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
-  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/ — 6종)
+  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/ — 스토리에서 맞서 싸우는 빌런 6종) + gymbro/(스토리 모드 주인공, GameState.PROTAGONIST_NAME — 로컬 대전 선택에는 안 나옴)
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
   combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
   controllers/    # PlayerController / AIController
   stats/          # CharacterStats 리소스(.tres)
   maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
-  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/StoryIntro/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
+  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/EpisodeSelect/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
 ```
 
 ## 참고
