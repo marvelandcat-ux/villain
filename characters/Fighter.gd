@@ -229,6 +229,12 @@ const COMBO_WINDOW := 1.5
 ## (맵 히트박스는 `Hurtbox.take_hit()`이 `source_fighter == null`을 보고 이쪽으로 보내고,
 ##  히트박스 없이 직접 때리는 기믹은 `StompZone`처럼 이 함수를 직접 부른다)
 func take_map_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
+	# **맞으면 방어가 깨진다.** 데미지만 통과시키면 넉백이 지워진다 —
+	# 방어 중에는 apply_physics가 "제자리에 버틴다"고 매 프레임 velocity.x를 0으로 만들기 때문에,
+	# 열차에 맞아도 그 자리에 붙박이로 서 있게 된다(실측으로 잡은 문제).
+	# 쿨타임은 정상적으로 물린다 — 기믹 앞에서 방어를 켠 건 그만큼 손해여야 한다
+	if is_guarding:
+		cancel_guard()
 	take_damage(amount, knockback, pop_override, true)
 
 ## 피해를 입는다. **맵 기믹이 주는 피해는 이 함수가 아니라 take_map_damage()를 쓸 것** —
