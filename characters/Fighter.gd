@@ -74,6 +74,8 @@ var is_feared: bool = false
 ## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
 ## 잡은 스킬(파일드라이버 등)이 apply_physics를 건너뛰게 해서 위치를 직접 조작할 수 있게 한다
 var is_grabbed: bool = false
+## 이번 프레임에 조작으로 들어온 좌우 입력(-1/0/1). 그네처럼 "누르고 있는 방향"이 필요한 기믹이 읽는다
+var move_input: float = 0.0
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철 아저씨 전용, 캐릭터 씬에서 켬)
 @export var vault_jump: bool = false
 
@@ -280,6 +282,15 @@ func _after(duration: float, callback: Callable) -> void:
 	)
 	timer.start()
 
+## 밖에서 경직을 걸어준다 (놀이터에서 왕관을 떨어뜨렸을 때 등).
+## 이미 걸린 경직보다 짧으면 무시한다 — 짧은 값으로 덮어써서 경직이 오히려 일찍 풀리는 걸 막는다
+func apply_hitstun(duration: float) -> void:
+	_hitstun_time = maxf(_hitstun_time, duration)
+
+## 지금 경직 중인가 (이동·점프·스킬이 막혀 있는 상태)
+func is_in_hitstun() -> bool:
+	return _hitstun_time > 0.0
+
 ## duration초 동안 무적 상태로 만든다
 func grant_invincibility(duration: float) -> void:
 	is_invincible = true
@@ -304,6 +315,9 @@ func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
 func move(direction: float) -> void:
+	# 실제로 움직이지 못하는 상황(경직 등)에도 "무슨 방향을 누르고 있는지"는 남긴다 —
+	# 그네처럼 이동이 아니라 입력 자체를 읽어야 하는 기믹이 이 값을 본다
+	move_input = direction
 	# 피격 경직 중엔 조작으로 넉백 속도를 덮어쓰지 않는다 (그래야 넉백 방향으로 날아간다)
 	if _hitstun_time > 0.0 or is_grabbed:
 		return

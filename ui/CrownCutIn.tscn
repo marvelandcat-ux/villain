@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/CrownCutIn.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://f3m1p7t7ipqi" path="res://sprite/맵/놀이터/왕관.png" id="2_crown"]
+[ext_resource type="Texture2D" uid="uid://b0e7mv32js3x7" path="res://sprite/맵/놀이터/진짜왕관.png" id="2_crown"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
 [ext_resource type="Texture2D" uid="uid://bag0a6mqiys2y" path="res://sprite/맵/놀이터/대관식.png" id="4_bg"]
 
@@ -38,5 +38,7 @@ position = Vector2(0, 70)
 
 [node name="Crown" type="Sprite2D" parent="Holder"]
 position = Vector2(0, -172)
-scale = Vector2(0.296, 0.296)
+scale = Vector2(0.2705, 0.2705)
 texture = ExtResource("2_crown")
+region_enabled = true
+region_rect = Rect2(163, 150, 1257, 746)

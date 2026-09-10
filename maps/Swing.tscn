@@ -1,0 +1,44 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://maps/Swing.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_seat"]
+size = Vector2(78, 46)
+
+[node name="Swing" type="Node2D"]
+script = ExtResource("1")
+seat_offset = Vector2(0, -36)
+
+[node name="FrameLeft" type="Polygon2D" parent="."]
+color = Color(0.35, 0.62, 0.85, 1)
+polygon = PackedVector2Array(-100.0, 0.0, -80.0, 0.0, -7.0, -190.0, -22.0, -190.0)
+
+[node name="FrameRight" type="Polygon2D" parent="."]
+color = Color(0.35, 0.62, 0.85, 1)
+polygon = PackedVector2Array(100.0, 0.0, 80.0, 0.0, 7.0, -190.0, 22.0, -190.0)
+
+[node name="FrameBar" type="Polygon2D" parent="."]
+color = Color(0.28, 0.52, 0.75, 1)
+polygon = PackedVector2Array(-110.0, -203.0, 110.0, -203.0, 110.0, -190.0, -110.0, -190.0)
+
+[node name="Arm" type="Node2D" parent="."]
+position = Vector2(0, -190)
+
+[node name="RopeLeft" type="Polygon2D" parent="Arm"]
+color = Color(0.42, 0.36, 0.3, 1)
+polygon = PackedVector2Array(-31.0, 0.0, -25.0, 0.0, -25.0, 130.0, -31.0, 130.0)
+
+[node name="RopeRight" type="Polygon2D" parent="Arm"]
+color = Color(0.42, 0.36, 0.3, 1)
+polygon = PackedVector2Array(25.0, 0.0, 31.0, 0.0, 31.0, 130.0, 25.0, 130.0)
+
+[node name="SeatVisual" type="Polygon2D" parent="Arm"]
+color = Color(0.95, 0.62, 0.25, 1)
+polygon = PackedVector2Array(-40.0, 130.0, 40.0, 130.0, 40.0, 142.0, -40.0, 142.0)
+
+[node name="Seat" type="Area2D" parent="Arm"]
+position = Vector2(0, 136)
+monitorable = false
+
+[node name="SeatCollision" type="CollisionShape2D" parent="Arm/Seat"]
+shape = SubResource("RectangleShape2D_seat")

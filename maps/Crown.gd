@@ -5,6 +5,7 @@ extends Area2D
 ##
 ## 흐름: 꼭대기에 놓인 왕관을 주우면 "놀이터의 왕"이 되어 버프를 받는다.
 ## 왕이 한 대라도 맞으면 **왕관이 머리에서 튕겨 나가 바닥에 떨어지고**, 잠깐 뒤부터 다시 아무나 주울 수 있다.
+## 놓친 쪽은 `king_stun_time`(0.5초) 동안 굳어서 그 자리에서 바로 되줍지 못한다 — 때린 쪽에게 먼저 주울 틈이 생긴다.
 ## 그래서 왕은 들고 도망치고, 상대는 쫓아가서 때려 떨어뜨린 뒤 먼저 주워야 한다.
 ##
 ## **승리 조건은 건드리지 않는다.** 왕관을 오래 들고 있어도 라운드가 끝나지 않는다 —
@@ -50,6 +51,9 @@ const KING_KEY := "playground_king"
 ## 떨어진 뒤 다시 주울 수 있게 되기까지의 시간(초).
 ## **0으로 두면 안 된다** — 때린 쪽이 밀착해 있으면 떨어지자마자 그대로 회수해서
 ## "때리면 뺏김"이 되어 버린다. 잠깐 잠가야 둘 다 달려드는 쟁탈전이 생긴다
+## 왕관을 떨어뜨린 쪽이 굳는 시간(초). 이 동안은 조작도 막히고 왕관도 못 줍는다 —
+## 때린 쪽이 먼저 주울 여지를 만들어주는 값이라, 0이면 맞자마자 그 자리에서 다시 주워버린다
+@export var king_stun_time: float = 0.5
 @export var pickup_delay: float = 0.35
 ## 못 줍는 동안 왕관이 깜빡이는 속도(초당 횟수). 0이면 안 깜빡인다
 @export var lock_blink_speed: float = 6.0
@@ -78,7 +82,7 @@ const KING_KEY := "playground_king"
 @export var ground_friction: float = 3.0
 ## 왕관이 나갈 수 없는 좌우 **중심** 한계.
 ## 놀이터 벽 안쪽 면이 ±700이고 왕관 폭이 56이라, 중심은 ±672까지만 가야 벽에 안 파고든다
-@export var bounds_x: float = 672.0
+@export var bounds_x: float = 912.0
 
 @export_group("들고 있을 때")
 ## 왕의 원점(발밑)에서 왕관까지의 거리. 캐릭터 키가 60px이라 머리 위가 대략 -70이다
@@ -192,6 +196,9 @@ func _try_pickup() -> void:
 		var fighter: Fighter = area.fighter
 		if fighter == null or not is_instance_valid(fighter) or fighter.current_hp <= 0:
 			continue
+		# 방금 왕관을 떨어뜨리고 굳어 있는 쪽은 못 줍는다
+		if fighter.is_in_hitstun():
+			continue
 		var d: float = global_position.distance_squared_to(fighter.global_position)
 		if d < best:
 			best = d
@@ -238,6 +245,11 @@ func _drop(knockback: Vector2) -> void:
 		loser.clear_modifier("attack_debuff_multiplier", _modifier_id)
 		if loser.damaged.is_connected(_on_holder_damaged):
 			loser.damaged.disconnect(_on_holder_damaged)
+		# 왕관을 놓친 대가로 잠깐 굳는다. 이 동안은 조작도 안 되고 왕관도 못 줍는다
+		loser.apply_hitstun(king_stun_time)
+		# 굴어 있는 게 눈에 안 보이면 그냥 렉처럼 느껴진다 — 머리 위에 별을 띄워서
+		# "지금은 못 움직이고 못 줄는다"를 알려준다
+		StunStars.spawn(loser, king_stun_time)
 	_holder = null
 	# 수직으로만 맞은 타격(넉백 x가 0)이면 맞은 쪽의 뒤쪽으로 흘린다
 	var dir: float = signf(knockback.x)
