@@ -54,6 +54,7 @@ const MAPS := {
 	"층간소음 아파트": "res://maps/NoisyApartment.tscn",
 	"놀이터": "res://maps/Playground.tscn",
 	"지하철 선로": "res://maps/SubwayTrack.tscn",
+	"공사현장 (내리찍기)": "res://maps/CollapsingApartment.tscn",
 }
 
 ## 스토리 모드에서 순서대로 맞서는 상대 목록 (캐릭터 씬 경로) — 로스터 등록 순서 그대로 사용

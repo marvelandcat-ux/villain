@@ -9,6 +9,10 @@ extends Node2D
 @export var stage_width: float = 960.0
 ## 이 값보다 아래로 떨어지면 링아웃으로 즉시 패배 처리 (벽이 없는 링아웃형 맵에서만 의미 있음)
 @export var ring_out_y: float = 900.0
+## 이 맵에서만 쓸 수 있는 전용 스킬(예: 아파트 내리찍기). 지정하면 스폰되는 두 캐릭터 모두에게
+## 자동으로 붙는다(Fighter.map_skill) — 캐릭터 씬 쪽은 전혀 안 건드려도 된다. Skill을 상속한
+## 스크립트가 루트인 씬이어야 하고, 비워두면 그냥 일반 맵(맵 전용 스킬 없음)
+@export var map_skill_scene: PackedScene
 
 var _p1: Fighter
 var _p2: Fighter
@@ -131,6 +135,10 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 		var controller := PlayerController.new()
 		controller.player_index = player_index
 		fighter.add_child(controller)
+	if map_skill_scene:
+		var skill: Skill = map_skill_scene.instantiate()
+		fighter.add_child(skill)
+		fighter.map_skill = skill
 	return fighter
 
 func _freeze_controllers() -> void:
