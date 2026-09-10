@@ -25,4 +25,4 @@ func _shockwave(source: Fighter) -> void:
 			continue
 		if f.global_position.distance_to(source.global_position) <= radius:
 			# 맵 기믹이라 방어로 못 막는다 (마지막 인자 ignore_guard)
-			f.take_damage(damage, Vector2(0, -150), -1.0, true)
+			f.take_map_damage(damage, Vector2(0, -150))

@@ -218,6 +218,21 @@ const COMBO_WINDOW := 1.5
 ## is_invincible이 true면 아예 무시한다
 ## pop_override: 위로 띄우는 힘(px/s)을 직접 지정한다. 음수(기본)면 데미지에 비례한 기본 팝업을 쓰고,
 ## 0이면 전혀 안 띄운다(지상 유지 — 콤보 앞 타격이 상대를 붙잡아두게). 콤보 마무리만 기본 팝업으로 크게 날린다
+## 맵 기믹이 주는 피해 — 지나가는 열차, 떨어지는 화분, 층간소음 충격파처럼
+## **주인(공격한 캐릭터)이 없는 피해**는 전부 이 함수를 거친다.
+##
+## 캐릭터의 공격과 달리 **방어로 막히지 않는다.** 열차를 방어로 버틸 수 있으면
+## 의자로 피해 올라갈 이유가 없어져서 기믹 자체가 죽기 때문이다.
+##
+## **맵 피해에만 붙일 처리는 앞으로 전부 여기에 넣을 것** — 여기 한 줄을 추가하면
+## 열차·화분·충격파에 한꺼번에 적용된다. 지금은 방어를 무시하는 것 하나뿐이다.
+## (맵 히트박스는 `Hurtbox.take_hit()`이 `source_fighter == null`을 보고 이쪽으로 보내고,
+##  히트박스 없이 직접 때리는 기믹은 `StompZone`처럼 이 함수를 직접 부른다)
+func take_map_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
+	take_damage(amount, knockback, pop_override, true)
+
+## 피해를 입는다. **맵 기믹이 주는 피해는 이 함수가 아니라 take_map_damage()를 쓸 것** —
+## ignore_guard는 그쪽이 넘겨주는 값이라 바깥에서 직접 true로 주면 두 경로가 갈라진다
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0, ignore_guard: bool = false) -> void:
 	if is_invincible:
 		return
