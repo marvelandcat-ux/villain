@@ -411,6 +411,13 @@ func cancel_guard(refund: bool = false) -> void:
 		_shield.set_active(false)
 	_set_visual_guard(false)
 
+## 내 기본공격이 상대 방어에 막혔을 때 — 손에 든 무기를 잠깐 빨갛게 깜빡이게 한다.
+## 그 연출이 없는 비주얼(임시 사각형)이면 그냥 넘어간다. Hitbox가 막힌 걸 확인하고 부른다
+func play_weapon_blocked() -> void:
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("play_weapon_blocked"):
+		visual.play_weapon_blocked()
+
 ## 몸(BodyRig)에 막는 자세를 켜고 끈다. 그 메서드가 없는 비주얼이면 그냥 넘어간다
 func _set_visual_guard(on: bool) -> void:
 	var visual: Node2D = get_node_or_null("Visual")

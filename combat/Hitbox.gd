@@ -76,6 +76,7 @@ func _try_hit(area: Area2D) -> bool:
 	var kb: Vector2 = _compute_knockback(area)
 	if not area.take_hit(damage, kb, source_fighter, pop_override):
 		return false
+	_notify_blocked_by_guard(area)
 	_spawn_spark(area.global_position, kb)
 	if debris_scene != null:
 		_spawn_debris(area.global_position)
@@ -88,6 +89,19 @@ func _try_hit(area: Area2D) -> bool:
 	_spawn_damage_number(area.global_position, damage, combo)
 	connected.emit(victim)
 	return true
+
+## 맞은 쪽이 방어 중이었으면 때린 쪽에게 알린다 — 손에 든 무기가 잠깐 빨갛게 깜빡인다.
+## **기본공격이 막혔을 때만이라** 이 히트박스가 공격자의 basic_attack 소속인지 확인한다
+## (스킬 히트박스나 주인 없는 맵 기믹은 그냥 넘어간다)
+func _notify_blocked_by_guard(hurtbox: Hurtbox) -> void:
+	if not _has_source or not is_instance_valid(_source_fighter):
+		return
+	var victim: Fighter = hurtbox.fighter
+	if victim == null or not victim.is_guarding:
+		return
+	if _source_fighter.basic_attack == null or get_parent() != _source_fighter.basic_attack:
+		return
+	_source_fighter.play_weapon_blocked()
 
 ## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)
 func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:

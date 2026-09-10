@@ -243,6 +243,16 @@ extends Node2D
 ## 맞았을 때 잠깐 이 얼굴(아파하는 표정)로 머리를 바꾼다. 비어 있으면 아무 일도 안 한다(촉법소년만 지정)
 @export var hurt_head_texture: Texture2D
 ## 아파하는 얼굴을 보여주는 시간(초)
+## --- 방어에 막혔을 때 무기가 빨갛게 깜빡이는 연출 ---
+## 상대 방어에 기본공격이 막히면 손에 든 무기가 이 시간(초) 동안 깜빡인다
+@export var blocked_flash_duration: float = 3.0
+## 깜빡일 때 가장 진해지는 색. modulate라 원래 그림 색에 곱해진다
+@export var blocked_flash_color: Color = Color(1.0, 0.2, 0.2)
+## 그 시간 동안 원래색 <-> 빨강을 몇 번 왕복하는지
+@export var blocked_flash_cycles: float = 6.0
+## 가장 옅어졌을 때의 투명도 (1이면 투명도는 안 변하고 색만 바뀐다)
+@export_range(0.0, 1.0, 0.05) var blocked_flash_min_alpha: float = 0.3
+
 @export var hurt_face_duration: float = 0.45
 ## 아파하는 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var hurt_head_scale: Vector2 = Vector2.ZERO
@@ -350,6 +360,8 @@ var _reel_phase: float = 0.0
 var _vomit_time: float = 0.0
 ## 아파하는 얼굴을 보여줄 남은 시간(초). 0보다 크면 피격 표정이다
 var _hurt_time: float = 0.0
+## 방어에 막힌 뒤 무기가 깜빡이는 데 남은 시간(초)
+var _blocked_flash_left: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
 var _guard_target: float = 0.0
@@ -397,6 +409,7 @@ func _process(delta: float) -> void:
 
 	# 숨쉬기 위상은 항상 진행 (가만히 서 있을 때만 화면에 반영된다)
 	_breathe_phase += delta * breathe_speed
+	_update_blocked_flash(delta)
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
@@ -977,6 +990,31 @@ func play_vomit_face() -> void:
 	if vomit_head_scale != Vector2.ZERO:
 		_head.scale = vomit_head_scale
 	_vomit_time = vomit_face_duration
+
+## 상대 방어에 기본공격이 막혔을 때 — 손에 든 무기를 blocked_flash_duration 동안 깜빡이게 한다.
+## Fighter.play_weapon_blocked()가 호출한다. 손에 든 게 없는 캐릭터는 아무것도 안 보인다
+func play_weapon_blocked() -> void:
+	if _hand_r_hold == null:
+		return
+	_blocked_flash_left = blocked_flash_duration
+
+## 무기 깜빡임을 매 프레임 갱신한다. 원래색(흰색 modulate) <-> blocked_flash_color를 오가면서
+## 투명도도 같이 오르내린다 — 색이 진해질 때 가장 옅어져서 "지지직거리는" 느낌이 난다.
+## HandRHold 자체에 걸므로 손에 매달린 무기(키보드·술병·사탕)가 통째로 물든다
+func _update_blocked_flash(delta: float) -> void:
+	if _hand_r_hold == null or _blocked_flash_left <= 0.0:
+		return
+	_blocked_flash_left = maxf(_blocked_flash_left - delta, 0.0)
+	if is_zero_approx(_blocked_flash_left):
+		_hand_r_hold.modulate = Color.WHITE   # 끝나면 원래 색으로
+		return
+	# 0(원래색) -> 1(빨강) -> 0 을 blocked_flash_cycles번 왕복. cos이라 양 끝에서 부드럽게 멈춘다
+	var elapsed: float = blocked_flash_duration - _blocked_flash_left
+	var span: float = maxf(blocked_flash_duration, 0.001)
+	var wave: float = 0.5 - 0.5 * cos(elapsed / span * TAU * blocked_flash_cycles)
+	var tint: Color = Color.WHITE.lerp(blocked_flash_color, wave)
+	tint.a = lerpf(1.0, blocked_flash_min_alpha, wave)
+	_hand_r_hold.modulate = tint
 
 ## 피격 표정 — 맞은 순간 잠깐 아파하는 얼굴로 바꾼다. Fighter.take_damage가 호출한다.
 ## hurt_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
