@@ -1,12 +1,12 @@
 [gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://ui/MenuIllust.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://mu7udgb1u85b" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0005_몸통.png" id="2_body"]
-[ext_resource type="Texture2D" uid="uid://2qpv28kpbqf3" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0004_아래쪽옷.png" id="3_lowercloth"]
-[ext_resource type="Texture2D" uid="uid://c4wbl6v7cqiho" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0003_머리.png" id="4_head"]
-[ext_resource type="Texture2D" uid="uid://c4f1xoi1v7p43" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0002_맨아래띠.png" id="5_ribbonbottom"]
-[ext_resource type="Texture2D" uid="uid://bdu3ut22hcdgp" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0001_중간띠.png" id="6_ribbonmiddle"]
-[ext_resource type="Texture2D" uid="uid://bmcrbkpu55iol" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0000_맨위띠.png" id="7_ribbontop"]
+[ext_resource type="Texture2D" uid="uid://7wydsf07px0c" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0005_몸통.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://q3thtpk88nke" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0004_아래쪽옷.png" id="3_lowercloth"]
+[ext_resource type="Texture2D" uid="uid://b3fqxmldao3pa" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0003_머리.png" id="4_head"]
+[ext_resource type="Texture2D" uid="uid://da0knrs0lpav7" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0002_맨아래띠.png" id="5_ribbonbottom"]
+[ext_resource type="Texture2D" uid="uid://dbxgk4a3xwj0x" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0001_중간띠.png" id="6_ribbonmiddle"]
+[ext_resource type="Texture2D" uid="uid://dduw38wa8iyj" path="res://sprite/메인메뉴/일러스트/주정꾼_파츠/주정꾼잘생긴버전_0000_맨위띠.png" id="7_ribbontop"]
 
 [node name="MenuIllust" type="Node2D"]
 script = ExtResource("1")

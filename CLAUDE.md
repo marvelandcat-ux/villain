@@ -6,7 +6,7 @@
 
 ## 프로젝트 정보
 
-- 엔진: Godot 4.6, GDScript
+- 엔진: Godot 4.7.2, GDScript (2026-09-10에 4.6에서 올렸다 — 아래 "참고" 절의 버전 규칙을 볼 것)
 - 렌더러: Forward Plus, 3D 물리엔진 Jolt (프로젝트 기본값 — 실제 게임은 2D)
 - 장르: 사이드뷰 대전 격투, 바운스어택류(타격 후 넉백을 다시 잡아채는) 콤보 중심
 - 전투 원칙: 피격 경직(히트스턴) 최소화 지향, 지형·벽을 활용하는 스테이지 기믹
@@ -906,9 +906,13 @@ res://
 ## 참고
 
 - 기획 오픈 이슈(히트스턴 예외, 승리 조건 HP vs 링아웃 등)는 아티팩트 문서의 "다음에 정할 것" 표를 확인. 확정 전까지는 구현 시 임시값으로 처리하고 주석/TODO로 표시
-- **엔진 버전은 4.6으로 통일한다.** 4.7로 프로젝트를 열면 `project.godot`의 `config/features`가 `"4.7"`로 다시 쓰이고, 4.6으로 연 커밋과 **매번 머지 충돌이 난다**(실제로 겪음 — 바로 옆 줄인 `run/main_scene`까지 같이 충돌로 딸려 들어왔다). 반드시 4.6.x로 열 것
+- **엔진 버전은 4.7.2로 통일한다(2026-09-10에 4.6 -> 4.7.2로 올렸다).** `project.godot`의 `config/features`가 `"4.7"`이다. **버전이 섞이면 이 줄이 열 때마다 다시 쓰여서 매번 머지 충돌이 난다** — 바로 옆 줄인 `run/main_scene`까지 같이 충돌로 딸려 들어온다(실제로 겪음). 그래서 **팀원 전원이 4.7.2를 써야 한다.** 누군가 4.6으로 열면 반대 방향으로 똑같은 충돌이 난다
+  - 올리기 전에 4.7.2에서 전체 검증을 돌렸다: 스크립트 파싱 에러 0건, 맵 3종(지하철 승강장·놀이터·층간소음) 각 18초 무사고, UI 5종(타이틀·메인메뉴·캐릭터선택·맵선택·방설정)·훈련장 무사고, 방어 동작 16항목 전부 통과
+  - **4.7에서 새로 뜨는 경고: `ext_resource, invalid UID`.** 씬이 들고 있는 uid와 `.import`의 실제 uid가 다르면 경고를 띄우고 경로로 대체해 읽는다(동작은 한다). `MenuIllust.tscn` 6개·`SubwayVillainRig.tscn` 1개가 그랬는데 — 그림을 다시 임포트하면 uid가 새로 생기는데 씬은 옛 uid를 들고 있어서다. 전부 실제 값으로 맞춰뒀다. **그림을 갈아끼운 뒤 이 경고가 뜨면 씬의 uid를 `.import`의 `uid=` 값으로 고칠 것**
+  - 남아 있는 것: 타이틀 화면을 `--quit-after`로 강제 종료하면 `2 ObjectDB instances were leaked` / `1 resources still in use`가 뜬다. 브금·페이드 트윈이 도는 중에 끊어서 나는 종료 시점 메시지라 게임 동작에는 영향이 없다
 - **코드 수정 후 헤드리스로 에러 확인은 기본적으로 하지 않는다(사용자 요청, 2026-09-08).** 시간·크레딧을 아끼기 위해 매번 돌리지 말 것 — 사용자가 명시적으로 "실행해서 확인해줘"라고 할 때만 돌린다.
-- Godot 실행 파일(PC마다 다름): 이 PC는 `D:\Godot_v4.6.3-stable_win64.exe\Godot_v4.6.3-stable_win64_console.exe`, 다른 PC는 `D:\10인준완\Godot\engine\` 아래. (필요할 때) 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있음 — 예: `<위 경로> --headless --path "<프로젝트 경로>" "res://maps/ConvenienceStore.tscn" --quit-after 120`. (경로가 없으면 `Godot*4.6*win64_console.exe`를 찾을 것 — 4.7을 쓰면 위의 충돌이 난다)
-- **주의:** 새 `class_name` 스크립트를 추가한 직후에는 먼저 `<위 경로> --headless --path "D:/10인준완/Godot/villain" --editor --quit-after 5`로 한 번 실행해서 전역 클래스 캐시를 갱신해야 함. 안 그러면 방금 만든 클래스를 참조하는 다른 스크립트가 "Could not find type" 에러로 로드 실패함
+- Godot 실행 파일은 PC마다 다르다. **이 PC(`C:\Users\bitba\Documents\GitHub\villain`)는 `C:\Users\bitba\Downloads\Godot_v4.7.2-stable_win64.exe (1)\Godot_v4.7.2-stable_win64_console.exe`** — 폴더 이름에 공백과 괄호가 들어 있으니 PowerShell에서는 호출 연산자로 `& "<경로>" ...`처럼 부를 것. 다른 PC는 `D:\10인준완\Godot\engine\` 아래에 있었다(4.6 시절 경로라 지금은 다를 수 있다). 경로가 안 맞으면 `Godot*4.7*win64*console*.exe`로 찾을 것
+  - (필요할 때) 헤드리스로 씬을 실행해서 런타임 에러를 확인할 수 있다 — 예: `& "<위 경로>" --headless --path "C:\Users\bitba\Documents\GitHub\villain" "res://maps/SubwayPlatform.tscn" --fixed-fps 60 --quit-after 1100`
+- **주의:** 새 `class_name` 스크립트를 추가한 직후에는 먼저 ``<위 경로> --headless --path "D:/10인준완/Godot/villain" --editor --quit-after 5` "<위 경로>" --headless --path "C:SERSBITBADOCUMENTSGITHUBILLAIN" --EDITOR --QUIT-AFTER 20`로 한 번 실행해서 전역 클래스 캐시를 갱신해야 함. 안 그러면 방금 만든 클래스를 참조하는 다른 스크립트가 "Could not find type" 에러로 로드 실패함
 - 자동 입력 시뮬레이션이 필요한 테스트는 `extends SceneTree` + `--script` 방식이 아니라, `extends Node` 스크립트를 임시 `.tscn`으로 감싸서 `--headless --path ... <임시 씬> --quit-after N`로 실행할 것 — `--script` 모드는 오토로드(`GameState` 등)가 초기화되지 않아 컴파일 에러가 남
 - **주의:** 헤드리스 모드는 프레임 제한이 없어서 60fps보다 훨씬 빠르게 돈다(실측 약 145fps). 쿨타임·버프 지속시간처럼 시간 기반 로직을 테스트할 때 `--quit-after N`의 N을 "60fps 기준 초"로 계산하면 실제로는 그보다 훨씬 짧은 시간만 흐른다 — 프레임 수 대신 `Time.get_ticks_msec()`로 실제 경과 시간을 재면서 대기하거나, `--fixed-fps 60`을 같이 붙여서 프레임당 델타를 고정시킬 것
