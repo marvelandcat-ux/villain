@@ -47,7 +47,7 @@ var windup_time: float = 0.14
 ## 사거리의 몇 %를 지났을 때부터 아래로 처지기 시작하는지 (0.5 = 절반 지점부터). 1이면 안 처진다
 var drop_after: float = 0.5
 ## 처지기 시작한 뒤 받는 중력(px/초²)
-var gravity: float = 3400.0
+var gravity: float = 5000.0
 ## 떨어지다 지면·발판에 닿으면 거기서 멈출지. 손 높이가 지면에서 27px뿐이라
 ## 이게 없으면 마우스가 땅에 박힌 채 미끄러져 간다
 var stop_on_ground: bool = true

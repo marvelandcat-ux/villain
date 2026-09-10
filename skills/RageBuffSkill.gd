@@ -1,53 +1,60 @@
 class_name RageBuffSkill
 extends Skill
 
-## 열등감 느끼기 — 사용하면 일정 시간 자신의 기본공격 공격속도가 50% 빨라진다.
+## 열등감 느끼기 — 사용하면 duration 동안 기본공격 쿨타임이 basic_attack_cooldown으로 **고정**된다.
 ## 기획 문서에 발동 조건이 미정이었던 오픈 이슈를 액티브 사용식으로 임의 확정한 것 (악플러 스킬2)
-@export var attack_speed_multiplier: float = 1.5
-@export var duration: float = 5.0
-## 버프가 도는 동안 화난 얼굴(리그의 action_head_texture)로 바꿀지.
-## 그림이 없는 캐릭터는 리그 쪽에서 그냥 넘어가므로 켜둬도 영향이 없다
-@export var rage_face: bool = true
+##
+## 예전에는 attack_speed_multiplier(쿨타임이 1.5배 빨리 도는 배수) 방식이었는데,
+## "쿨 0.3초"처럼 결과값을 딱 정하고 싶어서 절대값 덮어쓰기(Skill.cooldown_override)로 바꿨다.
+## 배수도 그대로 남겨뒀지만 기본값이 1.0이라 꺼져 있다 — 둘을 같이 켜면 0.3초보다 더 빨라진다
+## 버프가 도는 동안엔 분노한 표정(action_head_texture)으로 얼굴이 바뀐다.
+## 시간이 다 되면 되돌리는데, **씬이 통째로 사라져도 콜백이 남지 않도록 자식 Timer 노드를 쓴다**
+## (get_tree().create_timer는 SceneTree에 속해서 이 노드보다 오래 살아남아 "Lambda capture was freed" 에러가 난다)
+@export var duration: float = 6.0
+## 버프가 도는 동안 기본공격 쿨타임을 이 값(초)으로 묶는다. 헛쳤을 때의 miss_cooldown도 같이 이 값이 된다
+@export var basic_attack_cooldown: float = 0.3
+## 기본공격 쿨타임이 도는 속도 배수. 1.0이면 안 걸린다(지금은 위의 절대값 방식만 쓴다)
+@export var attack_speed_multiplier: float = 1.0
 
-## 화난 얼굴을 원래대로 되돌리기까지 남은 시간(초)
-var _face_left: float = 0.0
-## 얼굴을 바꿔둔 몸(BodyRig) — 시간이 다 되면 여기에 되돌려달라고 한다
-var _rig: Node2D
+## 버프를 되돌릴 타이머 — 이 노드의 자식이라 캐릭터가 사라지면 같이 사라진다
+var _timer: Timer
 
 func _execute(fighter: Fighter) -> void:
-	fighter.apply_temp_multiplier("attack_speed_multiplier", attack_speed_multiplier, duration)
-	# 열받아서 씩씩거리는 동안 붉으락푸르락한 오라
+	if attack_speed_multiplier != 1.0:
+		fighter.apply_temp_multiplier("attack_speed_multiplier", attack_speed_multiplier, duration)
+	# 기본공격 쿨타임을 고정값으로 덮어쓴다. 이미 돌고 있던 쿨도 그 값으로 줄여줘야
+	# 스킬을 누른 직후부터 바로 빨라진 게 느껴진다
+	if fighter.basic_attack:
+		fighter.basic_attack.cooldown_override = basic_attack_cooldown
+		fighter.basic_attack.cooldown_left = minf(fighter.basic_attack.cooldown_left, basic_attack_cooldown)
+	# 열받아서 씩씩거리는 동안 붉으락푸르락한 오라 + 분노한 표정
 	fighter.set_tint("rage", Color(1.0, 0.55, 0.35), duration)
 	var visual: Node2D = fighter.get_node_or_null("Visual")
-	if visual == null:
+	if visual and visual.has_method("set_action_face"):
+		visual.set_action_face(true)
+	if visual:
+		var tween := fighter.create_tween()
+		tween.set_loops(3)
+		tween.tween_property(visual, "scale", Vector2(1.12, 1.12), 0.15)
+		tween.tween_property(visual, "scale", Vector2(1, 1), 0.15)
+	_start_timer()
+
+## duration 뒤에 버프를 되돌린다. 다시 쓰면 타이머를 새로 시작해 시간이 연장된다
+func _start_timer() -> void:
+	if _timer == null:
+		_timer = Timer.new()
+		_timer.one_shot = true
+		add_child(_timer)
+		_timer.timeout.connect(_end_rage)
+	_timer.start(duration)
+
+## 쿨타임 덮어쓰기와 분노 표정을 원래대로 돌린다
+func _end_rage() -> void:
+	var fighter := get_parent() as Fighter
+	if fighter == null:
 		return
-	# 버프가 도는 내내 화난 얼굴이 "기본 얼굴"이 된다 — 그 사이에 맞으면 피격 표정이
-	# 잠깐 덮었다가, 그게 끝나면 원래 얼굴이 아니라 이 화난 얼굴로 돌아온다
-	if rage_face and visual.has_method("set_action_face"):
-		_rig = visual
-		_rig.set_action_face(true)
-		_face_left = duration
-	var tween := fighter.create_tween()
-	tween.set_loops(3)
-	tween.tween_property(visual, "scale", Vector2(1.12, 1.12), 0.15)
-	tween.tween_property(visual, "scale", Vector2(1, 1), 0.15)
-
-## 버프 시간이 다 되면 원래 얼굴로 돌려놓는다.
-## SceneTree 타이머가 아니라 이 노드의 _process로 세는 이유 — 라운드 리로드나 대전 도중 나가기로
-## 씬이 정리되면 이 노드도 같이 사라져서, 이미 없어진 리그를 건드릴 일이 아예 생기지 않는다
-func _process(delta: float) -> void:
-	super._process(delta)   # 쿨타임 감소
-	if _face_left <= 0.0:
-		return
-	_face_left = maxf(_face_left - delta, 0.0)
-	if is_zero_approx(_face_left):
-		_restore_face()
-
-func _restore_face() -> void:
-	if _rig and is_instance_valid(_rig) and _rig.has_method("set_action_face"):
-		_rig.set_action_face(false)
-	_rig = null
-	_face_left = 0.0
-
-func _exit_tree() -> void:
-	_restore_face()
+	if fighter.basic_attack:
+		fighter.basic_attack.cooldown_override = 0.0
+	var visual: Node2D = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_action_face"):
+		visual.set_action_face(false)

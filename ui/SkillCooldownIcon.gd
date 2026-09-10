@@ -71,10 +71,12 @@ func bind(skill: Skill, key_hint: String, fallback_color: Color) -> void:
 func _process(delta: float) -> void:
 	if _skill == null:
 		return
-	# cooldown이 0인 스킬(= 언제나 사용 가능)은 항상 꽉 찬 상태로 둔다
+	# cooldown이 0인 스킬(= 언제나 사용 가능)은 항상 꽉 찬 상태로 둔다.
+	# 버프가 쿨타임을 덮어썼으면(cooldown_override) 그 값을 기준으로 채워야 물높이가 맞는다
 	var ratio: float = 1.0
-	if _skill.cooldown > 0.0:
-		ratio = clampf(1.0 - _skill.cooldown_left / _skill.cooldown, 0.0, 1.0)
+	var full: float = _skill.effective_cooldown()
+	if full > 0.0:
+		ratio = clampf(1.0 - _skill.cooldown_left / full, 0.0, 1.0)
 	_fit_bar()
 	_bar.value = ratio
 	_update_water_line(ratio)

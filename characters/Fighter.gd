@@ -10,6 +10,11 @@ signal health_changed(current: int, max: int)
 signal died
 ## 기본공격을 실제로 발동시켰을 때 알린다 (분신이 기본공격을 따라 하는 스킬 등이 듣는다)
 signal basic_attack_used
+## 실제로 피해를 입은 순간 알린다 — 경감 후 깎인 양과 그때의 넉백을 같이 넘긴다.
+## "맞으면 풀리는" 효과가 쓴다(놀이터 왕관이 몸에서 떨어져 나가는 처리).
+## **health_changed로 대신하면 안 된다** — 회복할 때도 같이 날아오고, 넉백 방향을 알 수 없다.
+## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
+signal damaged(amount: int, knockback: Vector2)
 
 ## 캐릭터 고정 수치
 @export var stats: CharacterStats
@@ -107,6 +112,8 @@ var is_feared: bool = false
 ## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
 ## 잡은 스킬(파일드라이버 등)이 apply_physics를 건너뛰게 해서 위치를 직접 조작할 수 있게 한다
 var is_grabbed: bool = false
+## 이번 프레임에 조작으로 들어온 좌우 입력(-1/0/1). 그네처럼 "누르고 있는 방향"이 필요한 기믹이 읽는다
+var move_input: float = 0.0
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철 아저씨 전용, 캐릭터 씬에서 켬)
 @export var vault_jump: bool = false
 
@@ -242,6 +249,10 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	else:
 		velocity += knockback
 	health_changed.emit(current_hp, stats.max_hp)
+	_update_hp_face()
+	# 실제로 깎였을 때만 — 가드로 전부 막았으면 "맞았다"고 치지 않는다
+	if reduced_amount > 0:
+		damaged.emit(reduced_amount, knockback)
 	if current_hp <= 0:
 		died.emit()
 
@@ -268,6 +279,14 @@ func _play_hurt_face() -> void:
 	if visual and visual.has_method("play_hurt_face"):
 		visual.play_hurt_face()
 
+## 남은 HP 비율을 몸에 알려준다 — HP가 얼마 안 남으면 지친 얼굴로 바뀐다.
+## 그 표정이 없는 캐릭터나 임시 사각형 비주얼이면 그냥 넘어간다. HP가 바뀔 때마다 부른다
+func _update_hp_face() -> void:
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("update_hp_ratio"):
+		var max_hp: int = stats.max_hp if stats else 0
+		visual.update_hp_ratio(float(current_hp) / float(max_hp) if max_hp > 0 else 1.0)
+
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
@@ -281,6 +300,7 @@ func _flash_hit() -> void:
 func heal(amount: int) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
+	_update_hp_face()
 
 ## 여러 상태이상 색조가 겹쳐도 서로 안 지우도록 관리하는 저장소. {id: Color} — 화면에는 가장 최근 것이 보이고,
 ## 그게 풀리면 그 전에 걸려있던 것으로 되돌아간다 (전부 사라지면 원래 색)
@@ -322,6 +342,15 @@ func _after(duration: float, callback: Callable) -> void:
 	)
 	timer.start()
 
+## 밖에서 경직을 걸어준다 (놀이터에서 왕관을 떨어뜨렸을 때 등).
+## 이미 걸린 경직보다 짧으면 무시한다 — 짧은 값으로 덮어써서 경직이 오히려 일찍 풀리는 걸 막는다
+func apply_hitstun(duration: float) -> void:
+	_hitstun_time = maxf(_hitstun_time, duration)
+
+## 지금 경직 중인가 (이동·점프·스킬이 막혀 있는 상태)
+func is_in_hitstun() -> bool:
+	return _hitstun_time > 0.0
+
 ## duration초 동안 무적 상태로 만든다
 func grant_invincibility(duration: float) -> void:
 	is_invincible = true
@@ -339,6 +368,7 @@ func ring_out() -> void:
 		return
 	current_hp = 0
 	health_changed.emit(current_hp, stats.max_hp)
+	_update_hp_face()
 	died.emit()
 
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
@@ -441,6 +471,9 @@ func _spawn_dash_afterimage() -> void:
 	tween.tween_callback(ghost.queue_free)
 
 func move(direction: float) -> void:
+	# 실제로 움직이지 못하는 상황(경직 등)에도 "무슨 방향을 누르고 있는지"는 남긴다 —
+	# 그네처럼 이동이 아니라 입력 자체를 읽어야 하는 기믹이 이 값을 본다
+	move_input = direction
 	# 피격 경직 중엔 조작으로 넉백 속도를 덮어쓰지 않는다 (그래야 넉백 방향으로 날아간다)
 	if _hitstun_time > 0.0 or is_grabbed:
 		return

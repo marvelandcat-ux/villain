@@ -11,6 +11,14 @@ extends Node
 @export var icon: Texture2D
 
 var cooldown_left: float = 0.0
+## 0보다 크면 cooldown 대신 이 값이 쓰인다 — 버프가 잠깐 쿨타임을 **고정값으로** 덮어쓸 때 쓴다
+## (악플러 열등감이 기본공격 쿨을 0.3초로 묶는 용도). 버프가 끝나면 0으로 되돌려 원래 cooldown으로 돌아간다.
+## 배수(attack_speed_multiplier)와 달리 원래 값이 얼마든 결과가 같은 절대값이다
+var cooldown_override: float = 0.0
+
+## 지금 실제로 쓸 쿨타임 — 덮어쓰기가 걸려 있으면 그 값, 아니면 원래 cooldown
+func effective_cooldown() -> float:
+	return cooldown_override if cooldown_override > 0.0 else cooldown
 
 func _process(delta: float) -> void:
 	if cooldown_left <= 0.0:
@@ -29,7 +37,7 @@ func can_use() -> bool:
 func use(fighter: Fighter) -> void:
 	if not can_use():
 		return
-	cooldown_left = cooldown
+	cooldown_left = effective_cooldown()
 	# 모션이 긴 스킬은 그동안 다른 스킬을 못 쓰게 잠근다 (이동은 계속 가능)
 	if lock_duration > 0.0 and fighter:
 		fighter.start_busy(lock_duration)
@@ -38,7 +46,7 @@ func use(fighter: Fighter) -> void:
 ## 스킬 클래시(연타 미니게임)에서 졌을 때 호출한다 — 실제 효과(_execute)는 내지 않고
 ## 쿨타임만 정상적으로 소모시킨다. "동시에 썼지만 상대에게 밀려서 불발됐다"는 느낌
 func cancel_use() -> void:
-	cooldown_left = cooldown
+	cooldown_left = effective_cooldown()
 
 ## 하위 클래스가 실제 효과를 구현하는 곳
 func _execute(_fighter: Fighter) -> void:
