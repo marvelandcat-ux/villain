@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/AkpeulleoStats.tres" id="2"]
-[ext_resource type="Script" path="res://skills/MeleeAttack.gd" id="3"]
+[ext_resource type="Script" uid="uid://cgqw8ohid720h" path="res://skills/ComboMeleeAttack.gd" id="3"]
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
 [ext_resource type="Script" path="res://skills/MouseGrabSkill.gd" id="6"]
@@ -34,9 +34,10 @@ shape = SubResource("CapsuleShape2D_body")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
-damage = 6
 range = 40.0
 windup = 0.18
+cooldown = 0.3
+miss_cooldown = 1.0
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false

@@ -23,7 +23,9 @@ extends Skill
 ## 서로 튕겨나가는 넉백 — 적은 진행 방향으로, 자신은 반대로 날아간다.
 ## 이 값은 "자전거를 딱 절반 탔을 때(진행도 0.5)"의 넉백 = 평균이다.
 ## 실제 넉백 = 이 값 × (min~max 배율). 막 출발=min배, 다 탐=max배, 절반=1배(이 값 그대로)
-@export var enemy_collision_knockback: Vector2 = Vector2(220, -120)
+## 2026-09-09: 2배(660, -360)로 올렸다가 "너무 멀리 날아간다"는 피드백으로 다시 절반으로 깎아 (330, -180)로 확정.
+## 브랜치 머지 때 옛 값(220, -120 / 340, -150)으로 되돌아간 적이 있으니 충돌 나면 이 값을 남길 것
+@export var enemy_collision_knockback: Vector2 = Vector2(330, -180)
 ## 돌진 진행도(0=막 출발 ~ 1=다 탐)에 따라 넉백에 곱하는 배율. min에서 max로 선형 증가하고,
 ## 진행도 0.5(절반)에서 정확히 (min+max)/2 = 1.0배 = 평균이 나오게 min 0 / max 2로 잡았다
 @export var min_knockback_scale: float = 0.0

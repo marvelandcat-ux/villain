@@ -22,6 +22,8 @@
   - 대신 두 캐릭터가 같은 자리에 겹쳐 설 수 있게 됐다(스매시브라더스류와 같은 방식). 서로 밀어내는 처리가 필요하면 따로 넣어야 한다
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - `combat/Hitbox.gd` / `combat/Hurtbox.gd`: 실제 데미지 판정. `Hurtbox`는 Fighter의 자식 Area2D로 피격을 받아 `take_damage()`를 부르고, `Hitbox`는 공격 판정 Area2D로 `Hurtbox`와 겹치면 데미지를 준다 (자기 자신은 무시)
+- `skills/ComboMeleeAttack.gd`: **기본공격 3타 콤보 — 기본공격이 있는 캐릭터 6명 전원이 쓴다**(`MeleeAttack`을 상속). 맞아야만 다음 타로 이어지는 히트 확인식이라, 헛치면 예약 입력이 버려지고 `miss_cooldown`(1초)이 돌며 1타로 리셋된다. 3타를 다 맞추면 `cooldown`(0.3초) 마무리 회복. 타별 데미지·넉백은 `combo_damage`/`combo_knockback` 배열이라 `damage` 프로퍼티는 안 쓴다(씬에서 지워야 한다). 기본공격이 아예 없는 지하철 아저씨(`vault_jump`)만 예외
+  - **주의(실제로 겪음): 이 4명(악플러·고양이 아주머니·촉법소년·층간소음)의 콤보 적용이 커밋 안 되고 GitHub Desktop이 만든 stash에 들어가 있어서 "콤보가 사라졌다"가 된 적이 있다.** 브랜치를 옮길 때 GitHub Desktop이 작업 내용을 stash로 치워두므로, 뭔가 없어졌으면 `git stash list`부터 볼 것
 - `skills/MeleeAttack.gd`: 기본공격 공용 스킬 — 캐릭터 앞에 히트박스를 잠깐 켰다 끈다. `damage`/`range`만 캐릭터마다 다르게 지정해서 재사용 (사탕찌르기, 키보드 휘두르기, 술병깨기, 팻말 때리기 전부 이걸 씀)
 - `combat/SkillClashManager.gd`: 두 Fighter가 같은 스킬 슬롯을 `match_window`(0.15초) 안에 함께 쓰면 "동시 사용"으로 보고 화면을 멈추고 `ui/SkillClashPopup.tscn`(연타 미니게임)을 띄운다. 이긴 쪽만 실제 효과가 나가고 진 쪽은 `Skill.cancel_use()`로 쿨타임만 소모된 채 취소된다. `Stage.gd`가 `_ready()`에서 심어두고 Fighter는 `"skill_clash_manager"` 그룹으로 찾는다(훈련장처럼 매니저가 없는 씬은 클래시 없이 바로 발동). **`skill_1`/`skill_2`/`궁극기`만 이 클래시를 탄다 — `Fighter.use_basic_attack()`은 일부러 클래시 매니저를 거치지 않고 항상 바로 나간다.** 기본공격은 스킬보다 훨씬 자주(쿨타임 1초) 나가는 잽이라, 여기까지 클래시에 걸리면 마주칠 때마다 화면이 멈추고 연타 게임이 뜨는 꼴이 된다
 - **주의(실제로 겪은 버그):** `get_tree().create_timer(t).timeout.connect(func(): 어떤노드.뭔가 = 값)`처럼 다른 노드를 건드리는 콜백을 예약할 때, 그 노드가 타이머가 끝나기 전에 사라지면(대전 도중 나가기·다시하기 등으로 씬이 통째로 정리되는 경우) `ERROR: Lambda capture ... was freed`가 나면서 사라진 노드를 건드리려다 에러가 난다. `get_tree().create_timer()`는 SceneTree에 속해서 관련 노드보다 오래 살아남기 때문. 해결책은 `is_instance_valid()` 체크가 아니라 **그 노드(또는 관련 스킬 노드)의 자식으로 `Timer` 노드를 만들어서 씀** — 부모가 사라지면 자식 Timer도 같이 사라져서 콜백 자체가 아예 실행되지 않는다(`Fighter._after()`, `FirePlate.gd`, `Projectile.gd` 참고). `await get_tree().create_timer(t).timeout`처럼 하나만 기다리고 끝내는 짧은 대기(`MeleeAttack`의 히트박스 on/off 등)는 이 문제가 잘 안 생겨서 그대로 둬도 됨
@@ -49,6 +51,15 @@
   **값이 사는 곳이 갈려 있다:** 데미지·입 위치·디버프처럼 캐릭터마다 다를 값은 캐릭터 씬의 `SkillUltimate` 노드,
   부채꼴 길이(`cone_range`)·각도(`half_angle_deg`)·연출은 전부 `ScreamCone.tscn` 루트. 한 값은 반드시 한 군데에만 둔다 —
   처음엔 길이·각도를 양쪽에 두고 스킬이 씬 값을 덮어썼는데, `ScreamCone.tscn`에서 아무리 고쳐도 게임에선 안 먹는 함정이 돼서 스킬 쪽을 지웠다
+- `skills/MouseGrab.gd` (악플러 스킬1 "유선 마우스 그랩"): 던지는 동안은 `sprite/악플러/몸/마우스 선.png`, 잡은 뒤에는 `묶인거.png`를 쓴다(2026-09-09에 임시 도형에서 교체). **두 그림 다 "케이블이 왼쪽으로 뻗고 물체가 오른쪽"인 한 장짜리라, 유선과 물체를 `region_rect`로 잘라 따로 그린다** — 통짜로 늘리면 마우스·케이블 뭉치까지 같이 늘어나 찌그러진다. 유선 조각만 길이를 늘리고(`_stretch_cord`), 물체는 배율 고정
+  - 잘라 쓰는 영역과 "케이블 중심선이 영역 위에서 몇 px 아래인가"(조각을 이어 붙이는 기준점)를 상수로 박아뒀다: 마우스 유선 `Rect2(0,333,1751,72)`/축 35, 마우스 몸통 `Rect2(1751,259,383,174)`/축 109, 감긴 유선 `Rect2(0,474,722,134)`/축 52, 케이블 뭉치 `Rect2(722,292,644,491)`/축 234·중심 (322,245.5). **그림을 다시 그리면 이 값을 전부 다시 재야 한다**
+  - 유선은 `centered = false` + `offset`으로 **텍스처의 중심선을 스프라이트 원점에 맞춘 뒤** 두 점을 잇는 각도로 회전시킨다. 그래서 악플러가 점프해서 손 높이가 달라져도 유선이 손과 마우스를 정확히 잇는다
+  - 왼쪽을 볼 때는 `scale.x` 부호를 뒤집는다(회전 180도로 처리하면 마우스·뭉치가 위아래로 뒤집힌다 — 유선만 회전을 쓴다)
+  - **유선의 시작점은 고정 좌표가 아니라 리그의 실제 오른손이다**(`BodyRig.get_hand_position()` = `HandRHold`의 global_position). 예전에는 몸통 기준 `(22,-6)` 고정이라 팔이 아무리 움직여도 줄이 배에서 나왔다 — "손으로 잡은 느낌"이 안 나던 원인
+  - **던지기는 세 단계다: ① 손에 쥔 채 젖히기(`throw_windup` 0.14초) ② 날아가기 ③ 끌어오기.** ①에서는 마우스 앞끝을 손보다 반 칸 앞에 둬서 몸통 가운데가 손에 얹히게 하는데, 이게 ②의 계산식과 **같은 식**이라 손을 떠나는 순간 유선 길이가 안 튄다. 두 단계 모두 `_draw_throw()` 하나로 그린다
+  - 팔 동작은 `BodyRig.play_cast_motion(젖히는 시간, 돌아오는 시간)`이 맡는다. **젖히는 시간은 `MouseGrabSkill.throw_windup`과 같은 값을 넘겨야** 마우스가 손을 떠나는 순간과 팔이 뿌리는 순간이 맞는다(스킬이 양쪽에 같은 값을 넘긴다)
+  - 잡은 뒤에는 `BodyRig.set_reeling(true)`로 **두 손이 줄을 잡고 박자에 맞춰 당기는 자세**가 켜지고, 놓아줄 때(`_release`/`_exit_tree`) 꺼진다
+  - 크기는 `MouseGrabSkill`의 `mouse_length`(30px, 마우스 몸통 길이)·`coil_width`(50px, 감긴 뭉치 폭)로 인스펙터에서 조절한다. 배율은 이 값에서 역산하므로 그림이 바뀌어도 화면 크기는 유지된다. **`MouseGrab.new()`로 코드에서 만드는 노드라 이 두 값은 `setup()`을 부르기 전에 대입해야 한다**(`setup()` 안에서 그림을 만든다)
 - `Fighter.vault_jump: bool`: true인 캐릭터(지하철 아저씨)는 기본공격이 없는 대신, 점프할 때 `_play_vault_effect()`가 회전 트윈으로 "개찰구를 뛰어넘는" 연출을 보여준다
 - **주의(실제로 겪은 버그):** `add_child(node)`로 노드를 트리에 붙이면 `_ready()`가 **그 자리에서 동기적으로** 실행된다 — `add_child()` 호출 다음 줄에서 그 노드의 export 변수를 세팅해도, `_ready()`는 이미 그 전에(즉 기본값으로) 끝나버린 뒤다. `_ready()` 안에서 `wait_time = lifetime` 처럼 export 값을 캐싱하면 호출자가 나중에 설정한 값이 아니라 기본값이 캐싱되는 버그가 생김(고양이 아주머니 `skills/CatPet.gd`에서 실제로 겪음). 해결책: 그런 캐싱은 `_ready()`가 아니라 **첫 `_physics_process`/`_process` 호출 시점**(`_initialized` 플래그로 한 번만 실행)으로 미룰 것 — 그때는 호출자의 프로퍼티 설정이 이미 끝나 있음이 보장됨
 
@@ -108,6 +119,13 @@
 - `attack_swing_arc`(기본 0): 후려치는 구간에서 손이 직선이 아니라 **이동 방향의 아래쪽으로 부풀며 호를 그린다.** 아래로 훑어서 위로 올려치는 스윙(악플러 26)에 쓴다. 0이면 예전처럼 직선이라 주정뱅이는 영향 없음. 악플러 최종값은 `raise 25 / swing 70 / raise_offset (-24, 4) / slam_offset (26, -12) / arc 26` — 뒤·아래에서 시작해 아래를 훑고 앞·위로 올려친다
 - **회전 각도와 물건 오프셋은 서로 얽혀 있다.** 오프셋이 클수록 같은 회전각이 물건을 훨씬 크게 휘두른다 — 오프셋 46일 때 총 120도를 줬더니 키보드가 화면 밖으로 날아갔다. 오프셋을 바꾸면 `attack_raise_deg`/`attack_swing_deg`도 같이 다시 봐야 한다
 - **주의:** `attack_duration`을 바꾸면 `BasicAttack.windup`도 같이 맞춰야 한다. 실제로 후려치는 구간은 전체의 40~62%라, 0.40초면 windup 0.16 / 0.45초면 0.18이다. 안 맞추면 예비동작 중에 판정이 나가서 보이는 것보다 먼저 맞는다
+- **마우스 던지기/줄 당기기 모션(악플러 스킬1)**: `play_cast_motion(젖히는 시간, 돌아오는 시간)`이 오른손을 어깨 뒤로 당겼다가(`cast_windup_offset`) 앞으로 뿌리고(`cast_release_offset`) 제자리로 돌린다. `set_reeling(true/false)`는 두 손을 줄에 모아(`reel_hand_offset`/`reel_hand_l_offset`) `reel_tug_speed` 박자로 당겼다 놓는 자세를 켜고 끈다 — `_reel_blend`로 섞으므로 켜지고 꺼질 때 툭 끊기지 않는다
+  - **`cast_windup_offset`의 y를 -6보다 위로 올리지 말 것.** 이 리그는 머리가 55x55라 손 제자리(27,3) 기준으로 y=-6 위는 전부 얼굴이고, 마우스는 맵에 붙어 `z_index 20`으로 그려지므로 **머리 위에 얹힌 것처럼 보인다**(실제로 -20으로 잡았다가 고쳤다). 지금은 (-8,-2)
+  - `cast_hides_held_item`(기본 꺼짐)을 켜면 던지고 당기는 동안 `HandRHold`가 숨는다 — 악플러는 같은 오른손에 키보드를 들고 있어서 안 숨기면 키보드와 마우스가 겹친다. `AkpeulleoRig.tscn`에서만 켜져 있다
+- **피격 표정(`hurt_head_texture`, 2026-09-09)**: 맞으면 `Fighter.take_damage`가 `Visual.play_hurt_face()`를 불러 `hurt_face_duration`(0.45초) 동안 아파하는 얼굴로 바꾼다. 그림이 비어 있는 캐릭터는 그냥 넘어가므로 **지금은 촉법소년만 적용**(`sprite/축법소년/축법소년 다치다.png`). 새 캐릭터는 그림만 `hurt_head_texture`에 넣으면 된다
+  - 잠깐 바뀌는 표정이 **피격 > 토하기 > (액션/취함/맨정신)** 순으로 우선한다. `set_action_face`/`set_drunk_head`는 잠깐 바뀐 표정이 떠 있는 동안 적용을 미루고, 그 표정이 끝날 때 `_restore_head()`가 아직 남아있는 표정 → 없으면 기본 머리 순으로 되돌린다
+  - **촉법소년은 두 그림의 캔버스·유효영역이 사실상 같아서(909x962 vs 909x961) 배율·위치 보정을 안 넣었다.** 여백이 다른 그림을 쓸 때만 `hurt_head_scale`/`hurt_head_offset`을 잡으면 된다
+  - **주의: `sprite/축법소년/축법소년 머리.png`(기본 머리)가 폴더에도 git에도 없이 임포트 캐시(`.godot/imported/*.ctex`)로만 살아있던 적이 있다.** 게임은 멀쩡히 돌아서 눈치채기 어렵고, 캐시를 지우거나 새로 클론하면 머리가 사라진다. 이때는 `.ctex`(GST2 헤더 + offset 56부터 무손실 WebP)에서 원본을 그대로 뽑아낼 수 있다 — `.import`를 그대로 두면 uid도 유지돼서 씬 참조가 안 깨진다
 - **술 마시기 모션(주정뱅이 스킬1)**: `DrinkSkill`이 발동하면 `Visual.play_drink_motion()`을 호출한다(기본공격과 같은 방식 — 그 메서드가 없는 비주얼은 그냥 넘어감). 고개가 `drink_head_tilt_deg`(-22도, 음수가 얼굴이 위를 보는 방향)만큼 뒤로 젖혀지고, 오른손이 `drink_hand_offset`(-16, -34)만큼 얼굴 쪽으로 올라가면서 `drink_hand_deg`(-116도)만큼 돌아 술병 목이 입을 향한다. 다 올린 뒤에는 머리와 병이 **같은 `gulp` 값으로 함께** 위아래로 들썩여서(`drink_head_bob` 2.5px, `drink_gulp_count` 3회) 병이 입에서 떨어져 보이지 않는다. 전체 `drink_duration`(1.1초) 중 0~25%가 올리기, 25~75%가 마시기, 75~100%가 내리기
 - 마시기 모션은 `_pose_attack_hand()`와 같은 자리에서, **공격 다음에** 덮어쓴다(둘이 겹치면 마시기가 이김). 머리 회전은 걷기 코드가 건드리지 않으므로 손 회전과 똑같이 `_apply_pose`에서 매 프레임 0으로 되돌린 뒤 마시기가 덮어쓰는 방식 — 안 그러면 동작이 끝나도 고개가 젖혀진 채로 남는다
 - 술병(`JujeongbaengiRig.tscn`의 `HandRHold/Bottle`)의 제자리는 `position (6.868347, -10.263336)` / `rotation -2.708751`(-155도) — 병목을 아래로 내려 든, 이미 "붓는" 자세다. **한 번 (5,12)/-34도(병목을 위로 든 자세)로 바꿨다가 되돌렸으니 다시 건드리지 말 것.** 소주병 원본은 뚜껑이 위인 세로 그림이라, 회전 r일 때 병목 방향은 `(sin r, -cos r)`으로 계산한다
@@ -360,7 +378,7 @@
 
 **로컬 대전(PvP) 흐름:** `ui/TitleScreen.tscn`(아무 키) → `ui/MainMenu.tscn`("대전 모드" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
 
-**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/StoryIntro.tscn`(P1 캐릭터만 고름 — P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해짐) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/EpisodeSelect.tscn`(몇 번째 상대부터 할지 고르면 `story_index`에 저장) → `ui/CharacterSelect.tscn`(P1 캐릭터만 고름 — 같은 화면이 `GameState.game_mode == "story"`를 보고 스토리용으로 동작한다. P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정돼 P2 칸에 미리 공개되고, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해져 맵 선택 화면을 건너뛴다) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
 
 **훈련장 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("조작 방법") → `ui/HowToPlay.tscn`("훈련장에서 해보기") → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
@@ -382,6 +400,19 @@
   - **`interval`은 "도착에서 다음 도착까지"다.** 열차가 출발하는 순간 `_timer = interval`로 다시 채우기 때문에 지나가는 시간까지 그 안에 포함된다 — 30으로 두면 정확히 30초마다 한 대씩 온다(헤드리스 실측: 0.6s / 30.6s / 60.6s). 예전처럼 "열차가 나간 뒤부터 세는" 방식이 아니다
   - **`arrival_music`은 아직 비어 있다.** 옛날 지하철 도착 음악 파일을 넣으면 도착 5초 전부터 재생되고 열차가 지나가면 멈춘다. 비어 있으면 `music.play()`를 건너뛰고 경고등만 깜빡인다
   - **부딪히면 계속 밀린다.** `Hitbox.repeat_interval`(아래 참고)로 겹쳐 있는 동안 0.35초마다 다시 때리고, 넉백은 `Vector2(knockback_push * 진행방향, -knockback_lift)`라 **열차가 가는 쪽으로 밀리면서 위로 튕긴다**. 판정이 열차 전체(지붕까지)를 덮고 있어서 지붕에 올라타도 그냥 튕겨 나간다(기획 확정 4·5)
+  - **창문 불빛(2026-09-09):** 객실 창문만 따뜻한 호박색으로 빛난다. 셰이더가 아니라 **창문 부분만 밝게 구워둔 그림**(`sprite/맵/지하철역/열차창문빛.png`)을 `Body/WindowGlow` 스프라이트로 열차 위에 얹고 `CanvasItemMaterial.blend_mode = 1`(더하기)로 합성한 것이다. `Body`의 자식이라 열차와 같이 움직이고 같이 숨는다(대기 중에는 `body.visible = false`)
+    - 어디가 창문인지는 `Metro!.png`에서 **무채색이고 검은 외곽선보다는 밝고 크림색 몸통보다는 어두운** 픽셀을 골라 연결 성분으로 묶고, 1000px 이상 덩어리 13개(큰 창 5 + 운전실 + 문 오벌 7)만 남겨서 뽑았다. 그림을 다시 그리면 이 마스크도 다시 만들어야 한다
+    - 캔버스가 `region_rect`(2101x250)보다 **사방 70px 크다**(2241x390). 빛이 열차 밖으로 새어나가는 헤일로를 담을 자리다. 두 스프라이트 다 `centered`라 중심이 같아 위치가 그대로 맞는다 — 여백을 좌우 다르게 주면 어긋난다
+    - **주의: `SubwayPlatform.tscn`의 `CanvasModulate`(0.55, 0.58, 0.7)가 가산 광선의 색까지 곱한다.** 흰빛(255,236,178)으로 구웠더니 통과 후 (140,137,125) 회색이 돼서 "밝아졌을 뿐 안 빛나는" 그림이 됐다. 지금은 **미리 보정한 (255,196,92)** 로 구워서 통과 후 (140,113,64) 호박색이 더해진다. 맵 조명 색을 바꾸면 이 색도 다시 잡아야 한다
+  - **창문 빛이 맵에 비친다(2026-09-09):** 창문마다 위로 뻗는 **사다리꼴 빛기둥**(`Polygon2D`)이 벽에 창문 모양 그대로 빛을 던지고, 열차가 지나가면 그 네모들이 벽을 훑고 지나간다. 밤에 지하철이 지나갈 때 옆이 창문 모양대로 밝아지는 그 느낌이다
+    - 씬에 26개를 그려 넣지 않고 **`SubwayTrain.WINDOW_RECTS`(창문 13개의 Body 로컬 사각형)를 보고 `_ready()`에서 코드로 만든다.** 이 표는 `열차창문빛.png`을 뽑을 때 쓴 것과 같은 마스크에서 잰 값이라, 그림을 다시 그리면 **텍스처와 이 표를 같이** 다시 뽑아야 한다
+    - 정점 알파(`Polygon2D.vertex_colors`)로 창문 쪽은 밝고 끝은 투명하게 만든다. 더하기 블렌드는 컨테이너에 걸고 자식은 `use_parent_material`로 물려받는다. 컨테이너를 `body.move_child(..., 0)`으로 **Car보다 앞 순서**에 두어 빛이 열차 뒤(벽 쪽)로 깔리게 한다 — 열차 위에 얹으면 차체를 덮어서 빛이 아니라 반투명 판때기로 보인다
+    - **`beam_spread`를 크게 주면 안 된다(실제로 겪음).** 0.5로 했더니 옆 창문 빛과 X자로 겹쳐 창문 모양이 뭉개지고 화면이 하얗게 떴다. 지금 0.1은 거의 곧게 뻗어서 창문 네모가 그대로 읽힌다
+    - **`beam_length_variance`(0.35)로 창문마다 빛기둥 높이가 다르게 뽑힌다**(기준 길이의 65~135%). 전부 같은 높이면 자로 잰 것처럼 보인다. **열차가 출발할 때마다(`_begin_run`) 다시 뽑으므로 지나갈 때마다 모양이 달라진다** — 노드를 다시 만들지 않고 이미 있는 `Polygon2D`의 `polygon`만 새로 계산해 넣는다(그래서 `_beams`에 어느 창문/어느 방향이었는지 같이 들고 있다)
+    - 벌어짐(`beam_spread`)과 눕는 정도(`beam_tilt`)가 **길이에 비례**하므로, 길이를 랜덤으로 줘도 모양이 자연스럽게 같이 변한다
+    - **`beam_tilt`(0.35)는 열차 중심에서 멀수록 빛기둥을 바깥으로 눕힌다** — 한가운데 창문은 곧게 서고 앞뒤 끝은 약 19도(0.35 x 230 = 80px) 기울어, 빛이 열차에서 퍼져나가는 것처럼 보인다. `beam_spread`(전체가 고르게 벌어짐)와 다른 값이니 헷갈리지 말 것
+    - **`beam_down_length`는 0이 기본이다.** 이 맵은 열차가 선로 바닥(y=300)에 딱 붙어 있어서 아래로 가는 빛이 차체에 통째로 가려 안 보인다 — 열차가 공중에 뜬 맵을 만들면 그때 켜면 된다
+    - 세기·떨림은 `window_glow`(1.0) / `window_flicker`(0.09) / `window_flicker_speed`(16)로 조절하고, 빛기둥은 `beam_up_length`(230) / `beam_length_variance`(0.35) / `beam_spread`(0.1) / `beam_tilt`(0.35) / `beam_alpha`(0.68) / `beam_color`로 조절한다. 창문 불빛과 빛기둥이 **같은 박자로 같이 떨린다**(같은 조명으로 보이게). 주기가 다른 두 sin을 곱해서 규칙적인 깜빡임으로 안 보이게 했다
   - 열차 그림은 운전실이 **왼쪽**에 있어서 `_apply_direction()`이 `body.scale.x = -_direction`으로 **부호를 뒤집어서** 진행 방향을 보게 한다(`+_direction`이면 뒤로 달리는 것처럼 보인다). 판정 사각형은 좌우 대칭이라 음수 스케일의 영향을 받지 않는다
   - **AI(`AIController.gd`)가 이 기믹을 피한다(2026-09-04 구현):** `SubwayTrain.is_dangerous()`가 경고등 켜짐(WARNING) 또는 실제로 지나가는 중(RUNNING)이면 true를 돌려준다. `_ready()`에서 `add_to_group("ai_danger_zone")`으로 자신을 등록해두면 `AIController._try_dodge_hazard()`가 매 프레임 이 그룹을 훑어서 위험을 감지하고, `"ai_safe_spot"` 그룹의 `maps/AISafeSpot.gd`(빈 Marker2D에 붙이기만 하면 됨) 중 가장 가까운 곳으로 걸어가 이단 점프로 올라탄 뒤 위험이 끝날 때까지 버틴다. `SubwayPlatform.tscn`의 의자 발판(`BenchLeft`/`BenchRight`) 바로 위에 `AISafeSpotLeft`/`AISafeSpotRight`(y=155, 발판 윗면 높이)를 놓아뒀다. **캐릭터 이름이나 맵 이름으로 분기하지 않고 두 그룹만으로 판단하는 범용 시스템**이라, 다른 맵에 새 기믹을 추가할 때도 위험 판정 노드에 `is_dangerous()`만 만들어 그룹에 등록하고 대피 지점에 `AISafeSpot.gd`만 놓으면 자동으로 적용된다(피할 곳이 없는 기믹이면 `ai_safe_spot`을 안 놓으면 그만 — `_try_dodge_hazard()`가 그냥 false를 돌려주고 평소처럼 싸운다). 헤드리스로 전체 열차 주기(경고 5초 → 통과)를 실측해서 AI가 경고 시작 직후 발판으로 올라가 끝날 때까지 안 맞고 버티는 것을 확인했다
 - **`combat/Hitbox.gd`의 `repeat_interval`(기본 0):** 0보다 크면 겹쳐 있는 동안 그 간격마다 계속 다시 때린다(`_process`가 `get_overlapping_areas()`를 훑으며 대상별 쿨타임을 관리 — `HazardPlatform.gd`와 같은 방식). 0이면 예전처럼 처음 겹친 순간 한 번만. **스킬 히트박스는 전부 0을 쓰므로 기존 동작은 그대로다.** 판정을 껐다 켤 때는 `clear_repeat_state()`로 쿨타임을 비운다
@@ -688,7 +719,7 @@ res://
   controllers/    # PlayerController / AIController
   stats/          # CharacterStats 리소스(.tres)
   maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
-  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/StoryIntro/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
+  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/EpisodeSelect/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
 ```
 
 ## 참고
