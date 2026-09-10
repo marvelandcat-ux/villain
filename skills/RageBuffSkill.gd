@@ -32,11 +32,11 @@ func _execute(fighter: Fighter) -> void:
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("set_action_face"):
 		visual.set_action_face(true)
-	if visual:
-		var tween := fighter.create_tween()
-		tween.set_loops(3)
-		tween.tween_property(visual, "scale", Vector2(1.12, 1.12), 0.15)
-		tween.tween_property(visual, "scale", Vector2(1, 1), 0.15)
+	# **몸을 부풀렸다 줄이는 연출은 뺐다(2026-09-10).** BodyRig는 좌우 반전을 scale.x 부호로
+	# 하는데, 트윈이 scale을 양수 (1.12, 1.12)로 끌고 가면서 왼쪽을 보던 캐릭터가 0을 지나
+	# 오른쪽으로 뒤집혔다("열등감 쓰면 자꾸 오른쪽 돌아본다"). 리그가 매 프레임 부호를
+	# 되돌리려 해서 서로 싸우기까지 했다. 크기를 건드리려면 트윈 대신 리그 쪽에
+	# 부호를 지키는 전용 연출을 만들 것
 	_start_timer()
 
 ## duration 뒤에 버프를 되돌린다. 다시 쓰면 타이머를 새로 시작해 시간이 연장된다

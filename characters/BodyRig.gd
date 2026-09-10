@@ -114,6 +114,9 @@ extends Node2D
 ## 기본공격할 때 왼손도 오른손 쪽으로 모아서 두 손으로 무기를 잡을지.
 ## 평소에는 한 손으로 들고 다니다가 때릴 때만 두 손으로 잡는 캐릭터(악플러 키보드)에서 켠다
 @export var attack_two_handed: bool = false
+## 두 손으로 잡는 자세가 붙고 풀리는 속도(1/초). 예비동작(0.18초) 안에 다 붙어야 하므로
+## 9 밑으로 내리면 때리는 순간에 아직 한 손인 것처럼 보인다
+@export var attack_grip_speed: float = 12.0
 ## 두 손으로 잡을 때 왼손이 오른손에서 떨어져 있는 거리(px). 오른손보다 살짝 뒤·아래를 잡는다
 @export var attack_grip_offset: Vector2 = Vector2(-10, 4)
 ## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
@@ -364,6 +367,10 @@ var _vomit_time: float = 0.0
 var _hurt_time: float = 0.0
 ## 방어에 막힌 뒤 무기가 깜빡이는 데 남은 시간(초)
 var _blocked_flash_left: float = 0.0
+## 두 손으로 잡은 정도 (0=제자리, 1=완전히 잡음). **스윙 진행도가 아니라 따로 블렌드하는 이유:**
+## 타별 진행도를 쓰면 1타가 끝날 때 왼손이 풀렸다가 2타에서 다시 붙어서, 콤보 내내
+## 잡았다 놨다를 반복하는 어색한 그림이 된다. 공격이 이어지는 동안은 계속 1로 유지된다
+var _grip_blend: float = 0.0
 ## 이번 깜빡임의 전체 길이(초) — Fighter가 넘겨준 잠금 시간이 들어온다
 var _blocked_flash_span: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
@@ -414,6 +421,9 @@ func _process(delta: float) -> void:
 	# 숨쉬기 위상은 항상 진행 (가만히 서 있을 때만 화면에 반영된다)
 	_breathe_phase += delta * breathe_speed
 	_update_blocked_flash(delta)
+	# 두 손 잡기 — 공격이 도는 동안은 1로, 콤보가 끝나면 0으로 서서히 돌아간다
+	if attack_two_handed:
+		_grip_blend = move_toward(_grip_blend, 1.0 if _attack_time > 0.0 else 0.0, delta * attack_grip_speed)
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
@@ -599,6 +609,11 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _scratch_time > 0.0:
 		_pose_scratch()
 
+	# 두 손으로 무기를 잡는 자세 (악플러 키보드) — 공격이 끝난 뒤에도 블렌드가 남아 있으므로
+	# 스윙 안이 아니라 여기서 매 프레임 적용한다. 왼손만 건드리므로 오른손 동작과 안 겹친다
+	if attack_two_handed and _grip_blend > 0.001:
+		_pose_grip_hand()
+
 	# 뒤돌아보는 중이면 몸은 그대로 두고 머리만 반대쪽을 본다
 	if _lookback_time > 0.0:
 		_pose_lookback()
@@ -693,7 +708,7 @@ func _pose_attack_hand() -> void:
 		offset = slam_off.lerp(Vector2.ZERO, p)
 	_hand_r.rotation = deg_to_rad(angle)
 	_hand_r.position = _rest_positions[_hand_r] + offset
-	_pose_grip_hand(progress)
+	# 두 손 잡기는 스윙이 끝난 뒤에도 블렌드가 남아 있어야 하므로 _apply_pose에서 따로 부른다
 
 ## 스윙 타 번호(_attack_variant)에 따른 감기 각도/후리기 각도/손 경로.
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
@@ -701,6 +716,8 @@ func _pose_attack_hand() -> void:
 func _attack_variant_params() -> Dictionary:
 	if attack_thrust:
 		return _thrust_variant_params()
+	if attack_two_handed:
+		return _two_handed_variant_params()
 	match _attack_variant:
 		1:
 			# 2타 — 앞쪽으로 낮고 빠르게 후려치기 (내려찍기와 다른 궤적: 감기 작게, 앞으로 길게)
@@ -720,6 +737,39 @@ func _attack_variant_params() -> Dictionary:
 			}
 		_:
 			# 1타 — 기존 내려찍기 (씬 export 값 그대로)
+			return {
+				"raise_deg": attack_raise_deg,
+				"swing_deg": attack_swing_deg,
+				"raise_off": attack_raise_offset,
+				"slam_off": attack_slam_offset,
+			}
+
+## 두 손으로 잡는 무기(악플러 키보드)의 타별 동작. 두 손으로 잡은 채 **점점 크게 내려찍는** 흐름이다 —
+## 1타는 씬 값 그대로 짧게 후려치고, 2타는 들었다가 앞아래로 찍고, 3타는 머리 위까지 들었다가 바닥까지 찍는다.
+##
+## **총 회전각(raise + swing)을 120도 밑으로 유지할 것.** 그 위로 가면 키보드가 얼굴을 가로질러
+## 지저분해진다(예전에 35/85로 해봤다가 25/70으로 낮춘 이유). 타마다 크기 차이는 각도 대신
+## 손 이동 거리(raise_off/slam_off)로 벌린다 — 무기가 손에서 20px 떨어져 있어 위치가 더 크게 먹힌다
+func _two_handed_variant_params() -> Dictionary:
+	match _attack_variant:
+		1:
+			# 2타 — 어깨 위로 들었다가 앞아래로 내려찍기 (총 105도)
+			return {
+				"raise_deg": 45.0,
+				"swing_deg": 60.0,
+				"raise_off": Vector2(-14.0, -18.0),
+				"slam_off": Vector2(22.0, 12.0),
+			}
+		2:
+			# 3타 — 머리 위까지 크게 들었다가 바닥까지 내려찍는 마무리 (총 120도)
+			return {
+				"raise_deg": 50.0,
+				"swing_deg": 70.0,
+				"raise_off": Vector2(-18.0, -30.0),
+				"slam_off": Vector2(26.0, 22.0),
+			}
+		_:
+			# 1타 — 씬 export 값 그대로 (악플러는 아래를 훑어 앞·위로 올려치는 스윙)
 			return {
 				"raise_deg": attack_raise_deg,
 				"swing_deg": attack_swing_deg,
@@ -764,21 +814,14 @@ func _swing_arc(t: float, raise_off: Vector2, slam_off: Vector2) -> Vector2:
 		return Vector2.ZERO
 	return Vector2(-travel.y, travel.x).normalized() * attack_swing_arc * sin(t * PI)
 
-## 두 손으로 잡는 캐릭터는 왼손이 오른손 옆으로 붙었다가, 내려찍고 나면 다시 풀린다.
+## 두 손으로 잡는 캐릭터는 왼손이 오른손 옆으로 붙는다. **콤보가 이어지는 동안은 계속 붙어 있고**
+## 마지막 타가 끝난 뒤에야 풀린다 — 타마다 놨다 잡으면 손이 덜덜거리는 것처럼 보인다.
 ## 무기는 오른손(HandRHold)에 매달려 있으므로 왼손은 위치·회전만 따라가면 같이 잡은 것처럼 보인다
-func _pose_grip_hand(progress: float) -> void:
-	if not attack_two_handed or _hand_l == null:
+func _pose_grip_hand() -> void:
+	if _hand_l == null:
 		return
-	var grip: float
-	if progress < ATTACK_STRIKE_START:
-		# 예비동작 앞부분에서 왼손이 빠르게 붙는다 (때리기 전에 이미 두 손으로 잡고 있어야 한다)
-		grip = minf(progress / (ATTACK_STRIKE_START * 0.6), 1.0)
-	elif progress < ATTACK_STRIKE_END:
-		grip = 1.0
-	else:
-		grip = 1.0 - (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
-	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, grip)
-	_hand_l.rotation = _hand_r.rotation * grip
+	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, _grip_blend)
+	_hand_l.rotation = _hand_r.rotation * _grip_blend
 
 ## 점프하는 순간 몸을 세로로 늘린다 (squash & stretch). Fighter.jump()이 호출한다
 func play_jump_stretch() -> void:
