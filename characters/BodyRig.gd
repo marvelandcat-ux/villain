@@ -1082,23 +1082,23 @@ func update_hp_ratio(ratio: float) -> void:
 	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
-## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 지침 > 취함 > 맨정신 순 우선).
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 지침 > 맨정신 순 우선).
 ## 액션 표정이 맨 위인 이유: 스킬을 쓰는 순간만큼은 그 표정이 보여야 한다.
-## **주정뱅이는 지침과 취함을 둘 다 가진 유일한 캐릭터라 이 순서가 실제로 보인다** —
-## HP가 얼마 안 남으면 술을 마셔도 취한 얼굴 대신 지친 얼굴이 유지된다(술 스택은
-## DrinkSkill의 빨간 색조로 따로 보인다). 반대로 하고 싶으면 아래 두 elif 순서만 바꾸면 된다
+## **취함이 지침보다 위다(2026-09-10, 사용자 결정)** — 주정뱅이가 둘을 동시에 가진 유일한 캐릭터인데,
+## 술 스택은 토하기 사거리를 정하는 핵심 정보라 빈사 상태에서도 취한 얼굴이 보여야 한다.
+## 그래서 지친 얼굴은 "맨정신인데 HP가 얼마 안 남았을 때"만 뜬다
 func _apply_base_head() -> void:
 	if _head == null:
 		return
 	if _action_face_on and action_head_texture != null:
 		_head.texture = action_head_texture
 		_head.scale = action_head_scale if action_head_scale != Vector2.ZERO else _head_rest_scale
-	elif _weary_on and weary_head_texture != null:
-		_head.texture = weary_head_texture
-		_head.scale = weary_head_scale if weary_head_scale != Vector2.ZERO else _head_rest_scale
 	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
+	elif _weary_on and weary_head_texture != null:
+		_head.texture = weary_head_texture
+		_head.scale = weary_head_scale if weary_head_scale != Vector2.ZERO else _head_rest_scale
 	else:
 		_head.texture = _head_rest_texture
 		_head.scale = _head_rest_scale
