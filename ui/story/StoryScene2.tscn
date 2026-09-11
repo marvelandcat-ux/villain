@@ -1,6 +1,16 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Script" path="res://ui/story/StoryZoomView.gd" id="2"]
+[ext_resource type="Script" path="res://ui/story/StoryWalker.gd" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_배경.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_간판띠.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_왼쪽끝직원.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_화면아래-남직원.png" id="7"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_입구쪽남직원.png" id="8"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_여비서1.png" id="9"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_경찰관2.png" id="10"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_경찰관1.png" id="11"]
 
 [node name="StoryScene2" type="Control"]
 layout_mode = 3
@@ -20,6 +30,100 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
+
+[node name="Office" type="Node2D" parent="."]
+position = Vector2(-32.000, -18.201)
+scale = Vector2(0.803828, 0.803828)
+script = ExtResource("2")
+
+[node name="Plate" type="Sprite2D" parent="Office"]
+texture = ExtResource("4")
+centered = false
+
+[node name="People" type="Node2D" parent="Office"]
+
+[node name="왼쪽끝직원" type="Sprite2D" parent="Office/People"]
+position = Vector2(186.6, 941)
+texture = ExtResource("6")
+centered = false
+offset = Vector2(-117.6, -219)
+script = ExtResource("3")
+walk = Vector2(-70, 0)
+grow = 0
+bob = 1.5
+steps_per_second = 2.4
+sway_deg = 0.3
+phase = 0.5
+
+[node name="화면아래-남직원" type="Sprite2D" parent="Office/People"]
+position = Vector2(1347.7, 941)
+texture = ExtResource("7")
+centered = false
+offset = Vector2(-112.7, -201)
+script = ExtResource("3")
+walk = Vector2(3, -16)
+grow = -0.02
+bob = 2
+steps_per_second = 1.8
+sway_deg = 0.4
+phase = 0.8
+
+[node name="입구쪽남직원" type="Sprite2D" parent="Office/People"]
+position = Vector2(1466.8, 816)
+texture = ExtResource("8")
+centered = false
+offset = Vector2(-87.8, -514)
+script = ExtResource("3")
+walk = Vector2(6, -22)
+grow = -0.035
+bob = 2
+steps_per_second = 1.9
+sway_deg = 0.6
+phase = 0.15
+
+[node name="여비서1" type="Sprite2D" parent="Office/People"]
+position = Vector2(889.3, 820)
+texture = ExtResource("9")
+centered = false
+offset = Vector2(-70.3, -396)
+script = ExtResource("3")
+walk = Vector2(3, -24)
+grow = -0.035
+bob = 2
+steps_per_second = 2
+sway_deg = 0.8
+phase = 0.6
+
+[node name="경찰관2" type="Sprite2D" parent="Office/People"]
+position = Vector2(710.3, 941)
+texture = ExtResource("10")
+centered = false
+offset = Vector2(-204.3, -373)
+script = ExtResource("3")
+walk = Vector2(-6, 24)
+grow = 0.03
+bob = 2.5
+steps_per_second = 1.7
+sway_deg = 0.6
+phase = 0.35
+
+[node name="경찰관1" type="Sprite2D" parent="Office/People"]
+position = Vector2(1194, 941)
+texture = ExtResource("11")
+centered = false
+offset = Vector2(-112, -492)
+script = ExtResource("3")
+walk = Vector2(4, -16.9)
+grow = -0.025
+bob = 2.5
+steps_per_second = 1.8
+sway_deg = 0.6
+phase = 0
+
+[node name="SignBand" type="Sprite2D" parent="Office"]
+position = Vector2(740, 335)
+texture = ExtResource("5")
+centered = false
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
