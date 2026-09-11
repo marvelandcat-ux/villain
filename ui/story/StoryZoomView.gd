@@ -22,6 +22,11 @@ extends Node2D
 @export var zoom_to: float = 1.08
 ## 확대에 걸리는 시간(초). 끝나면 그 배율로 멈춘다
 @export var zoom_time: float = 8.0
+## 확대를 시작하기 전 기다리는 시간(초) — 장면 끝에서만 밀고 들어가게 할 때
+@export var zoom_delay: float = 0.0
+## true면 천천히 시작해서 점점 빨라지며 끝난다 — 다음 장면으로 넘어가기 직전 "안으로 밀고 들어가는" 느낌.
+## false면 천천히 시작해서 천천히 멈춘다
+@export var accelerate: bool = false
 
 var _t: float = 0.0
 
@@ -35,8 +40,8 @@ func _process(delta: float) -> void:
 func _apply() -> void:
 	var view: Vector2 = get_viewport_rect().size
 	var fit: float = maxf(view.x / canvas_size.x, view.y / canvas_size.y)
-	var u: float = clampf(_t / maxf(zoom_time, 0.01), 0.0, 1.0)
-	var eased: float = 0.5 - 0.5 * cos(u * PI)   # 천천히 시작해서 천천히 멈춘다
+	var u: float = clampf((_t - zoom_delay) / maxf(zoom_time, 0.01), 0.0, 1.0)
+	var eased: float = u * u if accelerate else 0.5 - 0.5 * cos(u * PI)
 	var s: float = fit * lerpf(zoom_from, zoom_to, eased)
 	var focus: Vector2 = pivot.lerp(pivot_to, eased)
 	var pos: Vector2 = view * 0.5 - focus * s
