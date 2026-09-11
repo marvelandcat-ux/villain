@@ -5,7 +5,7 @@ extends Control
 ##
 ## (2026-09-12 사용자가 러프로 정한 "대화창 초기 형식". 러프에선 잘 보이라고 검정으로 칠했지만 실제는 반투명 회색)
 ## 장면마다 이 씬(DialogueBox.tscn)을 인스턴스로 올리고 `speaker` / `lines`만 채우면 된다.
-##  - 클릭 또는 스페이스·엔터(`ui_accept`)로 다음 대사. 마지막 대사에서 한 번 더 넘기면 `finished`
+##  - **스페이스바로만** 다음 대사(사용자 지정). 마지막 대사에서 한 번 더 넘기면 `finished`
 ##  - 대사 앞에 "이름|" 을 붙이면 그 대사부터 말하는 사람이 바뀐다 (예: "민원인|저기요...") — 이후 대사도 그 이름을 이어 쓴다
 ##  - 말하는 사람이 비어 있으면 이름창을 숨긴다(내레이션)
 ##  - StoryFadeScene의 `dialogue`에 이 노드를 지정하면, 대사를 다 넘겨야 다음 장면으로 페이드아웃한다
@@ -58,10 +58,10 @@ func _show_line() -> void:
 	_text_label.text = text
 
 func _unhandled_input(event: InputEvent) -> void:
-	var pressed: bool = event.is_action_pressed("ui_accept")
-	if event is InputEventMouseButton:
-		var mb: InputEventMouseButton = event
-		pressed = pressed or (mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT)
-	if pressed and not is_finished():
+	# 대사는 스페이스바로만 넘긴다(사용자 지정 — 클릭·엔터로는 안 넘어감). 꾹 누를 때 반복 입력(echo)은 무시
+	if not (event is InputEventKey):
+		return
+	var key: InputEventKey = event
+	if key.pressed and not key.echo and (key.keycode == KEY_SPACE or key.physical_keycode == KEY_SPACE) and not is_finished():
 		advance()
 		get_viewport().set_input_as_handled()
