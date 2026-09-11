@@ -137,11 +137,14 @@ func _start_reveal() -> void:
 		tw.tween_property(item, "position", _reveal_pos[i], reveal_time).set_delay(delay) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
+## `dialogue`에 지정한 노드가 끝났는지 — DialogueBox(대화창)든 LocationCard(장소 카드)든 is_finished()만 있으면 된다
 func _dialogue_done() -> bool:
 	if dialogue.is_empty():
 		return true
-	var box: DialogueBox = get_node_or_null(dialogue) as DialogueBox
-	return box == null or box.is_finished()
+	var node: Node = get_node_or_null(dialogue)
+	if node == null or not node.has_method("is_finished"):
+		return true
+	return bool(node.call("is_finished"))
 
 func _go(step: int) -> void:
 	_step = step
