@@ -73,14 +73,14 @@ const STORY_OPPONENTS: Array = [
 	"res://characters/subwayvillain/SubwayVillain.tscn",
 	"res://characters/floornoise/FloorNoise.tscn",
 ]
-## 스토리 모드에서 에피소드별로 쓰는 맵 (STORY_OPPONENTS와 같은 순서). 딱히 정하지 않으면 편의점 앞을 쓴다
+## 스토리 모드에서 에피소드별로 쓰는 맵 (STORY_OPPONENTS와 같은 순서). 캐릭터 테마에 맞춰 임의로 배정함(2026-09-11) — 확정 기획 아님, 나중에 바뀔 수 있음
 const STORY_MAPS: Array = [
-	"res://maps/ConvenienceStore.tscn",
-	"res://maps/SubwayPlatform.tscn", # 악플러 — 임시로 지하철 승강장에서 붙는다
-	"res://maps/ConvenienceStore.tscn",
-	"res://maps/ConvenienceStore.tscn",
-	"res://maps/ConvenienceStore.tscn",
-	"res://maps/ConvenienceStore.tscn",
+	"res://maps/Playground.tscn", # 촉법소년 — 놀이터
+	"res://maps/TrashRoom.tscn", # 악플러 — 자기 방(쓰레기집)
+	"res://maps/ConvenienceStore.tscn", # 주정뱅이 — 편의점 앞
+	"res://maps/SchoolRooftop.tscn", # 고양이 아주머니 — 학교 옥상(길고양이가 잘 다니는 곳)
+	"res://maps/SubwayPlatform.tscn", # 지하철 아저씨 — 지하철 승강장
+	"res://maps/NoisyApartment.tscn", # 층간소음 청년 — 층간소음 아파트
 ]
 
 var p1_character_path: String = CHARACTERS.values()[0]
