@@ -154,7 +154,7 @@ func _physics_process(delta: float) -> void:
 		_mouse_pos.x += _dir * _throw_speed * delta
 		# 잡기 판정이 먼저다 — 상대 발밑에 떨어지는 프레임에서 착지가 먼저 걸리면
 		# 맞을 만했던 한 발이 그냥 사라진다. 떨어지는 중에도 판정은 계속 살아있다
-		if _opponent and is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < catch_radius:
+		if _touches_opponent():
 			_grab()
 		elif _hit_ground(was, _mouse_pos) or absf(_mouse_pos.x - hand.x) >= _max_range:
 			_state = STATE_RETURN   # 땅에 떨어졌거나 사거리 끝 → 줄을 당겨 되감는다
@@ -167,6 +167,9 @@ func _physics_process(delta: float) -> void:
 			_release()
 			return
 		_mouse_pos += to_hand / gap * minf(return_speed * delta, gap - mouse_length)
+		# 되감기는 길에도 잡기 판정이 산다 — 돌아오는 마우스에 걸리면 그 자리에서 감아 끌어온다
+		if _touches_opponent():
+			_grab()
 	elif _state == STATE_REEL:
 		# 잡은 상대를 끌어온다 (케이블이 상대 몸에 감겨 있다)
 		if not (_opponent and is_instance_valid(_opponent)):
@@ -245,6 +248,10 @@ func _hit_ground(from: Vector2, to: Vector2) -> bool:
 	return hit["normal"].y < -0.5
 
 ## 잡는 순간 — 데미지를 조금 주고, 상대 수평 이동을 잡아채 끌어오기 시작한다
+## 마우스가 상대 몸에 닿았는가 — 날아갈 때와 되감길 때가 같은 기준을 쓴다
+func _touches_opponent() -> bool:
+	return is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < catch_radius
+
 func _grab() -> void:
 	_state = STATE_REEL
 	_set_reeling(true)

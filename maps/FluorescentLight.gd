@@ -13,9 +13,10 @@ extends Node2D
 @export var length: float = 90.0
 
 ## --- 빛 ---
-## 빛 색 — 맵의 CanvasModulate(0.55, 0.58, 0.7)가 더하기 빛에도 곱해지므로 파란 기를 미리 빼둔 값.
-## 통과하고 나면 살짝 푸르스름한 형광등 흰빛이 된다
-@export var glow_color: Color = Color(1.0, 1.0, 0.9)
+## 빛 색 — 맵의 CanvasModulate(0.88, 0.9, 0.96)가 더하기 빛에도 곱해지므로 그만큼 미리 나눠둔 값.
+## 통과하고 나면 (0.55, 0.58, 0.63) 살짝 푸르스름한 형광등 흰빛이 더해진다.
+## 맵이 밝아도 빛이 하얗게 날아가지 않게 더해지는 양을 어두웠던 시절과 똑같이 맞춰뒀다
+@export var glow_color: Color = Color(0.625, 0.644, 0.656)
 ## 형광관 둘레 후광 반지름(px)과 세기 — 넓고 옅은 겹 + 좁고 진한 겹 두 개를 겹쳐 가장자리를 부드럽게 한다
 @export var halo_radius: float = 30.0
 @export var halo_alpha: float = 0.4

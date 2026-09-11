@@ -62,8 +62,9 @@ extends Node2D
 ## 열차 한가운데 창문은 곧게 서고, 앞뒤 끝으로 갈수록 바깥으로 눕는다 —
 ## 빛이 열차에서 퍼져나가는 것처럼 보이게 하는 값. 0이면 전부 곧게 선다
 @export var beam_tilt: float = 0.35
-## 빛기둥 색 — window_glow와 마찬가지로 CanvasModulate를 통과할 것을 감안해 미리 따뜻하게 잡은 값
-@export var beam_color: Color = Color(1.0, 0.769, 0.361)
+## 빛기둥 색 — 맵의 CanvasModulate(0.88, 0.9, 0.96)가 더하기 빛에도 곱해지므로 그만큼 미리 나눠둔 값.
+## 통과하고 나면 (0.55, 0.45, 0.25) 호박색이 더해진다. 맵 조명을 바꾸면 "원하는 최종색 / 맵 조명"으로 다시 잡을 것
+@export var beam_color: Color = Color(0.625, 0.496, 0.263)
 
 ## 진행 중인 상태
 enum State { WAITING, WARNING, RUNNING }
