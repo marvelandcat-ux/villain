@@ -21,6 +21,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
+hold_time = 2.0
+next_scene = "res://ui/story/StoryScene3.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
