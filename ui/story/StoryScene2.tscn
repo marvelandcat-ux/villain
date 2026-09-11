@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="Script" path="res://ui/story/StoryZoomView.gd" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_여비서1.png" id="9"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_경찰관2.png" id="10"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부/민폐퇴치부_경찰관1.png" id="11"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/민폐퇴치부일러바꾼버전/민폐퇴치부간판일러_사람레이어분리버전_0006_레이어-0.png" id="12"]
 
 [node name="StoryScene2" type="Control"]
 layout_mode = 3
@@ -32,15 +33,25 @@ mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
 [node name="Office" type="Node2D" parent="."]
-position = Vector2(-32.000, -18.201)
-scale = Vector2(0.803828, 0.803828)
+position = Vector2(0.000, -0.191)
+scale = Vector2(0.765550, 0.765550)
 script = ExtResource("2")
+zoom_from = 1.0
+zoom_to = 1.35
+zoom_time = 6.0
+pivot_to = Vector2(767, 335)
+
+[node name="Still" type="Sprite2D" parent="Office"]
+texture = ExtResource("12")
+centered = false
 
 [node name="Plate" type="Sprite2D" parent="Office"]
+visible = false
 texture = ExtResource("4")
 centered = false
 
 [node name="People" type="Node2D" parent="Office"]
+visible = false
 
 [node name="왼쪽끝직원" type="Sprite2D" parent="Office/People"]
 position = Vector2(186.6, 941)
@@ -97,6 +108,7 @@ walk = Vector2(4, -16.9)
 grow = -0.025
 
 [node name="SignBand" type="Sprite2D" parent="Office"]
+visible = false
 position = Vector2(740, 335)
 texture = ExtResource("5")
 centered = false
