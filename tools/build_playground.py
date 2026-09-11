@@ -75,6 +75,27 @@ CLOUDS = {
     "cloud_right": ("14", 34, 142, 1604, 662, None),         # 구름3.png — 왼쪽이 높고 오른쪽으로 흘러내림
 }
 
+# --- 편집기에서 손으로 맞춘 값 (2026-09-12) ---
+# 사용자가 편집기에서 구름 콜리전·그림과 왕관을 직접 옮겨놨다. 아래 platform() 공식으로는 안 나오는 배치라
+# **공식 대신 이 값을 그대로 박는다.** 이 표를 지우고 빌더를 다시 돌리면 편집기에서 맞춘 게 공식값으로 되돌아간다.
+# 편집기에서 또 옮겼으면 그 씬의 값을 여기로 옮겨 적을 것 (구름 루트 위치는 여전히 *_CX / *_Y 공식을 쓴다)
+# 이름 -> collision_pos: 콜리전 위치(루트 기준) / collision_size: 콜리전 크기 /
+#        visual: (ExtResource id, 그림 위치, 그림 배율, region_rect)
+# CloudMidRight는 구름3 대신 구름2(왼쪽 구름과 같은 그림)로 바꿨다 — 사용자 결정
+PLATFORM_OVERRIDES = {
+    "CloudMidLeft": {"collision_pos": (-6, 24), "collision_size": (260, 20),
+        "visual": ("13", (4, 30.999994), (0.173509, 0.14346), (99, 53, 1978, 622))},  # 구름2.png
+    "CloudMidRight": {"collision_pos": (16, 25), "collision_size": (260, 20),
+        "visual": ("13", (13.000058, 13.000002), (0.137203, 0.143409), (99, 53, 1978, 622))},  # 구름2.png
+    "CloudTop": {"collision_pos": (8, -22), "collision_size": (288, 16),
+        "visual": ("12", (7.999996, -17.000004), (0.19698735, 0.1385736), (71, 111, 1643, 687))},  # 구름1.png
+}
+# 왕관 **본체** 위치와 그림 오프셋. 콜리전은 본체 원점에 둔다 —
+# 자식만 옮기면 Crown.gd가 본체 기준으로 머리 위·바닥에 놓을 때 그만큼 떠버린다
+CROWN_POS = (25, -472)
+CROWN_VISUAL_OFFSET = (0, -1)
+
+
 # --- 배경 아파트 단지 ---
 # 그림 종류 -> (ExtResource id, 알파 bbox x, y, w, h)
 APT_SPRITES = {
@@ -148,13 +169,23 @@ subs, plats = [], []
 
 
 def platform(name, cx, top, half, kind):
+    # 편집기에서 손으로 맞춘 값이 있으면 공식 대신 그걸 쓴다 (PLATFORM_OVERRIDES 설명 참고)
+    ov = PLATFORM_OVERRIDES.get(name, {})
+    cw, ch = ov.get("collision_size", (half * 2, THICK))
     subs.append('[sub_resource type="RectangleShape2D" id="Shape_%s"]\nsize = Vector2(%g, %g)\n'
-                % (name, half * 2, THICK))
+                % (name, cw, ch))
     s = '[node name="%s" type="StaticBody2D" parent="."]\nposition = Vector2(%g, %g)\n\n' % (name, cx, top + THICK / 2)
-    s += ('[node name="Collision" type="CollisionShape2D" parent="%s"]\nshape = SubResource("Shape_%s")\n'
-          'one_way_collision = true\n\n' % (name, name))
+    cpos = ov.get("collision_pos")
+    s += ('[node name="Collision" type="CollisionShape2D" parent="%s"]\n%sshape = SubResource("Shape_%s")\n'
+          'one_way_collision = true\n\n' % (name, ('position = Vector2(%g, %g)\n' % cpos) if cpos else '', name))
     if kind == "roof":
         pass  # 지붕 그림은 `pavilion_sprites()`가 부모 Node2D에 따로 그린다(기둥과 투명도가 달라서)
+    elif "visual" in ov:
+        ext_id, (vx, vy), (sx, sy), (bx, by, bw, bh) = ov["visual"]
+        s += ('[node name="Visual" type="Sprite2D" parent="%s"]\nposition = Vector2(%g, %g)\n'
+              'scale = Vector2(%g, %g)\ntexture = ExtResource("%s")\n'
+              'region_enabled = true\nregion_rect = Rect2(%g, %g, %g, %g)\n\n'
+              % (name, vx, vy, sx, sy, ext_id, bx, by, bw, bh))
     else:
         ext_id, bx, by, bw, bh, fixed = CLOUDS[kind]
         if fixed:
@@ -309,9 +340,11 @@ b += ('[node name="Crown" type="Area2D" parent="."]\nz_index = 20\nposition = Ve
       '[node name="CrownCollision" type="CollisionShape2D" parent="Crown"]\nshape = SubResource("Shape_crown")\n\n'
       # 진짜왕관.png의 알파 bbox는 캔버스 정중앙이 아니다(+23, +10). region으로 잘라내면
       # Sprite2D가 그 조각을 중심에 놓아주므로, 왕관이 판정 상자 한가운데에 정확히 앉는다
-      '[node name="CrownVisual" type="Sprite2D" parent="Crown"]\nscale = Vector2(0.04455, 0.04455)\n'
+      '[node name="CrownVisual" type="Sprite2D" parent="Crown"]\n%sscale = Vector2(0.04455, 0.04455)\n'
       'texture = ExtResource("5")\nregion_enabled = true\n'
-      'region_rect = Rect2(163, 150, 1257, 746)\n\n') % (TOP_CX, TOP_Y - 28)
+      'region_rect = Rect2(163, 150, 1257, 746)\n\n') % (
+      CROWN_POS[0], CROWN_POS[1],
+      ('position = Vector2(%g, %g)\n' % CROWN_VISUAL_OFFSET) if CROWN_VISUAL_OFFSET != (0.0, 0.0) else '')
 
 b += '[node name="SpringRideLeft" parent="." instance=ExtResource("4")]\nposition = Vector2(%g, 0)\n\n' % (-SPRING_X)
 b += '[node name="SpringRideRight" parent="." instance=ExtResource("4")]\nposition = Vector2(%g, 0)\n\n' % SPRING_X
