@@ -1,0 +1,55 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/대화창경찰서배경.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+
+[node name="StoryScene3" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+dialogue = NodePath("DialogueBox")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Room" type="Node2D" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="Room"]
+scale = Vector2(0.883978, 0.883978)
+texture = ExtResource("2")
+centered = false
+
+[node name="Police" type="Sprite2D" parent="Room"]
+position = Vector2(354.4, 33)
+scale = Vector2(0.613, 0.613)
+texture = ExtResource("3")
+centered = false
+
+[node name="DialogueBox" parent="." instance=ExtResource("4")]
+layout_mode = 1
+speaker = "경찰 아저씨"
+lines = PackedStringArray("(대사가 들어갈 자리)")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
