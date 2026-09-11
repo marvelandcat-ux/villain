@@ -19,6 +19,8 @@ extends Control
 @export var fade_out_time: float = 1.2
 ## 다 끝나면 넘어갈 장면. **비워두면 페이드인한 채로 멈춰 있는다**(다음 장면이 아직 없는 마지막 장면)
 @export_file("*.tscn") var next_scene: String = ""
+## 대화창(DialogueBox)을 지정하면 대사를 끝까지 넘겨야 페이드아웃한다(hold_time도 지나야 함). 비우면 시간만 본다
+@export var dialogue: NodePath
 
 enum Step { FADE_IN, HOLD, FADE_OUT, DONE }
 
@@ -41,13 +43,19 @@ func _process(delta: float) -> void:
 		Step.HOLD:
 			if next_scene == "":
 				_go(Step.DONE)   # 다음 장면이 없으면 여기서 끝 — 보이는 채로 멈춘다
-			elif _t >= hold_time:
+			elif _t >= hold_time and _dialogue_done():
 				_go(Step.FADE_OUT)
 		Step.FADE_OUT:
 			_fade.color.a = clampf(_t / maxf(fade_out_time, 0.001), 0.0, 1.0)
 			if _t >= fade_out_time:
 				_go(Step.DONE)
 				_open_next()
+
+func _dialogue_done() -> bool:
+	if dialogue.is_empty():
+		return true
+	var box: DialogueBox = get_node_or_null(dialogue) as DialogueBox
+	return box == null or box.is_finished()
 
 func _go(step: int) -> void:
 	_step = step
