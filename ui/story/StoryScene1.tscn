@@ -117,6 +117,7 @@ centered = false
 position = Vector2(2, 0)
 texture = ExtResource("4")
 centered = false
+metadata/cut_left = true
 
 [node name="Building" type="Sprite2D" parent="PoliceStation"]
 texture = ExtResource("3")
