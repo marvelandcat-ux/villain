@@ -46,79 +46,55 @@ centered = false
 position = Vector2(186.6, 941)
 texture = ExtResource("6")
 centered = false
-offset = Vector2(-117.6, -219)
+offset = Vector2(-117.6, -217)
 script = ExtResource("3")
 walk = Vector2(-70, 0)
 grow = 0
-bob = 1.5
-steps_per_second = 2.4
-sway_deg = 0.3
-phase = 0.5
 
 [node name="화면아래-남직원" type="Sprite2D" parent="Office/People"]
 position = Vector2(1347.7, 941)
 texture = ExtResource("7")
 centered = false
-offset = Vector2(-112.7, -201)
+offset = Vector2(-113.7, -195)
 script = ExtResource("3")
 walk = Vector2(3, -16)
 grow = -0.02
-bob = 2
-steps_per_second = 1.8
-sway_deg = 0.4
-phase = 0.8
 
 [node name="입구쪽남직원" type="Sprite2D" parent="Office/People"]
 position = Vector2(1466.8, 816)
 texture = ExtResource("8")
 centered = false
-offset = Vector2(-87.8, -514)
+offset = Vector2(-78.8, -412)
 script = ExtResource("3")
 walk = Vector2(6, -22)
 grow = -0.035
-bob = 2
-steps_per_second = 1.9
-sway_deg = 0.6
-phase = 0.15
 
 [node name="여비서1" type="Sprite2D" parent="Office/People"]
 position = Vector2(889.3, 820)
 texture = ExtResource("9")
 centered = false
-offset = Vector2(-70.3, -396)
+offset = Vector2(-70.3, -370)
 script = ExtResource("3")
 walk = Vector2(3, -24)
 grow = -0.035
-bob = 2
-steps_per_second = 2
-sway_deg = 0.8
-phase = 0.6
 
 [node name="경찰관2" type="Sprite2D" parent="Office/People"]
 position = Vector2(710.3, 941)
 texture = ExtResource("10")
 centered = false
-offset = Vector2(-204.3, -373)
+offset = Vector2(-204.3, -371)
 script = ExtResource("3")
 walk = Vector2(-6, 24)
 grow = 0.03
-bob = 2.5
-steps_per_second = 1.7
-sway_deg = 0.6
-phase = 0.35
 
 [node name="경찰관1" type="Sprite2D" parent="Office/People"]
 position = Vector2(1194, 941)
 texture = ExtResource("11")
 centered = false
-offset = Vector2(-112, -492)
+offset = Vector2(-112, -487)
 script = ExtResource("3")
 walk = Vector2(4, -16.9)
 grow = -0.025
-bob = 2.5
-steps_per_second = 1.8
-sway_deg = 0.6
-phase = 0
 
 [node name="SignBand" type="Sprite2D" parent="Office"]
 position = Vector2(740, 335)
