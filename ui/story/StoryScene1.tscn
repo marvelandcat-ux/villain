@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_하늘.png" id="2"]
@@ -15,6 +15,7 @@
 [ext_resource type="Shader" path="res://ui/story/FlagWave.gdshader" id="13"]
 [ext_resource type="Script" path="res://ui/story/DriftingClouds.gd" id="14"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름7.png" id="15"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름8.png" id="16"]
 
 [sub_resource type="ShaderMaterial" id="FlagWave1"]
 shader = ExtResource("13")
@@ -80,6 +81,12 @@ centered = false
 [node name="Clouds" type="Node2D" parent="PoliceStation"]
 script = ExtResource("14")
 
+[node name="Cloud8" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(0, 114)
+texture = ExtResource("16")
+centered = false
+metadata/cut_left = true
+
 [node name="Cloud7" type="Sprite2D" parent="PoliceStation/Clouds"]
 position = Vector2(0, 234)
 texture = ExtResource("15")
@@ -87,7 +94,7 @@ centered = false
 metadata/cut_left = true
 
 [node name="Cloud6" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(1422, 324)
+position = Vector2(1417, 318)
 texture = ExtResource("9")
 centered = false
 metadata/cut_right = true
@@ -98,7 +105,7 @@ texture = ExtResource("8")
 centered = false
 
 [node name="Cloud4" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(1352, 100)
+position = Vector2(1345, 78)
 texture = ExtResource("7")
 centered = false
 metadata/cut_right = true
@@ -109,12 +116,12 @@ texture = ExtResource("6")
 centered = false
 
 [node name="Cloud2" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(304, 114)
+position = Vector2(298, 111)
 texture = ExtResource("5")
 centered = false
 
 [node name="Cloud1" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(2, 0)
+position = Vector2(0, 0)
 texture = ExtResource("4")
 centered = false
 metadata/cut_left = true
