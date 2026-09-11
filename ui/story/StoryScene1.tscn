@@ -84,11 +84,13 @@ script = ExtResource("14")
 position = Vector2(0, 234)
 texture = ExtResource("15")
 centered = false
+metadata/cut_left = true
 
 [node name="Cloud6" type="Sprite2D" parent="PoliceStation/Clouds"]
 position = Vector2(1422, 324)
 texture = ExtResource("9")
 centered = false
+metadata/cut_right = true
 
 [node name="Cloud5" type="Sprite2D" parent="PoliceStation/Clouds"]
 position = Vector2(1337, 136)
@@ -99,6 +101,7 @@ centered = false
 position = Vector2(1352, 100)
 texture = ExtResource("7")
 centered = false
+metadata/cut_right = true
 
 [node name="Cloud3" type="Sprite2D" parent="PoliceStation/Clouds"]
 position = Vector2(281, 53)
