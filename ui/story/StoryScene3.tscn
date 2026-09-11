@@ -19,6 +19,7 @@ script = ExtResource("1")
 dialogue = NodePath("DialogueBox")
 crossfade_time = 0.6
 reveal = Array[NodePath]([NodePath("Room/Police"), NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("CaseFile"), NodePath("CaseFile/Paper/Stamp")])
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -44,7 +45,6 @@ texture = ExtResource("3")
 centered = false
 
 [node name="CaseFile" type="Control" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -76,7 +76,6 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Stamp" type="Sprite2D" parent="CaseFile/Paper"]
-visible = false
 position = Vector2(280, 530)
 rotation = -0.0523599
 scale = Vector2(0.22, 0.22)
@@ -95,4 +94,4 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 0, 0, 1)
+color = Color(0, 0, 0, 0)

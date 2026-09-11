@@ -41,6 +41,9 @@ enum Transition { BLACK, CROSSFADE }
 @export var reveal_time: float = 0.3
 ## 나타날 때 아래에서 올라오는 거리(px)
 @export var reveal_rise: float = 18.0
+## 에디터에선 보이게 두고(배치 조정용) **게임이 시작될 때 숨길** 노드들 — 대화창 명령(@show, @stamp)으로 나중에 나타난다.
+## 에디터 눈 아이콘으로 켜고 끈 채 저장해도 게임에선 항상 숨긴 채 시작한다
+@export var hide_on_start: Array[NodePath] = []
 
 enum Step { FADE_IN, HOLD, FADE_OUT, DONE }
 
@@ -59,7 +62,14 @@ var _reveal_items: Array[CanvasItem] = []
 var _reveal_pos: Array[Vector2] = []
 
 func _ready() -> void:
+	# Fade는 씬 파일에선 투명으로 둔다(에디터에서 장면이 보이게) — 실제 시작 알파는 아래에서 정한다
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for path in hide_on_start:
+		var hidden_item: CanvasItem = get_node_or_null(path) as CanvasItem
+		if hidden_item == null:
+			push_warning("StoryFadeScene: hide_on_start 노드를 못 찾았다 — %s" % path)
+			continue
+		hidden_item.visible = false
 	for path in reveal:
 		var item: CanvasItem = get_node_or_null(path) as CanvasItem
 		if item == null or not (item is Node2D or item is Control):
@@ -68,6 +78,7 @@ func _ready() -> void:
 		var pos: Vector2 = item.get("position")
 		_reveal_items.append(item)
 		_reveal_pos.append(pos)
+		item.visible = true   # 배치하느라 에디터 눈 아이콘으로 꺼 둔 채 저장했어도 게임에선 나타나게
 		item.modulate.a = 0.0
 		item.set("position", pos + Vector2(0.0, reveal_rise))
 	if _carry != null and Time.get_ticks_msec() - _carry_msec < 3000:
