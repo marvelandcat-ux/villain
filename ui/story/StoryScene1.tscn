@@ -79,24 +79,9 @@ centered = false
 [node name="Clouds" type="Node2D" parent="PoliceStation"]
 script = ExtResource("14")
 
-[node name="Cloud1" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(2, 0)
-texture = ExtResource("4")
-centered = false
-
-[node name="Cloud2" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(304, 114)
-texture = ExtResource("5")
-centered = false
-
-[node name="Cloud3" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(281, 53)
-texture = ExtResource("6")
-centered = false
-
-[node name="Cloud4" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(1352, 100)
-texture = ExtResource("7")
+[node name="Cloud6" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(1422, 324)
+texture = ExtResource("9")
 centered = false
 
 [node name="Cloud5" type="Sprite2D" parent="PoliceStation/Clouds"]
@@ -104,9 +89,24 @@ position = Vector2(1337, 136)
 texture = ExtResource("8")
 centered = false
 
-[node name="Cloud6" type="Sprite2D" parent="PoliceStation/Clouds"]
-position = Vector2(1422, 324)
-texture = ExtResource("9")
+[node name="Cloud4" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(1352, 100)
+texture = ExtResource("7")
+centered = false
+
+[node name="Cloud3" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(281, 53)
+texture = ExtResource("6")
+centered = false
+
+[node name="Cloud2" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(304, 114)
+texture = ExtResource("5")
+centered = false
+
+[node name="Cloud1" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(2, 0)
+texture = ExtResource("4")
 centered = false
 
 [node name="Building" type="Sprite2D" parent="PoliceStation"]
