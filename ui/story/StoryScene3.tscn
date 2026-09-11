@@ -76,8 +76,8 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Stamp" type="Sprite2D" parent="CaseFile/Paper"]
-position = Vector2(280, 530)
-rotation = -0.0523599
+position = Vector2(1059, 498)
+rotation = -0.314159
 scale = Vector2(0.22, 0.22)
 texture = ExtResource("6")
 
