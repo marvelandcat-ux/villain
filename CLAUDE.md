@@ -564,12 +564,16 @@
 
 **로컬 대전(PvP) 흐름:** `ui/TitleScreen.tscn`(아무 키) → `ui/MainMenu.tscn`("대전 모드" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40, 시간제한 무제한/1~5분 설정 → `GameState.rounds_to_win`/`time_limit_seconds`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
 
-**스토리 모드 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("스토리 모드" 선택 — `rounds_to_win=2`, `time_limit_seconds=120` 고정, `story_index=0`으로 초기화) → `ui/EpisodeSelect.tscn`(몇 번째 상대부터 할지 고르면 `story_index`에 저장) → `ui/CharacterSelect.tscn`(P1 캐릭터만 고름 — 같은 화면이 `GameState.game_mode == "story"`를 보고 스토리용으로 동작한다. P2는 `GameState.STORY_OPPONENTS[story_index]`로 자동 지정돼 P2 칸에 미리 공개되고, 맵도 `GameState.STORY_MAPS[story_index]`로 에피소드별로 정해져 맵 선택 화면을 건너뛴다) → 맵(`Stage.gd`) → (P1 승리 시) `ui/ReformCutscene.tscn`(방금 이긴 빌런 전용 반성 대사 표시, "개과천선" — 캐릭터별 대사는 `ReformCutscene.REFORM_LINES` 딕셔너리) → 다음 상대로 자동 진행, 전원 격파 시 `ui/StoryClear.tscn`. P1이 지면 스토리 진행 없이 일반 결과 화면(다시하기/메인 메뉴로)만 뜬다
+**스토리 모드 흐름(2026-09-12 전면 개편 중):** 옛 스토리(에피소드 선택 -> 캐릭터 선택 -> 정해진 상대와 대전 -> 개과천선 대사 -> 클리어)는 **통째로 걷어냈다** — `EpisodeSelect`/`ReformCutscene`/`StoryClear`/`StoryIntro` 화면, `GameState.STORY_OPPONENTS`/`STORY_MAPS`/`story_index`/`story_cleared`와 진행도 함수, `CharacterSelect`·`Stage`의 스토리 분기를 전부 지웠다. 되살릴 일이 있으면 2026-09-12 이전 커밋에 있다.
+지금은 `ui/MainMenu.tscn`("스토리 모드" -> 확인) -> `ui/story/StoryScene1.tscn` -> `ui/story/StoryScene2.tscn` 뼈대만 있다. 두 장면 모두 `ui/story/StoryFadeScene.gd` 하나로 돈다: **검은 화면에서 페이드인(`fade_in_time` 1.2초) -> 머묾(`hold_time` 1.5초) -> 페이드아웃(`fade_out_time` 1.2초) -> `next_scene`**. `next_scene`이 비어 있으면 페이드인한 채로 멈춘다(지금 2번 장면). 페이드아웃이 완전히 검은 채로 끝나고 다음 장면도 검게 시작해서 이음매가 안 보인다. ESC는 어느 장면에서든 메인 메뉴로.
+  - 장면 내용은 씬에 자유롭게 올리되 **`Fade`(검은 ColorRect)는 항상 트리 맨 아래(맨 마지막 자식)에 둘 것** — 그래야 다른 걸 다 덮는다
+  - 1번 장면의 "스토리 1 (임시)" 글자(`Placeholder`)는 페이드가 눈에 보이게 하려고 둔 자리표시라 내용이 들어가면 지우면 된다
+  - `GameState.game_mode = "story"`는 그대로 쓴다 — `Stage`가 P2를 AI로 붙이고 `FighterPanel`이 P2 조작키를 숨기는 모드 구분 장치라, 새 스토리에 대전을 붙일 때 다시 쓸 수 있다
 
 **훈련장 흐름:** `ui/TitleScreen.tscn` → `ui/MainMenu.tscn`("조작 방법") → `ui/HowToPlay.tscn`("훈련장에서 해보기") → `maps/TrainingGround.tscn`. 캐릭터 선택·맵 선택 화면을 거치지 않고 바로 들어가고, 캐릭터는 훈련장 안의 드롭다운으로 바꾼다(바꾸면 그 자리에서 다시 스폰). 상대·라운드·시간제한·HUD가 없어서 `Stage.gd`를 상속하지 않는 독립 씬이다
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
-- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 인트로→모드 선택, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
+- 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택, 스토리 장면→메인 메뉴, 대전 중→메인 메뉴. 버튼으로도 동일하게 나갈 수 있음
 - **라운드제:** `Stage._process()`가 KO(HP 0) 또는 시간 초과(`GameState.time_limit_seconds`>0이고 다 됐을 때 — 그 순간 HP 높은 쪽이 라운드 승, 동률이면 무승부)를 감지하면 `_end_round(p1_won, is_draw)`를 부른다. 라운드 승수는 `GameState.p1_round_wins`/`p2_round_wins`에 누적되고, 둘 중 하나가 `rounds_to_win`에 도달하지 못했으면 `MatchResult.show_round_result()`로 점수 배너만 잠깐 보여준 뒤 `get_tree().reload_current_scene()`으로 같은 맵에서 다음 라운드를 새로 시작한다(HP/위치는 씬 리로드로 초기화되고, 라운드 승수는 `GameState`가 오토로드라 그대로 유지됨). 도달했으면 최종 결과(`MatchResult.show_result()`/`show_draw()`) 또는 스토리 모드 승리 시 `ReformCutscene`으로 분기
 - `CombatHUD`는 화면 중앙 상단에 **남은 시간 박스**(`TimerFrame` > `TimerBox` > `TimerLabel`)와 그 아래 라운드 점수(`RoundLabel`, `P1승 : P2승`)를 표시. `Stage`가 `combat_hud.update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신한다. 시간 값은 방 설정에서 고른 `GameState.time_limit_seconds`를 `Stage`가 깎아 내려주는 것이라 HUD는 표시만 한다 — **시간 제한 없음(0)이면 `TimerFrame` 자체가 숨겨지고**, 10초 이하로 남으면 숫자가 빨개진다
 - `maps/Stage.gd`는 이제 캐릭터를 씬에 미리 박아두지 않고, `_ready()`에서 `GameState`가 가리키는 캐릭터 씬을 `PlayerSpawn1`/`PlayerSpawn2`에 동적으로 생성한다. P1에는 항상 `PlayerController`를 붙이고, P2는 `GameState.game_mode`를 봐서 스토리 모드면 `ClaudeAIController`(정해진 상대를 AI가 조작), 로컬 대전(pvp)이면 `PlayerController`(사람이 직접 조작)를 붙인다. 새 맵은 바닥·벽(or 링아웃용 빈 공간)·`PlayerSpawn1`/`PlayerSpawn2`·`Camera2D`(스크립트: `maps/CameraRig.gd`)·`CombatHUD` 인스턴스만 배치하면 나머지는 `Stage.gd`가 처리
@@ -994,7 +998,7 @@ res://
   controllers/    # PlayerController / AIController
   stats/          # CharacterStats 리소스(.tres)
   maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
-  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/EpisodeSelect/ReformCutscene/StoryClear/MatchResult, HP바·쿨타임 HUD
+  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/MatchResult, story/(새 스토리 장면), HP바·쿨타임 HUD
 ```
 
 ## 참고

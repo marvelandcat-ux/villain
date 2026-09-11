@@ -9,10 +9,8 @@ const PREVIEW_BOX_SIZE := Vector2(300, 300)
 ## 초상화의 그림·배율·위치는 전부 ui/PortraitFrames.tscn에서 읽는다(GameState가 로드해둠).
 ## 그 씬을 에디터에서 열어 각 캐릭터 얼굴을 프레임 안에서 조절하면 여기 선택 화면에 그대로 반영된다
 
-## 로컬 대전(pvp)과 스토리 모드 둘 다 이 화면 하나를 같이 쓴다.
-## - pvp: P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2(AI) 캐릭터를 고르면 맵 선택 화면으로 넘어간다
-## - story: P2는 GameState.STORY_OPPONENTS[story_index]로 이미 정해져 있어서 P2 칸에 미리 공개해두고,
-##   P1만 고르면 바로 확정되어 GameState.STORY_MAPS[story_index]가 정한 맵으로 넘어간다 (에피소드별 고정 맵이라 맵 선택 화면 생략)
+## 대전 모드(pvp) 전용 화면이다. P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
+## (예전엔 옛 스토리 모드도 이 화면을 같이 썼는데, 2026-09-12 스토리 모드를 새로 짜면서 그 분기를 걷어냈다)
 ## 아래쪽 캐릭터 목록에서 하나를 누르면 위쪽 P1/P2 미리보기 칸에 이름과 색이 채워지는 방식
 
 @onready var status_label: Label = $Center/VBox/StatusLabel
@@ -27,8 +25,6 @@ const PREVIEW_BOX_SIZE := Vector2(300, 300)
 @onready var p2_preview_image: TextureRect = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewImage
 @onready var p2_preview_label: Label = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewLabel
 
-## 스토리 모드에서는 P2가 GameState.STORY_OPPONENTS로 이미 정해져 있어서 P1만 고르면 된다
-var _is_story_mode: bool = false
 var _picking_p1: bool = true
 ## 아직 "확정" 버튼을 안 누른, 미리보기 칸에만 반영된 임시 선택. 빈 문자열이면 아무것도 안 고른 상태
 var _pending_character: String = ""
@@ -36,7 +32,6 @@ var _thumb_buttons: Dictionary = {}  # {character_name: Button} — 선택 강�
 var _is_spinning: bool = false
 
 func _ready() -> void:
-	_is_story_mode = GameState.game_mode == "story"
 	for character_name in GameState.CHARACTERS.keys():
 		var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
 		var button := _make_tile(character_name, color, 14, _on_character_picked.bind(character_name))
@@ -45,23 +40,7 @@ func _ready() -> void:
 	## 격자 맨 끝에 놓이는 "?" 칸 — 누를 때마다 캐릭터 하나를 무작위로 골라 미리보기에 반영한다(다른 칸처럼 확정은 별도)
 	thumb_row.add_child(_make_tile("?", GameState.DEFAULT_COLOR, 28, _on_random_pressed))
 
-	if _is_story_mode:
-		status_label.text = "당신의 캐릭터를 선택하세요"
-		back_button.text = "에피소드 선택으로 (ESC)"
-		var opponent_name := _find_character_name(GameState.STORY_OPPONENTS[GameState.story_index])
-		p2_name_label.text = "상대"
-		p2_preview_box.color = GameState.CHARACTER_COLORS.get(opponent_name, GameState.DEFAULT_COLOR)
-		p2_preview_label.text = opponent_name
-		_apply_portrait(p2_preview_image, opponent_name)
-	else:
-		status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
-
-## 캐릭터 씬 경로로 GameState.CHARACTERS에 등록된 표시 이름을 역으로 찾는다 (스토리 상대 공개용)
-func _find_character_name(path: String) -> String:
-	for character_name in GameState.CHARACTERS.keys():
-		if GameState.CHARACTERS[character_name] == path:
-			return character_name
-	return "?"
+	status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
 
 func _make_tile(label: String, color: Color, font_size: int, callback: Callable) -> Button:
 	var button := Button.new()
@@ -204,12 +183,6 @@ func _on_confirm_pressed() -> void:
 	var path: String = GameState.CHARACTERS[_pending_character]
 	if _picking_p1:
 		GameState.p1_character_path = path
-		if _is_story_mode:
-			GameState.p2_character_path = GameState.STORY_OPPONENTS[GameState.story_index]
-			GameState.selected_map_path = GameState.STORY_MAPS[GameState.story_index]
-			GameState.reset_round_wins()
-			get_tree().change_scene_to_file(GameState.selected_map_path)
-			return
 		_picking_p1 = false
 		status_label.text = "P1: %s 확정! P2(AI) 캐릭터를 선택하세요" % _pending_character
 		_pending_character = ""
@@ -227,10 +200,7 @@ func _update_highlight() -> void:
 		button.modulate = Color(1, 1, 1) if (is_selected or _pending_character == "") else Color(0.55, 0.55, 0.55)
 
 func _on_back_pressed() -> void:
-	if _is_story_mode:
-		get_tree().change_scene_to_file("res://ui/EpisodeSelect.tscn")
-	else:
-		get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
+	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
