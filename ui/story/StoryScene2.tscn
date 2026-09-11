@@ -33,31 +33,26 @@ mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
 [node name="Office" type="Node2D" parent="."]
-position = Vector2(0.000, -0.191)
-scale = Vector2(0.765550, 0.765550)
+position = Vector2(-32.000, -18.201)
+scale = Vector2(0.803828, 0.803828)
 script = ExtResource("2")
-zoom_from = 1.0
-zoom_to = 1.35
-zoom_time = 6.0
-pivot_to = Vector2(767, 335)
 
 [node name="Still" type="Sprite2D" parent="Office"]
+visible = false
 texture = ExtResource("12")
 centered = false
 
 [node name="Plate" type="Sprite2D" parent="Office"]
-visible = false
 texture = ExtResource("4")
 centered = false
 
 [node name="People" type="Node2D" parent="Office"]
-visible = false
 
 [node name="왼쪽끝직원" type="Sprite2D" parent="Office/People"]
 position = Vector2(186.6, 941)
 texture = ExtResource("6")
 centered = false
-offset = Vector2(-117.6, -217)
+offset = Vector2(-120.6, -217)
 script = ExtResource("3")
 walk = Vector2(-70, 0)
 grow = 0
@@ -66,7 +61,7 @@ grow = 0
 position = Vector2(1347.7, 941)
 texture = ExtResource("7")
 centered = false
-offset = Vector2(-113.7, -195)
+offset = Vector2(-114.7, -195)
 script = ExtResource("3")
 walk = Vector2(3, -16)
 grow = -0.02
@@ -75,7 +70,7 @@ grow = -0.02
 position = Vector2(1466.8, 816)
 texture = ExtResource("8")
 centered = false
-offset = Vector2(-78.8, -412)
+offset = Vector2(-84.8, -412)
 script = ExtResource("3")
 walk = Vector2(6, -22)
 grow = -0.035
@@ -84,7 +79,7 @@ grow = -0.035
 position = Vector2(889.3, 820)
 texture = ExtResource("9")
 centered = false
-offset = Vector2(-70.3, -370)
+offset = Vector2(-73.3, -370)
 script = ExtResource("3")
 walk = Vector2(3, -24)
 grow = -0.035
@@ -93,7 +88,7 @@ grow = -0.035
 position = Vector2(710.3, 941)
 texture = ExtResource("10")
 centered = false
-offset = Vector2(-204.3, -371)
+offset = Vector2(-178.3, -371)
 script = ExtResource("3")
 walk = Vector2(-6, 24)
 grow = 0.03
@@ -108,7 +103,6 @@ walk = Vector2(4, -16.9)
 grow = -0.025
 
 [node name="SignBand" type="Sprite2D" parent="Office"]
-visible = false
 position = Vector2(740, 335)
 texture = ExtResource("5")
 centered = false
