@@ -27,7 +27,7 @@ enum Transition { BLACK, CROSSFADE }
 @export var fade_out_time: float = 1.2
 ## 다 끝나면 넘어갈 장면. **비워두면 들어온 채로 멈춰 있는다**(다음 장면이 아직 없는 마지막 장면)
 @export_file("*.tscn") var next_scene: String = ""
-## 대화창(DialogueBox)을 지정하면 대사를 끝까지 넘겨야 나간다(hold_time도 지나야 함). 비우면 시간만 본다
+## 대화창(DialogueBox)이나 장소 카드(LocationCard)를 지정하면 그게 끝나야 나간다(hold_time도 지나야 함). 비우면 시간만 본다
 @export var dialogue: NodePath
 ## 다음 장면으로 넘길 때 전환 방식
 @export var out_transition: Transition = Transition.BLACK

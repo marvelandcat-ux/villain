@@ -20,6 +20,8 @@ dialogue = NodePath("DialogueBox")
 crossfade_time = 0.6
 reveal = Array[NodePath]([NodePath("Room/Police"), NodePath("DialogueBox")])
 hide_on_start = Array[NodePath]([NodePath("CaseFile"), NodePath("CaseFile/Paper/Stamp")])
+fade_out_time = 1.0
+next_scene = "res://ui/story/StoryScene4.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
