@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://burvaaypmgjfd"]
+[gd_scene load_steps=15 format=3 uid="uid://burvaaypmgjfd"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://bpq00y7pcriss" path="res://sprite/맵/지하철역/등받이.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://d3apxkvb3r2x6" path="res://sprite/맵/지하철역/지하철아래.png" id="9"]
 [ext_resource type="Script" path="res://maps/AISafeSpot.gd" id="10"]
+[ext_resource type="PackedScene" path="res://maps/FluorescentLight.tscn" id="11"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(220, 20)
@@ -111,6 +112,21 @@ scale = Vector2(0.496278, 0.496278)
 texture = ExtResource("6")
 region_enabled = true
 region_rect = Rect2(88, 184, 2015, 325)
+
+[node name="FluorescentLight0" parent="DecoBackground" instance=ExtResource("11")]
+position = Vector2(-470, -30)
+
+[node name="FluorescentLight1" parent="DecoBackground" instance=ExtResource("11")]
+position = Vector2(-310, -30)
+
+[node name="FluorescentLight2" parent="DecoBackground" instance=ExtResource("11")]
+position = Vector2(310, -30)
+flicker_interval_min = 1.5
+flicker_interval_max = 4.0
+long_off_chance = 0.4
+
+[node name="FluorescentLight3" parent="DecoBackground" instance=ExtResource("11")]
+position = Vector2(470, -30)
 
 [node name="PlatformEdge0" type="Sprite2D" parent="DecoBackground" unique_id=349320149]
 position = Vector2(-1800, 220.55)

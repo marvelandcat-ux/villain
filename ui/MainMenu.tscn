@@ -308,9 +308,7 @@ text = "방향키/마우스로 선택 · ESC로 타이틀로"
 
 [node name="ConfirmPopup" parent="." unique_id=511114147 instance=ExtResource("4_confirm")]
 visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 0
 grow_horizontal = 2
 grow_vertical = 2
 

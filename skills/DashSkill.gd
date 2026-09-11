@@ -21,15 +21,21 @@ extends Skill
 ## 적을 들이받으면 촉법소년 자신도 입는 데미지 (자전거는 브레이크가 없다)
 @export var enemy_hit_self_damage: int = 10
 ## 서로 튕겨나가는 넉백 — 적은 진행 방향으로, 자신은 반대로 날아간다.
-## 이 값은 "자전거를 딱 절반 탔을 때(진행도 0.5)"의 넉백 = 평균이다.
-## 실제 넉백 = 이 값 × (min~max 배율). 막 출발=min배, 다 탐=max배, 절반=1배(이 값 그대로)
+## 이 값이 넉백의 기준값이다.
+## 실제 넉백 = 이 값 × 진행도 배율(min~mid~max) × knockback_scale_ratio. 지금 절반 탔을 때는 0.7배
 ## 2026-09-10: 2배(660, -360)는 너무 멀리 날아가고 원래 값(330, -180)은 약해서, 중간인 1.5배로 확정.
 ## 브랜치 머지 때 옛 값(220, -120 / 340, -150)으로 되돌아간 적이 있으니 충돌 나면 이 값을 남길 것
 @export var enemy_collision_knockback: Vector2 = Vector2(495, -270)
-## 돌진 진행도(0=막 출발 ~ 1=다 탐)에 따라 넉백에 곱하는 배율. min에서 max로 선형 증가하고,
-## 진행도 0.5(절반)에서 정확히 (min+max)/2 = 1.0배 = 평균이 나오게 min 0 / max 2로 잡았다
+## 돌진 진행도(0=막 출발 ~ 1=다 탐)에 따라 넉백에 곱하는 배율. 절반(0.5)을 기준으로 두 구간으로 나뉜다:
+## 0~0.5는 min -> mid(0배 -> 1배), 0.5~1은 mid -> max(1배 -> 1.5배).
+## 2026-09-11: 원래 끝까지 한 직선(0 -> 2배)이었는데 다 타고 박으면 너무 멀리 날아가서,
+## 절반 이후의 증가 속도만 반으로 줄였다(max 2.0 -> 1.5). 절반 이전은 그대로다
 @export var min_knockback_scale: float = 0.0
-@export var max_knockback_scale: float = 2.0
+@export var mid_knockback_scale: float = 1.0
+@export var max_knockback_scale: float = 1.5
+## 위 진행도 배율을 얼마만큼만 적용할지. 곡선 모양(min/mid/max)은 그대로 두고 결과에 한 번 더 곱한다.
+## 2026-09-11: 1.5배 곡선도 세다고 해서 0.7로 낮췄다 → 실제 배율은 0 / 0.7 / 1.05배(출발·절반·다 탐)
+@export var knockback_scale_ratio: float = 0.7
 ## 적을 들이받았다고 볼 몸 사이 거리(px). 캐릭터끼리 몸 충돌이 꺼져 있어(add_collision_exception_with)
 ## 물리 충돌 대신 이 거리로 판정한다. 서로 밀어내는 최소 간격(BODY_PUSH_WIDTH=38)보다 살짝 크게 잡아 접촉 순간 잡는다
 @export var enemy_hit_range_x: float = 42.0
@@ -128,10 +134,14 @@ func _get_enemy_in_range(fighter: Fighter) -> Fighter:
 
 ## 적을 들이받았을 때 — 적은 진행 방향으로, 촉법소년은 반대로 세게 튕겨나가고 둘 다 데미지를 입는다
 func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
-	# 오래 달렸을수록(지속시간 진행도) 넉백이 세진다. min→max로 선형이라 진행도 0.5(절반)에서 1.0배(=평균)가 나온다
+	# 오래 달렸을수록(지속시간 진행도) 넉백이 세진다. 절반까지는 min→mid, 그 뒤로는 mid→max로 완만하게 오른다
 	var progress: float = clampf((dash_duration - _time_left) / dash_duration, 0.0, 1.0)
-	var scale: float = lerp(min_knockback_scale, max_knockback_scale, progress)
-	var kb: Vector2 = enemy_collision_knockback * scale
+	var scale: float
+	if progress < 0.5:
+		scale = lerpf(min_knockback_scale, mid_knockback_scale, progress / 0.5)
+	else:
+		scale = lerpf(mid_knockback_scale, max_knockback_scale, (progress - 0.5) / 0.5)
+	var kb: Vector2 = enemy_collision_knockback * scale * knockback_scale_ratio
 	# 부딪힌 지점(둘 사이 중간)에 터지는 이펙트
 	_spawn_burst(fighter, (fighter.global_position + enemy.global_position) * 0.5)
 	# 적: 돌진 방향으로 날아감
