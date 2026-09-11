@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://burvaaypmgjfd"]
+[gd_scene load_steps=16 format=3 uid="uid://burvaaypmgjfd"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://d3apxkvb3r2x6" path="res://sprite/맵/지하철역/지하철아래.png" id="9"]
 [ext_resource type="Script" path="res://maps/AISafeSpot.gd" id="10"]
 [ext_resource type="PackedScene" path="res://maps/FluorescentLight.tscn" id="11"]
+[ext_resource type="Script" path="res://maps/WindNewspaper.gd" id="12"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(220, 20)
@@ -270,6 +271,44 @@ script = ExtResource("10")
 
 [node name="DecoSubwayTrain" parent="." unique_id=7725255 instance=ExtResource("4")]
 position = Vector2(-29, 259)
+
+[node name="DecoWindPapers" type="Node2D" parent="."]
+
+[node name="Paper0" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(-470, 295.4)
+script = ExtResource("12")
+
+[node name="Paper1" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(-320, 295.8)
+script = ExtResource("12")
+paper_size = Vector2(20, 16)
+paper_color = Color(1, 0.92, 0.5, 1)
+
+[node name="Paper2" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(-130, 295.4)
+script = ExtResource("12")
+
+[node name="Paper3" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(70, 295.4)
+script = ExtResource("12")
+
+[node name="Paper4" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(250, 295.8)
+script = ExtResource("12")
+paper_size = Vector2(20, 16)
+paper_color = Color(1, 0.72, 0.78, 1)
+
+[node name="Paper5" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(440, 295.4)
+script = ExtResource("12")
+
+[node name="PaperBenchLeft" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(-240, 151.4)
+script = ExtResource("12")
+
+[node name="PaperBenchRight" type="Node2D" parent="DecoWindPapers"]
+position = Vector2(320, 151.4)
+script = ExtResource("12")
 
 [node name="Ground" type="StaticBody2D" parent="." unique_id=2100912680]
 position = Vector2(0, 320)

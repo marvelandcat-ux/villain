@@ -112,6 +112,8 @@ const WINDOW_RECTS: Array[Rect2] = [
 func _ready() -> void:
 	# AIController가 "ai_danger_zone" 그룹으로 찾아서 is_dangerous()를 물어보고 피신 여부를 판단한다
 	add_to_group("ai_danger_zone")
+	# 신문지 날림(WindNewspaper) 같은 장식 연출이 "subway_train" 그룹으로 찾아서 바람 위치를 묻는다
+	add_to_group("subway_train")
 	_timer = first_delay
 	hitbox.damage = damage
 	hitbox.repeat_interval = hit_interval
@@ -126,6 +128,22 @@ func _ready() -> void:
 ## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
 func is_dangerous() -> bool:
 	return _state != State.WAITING
+
+## 지금 선로를 달리고 있는지 — 신문지 날림 같은 장식 연출이 바람을 일으킬지 볼 때 쓴다(WindNewspaper)
+func is_running() -> bool:
+	return _state == State.RUNNING
+
+## 진행 방향 (1 = 오른쪽으로, -1 = 왼쪽으로)
+func get_direction() -> int:
+	return _direction
+
+## 열차 몸통 한가운데의 월드 x 좌표
+func get_body_x() -> float:
+	return body.global_position.x
+
+## 열차 몸통 길이의 절반(px)
+func get_half_width() -> float:
+	return TRAIN_HALF_WIDTH
 
 func _process(delta: float) -> void:
 	_timer -= delta
