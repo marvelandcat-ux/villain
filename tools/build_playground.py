@@ -340,11 +340,7 @@ for x in range(-930, 940, 46):
         continue
     b += pnode("Tuft%d" % j, "DecoGround", "0.36, 0.6, 0.27, 1", poly([(x, 280), (x + 5, 262), (x + 10, 280)]))
     j += 1
-for i, (cx, half) in enumerate(SAND):
-    bx = cx + (half * 0.45 if cx < 0 else -half * 0.45)
-    b += pnode("Bucket%d" % i, "DecoGround", "0.95, 0.35, 0.3, 1",
-               poly([(bx - 16, 278), (bx + 16, 278), (bx + 12, 254), (bx - 12, 254)]))
-    b += pnode("BucketRim%d" % i, "DecoGround", "0.99, 0.55, 0.5, 1", rect(bx - 14, 250, bx + 14, 256))
+# 모래통 위 빨간 양동이(Bucket*/BucketRim*)는 2026-09-11 사용자 요청으로 뺐다
 
 for i, (cx, half) in enumerate(SAND):
     b += ('[node name="SandPit%d" type="Area2D" parent="."]\nposition = Vector2(%g, 276)\n'
@@ -364,7 +360,9 @@ for nm, x in (("LeftWall", -HALF), ("RightWall", HALF)):
 b += ('[node name="PlayerSpawn1" type="Marker2D" parent="."]\nposition = Vector2(-560, 240)\n\n'
       '[node name="PlayerSpawn2" type="Marker2D" parent="."]\nposition = Vector2(560, 240)\n\n'
       '[node name="Camera2D" type="Camera2D" parent="."]\nposition = Vector2(0, 20)\n'
-      'script = ExtResource("3")\nmin_y = -300.0\nmax_y = 20.0\n\n'
+      # lock_ground_to_bottom: 멀리 볼수록 아래 흙이 두꺼워지던 걸 막는다(흙은 화면 아래 56px로 고정)
+      'script = ExtResource("3")\nmin_y = -300.0\nmax_y = 20.0\n'
+      'lock_ground_to_bottom = true\nground_y = 280.0\nground_margin_px = 56.0\n\n'
       '[node name="CombatHUD" parent="." instance=ExtResource("2")]\n\n'
       '[node name="CrownCutIn" parent="." instance=ExtResource("10")]\n')
 

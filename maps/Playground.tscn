@@ -638,22 +638,6 @@ polygon = PackedVector2Array(864.0, 280.0, 869.0, 262.0, 874.0, 280.0)
 color = Color(0.36, 0.6, 0.27, 1)
 polygon = PackedVector2Array(910.0, 280.0, 915.0, 262.0, 920.0, 280.0)
 
-[node name="Bucket0" type="Polygon2D" parent="DecoGround"]
-color = Color(0.95, 0.35, 0.3, 1)
-polygon = PackedVector2Array(-186.5, 278.0, -154.5, 278.0, -158.5, 254.0, -182.5, 254.0)
-
-[node name="BucketRim0" type="Polygon2D" parent="DecoGround"]
-color = Color(0.99, 0.55, 0.5, 1)
-polygon = PackedVector2Array(-184.5, 250.0, -156.5, 250.0, -156.5, 256.0, -184.5, 256.0)
-
-[node name="Bucket1" type="Polygon2D" parent="DecoGround"]
-color = Color(0.95, 0.35, 0.3, 1)
-polygon = PackedVector2Array(154.5, 278.0, 186.5, 278.0, 182.5, 254.0, 158.5, 254.0)
-
-[node name="BucketRim1" type="Polygon2D" parent="DecoGround"]
-color = Color(0.99, 0.55, 0.5, 1)
-polygon = PackedVector2Array(156.5, 250.0, 184.5, 250.0, 184.5, 256.0, 156.5, 256.0)
-
 [node name="SandPit0" type="Area2D" parent="."]
 position = Vector2(-220, 276)
 script = ExtResource("8")
@@ -694,6 +678,9 @@ position = Vector2(0, 20)
 script = ExtResource("3")
 min_y = -300.0
 max_y = 20.0
+lock_ground_to_bottom = true
+ground_y = 280.0
+ground_margin_px = 56.0
 
 [node name="CombatHUD" parent="." instance=ExtResource("2")]
 
