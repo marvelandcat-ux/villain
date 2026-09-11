@@ -44,7 +44,7 @@ centered = false
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
 speaker = "주인공"
-lines = PackedStringArray("오늘이 이 부서에서 근무 첫날인가...")
+lines = PackedStringArray("오늘이 이 부서에서 근무 첫날인가...", "아 벌써 새 사건이 들어왔군")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
