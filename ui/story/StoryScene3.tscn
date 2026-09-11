@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/대화창경찰서배경.png" id="2"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/사건파일양식.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/수사착수도장.png" id="6"]
 
 [node name="StoryScene3" type="Control"]
 layout_mode = 3
@@ -74,10 +75,17 @@ texture = ExtResource("5")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="Stamp" type="Sprite2D" parent="CaseFile/Paper"]
+visible = false
+position = Vector2(280, 530)
+rotation = -0.0523599
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("6")
+
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
 speaker = "주인공"
-lines = PackedStringArray("오늘이 이 부서에서 근무 첫날인가...", "아 벌써 새 사건이 들어왔군", "@show CaseFile 0.4", "이런 이거 지독하네", "당장 출동해야겠어", "@close")
+lines = PackedStringArray("오늘이 이 부서에서 근무 첫날인가...", "아 벌써 새 사건이 들어왔군", "@show CaseFile 0.4", "이런 이거 지독하네", "당장 출동해야겠어", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
