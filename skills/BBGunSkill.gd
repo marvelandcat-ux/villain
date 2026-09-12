@@ -1,7 +1,7 @@
 class_name BBGunSkill
 extends Skill
 
-## BB탄 쏘기 — 3발 연사 (촉법소년 스킬2)
+## 비비탄 쏘기 — 3발 연사 (촉법소년 스킬2)
 @export var projectile_scene: PackedScene
 @export var shot_count: int = 3
 @export var shot_interval: float = 0.12

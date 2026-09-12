@@ -41,6 +41,8 @@ enum Transition { BLACK, CROSSFADE }
 @export var reveal_time: float = 0.3
 ## 나타날 때 아래에서 올라오는 거리(px)
 @export var reveal_rise: float = 18.0
+## (임시) 테스트용 — **S 키를 누르면 다음 장면으로 바로 건너뛴다.** 스토리를 다 만들면 이 기능을 지울 것
+@export var debug_skip_key: bool = true
 ## 에디터에선 보이게 두고(배치 조정용) **게임이 시작될 때 숨길** 노드들 — 대화창 명령(@show, @stamp)으로 나중에 나타난다.
 ## 에디터 눈 아이콘으로 켜고 끈 채 저장해도 게임에선 항상 숨긴 채 시작한다
 @export var hide_on_start: Array[NodePath] = []
@@ -163,6 +165,14 @@ func _open_next(crossfade: bool) -> void:
 	get_tree().change_scene_to_file(next_scene)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if debug_skip_key and event is InputEventKey:
+		var key: InputEventKey = event
+		if key.pressed and not key.echo and (key.keycode == KEY_S or key.physical_keycode == KEY_S):
+			if next_scene != "" and ResourceLoader.exists(next_scene):
+				_carry = null
+				get_viewport().set_input_as_handled()
+				get_tree().change_scene_to_file(next_scene)   # 임시 건너뛰기 — 페이드 없이 바로
+			return
 	if event.is_action_pressed("ui_cancel"):
 		_carry = null
 		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")

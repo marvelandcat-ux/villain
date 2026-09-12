@@ -1,7 +1,7 @@
 class_name Projectile
 extends Hitbox
 
-## 직선으로 날아가는 투사체 공용 컴포넌트 (BB탄, 토하기 등). Hitbox를 상속해서 맞으면 실제 데미지를 준다
+## 직선으로 날아가는 투사체 공용 컴포넌트 (비비탄, 토하기 등). Hitbox를 상속해서 맞으면 실제 데미지를 준다
 @export var lifetime: float = 1.5
 ## 진행 방향으로 매초 이만큼 빨라진다(px/s²). 0이면 등속. 시간이 지날수록 빨라지는 총알에 쓴다
 @export var acceleration: float = 0.0

@@ -4,7 +4,7 @@ extends Node
 ## 목표(대개 플레이어)와의 거리를 보고 접근/거리유지/후퇴/기본공격/스킬 사용을 스스로 결정하는 단순 AI.
 ## target을 직접 지정하지 않으면 씬에서 자기 자신이 아닌 첫 Fighter를 자동으로 목표로 삼는다 (1대1 전제)
 @export var attack_range: float = 55.0
-## 원거리 스킬(BB탄, 토하기 등)을 가진 캐릭터가 유지하려는 거리
+## 원거리 스킬(비비탄, 토하기 등)을 가진 캐릭터가 유지하려는 거리
 @export var ranged_distance: float = 180.0
 @export var skill_use_chance: float = 0.02  ## 매 물리 프레임마다 스킬 사용을 시도할 확률
 ## 자기 스킬이 전부 쿨타임이라 당장 할 게 없을 때, 매 프레임 뒤로 빠지기를 시작할 확률
@@ -53,7 +53,7 @@ var guard_bias: float = 1.0
 func _ready() -> void:
 	if target == null:
 		target = fighter.find_opponent()
-	# skill_2가 원거리 스킬(BB탄처럼 projectile_scene, 토하기 기둥처럼 beam_scene을 가진 스킬)이면
+	# skill_2가 원거리 스킬(비비탄처럼 projectile_scene, 토하기 기둥처럼 beam_scene을 가진 스킬)이면
 	# 원거리 캐릭터로 보고 거리를 두고 싸우게 한다. 캐릭터별로 따로 분기하지 않고 스킬 구성만으로 판단
 	_is_ranged = fighter.skill_2 != null and (
 		fighter.skill_2.get("projectile_scene") != null or fighter.skill_2.get("beam_scene") != null)
