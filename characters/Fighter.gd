@@ -514,7 +514,7 @@ func _spawn_dash_afterimage() -> void:
 
 func move(direction: float) -> void:
 	# 실제로 움직이지 못하는 상황(경직 등)에도 "무슨 방향을 누르고 있는지"는 남긴다 —
-	# 그네처럼 이동이 아니라 입력 자체를 읽어야 하는 기믹이 이 값을 본다
+	# 이동이 아니라 입력 자체를 읽어야 하는 기믹이 이 값을 본다 (예전 탑승식 그네가 그랬다)
 	move_input = direction
 	# 피격 경직 중엔 조작으로 넉백 속도를 덮어쓰지 않는다 (그래야 넉백 방향으로 날아간다)
 	if _hitstun_time > 0.0 or is_grabbed:

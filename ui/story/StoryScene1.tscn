@@ -1,0 +1,163 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_하늘.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_건물.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름1.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름2.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름3.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름4.png" id="7"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름5.png" id="8"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름6.png" id="9"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발1.png" id="10"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발2.png" id="11"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발3.png" id="12"]
+[ext_resource type="Shader" path="res://ui/story/FlagWave.gdshader" id="13"]
+[ext_resource type="Script" path="res://ui/story/DriftingClouds.gd" id="14"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름7.png" id="15"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_구름8.png" id="16"]
+
+[sub_resource type="ShaderMaterial" id="FlagWave1"]
+shader = ExtResource("13")
+shader_parameter/hoist_x0 = 46.74
+shader_parameter/hoist_slope = -0.0968
+shader_parameter/flag_width = 28.3
+shader_parameter/amplitude = 3.0
+shader_parameter/wave_speed = 2.6
+shader_parameter/wavelength = 70.0
+shader_parameter/phase = 0.0
+shader_parameter/shade = 0.08
+
+[sub_resource type="ShaderMaterial" id="FlagWave2"]
+shader = ExtResource("13")
+shader_parameter/hoist_x0 = 48.12
+shader_parameter/hoist_slope = -0.0831
+shader_parameter/flag_width = 29.6
+shader_parameter/amplitude = 3.0
+shader_parameter/wave_speed = 2.9
+shader_parameter/wavelength = 70.0
+shader_parameter/phase = 2.1
+shader_parameter/shade = 0.08
+
+[sub_resource type="ShaderMaterial" id="FlagWave3"]
+shader = ExtResource("13")
+shader_parameter/hoist_x0 = 52.58
+shader_parameter/hoist_slope = -0.1679
+shader_parameter/flag_width = 28.1
+shader_parameter/amplitude = 3.0
+shader_parameter/wave_speed = 2.4
+shader_parameter/wavelength = 70.0
+shader_parameter/phase = 4.2
+shader_parameter/shade = 0.08
+
+[node name="StoryScene1" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+next_scene = "res://ui/story/StoryScene2.tscn"
+hold_time = 1.5
+out_transition = 1
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="PoliceStation" type="Node2D" parent="."]
+position = Vector2(0, -66.66667)
+scale = Vector2(0.8333333, 0.8333333)
+
+[node name="Sky" type="Sprite2D" parent="PoliceStation"]
+texture = ExtResource("2")
+centered = false
+
+[node name="Clouds" type="Node2D" parent="PoliceStation"]
+script = ExtResource("14")
+
+[node name="Cloud8" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(0, 114)
+texture = ExtResource("16")
+centered = false
+metadata/cut_left = true
+
+[node name="Cloud7" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(0, 234)
+texture = ExtResource("15")
+centered = false
+metadata/cut_left = true
+
+[node name="Cloud6" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(1417, 318)
+texture = ExtResource("9")
+centered = false
+metadata/cut_right = true
+
+[node name="Cloud5" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(1337, 136)
+texture = ExtResource("8")
+centered = false
+
+[node name="Cloud4" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(1345, 78)
+texture = ExtResource("7")
+centered = false
+metadata/cut_right = true
+
+[node name="Cloud3" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(281, 53)
+texture = ExtResource("6")
+centered = false
+
+[node name="Cloud2" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(298, 111)
+texture = ExtResource("5")
+centered = false
+
+[node name="Cloud1" type="Sprite2D" parent="PoliceStation/Clouds"]
+position = Vector2(0, 0)
+texture = ExtResource("4")
+centered = false
+metadata/cut_left = true
+
+[node name="Building" type="Sprite2D" parent="PoliceStation"]
+texture = ExtResource("3")
+centered = false
+
+[node name="Flags" type="Node2D" parent="PoliceStation"]
+
+[node name="Flag1" type="Sprite2D" parent="PoliceStation/Flags"]
+material = SubResource("FlagWave1")
+position = Vector2(77, 506)
+texture = ExtResource("10")
+centered = false
+
+[node name="Flag2" type="Sprite2D" parent="PoliceStation/Flags"]
+material = SubResource("FlagWave2")
+position = Vector2(136, 497)
+texture = ExtResource("11")
+centered = false
+
+[node name="Flag3" type="Sprite2D" parent="PoliceStation/Flags"]
+material = SubResource("FlagWave3")
+position = Vector2(190, 508)
+texture = ExtResource("12")
+centered = false
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

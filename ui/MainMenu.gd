@@ -295,14 +295,12 @@ func _on_confirmed() -> void:
 		_pending.call()
 	_pending = Callable()
 
-## 스토리 모드 — 라운드 수·시간제한이 고정이고 진행도를 처음부터 다시 시작한다
+## 스토리 모드 — 2026-09-12 새로 짜는 중. 지금은 검은 화면 장면(ui/story/)이 페이드로 이어지는 뼈대만 있다.
+## 옛 흐름(에피소드 선택 -> 캐릭터 선택 -> 대전 -> 개과천선 -> 클리어)은 통째로 걷어냈다
 func _start_story() -> void:
 	GameState.game_mode = "story"
-	GameState.rounds_to_win = 2
-	GameState.time_limit_seconds = 120
-	GameState.reset_story_progress()
 	GameState.reset_round_wins()
-	get_tree().change_scene_to_file("res://ui/EpisodeSelect.tscn")
+	get_tree().change_scene_to_file("res://ui/story/StoryScene1.tscn")
 
 ## 대전 모드 — 방 설정(선취 라운드/시간제한)부터 고른다
 func _start_versus() -> void:

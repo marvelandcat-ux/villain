@@ -81,6 +81,28 @@ extends Node2D
 @export_range(0.0, 1.0, 0.05) var clash_body_follow: float = 0.5
 ## 대치 자세로 들어가고 풀리는 빠르기
 @export var clash_blend_speed: float = 10.0
+## --- 스킬 클래시 주먹 러시 (2026-09-12) ---
+## 연타 한 번마다 주먹이 번갈아 나간다 — 누르는 속도가 그대로 주먹질 속도가 된다.
+## 예전엔 두 손을 맞대고 앞뒤로 밀었는데, "서로 미친 듯이 주먹을 내지르는" 그림으로 바꿨다
+## 주먹 한 번을 뻗었다 거두는 데 걸리는 시간(초)
+@export var clash_punch_time: float = 0.055
+## 연타 한 번에 나가는 주먹 수. 2면 양손이 한 번씩 — 초당 8타면 주먹은 초당 16번
+@export var clash_punches_per_press: int = 2
+## 쌓일 수 있는 주먹 수 상한 — 너무 쌓이면 손을 뗀 뒤에도 한참 주먹질을 계속한다
+@export var clash_punch_queue_max: int = 4
+## 거둔 주먹이 머무는 자리(맞대는 자리 clash_hand_target 기준, 앞=+x)
+@export var clash_punch_guard: Vector2 = Vector2(-14, 5)
+## 주먹이 맞대는 자리보다 더 뻗어나가는 거리(px)
+@export var clash_punch_overshoot: float = 5.0
+## 주먹마다 높이가 위아래로 흩어지는 폭(px) — 같은 자리만 치면 기계처럼 보인다
+@export var clash_punch_spread: float = 9.0
+## 주먹을 뻗을 때 몸이 앞으로 들썩이는 양(px) — 팔로만 치면 가벼워 보인다
+@export var clash_punch_body_kick: float = 2.0
+## 주먹 잔상 개수 / 남아 있는 시간(초) / 처음 불투명도.
+## 다 뻗은 순간마다 그 자리에 잔상을 남겨서 주먹이 여러 개로 보이게 한다
+@export var clash_ghost_count: int = 8
+@export var clash_ghost_life: float = 0.14
+@export_range(0.0, 1.0, 0.05) var clash_ghost_alpha: float = 0.55
 
 ## 중력으로 떨어지는 동안(하강 중) 고개를 아래로 숙이는 각도(도). 양수가 아래를 보는 방향(마시기와 같은 규칙)
 @export var fall_head_tilt_deg: float = 18.0
@@ -323,6 +345,22 @@ var _clash_push: float = 0.0
 ## 맞댄 손이 앞뒤로 밀고 밀리는 양(px). **화면(월드) 기준 가로 오프셋**이라 왼쪽을 보는 캐릭터는
 ## 안에서 부호를 뒤집어 쓴다 — 두 캐릭터가 같은 값을 받아야 손이 같은 방향으로 함께 움직인다
 var _clash_shove: float = 0.0
+## --- 주먹 러시 상태 ---
+## 앞으로 나갈 주먹 수 (연타가 쌓아준다)
+var _punch_queue: int = 0
+## 지금 주먹의 진행 0(거둠)~1(다시 거둠). 음수면 쉬는 중
+var _punch_t: float = -1.0
+## 이번 주먹이 오른손인지 — 매번 번갈아 나간다
+var _punch_right: bool = false
+## 이번 주먹의 높이 흩어짐
+var _punch_y: float = 0.0
+## 이번 주먹의 잔상을 이미 남겼는지 (한 주먹에 하나만)
+var _punch_ghosted: bool = false
+## 주먹 잔상 — 처음 쓸 때 만들어두고 계속 재활용한다. owner를 안 줘서 씬에 저장되지 않는다
+var _ghosts: Array[Sprite2D] = []
+var _ghost_life: Array[float] = []
+## 클래시 동안 손에 든 물건(소주병·키보드 등)을 숨겼는지 — 끝나면 다시 보여주려고 기억한다
+var _hold_hidden_by_clash: bool = false
 ## 페달 회전 각도 (계속 커짐)
 var _pedal_phase: float = 0.0
 ## 자전거의 "탄 위치"(씬에 저장된 제자리) — 여기서 뒤로 밀어 슬라이드 연출한다
@@ -514,6 +552,7 @@ func _process(delta: float) -> void:
 
 	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
 	_clash_blend = move_toward(_clash_blend, _clash_target, delta * clash_blend_speed)
+	_tick_clash_punches(delta)
 
 	if on_floor and speed_ratio > 0.05:
 		_phase += delta * step_speed * maxf(speed_ratio, 0.3)
@@ -646,6 +685,15 @@ func _apply_pose(speed_ratio: float) -> void:
 			if _attack_time > 0.0 or _drink_time > 0.0 or _grab_time > 0.0:
 				hide_cast = false
 			_hand_r_hold.visible = not (hide_cast or hide_gun)
+	# 클래시 주먹 러시 중엔 손에 든 물건을 숨긴다 — 잔상은 손만 복사하므로 물건만 덩그러니 따라다니면 어색하다
+	if _hand_r_hold:
+		if _clash_blend > 0.5:
+			if _hand_r_hold.visible:
+				_hand_r_hold.visible = false
+				_hold_hidden_by_clash = true
+		elif _hold_hidden_by_clash:
+			_hand_r_hold.visible = true
+			_hold_hidden_by_clash = false
 
 	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
 	if _squashing:
@@ -840,7 +888,7 @@ func play_squash(amount: Vector2) -> void:
 	_squashing = true
 
 ## 스킬 클래시 대치 자세를 켜고 끈다 (SkillClashPopup이 부른다).
-## 두 손을 앞으로 뻗어 상대 손과 맞대고, 밀당에 따라 몸과 고개가 앞뒤로 기운다
+## 켜져 있는 동안 연타가 들어올 때마다 주먹을 번갈아 내지르고(clash_punch), 밀당에 따라 몸과 고개가 앞뒤로 기운다
 func set_clash(on: bool) -> void:
 	_clash_target = 1.0 if on else 0.0
 	if not on:
@@ -848,6 +896,13 @@ func set_clash(on: bool) -> void:
 		# 바로 0으로 지워서 "제자리 자세로 스르륵"만 남긴다
 		_clash_push = 0.0
 		_clash_shove = 0.0
+		# 주먹질도 멈추고 남은 잔상은 치운다
+		_punch_queue = 0
+		_punch_t = -1.0
+		for g in _ghosts:
+			g.visible = false
+		for i in _ghost_life.size():
+			_ghost_life[i] = 0.0
 
 ## 지금 밀당이 어느 쪽으로 기울었는지 넣어준다. -1이면 완전히 밀리는 중, +1이면 완전히 밀어붙이는 중
 func set_clash_push(push: float) -> void:
@@ -859,7 +914,7 @@ func set_clash_push(push: float) -> void:
 func set_clash_shove(world_dx: float) -> void:
 	_clash_shove = world_dx
 
-## 두 손을 앞으로 모아 상대와 맞대고, 밀당만큼 몸과 고개를 기울인다.
+## 주먹을 번갈아 내지르고, 밀당만큼 몸과 고개를 기울인다.
 ##
 ## **기울기에 facing 부호를 곱하는 이유:** 좌우 반전은 `scale.x = -1`로 하는데,
 ## Node2D 변환이 `회전 * 크기` 순서라 x축은 뒤집혀도 회전 각도는 그대로 남는다.
@@ -870,24 +925,105 @@ func _pose_clash() -> void:
 	if sgn == 0.0:
 		sgn = 1.0
 	# 화면 기준 오프셋을 이 캐릭터의 로컬 기준으로 바꾼다. 리그가 scale.x로 뒤집히므로
-	# 부호를 곱해두면 두 캐릭터의 손이 화면에서 같은 방향으로 함께 움직인다
+	# 부호를 곱해두면 두 캐릭터가 화면에서 같은 방향으로 함께 밀린다(이기는 쪽이 전진한다)
 	var shove := Vector2(_clash_shove * sgn, 0.0)
-	var target: Vector2 = clash_hand_target + shove
-	var gap := Vector2(0.0, clash_hand_gap * 0.5)
+	var impact: Vector2 = clash_hand_target + shove
+	var guard: Vector2 = impact + clash_punch_guard
+	var half_gap := Vector2(0.0, clash_hand_gap * 0.5)
+	# 쉬는 손은 가드 자리에서 기다린다 (오른손은 조금 위, 왼손은 조금 아래·뒤)
+	var r_rest: Vector2 = guard - half_gap
+	var l_rest: Vector2 = guard + half_gap + Vector2(-3.0, 0.0)
+	var hit: Vector2 = impact + Vector2(clash_punch_overshoot, _punch_y)
+	# 뻗는 정도 0(거둠) -> 1(다 뻗음) -> 0. sin 반주기라 빠르게 나갔다 빠르게 돌아온다.
+	# **각 손의 쉬는 자리에서 출발한다** — 가운데 한 점에서 출발하면 주먹이 나가는 순간 손이 톡 튄다
+	var ext: float = sin(clampf(_punch_t, 0.0, 1.0) * PI) if _punch_t >= 0.0 else 0.0
+	var r_target: Vector2 = r_rest.lerp(hit, ext if _punch_right else 0.0)
+	var l_target: Vector2 = l_rest.lerp(hit, 0.0 if _punch_right else ext)
 	if _hand_r:
-		_hand_r.position = _hand_r.position.lerp(target - gap, t)
+		_hand_r.position = _hand_r.position.lerp(r_target, t)
 		_hand_r.rotation = 0.0
 	if _hand_l:
-		_hand_l.position = _hand_l.position.lerp(target + gap, t)
+		_hand_l.position = _hand_l.position.lerp(l_target, t)
 		_hand_l.rotation = 0.0
-	# 손만 움직이면 팔만 따로 노는 것처럼 보인다 — 몸도 절반쯤 같이 밀린다
+	# 주먹을 뻗을 때 몸이 조금 앞으로 들썩인다 — 팔로만 치면 가벼워 보인다.
+	# 이기는 쪽으로 쏠리는 밀림(shove)도 몸이 절반쯤 따라간다
+	var kick: float = clash_punch_body_kick * ext
 	if _body:
-		_body.position.x = _rest_positions[_body].x + shove.x * clash_body_follow * t
+		_body.position.x = _rest_positions[_body].x + (shove.x * clash_body_follow + kick) * t
 	if _head:
-		_head.position.x = _rest_positions[_head].x + shove.x * clash_body_follow * t
+		_head.position.x = _rest_positions[_head].x + (shove.x * clash_body_follow + kick * 0.6) * t
 	rotation = deg_to_rad(clash_lean_deg) * _clash_push * t * sgn
 	if _head:
 		_head.rotation = deg_to_rad(clash_head_deg) * _clash_push * t * sgn
+
+## 연타 한 번에 주먹을 쌓아준다 (SkillClashPopup이 누를 때마다 부른다). 누르는 속도가 곧 주먹질 속도다
+func clash_punch() -> void:
+	_punch_queue = mini(_punch_queue + clash_punches_per_press, clash_punch_queue_max)
+
+## 주먹 러시를 한 프레임 진행한다 — 쌓인 주먹을 하나씩 번갈아 내보내고, 잔상을 흐리게 지운다
+func _tick_clash_punches(delta: float) -> void:
+	if _punch_t >= 0.0:
+		_punch_t += delta / maxf(clash_punch_time, 0.001)
+		# 다 뻗은 순간 그 자리에 잔상을 하나 남긴다 — 주먹이 거둬진 뒤에도 잠깐 남아서 여러 개로 보인다
+		if not _punch_ghosted and _punch_t >= 0.5:
+			_punch_ghosted = true
+			_spawn_ghost(_punch_right)
+		if _punch_t >= 1.0:
+			_punch_t = -1.0
+	if _punch_t < 0.0 and _punch_queue > 0 and _clash_target > 0.0:
+		_punch_queue -= 1
+		_punch_t = 0.0
+		_punch_right = not _punch_right
+		_punch_y = randf_range(-clash_punch_spread, clash_punch_spread)
+		_punch_ghosted = false
+	for i in _ghosts.size():
+		if _ghost_life[i] <= 0.0:
+			continue
+		_ghost_life[i] -= delta
+		var g: Sprite2D = _ghosts[i]
+		if _ghost_life[i] <= 0.0:
+			g.visible = false
+		else:
+			g.modulate.a = clash_ghost_alpha * (_ghost_life[i] / maxf(clash_ghost_life, 0.001))
+
+## 주먹 잔상 하나를 지금 손 자리에 남긴다 — 가장 오래된 잔상 칸을 재활용한다
+func _spawn_ghost(right: bool) -> void:
+	var src: Sprite2D = _hand_r if right else _hand_l
+	if src == null or clash_ghost_count <= 0:
+		return
+	if _ghosts.is_empty():
+		_build_ghosts()
+	var idx: int = 0
+	for i in _ghost_life.size():
+		if _ghost_life[i] < _ghost_life[idx]:
+			idx = i
+	var g: Sprite2D = _ghosts[idx]
+	g.texture = src.texture
+	g.centered = src.centered
+	g.offset = src.offset
+	g.flip_h = src.flip_h
+	g.region_enabled = src.region_enabled
+	g.region_rect = src.region_rect
+	g.z_index = src.z_index
+	g.scale = src.scale
+	g.rotation = src.rotation
+	# 조금씩 어긋나게 남겨야 주먹이 여러 개로 보인다 (같은 자리에 겹치면 하나로 보인다)
+	g.position = src.position + Vector2(randf_range(-5.0, 2.0), randf_range(-4.0, 4.0))
+	g.modulate.a = clash_ghost_alpha
+	g.visible = true
+	_ghost_life[idx] = clash_ghost_life
+
+## 잔상용 스프라이트를 만든다. 오른손 바로 뒤 순서에 끼워서 몸보다는 앞, 머리보다는 뒤에 그려지게 한다.
+## owner를 안 주므로 씬 파일에는 저장되지 않는다
+func _build_ghosts() -> void:
+	var at: int = (_hand_r.get_index() + 1) if _hand_r else get_child_count()
+	for i in clash_ghost_count:
+		var g := Sprite2D.new()
+		g.visible = false
+		add_child(g)
+		move_child(g, mini(at + i, get_child_count() - 1))
+		_ghosts.append(g)
+		_ghost_life.append(0.0)
 
 ## 자전거를 탄다/내린다 (촉법소년 돌진). 자전거 노드가 없는 캐릭터에선 아무 일도 안 한다.
 ## DashSkill이 돌진 시작에 true, 끝에 false로 부른다

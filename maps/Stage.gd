@@ -102,11 +102,6 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 	if is_draw:
 		result_screen.show_draw()
 		return
-	if GameState.game_mode == "story" and p1_won:
-		result_screen.queue_free()
-		GameState.mark_story_cleared(GameState.story_index)
-		get_tree().change_scene_to_file("res://ui/ReformCutscene.tscn")
-		return
 	var winner_name: String = _p1.stats.character_name if p1_won else _p2.stats.character_name
 	result_screen.show_result(p1_won, winner_name)
 

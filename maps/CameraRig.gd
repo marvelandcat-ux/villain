@@ -7,6 +7,15 @@ extends Camera2D
 @export var follow_speed: float = 4.0
 @export var min_y: float = 100.0
 @export var max_y: float = 250.0
+## 켜면 화면 아래로 보이는 흙(지면 아래) 두께를 **배율과 상관없이** ground_margin_px로 고정한다.
+## 끄면(기본) 예전처럼 min_y/max_y만 본다 — 이 스크립트를 쓰는 다른 맵들은 그대로다.
+## 넓은 맵(놀이터)은 캐릭터가 멀어지면 화면을 0.65배까지 물리는데, max_y가 고정값이면
+## 물릴수록 화면 반 높이가 월드에서 길어져서 아래 흙이 100px에서 190px까지 두꺼워진다
+@export var lock_ground_to_bottom: bool = false
+## 지면 윗면 y (lock_ground_to_bottom일 때만 쓴다)
+@export var ground_y: float = 280.0
+## 지면 아래로 화면에 남겨둘 흙 두께(화면 px, lock_ground_to_bottom일 때만 쓴다)
+@export var ground_margin_px: float = 56.0
 ## 벽 바깥이 안 보이도록 카메라 이동 범위를 제한할지. 벽이 없는 링아웃형 맵에서는 꺼도 된다
 @export var clamp_to_walls: bool = true
 ## 한계선을 벽 바깥면에서 더 안쪽으로 당기고 싶을 때 쓰는 여유 폭(px)
@@ -58,10 +67,21 @@ func _process(delta: float) -> void:
 		var a: Vector2 = fighters[0].global_position
 		var b: Vector2 = fighters[1].global_position
 		var mid: Vector2 = (a + b) / 2.0
-		mid.y = clampf(mid.y, min_y, max_y)
+		mid.y = clampf(mid.y, min_y, _lowest_center_y())
 		global_position = global_position.lerp(mid, follow_speed * delta)
 		_update_zoom(a, b, delta)
 	_apply_shake(delta)
+
+## 카메라 중심이 내려갈 수 있는 가장 아래 y.
+## lock_ground_to_bottom이면 "지면이 화면 아래에서 ground_margin_px 위에 오는 위치"를 **지금 배율로** 계산한다 —
+## 배율이 작을수록(멀리 볼수록) 화면 반 높이가 월드에서 길어지므로 중심을 그만큼 더 올려야 한다.
+## max_y는 여전히 넘지 않는다(가까이 당겼을 때 계산값이 max_y보다 아래로 가도 max_y에서 멈춤)
+func _lowest_center_y() -> float:
+	if not lock_ground_to_bottom:
+		return max_y
+	var half_h: float = get_viewport_rect().size.y * 0.5
+	var y: float = ground_y - (half_h - ground_margin_px) / maxf(zoom.y, 0.01)
+	return clampf(y, min_y, max_y)
 
 ## 두 캐릭터가 다 들어오는 배율을 구해서 부드럽게 따라간다.
 ## _min_zoom(벽 밖이 안 보이는 한계 배율)보다 더 물러나지는 않는다 — 더 넓게 보면 벽 너머가 드러난다.
