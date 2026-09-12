@@ -27,6 +27,13 @@ enum Transition { BLACK, CROSSFADE }
 @export var fade_out_time: float = 1.2
 ## 다 끝나면 넘어갈 장면. **비워두면 들어온 채로 멈춰 있는다**(다음 장면이 아직 없는 마지막 장면)
 @export_file("*.tscn") var next_scene: String = ""
+## 다음 장면이 **대전 맵**일 때 붙일 캐릭터(비워두면 대전 준비를 안 한다). Stage가 GameState를 보고 소환하며,
+## `GameState.game_mode == "story"`라 P2는 AI가 조종한다
+@export_file("*.tscn") var battle_p1: String = ""
+@export_file("*.tscn") var battle_p2: String = ""
+## 대전 규칙 — 먼저 몇 라운드를 따면 이기는지, 라운드 제한시간(초, 0이면 무제한)
+@export var battle_rounds: int = 2
+@export var battle_time_limit: int = 0
 ## 대화창(DialogueBox)이나 장소 카드(LocationCard)를 지정하면 그게 끝나야 나간다(hold_time도 지나야 함). 비우면 시간만 본다
 @export var dialogue: NodePath
 ## 다음 장면으로 넘길 때 전환 방식
@@ -157,6 +164,14 @@ func _open_next(crossfade: bool) -> void:
 	if not ResourceLoader.exists(next_scene):
 		push_warning("StoryFadeScene: 다음 장면을 못 찾았다 — %s" % next_scene)
 		return
+	if battle_p1 != "" and battle_p2 != "":
+		# 스토리에서 바로 대전으로 — 맵 씬(Stage)이 GameState를 보고 캐릭터를 소환한다
+		GameState.p1_character_path = battle_p1
+		GameState.p2_character_path = battle_p2
+		GameState.selected_map_path = next_scene
+		GameState.rounds_to_win = battle_rounds
+		GameState.time_limit_seconds = battle_time_limit
+		GameState.reset_round_wins()
 	if crossfade:
 		# 지금 화면을 찍어 두면 다음 장면이 _ready에서 맨 위에 덮고 서서히 투명하게 한다
 		var img: Image = get_viewport().get_texture().get_image()
