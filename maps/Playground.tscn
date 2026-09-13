@@ -17,6 +17,8 @@
 [ext_resource type="Texture2D" uid="uid://dmjrkeqwotk48" path="res://sprite/맵/놀이터/아파트1동.png" id="19"]
 [ext_resource type="Texture2D" uid="uid://b04jlui52c1ii" path="res://sprite/맵/놀이터/아파트2동.png" id="20"]
 [ext_resource type="Texture2D" uid="uid://cnk4dyrfxk770" path="res://sprite/맵/놀이터/아파트3동.png" id="21"]
+[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/놀이터바닥_모래띠제거.png" id="22"]
+[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/잔디.png" id="23"]
 [ext_resource type="Texture2D" path="res://sprite/맵/놀이터/파란시소.png" id="7"]
 
 [sub_resource type="RectangleShape2D" id="Shape_PavilionLeftRoof"]
@@ -58,9 +60,29 @@ z_index = -10
 color = Color(0.63, 0.81, 0.95, 1)
 polygon = PackedVector2Array(-2200, -900, 2200, -900, 2200, 285, -2200, 285)
 
-[node name="Dirt" type="Polygon2D" parent="DecoSky" unique_id=1553961111]
-color = Color(0.42, 0.3, 0.19, 1)
-polygon = PackedVector2Array(-2200, 280, 2200, 280, 2200, 900, -2200, 900)
+[node name="GroundImage" type="Sprite2D" parent="DecoSky"]
+position = Vector2(0, 289.5)
+texture = ExtResource("22")
+
+[node name="GrassTile0" type="Sprite2D" parent="DecoSky"]
+position = Vector2(-917.28, 307.36)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("23")
+
+[node name="GrassTile1" type="Sprite2D" parent="DecoSky"]
+position = Vector2(-305.76, 307.36)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("23")
+
+[node name="GrassTile2" type="Sprite2D" parent="DecoSky"]
+position = Vector2(305.76, 307.36)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("23")
+
+[node name="GrassTile3" type="Sprite2D" parent="DecoSky"]
+position = Vector2(917.28, 307.36)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("23")
 
 [node name="Sun" type="Polygon2D" parent="DecoSky" unique_id=1562151868]
 color = Color(1, 0.93, 0.55, 1)
@@ -218,70 +240,6 @@ polygon = PackedVector2Array(863.8, -436.5, 861.2, -428, 853.9, -420.9, 842.9, -
 [node name="SkyCloud3_2" type="Polygon2D" parent="DecoBack" unique_id=1042588446]
 color = Color(0.99, 0.99, 1, 0.9)
 polygon = PackedVector2Array(888.5, -427.4, 886.4, -421.4, 880.5, -416.4, 871.6, -413, 861.2, -411.8, 850.8, -413, 841.9, -416.4, 836, -421.4, 833.9, -427.4, 836, -433.4, 841.9, -438.4, 850.8, -441.8, 861.2, -443, 871.6, -441.8, 880.5, -438.4, 886.4, -433.4)
-
-[node name="TreeTrunk0" type="Polygon2D" parent="DecoBack" unique_id=1787764633]
-color = Color(0.42, 0.29, 0.18, 1)
-polygon = PackedVector2Array(-943, -150, -925, -150, -925, 285, -943, 285)
-
-[node name="TreeLeaf0_0" type="Polygon2D" parent="DecoBack" unique_id=77906932]
-color = Color(0.29, 0.55, 0.27, 1)
-polygon = PackedVector2Array(-924, -156, -929.9, -134, -946, -117.9, -968, -112, -990, -117.9, -1006.1, -134, -1012, -156, -1006.1, -178, -990, -194.1, -968, -200, -946, -194.1, -929.9, -178)
-
-[node name="TreeLeaf0_1" type="Polygon2D" parent="DecoBack" unique_id=392167138]
-color = Color(0.29, 0.55, 0.27, 1)
-polygon = PackedVector2Array(-884, -196, -890.7, -171, -909, -152.7, -934, -146, -959, -152.7, -977.3, -171, -984, -196, -977.3, -221, -959, -239.3, -934, -246, -909, -239.3, -890.7, -221)
-
-[node name="TreeLeaf0_2" type="Polygon2D" parent="DecoBack" unique_id=489570330]
-color = Color(0.29, 0.55, 0.27, 1)
-polygon = PackedVector2Array(-858, -152, -863.6, -131, -879, -115.6, -900, -110, -921, -115.6, -936.4, -131, -942, -152, -936.4, -173, -921, -188.4, -900, -194, -879, -188.4, -863.6, -173)
-
-[node name="TreeTrunk1" type="Polygon2D" parent="DecoBack" unique_id=2005930427]
-color = Color(0.42, 0.29, 0.18, 1)
-polygon = PackedVector2Array(-877, -150, -859, -150, -859, 285, -877, 285)
-
-[node name="TreeLeaf1_0" type="Polygon2D" parent="DecoBack" unique_id=746501182]
-color = Color(0.34, 0.62, 0.31, 1)
-polygon = PackedVector2Array(-858, -156, -863.9, -134, -880, -117.9, -902, -112, -924, -117.9, -940.1, -134, -946, -156, -940.1, -178, -924, -194.1, -902, -200, -880, -194.1, -863.9, -178)
-
-[node name="TreeLeaf1_1" type="Polygon2D" parent="DecoBack" unique_id=1576487518]
-color = Color(0.34, 0.62, 0.31, 1)
-polygon = PackedVector2Array(-818, -196, -824.7, -171, -843, -152.7, -868, -146, -893, -152.7, -911.3, -171, -918, -196, -911.3, -221, -893, -239.3, -868, -246, -843, -239.3, -824.7, -221)
-
-[node name="TreeLeaf1_2" type="Polygon2D" parent="DecoBack" unique_id=2137359400]
-color = Color(0.34, 0.62, 0.31, 1)
-polygon = PackedVector2Array(-792, -152, -797.6, -131, -813, -115.6, -834, -110, -855, -115.6, -870.4, -131, -876, -152, -870.4, -173, -855, -188.4, -834, -194, -813, -188.4, -797.6, -173)
-
-[node name="TreeTrunk2" type="Polygon2D" parent="DecoBack" unique_id=74660913]
-color = Color(0.42, 0.29, 0.18, 1)
-polygon = PackedVector2Array(871, -150, 889, -150, 889, 285, 871, 285)
-
-[node name="TreeLeaf2_0" type="Polygon2D" parent="DecoBack" unique_id=1269708225]
-color = Color(0.29, 0.55, 0.27, 1)
-polygon = PackedVector2Array(890, -156, 884.1, -134, 868, -117.9, 846, -112, 824, -117.9, 807.9, -134, 802, -156, 807.9, -178, 824, -194.1, 846, -200, 868, -194.1, 884.1, -178)
-
-[node name="TreeLeaf2_1" type="Polygon2D" parent="DecoBack" unique_id=201219452]
-color = Color(0.29, 0.55, 0.27, 1)
-polygon = PackedVector2Array(930, -196, 923.3, -171, 905, -152.7, 880, -146, 855, -152.7, 836.7, -171, 830, -196, 836.7, -221, 855, -239.3, 880, -246, 905, -239.3, 923.3, -221)
-
-[node name="TreeLeaf2_2" type="Polygon2D" parent="DecoBack" unique_id=2011723470]
-color = Color(0.29, 0.55, 0.27, 1)
-polygon = PackedVector2Array(956, -152, 950.4, -131, 935, -115.6, 914, -110, 893, -115.6, 877.6, -131, 872, -152, 877.6, -173, 893, -188.4, 914, -194, 935, -188.4, 950.4, -173)
-
-[node name="TreeTrunk3" type="Polygon2D" parent="DecoBack" unique_id=763531757]
-color = Color(0.42, 0.29, 0.18, 1)
-polygon = PackedVector2Array(931, -150, 949, -150, 949, 285, 931, 285)
-
-[node name="TreeLeaf3_0" type="Polygon2D" parent="DecoBack" unique_id=1796780742]
-color = Color(0.34, 0.62, 0.31, 1)
-polygon = PackedVector2Array(950, -156, 944.1, -134, 928, -117.9, 906, -112, 884, -117.9, 867.9, -134, 862, -156, 867.9, -178, 884, -194.1, 906, -200, 928, -194.1, 944.1, -178)
-
-[node name="TreeLeaf3_1" type="Polygon2D" parent="DecoBack" unique_id=1866229991]
-color = Color(0.34, 0.62, 0.31, 1)
-polygon = PackedVector2Array(990, -196, 983.3, -171, 965, -152.7, 940, -146, 915, -152.7, 896.7, -171, 890, -196, 896.7, -221, 915, -239.3, 940, -246, 965, -239.3, 983.3, -221)
-
-[node name="TreeLeaf3_2" type="Polygon2D" parent="DecoBack" unique_id=1410728834]
-color = Color(0.34, 0.62, 0.31, 1)
-polygon = PackedVector2Array(1016, -152, 1010.4, -131, 995, -115.6, 974, -110, 953, -115.6, 937.6, -131, 932, -152, 937.6, -173, 953, -188.4, 974, -194, 995, -188.4, 1010.4, -173)
 
 [node name="FenceTile0" type="Sprite2D" parent="DecoBack" unique_id=1928741576]
 position = Vector2(-1284.21, 238)
@@ -523,14 +481,6 @@ position = Vector2(0, 300)
 [node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=1420621520]
 shape = SubResource("Shape_ground")
 
-[node name="GroundVisual" type="Polygon2D" parent="Ground" unique_id=588433485]
-color = Color(0.52, 0.38, 0.24, 1)
-polygon = PackedVector2Array(-960, -20, 960, -20, 960, 20, -960, 20)
-
-[node name="GrassVisual" type="Polygon2D" parent="Ground" unique_id=1908527972]
-color = Color(0.45, 0.68, 0.33, 1)
-polygon = PackedVector2Array(-960, -20, 960, -20, 960, -10, -960, -10)
-
 [node name="SandVisual0" type="Sprite2D" parent="Ground" unique_id=1748728143]
 position = Vector2(-220, -11.36)
 scale = Vector2(0.118103, 0.181818)
@@ -544,112 +494,6 @@ scale = Vector2(0.118103, 0.181818)
 texture = ExtResource("15")
 region_enabled = true
 region_rect = Rect2(53, 329, 2066, 165)
-
-[node name="DecoGround" type="Node2D" parent="." unique_id=1734015503]
-
-[node name="Tuft0" type="Polygon2D" parent="DecoGround" unique_id=1760910104]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-930, 280, -925, 262, -920, 280)
-
-[node name="Tuft1" type="Polygon2D" parent="DecoGround" unique_id=1482074073]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-884, 280, -879, 262, -874, 280)
-
-[node name="Tuft2" type="Polygon2D" parent="DecoGround" unique_id=1842895877]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-838, 280, -833, 262, -828, 280)
-
-[node name="Tuft3" type="Polygon2D" parent="DecoGround" unique_id=278061187]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-792, 280, -787, 262, -782, 280)
-
-[node name="Tuft4" type="Polygon2D" parent="DecoGround" unique_id=1729334316]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-746, 280, -741, 262, -736, 280)
-
-[node name="Tuft5" type="Polygon2D" parent="DecoGround" unique_id=2103843739]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-700, 280, -695, 262, -690, 280)
-
-[node name="Tuft6" type="Polygon2D" parent="DecoGround" unique_id=1301433015]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-654, 280, -649, 262, -644, 280)
-
-[node name="Tuft7" type="Polygon2D" parent="DecoGround" unique_id=1853826152]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-608, 280, -603, 262, -598, 280)
-
-[node name="Tuft8" type="Polygon2D" parent="DecoGround" unique_id=1112297034]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-562, 280, -557, 262, -552, 280)
-
-[node name="Tuft9" type="Polygon2D" parent="DecoGround" unique_id=2065924043]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-516, 280, -511, 262, -506, 280)
-
-[node name="Tuft10" type="Polygon2D" parent="DecoGround" unique_id=19533542]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-470, 280, -465, 262, -460, 280)
-
-[node name="Tuft11" type="Polygon2D" parent="DecoGround" unique_id=735589259]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-424, 280, -419, 262, -414, 280)
-
-[node name="Tuft12" type="Polygon2D" parent="DecoGround" unique_id=995257226]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(-378, 280, -373, 262, -368, 280)
-
-[node name="Tuft13" type="Polygon2D" parent="DecoGround" unique_id=1636561468]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(358, 280, 363, 262, 368, 280)
-
-[node name="Tuft14" type="Polygon2D" parent="DecoGround" unique_id=1347086737]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(404, 280, 409, 262, 414, 280)
-
-[node name="Tuft15" type="Polygon2D" parent="DecoGround" unique_id=508264741]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(450, 280, 455, 262, 460, 280)
-
-[node name="Tuft16" type="Polygon2D" parent="DecoGround" unique_id=1151985173]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(496, 280, 501, 262, 506, 280)
-
-[node name="Tuft17" type="Polygon2D" parent="DecoGround" unique_id=1907888810]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(542, 280, 547, 262, 552, 280)
-
-[node name="Tuft18" type="Polygon2D" parent="DecoGround" unique_id=565622138]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(588, 280, 593, 262, 598, 280)
-
-[node name="Tuft19" type="Polygon2D" parent="DecoGround" unique_id=1993312470]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(634, 280, 639, 262, 644, 280)
-
-[node name="Tuft20" type="Polygon2D" parent="DecoGround" unique_id=390657568]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(680, 280, 685, 262, 690, 280)
-
-[node name="Tuft21" type="Polygon2D" parent="DecoGround" unique_id=1628761298]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(726, 280, 731, 262, 736, 280)
-
-[node name="Tuft22" type="Polygon2D" parent="DecoGround" unique_id=92710581]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(772, 280, 777, 262, 782, 280)
-
-[node name="Tuft23" type="Polygon2D" parent="DecoGround" unique_id=1115881208]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(818, 280, 823, 262, 828, 280)
-
-[node name="Tuft24" type="Polygon2D" parent="DecoGround" unique_id=2044852586]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(864, 280, 869, 262, 874, 280)
-
-[node name="Tuft25" type="Polygon2D" parent="DecoGround" unique_id=792722371]
-color = Color(0.36, 0.6, 0.27, 1)
-polygon = PackedVector2Array(910, 280, 915, 262, 920, 280)
 
 [node name="SandPit0" type="Area2D" parent="." unique_id=460419000]
 position = Vector2(-220, 276)

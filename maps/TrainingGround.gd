@@ -183,9 +183,11 @@ func _build_ui() -> void:
 	box.add_child(title)
 
 	var picker := OptionButton.new()
-	for character_name in GameState.CHARACTERS.keys():
+	# 대전 로스터에 없는 캐릭터(경찰관처럼 스토리 전용)도 여기서는 세워볼 수 있어야 한다
+	var roster: Dictionary = GameState.training_characters()
+	for character_name in roster.keys():
 		picker.add_item(character_name)
-	var current: int = GameState.CHARACTERS.values().find(GameState.p1_character_path)
+	var current: int = roster.values().find(GameState.p1_character_path)
 	if current >= 0:
 		picker.select(current)
 	picker.item_selected.connect(_on_character_selected)
@@ -245,7 +247,7 @@ func _add_slider(parent: VBoxContainer, min_value: float, max_value: float, step
 	return slider
 
 func _on_character_selected(index: int) -> void:
-	GameState.p1_character_path = GameState.CHARACTERS.values()[index]
+	GameState.p1_character_path = GameState.training_characters().values()[index]
 	_spawn_character(GameState.p1_character_path)
 
 func _on_gravity_changed(value: float) -> void:

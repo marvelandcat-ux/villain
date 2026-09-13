@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import io, math, os
-os.chdir(r"D:\11번 조동슬\힐끗광산\힐끗산광\villain")
+# 예전엔 만든 사람 PC의 절대경로가 박혀 있어서 다른 자리에서는 아예 안 돌아갔다(2026-09-13 발견).
+# 이 파일이 tools/ 안에 있다는 것만 알면 프로젝트 뿌리를 찾을 수 있다
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def poly(pts):
@@ -55,6 +57,8 @@ SAND = [(-220.0, 110.0), (220.0, 110.0)]
 THICK = 20.0
 # 모래사장 그림(`모래사장 (2).png`) 배치.
 # 알파 bbox는 Rect2(53, 329, 2066, 165) — 가로로 12.5:1이나 되는 아주 납작한 그림이다.
+# (2026-09-13) 빨간 나무틀을 잠깐 뺐다가 사용자가 "오히려 있어야 한다"고 해서 되돌렸다.
+# 틀 없는 판은 `모래사장_틀없음.png`으로 남아 있다 — 다시 뺄 일이 생기면 그걸 쓰면 된다
 SAND_BBOX = (53, 329, 2066, 165)
 ## 모래 윗면이 bbox 위에서 몇 %(0~1) 지점인지. 가운데 세로줄을 훑어 잰 값 —
 ## 이 줄이 지면(y=280)에 오도록 맞춰야 캐릭터가 모래를 밟고 선 것처럼 보이고,
@@ -227,7 +231,9 @@ header = (
     '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/덜촘촘한울타리.png" id="18"]\n'
     '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트1동.png" id="19"]\n'
     '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트2동.png" id="20"]\n'
-    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트3동.png" id="21"]\n\n')
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/아파트3동.png" id="21"]\n'
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/놀이터바닥_모래띠제거.png" id="22"]\n'
+    '[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/잔디.png" id="23"]\n\n')
 
 subs.append('[sub_resource type="RectangleShape2D" id="Shape_ground"]\nsize = Vector2(%g, 40)\n' % (HALF * 2))
 subs.append('[sub_resource type="RectangleShape2D" id="Shape_wall"]\nsize = Vector2(40, 400)\n')
@@ -243,7 +249,19 @@ b = ('[node name="Playground" type="Node2D"]\ntexture_filter = 4\n'
      'script = ExtResource("1")\nstage_width = %g\n\n' % (HALF * 2))
 b += '[node name="DecoSky" type="Node2D" parent="."]\nz_index = -10\n\n'
 b += pnode("Sky", "DecoSky", "0.63, 0.81, 0.95, 1", rect(-2200, -900, 2200, 285))
-b += pnode("Dirt", "DecoSky", "0.42, 0.3, 0.19, 1", rect(-2200, 280, 2200, 900))
+# **갈색 흙 사각형(DecoSky/Dirt)은 2026-09-13에 뺐다(사용자 요청).** 땅 그림이 화면에 보이는 범위
+# (x ±980, 아래로 y 380까지)를 다 덮어서 받쳐줄 필요가 없었고, 에디터에서는 그림 밖으로 ±2200까지
+# 뻗은 큰 네모가 그대로 보여서 거슬렸다
+# 땅 그림(2026-09-13 사용자 제작, 2063x762). 윗면 선이 그림 y=371.5에 가로로 곧게 나 있어서
+# 배율 1로 두고 그 선이 지면(y=280)에 오도록 중심을 289.5에 놓는다.
+# 가로 2063이면 x ±1031까지 덮는데, 카메라가 벽(±980) 밖을 못 보므로 이걸로 충분하다
+b += ('[node name="GroundImage" type="Sprite2D" parent="DecoSky"]\n'
+      'position = Vector2(0, 289.5)\ntexture = ExtResource("22")\n\n')
+# 잔디는 그림 폭(1274)이 무대보다 좁아서 네 장을 이어 붙인다. 좌우 끝 프로파일이 완전히 같아서 이음매가 안 보인다.
+# 배율 0.48 = 잔디 두께 105px -> 50px (없앤 모래띠와 같은 두께). 윗면(그림 y=560)이 지면 y=280에 오도록 y=307.36
+for _i, _x in enumerate((-917.28, -305.76, 305.76, 917.28)):
+    b += ('[node name="GrassTile%d" type="Sprite2D" parent="DecoSky"]\nposition = Vector2(%.2f, 307.36)\n'
+          'scale = Vector2(0.48, 0.48)\ntexture = ExtResource("23")\n\n' % (_i, _x))
 b += pnode("Sun", "DecoSky", "1, 0.93, 0.55, 1", ellipse(760, -560, 44, 44, 10))
 
 # 아파트는 하늘(-10)보다 앞, 구름·나무·울타리(-8)보다 뒤.
@@ -275,11 +293,9 @@ for i, (cx, cy, sc) in enumerate([(-700, -520, 0.9), (-330, -620, 0.7), (430, -5
     for j, (dx, dy, rx, ry) in enumerate([(-46, 6, 46, 26), (0, -10, 52, 34), (48, 4, 42, 24)]):
         b += pnode("SkyCloud%d_%d" % (i, j), "DecoBack", "0.99, 0.99, 1, 0.9",
                    ellipse(cx + dx * sc, cy + dy * sc, rx * sc, ry * sc))
-for i, x in enumerate([-934, -868, 880, 940]):
-    b += pnode("TreeTrunk%d" % i, "DecoBack", "0.42, 0.29, 0.18, 1", rect(x - 9, -150, x + 9, 285))
-    leaf = "0.29, 0.55, 0.27, 1" if i % 2 == 0 else "0.34, 0.62, 0.31, 1"
-    for j, (dx, dy, r) in enumerate([(-34, -6, 44), (0, -46, 50), (34, -2, 42)]):
-        b += pnode("TreeLeaf%d_%d" % (i, j), "DecoBack", leaf, ellipse(x + dx, -150 + dy, r, r, 12))
+# **배경 나무는 2026-09-13에 뺐다(사용자 요청 — "내가 한 게 아니라서").** 도형으로 그린 임시 나무였고
+# 무대 벽(±960) 바깥에 있어서 판정·카메라에는 영향이 없었다. 다시 넣을 땐 도형 말고 그림으로 넣을 것.
+# 원래 코드: x = -934 / -868 / 880 / 940 자리에 기둥(rect) 하나 + 잎 타원 3개씩
 # 초록 철망 울타리. 한 칸(기둥 4칸)씩 잘라 옆으로 이어붙인다
 frx, fry, frw, frh = FENCE_REGION
 fence_scale = FENCE_H / frh
@@ -354,8 +370,10 @@ b += ('[node name="Sprite" parent="SpringRideRight/Visual" index="0"]\n'
 
 b += '[node name="Ground" type="StaticBody2D" parent="."]\nposition = Vector2(0, 300)\n\n'
 b += '[node name="GroundCollision" type="CollisionShape2D" parent="Ground"]\nshape = SubResource("Shape_ground")\n\n'
-b += pnode("GroundVisual", "Ground", "0.52, 0.38, 0.24, 1", rect(-HALF, -20, HALF, 20))
-b += pnode("GrassVisual", "Ground", "0.45, 0.68, 0.33, 1", rect(-HALF, -20, HALF, -10))
+# **옛 단색 지면 폴리곤(GroundVisual 갈색 띠 / GrassVisual 초록 띠)은 2026-09-13에 뺐다(사용자 요청).**
+# `Ground`(StaticBody2D)의 자식이라 z=0이고, DecoSky(z=-10)에 있는 새 땅·잔디 **그림 위를 덮고 있었다** —
+# 그림을 다 넣었는데도 화면에는 계속 밋밋한 갈색 띠가 보인 원인이 이거였다.
+# 지면 판정은 GroundCollision이 따로 하므로 지워도 게임 동작은 그대로다
 for i, (cx, half) in enumerate(SAND):
     # `Ground` 노드가 y=300에 있으므로 지면 윗면은 로컬 y=-20이다.
     # 그림의 "모래 윗면" 줄이 거기 오도록 중심을 역산한다
@@ -366,13 +384,11 @@ for i, (cx, half) in enumerate(SAND):
           'region_enabled = true\nregion_rect = Rect2(%g, %g, %g, %g)\n\n'
           % (i, cx, center_y, SAND_W / sbw, SAND_H / sbh, sbx, sby, sbw, sbh))
 
-b += '[node name="DecoGround" type="Node2D" parent="."]\n\n'
-j = 0
-for x in range(-930, 940, 46):
-    if any(abs(x - cx) < half + 10 for cx, half in SAND) or abs(x) < 120:
-        continue
-    b += pnode("Tuft%d" % j, "DecoGround", "0.36, 0.6, 0.27, 1", poly([(x, 280), (x + 5, 262), (x + 10, 280)]))
-    j += 1
+# **잔디 삼각형(DecoGround/Tuft*)은 2026-09-13에 뺐다(사용자 요청).** 옛 단색 흙 위에 초록 티를 내려고
+# 46px 간격으로 찍어 둔 도형인데, 땅이 그림(놀이터바닥.png)으로 바뀌고 나니 기계적으로 늘어서 보였다.
+# 담고 있던 DecoGround 노드도 비게 돼서 같이 지웠다.
+# 원래 코드: x = -930~930을 46px 간격으로 돌며 모래통(±10 여유)과 가운데(±120)를 뺀 자리에
+# (x,280)-(x+5,262)-(x+10,280) 삼각형을 찍었다
 # 모래통 위 빨간 양동이(Bucket*/BucketRim*)는 2026-09-11 사용자 요청으로 뺐다
 
 for i, (cx, half) in enumerate(SAND):

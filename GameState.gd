@@ -13,6 +13,20 @@ const CHARACTERS := {
 	"헬스장 죽돌이": "res://characters/gymbro/GymBro.tscn",  # 뼈대만 있는 스텁 — 스킬 내용 미구현(오픈 이슈)
 }
 
+## **대전 선택 화면에는 안 띄우고 훈련장에서만 고를 수 있는 캐릭터**(2026-09-13 사용자 결정).
+## 스토리에서만 쓰는데 스킬 3칸이 아직 빈 껍데기라, 대전 로스터에 올리면 고른 사람이 손해를 본다.
+## 스킬을 다 만들면 위 CHARACTERS로 옮기고 여기서 지우면 된다
+const TRAINING_ONLY_CHARACTERS := {
+	"경찰관": "res://characters/police/Police.tscn",
+}
+
+## 훈련장 드롭다운에 쓰는 전체 목록 = 대전 로스터 + 훈련장 전용.
+## Dictionary는 넣은 순서를 지키므로 드롭다운 순서와 인덱스가 항상 같다
+func training_characters() -> Dictionary:
+	var all: Dictionary = CHARACTERS.duplicate()
+	all.merge(TRAINING_ONLY_CHARACTERS)
+	return all
+
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
 ## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
 const CHARACTER_COLORS := {
@@ -23,7 +37,7 @@ const CHARACTER_COLORS := {
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
 	"헬스장 죽돌이": Color(0.55, 0.6, 0.65),
-	"경찰관": Color(0.2, 0.35, 0.7),   # 스토리 주인공(임시) — CHARACTERS 로스터엔 안 넣음
+	"경찰관": Color(0.2, 0.35, 0.7),   # 스토리 주인공 — 대전 로스터엔 없고 훈련장에서만 고른다
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
