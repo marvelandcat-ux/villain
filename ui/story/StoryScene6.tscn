@@ -1,9 +1,17 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://d1xeu47aohx7a"]
 
 [ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://cjvpgx5wvlv2i" path="res://sprite/storymode/잼민이 제압 씬/공원풀숲.png" id="2"]
+[ext_resource type="Script" uid="uid://bb0kwyvde14pf" path="res://ui/story/PopUpLayer.gd" id="3"]
+[ext_resource type="Texture2D" uid="uid://boe7hcfo5ci7m" path="res://sprite/storymode/잼민이 제압 씬/머리내민경찰관_0000_레이어-1.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://xtrb7laikit6" path="res://sprite/storymode/잼민이 제압 씬/풀숲_앞.png" id="5"]
+[ext_resource type="Script" uid="uid://ckfqa48hiybhb" path="res://ui/story/RidingBy.gd" id="6"]
+[ext_resource type="Texture2D" uid="uid://mtrn5pp1el4o" path="res://sprite/storymode/잼민이 제압 씬/잼민이자전거타고있기오른발위버전.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://bekf3o76jjm5v" path="res://sprite/storymode/잼민이 제압 씬/잼민이자전거왼발위버전.png" id="8"]
+[ext_resource type="Script" path="res://ui/story/LeafBurst.gd" id="9"]
+[ext_resource type="Texture2D" uid="uid://gaf0rh5i8i0r" path="res://sprite/storymode/잼민이 제압 씬/흩날릴나뭇잎.png" id="10"]
 
-[node name="StoryScene6" type="Control"]
+[node name="StoryScene6" type="Control" unique_id=623334995]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,9 +20,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
-hold_time = 2.0
+hold_time = 3.0
+next_scene = "res://ui/story/StoryScene7.tscn"
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=727207660]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,7 +33,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[node name="Bg" type="TextureRect" parent="."]
+[node name="Bg" type="TextureRect" parent="." unique_id=173230442]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -36,7 +45,57 @@ texture = ExtResource("2")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Fade" type="ColorRect" parent="."]
+[node name="Head" type="TextureRect" parent="." unique_id=1929121386]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 6
+script = ExtResource("3")
+after = NodePath("../Kid")
+delay = 1.25
+
+[node name="GrassFront" type="TextureRect" parent="." unique_id=1143293290]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Leaves" type="Node2D" parent="."]
+position = Vector2(452, 315)
+script = ExtResource("9")
+leaf_texture = ExtResource("10")
+count = 14
+leaf_scale = 0.075
+spread_min = 60.0
+spread_max = 250.0
+rise_min = 90.0
+rise_max = 200.0
+fall = 280.0
+trigger = NodePath("../Head")
+
+[node name="Kid" type="Sprite2D" parent="." unique_id=993608233]
+position = Vector2(1341, -57.49993)
+scale = Vector2(1.5716147, 1.6806642)
+texture = ExtResource("7")
+script = ExtResource("6")
+frames = Array[Texture2D]([ExtResource("7"), ExtResource("8")])
+frame_time = 0.05
+speed = 4200.0
+delay = 1.0
+
+[node name="Fade" type="ColorRect" parent="." unique_id=1579182158]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
