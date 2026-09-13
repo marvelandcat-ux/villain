@@ -9,6 +9,10 @@ extends Node2D
 @export var stage_width: float = 960.0
 ## 이 값보다 아래로 떨어지면 링아웃으로 즉시 패배 처리 (벽이 없는 링아웃형 맵에서만 의미 있음)
 @export var ring_out_y: float = 900.0
+## 이 맵에서만 쓸 수 있는 전용 스킬(예: 아파트 내리찍기). 지정하면 스폰되는 두 캐릭터 모두에게
+## 자동으로 붙는다(Fighter.map_skill) — 캐릭터 씬 쪽은 전혀 안 건드려도 된다. Skill을 상속한
+## 스크립트가 루트인 씬이어야 하고, 비워두면 그냥 일반 맵(맵 전용 스킬 없음)
+@export var map_skill_scene: PackedScene
 
 var _p1: Fighter
 var _p2: Fighter
@@ -20,6 +24,12 @@ var _round_time_left: float = 0.0
 var _combat_hud: CombatHUD
 
 func _ready() -> void:
+	# 스토리 모드 한정: 캐릭터를 스폰하기도 전에 "주인공 VS 적" 매치업 화면부터 보여준다.
+	# GameState.p1/p2_character_path만으로 채우므로 Fighter가 없어도 상관없다
+	if GameState.game_mode == "story":
+		var versus: VersusIntro = load("res://ui/VersusIntro.tscn").instantiate()
+		add_child(versus)
+		await versus.finished
 	_round_time_left = GameState.time_limit_seconds
 	# 궁극기 컷인 연출 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
@@ -126,6 +136,10 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 		var controller := PlayerController.new()
 		controller.player_index = player_index
 		fighter.add_child(controller)
+	if map_skill_scene:
+		var skill: Skill = map_skill_scene.instantiate()
+		fighter.add_child(skill)
+		fighter.map_skill = skill
 	return fighter
 
 func _freeze_controllers() -> void:

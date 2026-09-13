@@ -10,7 +10,7 @@ const CHARACTERS := {
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
-	"헬스장 죽돌이": "res://characters/gymbro/GymBro.tscn",  # 뼈대만 있는 스텁 — 스킬 내용 미구현(오픈 이슈)
+	"주인공": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로다 — 표시 이름만 바꿈. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
 }
 
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
@@ -22,7 +22,7 @@ const CHARACTER_COLORS := {
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
-	"헬스장 죽돌이": Color(0.55, 0.6, 0.65),
+	"주인공": Color(0.55, 0.6, 0.65),
 	"경찰관": Color(0.2, 0.35, 0.7),   # 스토리 주인공(임시) — CHARACTERS 로스터엔 안 넣음
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
@@ -55,6 +55,7 @@ const MAPS := {
 	"층간소음 아파트": "res://maps/NoisyApartment.tscn",
 	"놀이터": "res://maps/Playground.tscn",
 	"지하철 선로": "res://maps/SubwayTrack.tscn",
+	"공사현장 (내리찍기)": "res://maps/CollapsingApartment.tscn",
 }
 
 var p1_character_path: String = CHARACTERS.values()[0]

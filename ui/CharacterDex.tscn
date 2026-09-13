@@ -1,0 +1,200 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://ui/CharacterDex.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/UI/메뉴사선_임시.png" id="2_slant"]
+[ext_resource type="Script" path="res://ui/MapPreview.gd" id="3_mappreview"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_desc"]
+bg_color = Color(0.16, 0.15, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.48, 0.55, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pip_empty"]
+bg_color = Color(0.25, 0.25, 0.28, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[node name="CharacterDex" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.09, 0.09, 0.11, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "캐릭터 도감"
+horizontal_alignment = 1
+
+[node name="TabRow" type="HBoxContainer" parent="Center/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="CharacterTabButton" type="Button" parent="Center/VBox/TabRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+disabled = true
+text = "캐릭터"
+
+[node name="MapTabButton" type="Button" parent="Center/VBox/TabRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "맵"
+
+[node name="Content" type="HBoxContainer" parent="Center/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="Left" type="VBoxContainer" parent="Center/VBox/Content"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NameBanner" type="Control" parent="Center/VBox/Content/Left"]
+custom_minimum_size = Vector2(360, 60)
+layout_mode = 2
+
+[node name="Shape" type="TextureRect" parent="Center/VBox/Content/Left/NameBanner"]
+layout_mode = 0
+offset_right = 360.0
+offset_bottom = 60.0
+mouse_filter = 2
+texture = ExtResource("2_slant")
+
+[node name="Text" type="Label" parent="Center/VBox/Content/Left/NameBanner"]
+layout_mode = 0
+offset_left = 56.0
+offset_right = 340.0
+offset_bottom = 60.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 26
+theme_override_constants/outline_size = 5
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+text = "?"
+vertical_alignment = 1
+
+[node name="StatsGrid" type="GridContainer" parent="Center/VBox/Content/Left"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="AttackLabel" type="Label" parent="Center/VBox/Content/Left/StatsGrid"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "공격"
+
+[node name="AttackPips" type="HBoxContainer" parent="Center/VBox/Content/Left/StatsGrid"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HpLabel" type="Label" parent="Center/VBox/Content/Left/StatsGrid"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "체력"
+
+[node name="HpPips" type="HBoxContainer" parent="Center/VBox/Content/Left/StatsGrid"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SpeedLabel" type="Label" parent="Center/VBox/Content/Left/StatsGrid"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "속도"
+
+[node name="SpeedPips" type="HBoxContainer" parent="Center/VBox/Content/Left/StatsGrid"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="DescriptionBox" type="PanelContainer" parent="Center/VBox/Content/Left"]
+custom_minimum_size = Vector2(360, 110)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_desc")
+
+[node name="Margin" type="MarginContainer" parent="Center/VBox/Content/Left/DescriptionBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="DescriptionLabel" type="Label" parent="Center/VBox/Content/Left/DescriptionBox/Margin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.83, 0.88, 1)
+theme_override_font_sizes/font_size = 15
+text = "상세 설명 준비 중"
+autowrap_mode = 3
+
+[node name="PreviewBox" type="ColorRect" parent="Center/VBox/Content"]
+custom_minimum_size = Vector2(340, 300)
+layout_mode = 2
+color = Color(0.35, 0.35, 0.4, 1)
+
+[node name="PreviewImage" type="TextureRect" parent="Center/VBox/Content/PreviewBox"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand_mode = 1
+stretch_mode = 6
+
+[node name="PreviewLabel" type="Label" parent="Center/VBox/Content/PreviewBox"]
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -48.0
+theme_override_font_sizes/font_size = 32
+theme_override_constants/outline_size = 6
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+text = "?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PreviewMap" type="Control" parent="Center/VBox/Content/PreviewBox"]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("3_mappreview")
+
+[node name="Grid" type="GridContainer" parent="Center/VBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 7
+
+[node name="BackButton" type="Button" parent="Center/VBox"]
+layout_mode = 2
+text = "메인 메뉴로 (ESC)"
+
+[connection signal="pressed" from="Center/VBox/TabRow/CharacterTabButton" to="." method="_on_character_tab_pressed"]
+[connection signal="pressed" from="Center/VBox/TabRow/MapTabButton" to="." method="_on_map_tab_pressed"]
+[connection signal="pressed" from="Center/VBox/BackButton" to="." method="_on_back_pressed"]

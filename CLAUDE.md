@@ -236,7 +236,7 @@
     - 쿨타임 표시 HUD는 아직 없다 — `Fighter.guard_cooldown_ratio()`(0~1)를 쓰면 된다
   - **플랫폼 아래로 내려가기(구현 완료, 2026-09-03):** 아래키를 누른 채 점프하면 `PlayerController._drop_through_platform()` → `Fighter.drop_through_platform()`이 발밑 발판을 통과해 아래층으로 내려간다. 통과 가능한 발판 위가 아니면(진짜 지면이거나 공중) 그냥 평범한 점프가 나간다 — 입력이 씹힌 것처럼 느껴지지 않게
     - **충돌 레이어를 통째로 끄지 않고 `add_collision_exception_with(발판)`으로 그 발판 하나만 예외 처리한다.** 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 통과해서 맵 밖으로 떨어진다. 예외는 `Fighter.DROP_THROUGH_DURATION`(0.35초) 뒤 자식 Timer(`_after`)로 되돌린다
-    - 발밑 발판은 직전 `move_and_slide()`가 남긴 충돌 목록(`get_slide_collision`)에서 **법선이 위를 향하는 면**만 골라, 그 도형에 `is_shape_owner_one_way_collision_enabled()`가 켜져 있는지로 판별한다(`Fighter._get_one_way_floor()`)
+    - 발밑 발판은 직전 `move_and_slide()`가 남긴 충돌 목록(`get_slide_collision`)에서 **법선이 위를 향하는 면**만 골라, 그 도형에 `is_shape_owner_one_way_collision_enabled()`가 켜져 있는지로 판별한다(`Fighter.get_one_way_floor()` — 원래 `_get_one_way_floor`였는데, 아파트 맵의 `GroundPoundSkill`처럼 "지금 밟은 발판이 뭔지" 알아야 하는 외부 스킬이 생겨서 공개 메서드로 바꿨다)
 
 ## 캐릭터 몸(스프라이트 조립)
 
@@ -1024,6 +1024,71 @@
 - **`Deco`로 시작하는 노드 이름은 "맵 선택 미리보기에서 빼라"는 뜻이다.** `ui/MapPreview.gd`는 맵 씬의 `Polygon2D`와 `Sprite2D`를 전부 모아 바운딩 박스에 맞춰 축소해 그리는데, 배경 벽·선로처럼 화면 밖까지 크게 깔아둔 장식(`SubwayPlatform`의 `DecoBackground`는 1800x860)이 섞이면 실제 스테이지가 미리보기 안에서 점처럼 작아진다. 그래서 `Camera2D`/`CanvasLayer`와 함께 이름이 `Deco`로 시작하는 가지를 통째로 건너뛴다 — 새 맵에 배경 장식을 넣을 때도 이 이름 규칙을 지킬 것
   - `MapPreview`는 원래 `Polygon2D`만 그렸는데, 지하철 승강장의 벤치가 폴리곤에서 스프라이트로 바뀌면서 미리보기에 아무것도 안 남는 문제가 생겨 **`Sprite2D`도 같이 그리도록 확장했다**(`_sprite_entry()`가 `region_enabled`/`centered`/`scale`을 반영해 사각형을 계산하고 `draw_texture_rect_region()`으로 그린다). 앞으로 다른 맵도 스프라이트로 갈아끼울 때 미리보기가 저절로 따라온다
 
+### 맵 전용 스킬(`Stage.map_skill_scene` / `Fighter.map_skill`) — 캐릭터 씬을 안 건드리고 맵에만 스킬을 붙이는 인프라
+
+`아파트 내리찍기`를 만들면서 추가한 범용 훅. 캐릭터 전용 스킬(`skill_1`/`skill_2`/`skill_ultimate`/`basic_attack`)은
+캐릭터 씬의 자식 노드 이름으로 자동 연결되지만, "이 맵에서만 쓸 수 있는 스킬"은 어느 캐릭터를 골라도 붙어야 하므로
+반대로 **맵이 스폰 시점에 심어준다**.
+
+- `Stage.gd`에 `@export var map_skill_scene: PackedScene`을 추가했다. 지정하면 `_spawn_fighter()`가 두 캐릭터
+  모두에게 그 씬을 인스턴스해 자식으로 붙이고 `fighter.map_skill`에 저장한다. 비워두면(기본값) 아무 일도 없다 —
+  기존 맵은 전부 그대로 동작한다
+- `Fighter.use_map_skill()`은 `use_skill_1()`과 거의 같은 모양(공포·잡힘·busy·쿨타임 확인 후 `map_skill.use(self)`)이지만
+  **스킬 클래시(연타 미니게임)를 안 탄다** — 상대 캐릭터와 겹친 게 아니라 맵 자체와의 상호작용이라 "동시에 썼다"는
+  개념이 맞지 않는다
+- **입력은 새 키를 안 만들고 "아래 키 단독"을 재활용했다.** `p1_down`/`p2_down`은 원래 `점프`와 조합될 때만
+  (`플랫폼 아래로 내려가기`) 의미가 있고, 지상에서든 공중에서든 **혼자 누르면 원래 아무 효과가 없었다** — 그래서
+  `PlayerController._physics_process()`에 "공중에서 아래 키만 단독으로 누르면 `use_map_skill()`"을 추가해도
+  기존 조작을 하나도 깨지 않는다. `map_skill`이 없는 맵에서는 `use_map_skill()`이 그냥 조용히 리턴한다
+- `Fighter._get_one_way_floor()`를 `get_one_way_floor()`로 공개 메서드로 바꿨다 — `GroundPoundSkill`처럼
+  Fighter 바깥의 스킬도 "지금 밟고 있는 원웨이 발판이 뭔지"를 알아야 해서다
+
+### `skills/GroundPoundSkill.gd` + `maps/BreakablePlatform.gd` — 내리찍기와 부서지는 발판
+
+`GroundPoundSkill`(map_skill로 붙는 스킬)은 공중에서 쓰면 그 자리에서 수직으로 빠르게 내리꽂히다가(`DashSkill`과
+같은 `movement_override` 방식으로 좌우 이동을 잠근다), 발밑 바닥에 닿는 순간 원형 범위 데미지를 주고
+`get_one_way_floor()`로 알아낸 발판이 `break_platform()` 메서드를 가지고 있으면(즉 `BreakablePlatform`이면)
+그 발판을 부순다. 진짜 지면(Ground)은 그 메서드가 없어서 안 부서진다 — 별도 분기 없이 `has_method` 덕 타이핑으로
+자연스럽게 갈린다.
+
+- 지상에서 쓰면(눌렸는데 이미 착지해 있는 등 예외적인 경우) 쿨타임을 그 자리에서 0으로 되돌려 낭비되지 않게 한다
+- `BreakablePlatform`은 평소엔 보통 원웨이 발판과 똑같이 서 있다가, `break_platform()`이 호출되면 시각을 숨기고
+  충돌을 끈 뒤 **자식 `RespawnTimer`**로 `respawn_time`(기본 4초) 뒤 되돌아온다. `get_tree().create_timer()`를
+  안 쓴 이유는 CLAUDE.md 위쪽에 정리된 함정과 같다 — 라운드 리로드로 이 노드가 먼저 사라지면 자식 Timer는 같이
+  사라져 콜백이 아예 안 불리지만, `get_tree()` 타이머는 SceneTree에 남아 해제된 노드를 건드리려다 에러가 난다
+- 부서지는 순간 파편은 `DashSkill`이 벽 충돌 이펙트로 쓰는 `CrashBurst`를 색만 바꿔 그대로 재사용한다(새 이펙트를
+  안 만들었다)
+
+### `maps/CollapsingApartment.tscn` — 공사현장 (세로로 긴 맵, 2026-09-10에 "무너지는 아파트"에서 이름 변경 — 파일·클래스 이름은 그대로 `CollapsingApartment`다)
+
+바닥 하나(진짜 지면, 안 부서짐) 위로 `BreakablePlatform` 4층이 170px 간격(발판 윗면 기준)으로 쌓인
+세로로 긴 맵. `map_skill_scene`에 `GroundPoundSkill.tscn`이 물려 있어서 양쪽 다 내리찍기를 쓸 수 있다.
+
+- **가로 폭 1.5배 확장 + 층마다 좌우 교차 배치(2026-09-10).** 벽 사이 폭을 800→**1200px**로 넓히고,
+  발판 폭도 600→**500px**로 줄여서 층마다 왼쪽(x=-250)·오른쪽(x=250)에 번갈아 붙였다(`Floor1`/`Floor3`은
+  왼쪽, `Floor2`/`Floor4`는 오른쪽). 발판 폭이 250(반폭)이라 안쪽 끝이 정확히 x=0에서 맞물리고,
+  바깥쪽 끝은 벽(±600)과 100px 여유를 두고 떨어진다 — 한 층에서 그냥 위로만 뛰면 다음 층에 못 닿고,
+  **반대쪽으로 이동하며 대각선으로 뛰어야** 다음 층에 올라간다. 벽 폭을 넓히면서 카메라 줌 여유도
+  같이 좋아졌다(아래 항목 참고)
+
+- **층 간격 170px은 "한 번 점프로는 못 닿고 이단 점프로만 닿게" 계산으로 잡은 값이다(2026-09-10 조정).**
+  `Fighter`의 현재 기본 물리(중력 1150, 지상 점프력 -430, 공중 점프력 -510)로 연속 물리 공식(`v²/2g`)을 풀면
+  지상 점프 한 번 최고 높이는 약 **80px**, 첫 점프 정점에서 이단 점프까지 이어 밟으면 이론상 최대 약 **193px**
+  (80 + 공중 점프분 113)이다 — 처음 잡았던 260px는 이 최대치보다 커서 **이단 점프로도 안 닿는 값**이었다.
+  170px는 이론 최대(193px)보다 낮춰서 완벽한 타이밍이 아니어도 여유 있게 닿게 하고, 지상 점프(80px)로는
+  분명히 못 넘게 잡은 값이다. **이 계산은 연속 물리 공식이라 Godot의 이산 스텝 물리와 살짝 다를 수 있으니**,
+  실제 느낌이 다르면 훈련장에서 재검증할 것 — `Fighter.DEFAULT_JUMP_VELOCITY`/`DEFAULT_AIR_JUMP_VELOCITY`가
+  또 바뀌면 이 간격도 같이 다시 계산해야 한다
+- **카메라 줌 한계는 폭을 넓히면서 많이 완화됐다.** `CameraRig._apply_wall_limits()`는 "벽 사이 폭이 화면에
+  딱 맞는 배율"을 가장 많이 물러날 수 있는 하한(`_min_zoom`)으로 강제하는데, 벽 사이가 800px였을 때는
+  `_min_zoom ≈ 1280/800 = 1.6`(세로로 보이는 범위 약 450px)로 빡빡했지만, 1200px로 넓힌 지금은
+  `_min_zoom ≈ 1280/1200 ≈ 1.07`(세로로 보이는 범위 약 **670px**)까지 물러날 수 있다 — 거의 일반 맵 수준.
+  그래도 두 캐릭터가 그보다 더 멀리(서로 다른 층 끝과 끝) 떨어지면 한쪽이 화면 밖으로 나갈 수 있는 구조적
+  한계 자체는 남아 있다. 실제 플레이 느낌을 보고 `stage_width`나 `CameraRig`의 `min_y`/`max_y`/`extra_zoom`을
+  조정할 것
+- 화면 하단 `HintLayer/HintLabel`에 조작 힌트를 고정 텍스트로 띄워둔다 — 이 맵에만 있는 처음 보는 조작이라
+  발견성을 위해 넣었다. 다른 힌트들처럼 페이드 처리는 안 했다(단순하게 유지)
+
 ## GDScript 코드 스타일
 
 ### 명명 규칙
@@ -1052,7 +1117,7 @@
 ```
 res://
   GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
-  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/ — 6종)
+  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/, gymbro/ — 로컬 대전 로스터 7종) + police/(스토리 모드 주인공, 로스터엔 안 나옴)
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
   combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
   controllers/    # PlayerController / AIController

@@ -54,6 +54,7 @@ extends Control
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
+@onready var _dex_button: Button = $DexButton
 ## 화면 전체를 덮는 검은 판 — 켜질 때 이게 걷히면서 화면이 열린다
 @onready var _screen_fade: ColorRect = $Fade
 ## 사선 메뉴 항목들 (트리 순서 = 위에서 아래 순서)
@@ -84,6 +85,7 @@ func _ready() -> void:
 		_place_illustration()
 	_collect_illustrations()
 	_build_menu()
+	_dex_button.pressed.connect(_on_dex_pressed)
 	_screen_fade.color.a = 1.0
 	_confirm.confirmed.connect(_on_confirmed)
 	_confirm.cancelled.connect(func(): _pending = Callable())
@@ -317,6 +319,10 @@ func _on_how_to_pressed() -> void:
 
 func _on_settings_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/Settings.tscn")
+
+## 도감은 되돌릴 게 없어서(읽기 전용) 확인 창 없이 바로 들어간다
+func _on_dex_pressed() -> void:
+	get_tree().change_scene_to_file("res://ui/CharacterDex.tscn")
 
 ## ESC로 뒤로 나갈 때도 모드 진입과 똑같이 한 번 물어본다 (실수로 튕겨나가지 않게)
 func _go_title() -> void:

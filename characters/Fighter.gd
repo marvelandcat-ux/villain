@@ -97,6 +97,11 @@ var skill_2: Skill
 var skill_ultimate: Skill
 var basic_attack: Skill
 
+## 캐릭터 씬이 아니라 "맵"이 스폰 시점에 심어주는 전용 스킬(예: 아파트 내리찍기).
+## Stage.gd가 map_skill_scene을 지정한 맵에서만 채워지고, 그 외 맵에서는 null이라
+## 컨트롤러가 그냥 아무 일도 하지 않는다
+var map_skill: Skill = null
+
 ## 돌진처럼 이동을 잠깐 가로채는 스킬이 자신을 등록해두는 슬롯.
 ## get_move_velocity_x()와 after_physics(fighter, delta)를 구현한 오브젝트여야 한다.
 ## 타입을 지정하지 않아야 서로 다른 스킬 클래스를 덕 타이핑으로 담을 수 있다
@@ -553,7 +558,7 @@ func jump() -> void:
 ## 충돌 레이어를 통째로 끄지 않고 add_collision_exception_with()로 그 발판 하나만 예외 처리하는 이유:
 ## 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 같이 통과해버려서 맵 밖으로 떨어진다
 func drop_through_platform() -> bool:
-	var platform: PhysicsBody2D = _get_one_way_floor()
+	var platform: PhysicsBody2D = get_one_way_floor()
 	if platform == null:
 		return false
 	add_collision_exception_with(platform)
@@ -570,8 +575,10 @@ func drop_through_platform() -> bool:
 
 ## 발밑에 닿아 있는 바닥 중 "통과 가능한 발판"이 있으면 그 StaticBody2D를 돌려준다.
 ## 직전 move_and_slide()가 기록해둔 충돌 목록에서 위를 향한 면만 골라 보고,
-## 그 면이 속한 충돌 도형에 one_way_collision이 켜져 있는지 확인한다
-func _get_one_way_floor() -> PhysicsBody2D:
+## 그 면이 속한 충돌 도형에 one_way_collision이 켜져 있는지 확인한다.
+## drop_through_platform() 말고도 GroundPoundSkill처럼 "지금 밟은 발판이 뭔지" 알아야 하는
+## 외부 스킬이 있어서 공개 메서드로 뒀다
+func get_one_way_floor() -> PhysicsBody2D:
 	if not is_on_floor():
 		return null
 	for i in range(get_slide_collision_count()):
@@ -672,6 +679,13 @@ func _play_visual_attack() -> void:
 	var visual := get_node_or_null("Visual")
 	if visual and visual.has_method("play_attack_swing"):
 		visual.play_attack_swing()
+
+## 맵 전용 스킬(map_skill)을 쓴다. 캐릭터 스킬과 달리 스킬 클래시(연타 미니게임)를 타지 않는다 —
+## 상대 캐릭터가 아니라 맵 자체와의 상호작용이라 "동시에 썼다"는 개념이 맞지 않는다
+func use_map_skill() -> void:
+	if map_skill == null or is_feared or is_grabbed or is_busy() or not map_skill.can_use():
+		return
+	map_skill.use(self)
 
 ## 1대1 전제로 자기 자신이 아닌 다른 Fighter를 찾는다
 func find_opponent() -> Fighter:
