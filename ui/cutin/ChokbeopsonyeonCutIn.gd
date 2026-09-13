@@ -3,23 +3,27 @@ extends Node2D
 
 ## 촉법소년(잼민이) 궁극기 "엄마가 부르면 집 가서 밥 먹고 옴" 컷인. 전체 2.4초.
 ##
-## 다른 캐릭터 컷인은 파츠를 코드로 흔들지만, 이건 러프 그림 3장을 순서대로 넘기는 플립북이다.
-## 배경이 세 장 다 같은 놀이터라 넘어가도 이어져 보이고, 그 위에 움직이는 것만 따로 얹는다.
-##  - 1번(0~26%): 놀이터에서 비비탄을 세 발 쏜다. 총구에서 총알(Pellet0~2)이 실제로 날아가고
-##                한 발마다 화면이 반동으로 밀린다
-##  - 2번(26~64%): 집에서 엄마가 부르는 대사(ShoutText)와 빨간 말줄(ShoutMark)이 같이 툭 떠오르고,
-##                 곧바로 머리 위로 느낌표(Exclaim)가 튀어나온다. 느낌표가 뜨는 순간 화면이 한 번 확 당겨졌다 돌아온다
-##  - 3번(64~100%): 총을 내던지고 집 쪽(왼쪽)으로 달려간다. 여기만 통짜 그림이 아니라
-##                  **캐릭터 없는 배경(3번배경) + 인게임 리그(Runner = ChokbeopsonyeonRig)** 로 나뉘어 있다.
-##                  리그가 그대로 들어가 있으므로 팔·다리가 BodyRig의 걷기 코드로 실제로 움직이고,
-##                  잼민이가 화면을 가로질러 달려나가며 지나간 자리마다 먼지가 남는다
+## (2026-09-13 개편) 예전엔 러프 그림 3장을 넘기는 플립북이었는데, 세 장이 따로 그려져서
+## 넘어갈 때마다 뒤 건물 크기·색이 달라 보였다(사용자 지적). 그래서 **배경은 1번 그림(총 쏘는 장면)의
+## 배경 한 장으로 고정**하고, 잼민이는 **인게임과 같은 파츠 리그(Runner = ChokbeopsonyeonRig)**로
+## 세 장면 모두를 연기하게 바꿨다. 움직임이 스프라이트 조합으로 만들어지니 배경을 갈아 끼울 이유가 없다.
+##  - 배경(Bg) = `sprite/축법소년/궁극기컷인/1번배경.png` — 1번 그림에서 잼민이·장난감 총·검은 낙서와
+##    그 위에 겹쳐 그려져 있던 시소를 지워 만든 그림이다
+##  - 1단계(0~26%): 그 자리에 서서 오른쪽으로 비비탄을 세 발 쏜다. 총구에서 총알(Pellet0~2)이 날아가고
+##                  한 발마다 리그가 반동을 먹고 화면도 밀린다
+##  - 2단계(26~64%): 엄마 대사(ShoutText)와 빨간 말줄(ShoutMark)이 툭 떠오르고, 곧바로 머리 위로
+##                   느낌표(Exclaim)가 튀어나온다. 그 순간 잼민이가 화들짝 뛰고 화면이 확 당겨졌다 돌아온다
+##  - 3단계(64~100%): 총을 놓고 집 쪽(왼쪽)으로 달려간다. 리그를 좌우로 뒤집고 걷기 동작을 켜서
+##                    팔·다리가 실제로 움직이며, 지나간 자리마다 먼지가 남는다
 ##
-## 대사와 느낌표는 원래 2번 그림에 손글씨로 같이 그려져 있던 것이다. 대사는 그림에서 지우고
-## Label(ShoutText)로 바꿔서 문구를 바로 고칠 수 있게 했고, 느낌표만 그림째 떼어내 스프라이트로 남겼다
-## (sprite/축법소년/궁극기컷인/느낌표.png). "대사가 먼저 뜨고 느낌표가 나중에 뜨는" 순서를 만들려는 분리다.
+## 엄마 대사는 원래 그림에 손글씨로 있던 것을 Label로 옮긴 것이라 문구를 바로 고칠 수 있다.
+## 느낌표만 그림째 떼어내 스프라이트로 남겼다(sprite/축법소년/궁극기컷인/느낌표.png).
 ##
 ## 길이는 cutin_duration으로 자기가 정한다 — UltimateCutIn이 이 값을 보고 컷인 표시 시간을 맞춰준다.
-## 에디터에서 그냥 열면 1번 프레임만 보이고 가만히 있는다.
+## 에디터에서 그냥 열면 1단계 자세로 가만히 서 있는다.
+##
+## 잼민이가 서는 자리·크기는 Runner 노드의 position/scale로 맞춰 놨다(원래 그림의 잼민이 자리).
+## 배경과 어긋나 보이면 인스펙터에서 Runner의 position·scale만 조금 만지면 된다.
 
 ## 이 컷인이 필요로 하는 표시 시간(초). UltimateCutIn이 기본 hold_time 대신 이 값을 쓴다
 @export var cutin_duration: float = 2.4
@@ -27,16 +31,18 @@ extends Node2D
 @export var ramp_time: float = 2.4
 
 @export_group("장면 전환")
-## 2번(엄마가 부름)으로 넘어가는 시점 (전체 길이 대비 비율)
-@export_range(0.0, 1.0, 0.01) var frame2_at: float = 0.26
-## 3번(집으로 달려감)으로 넘어가는 시점 (전체 길이 대비 비율)
-@export_range(0.0, 1.0, 0.01) var frame3_at: float = 0.64
+## 2단계(엄마가 부름)로 넘어가는 시점 (전체 길이 대비 비율)
+@export_range(0.0, 1.0, 0.01) var phase2_at: float = 0.26
+## 3단계(집으로 달려감)로 넘어가는 시점 (전체 길이 대비 비율)
+@export_range(0.0, 1.0, 0.01) var phase3_at: float = 0.64
 
-@export_group("1번 - 비비탄 발사")
-## 1번 장면 동안 몇 발 쏘는지 (총알 스프라이트 수만큼만 실제로 날아간다)
+@export_group("1단계 - 비비탄 발사")
+## 1단계 동안 몇 발 쏘는지 (총알 스프라이트 수만큼만 실제로 날아간다)
 @export var shot_count: int = 3
-## 총구 위치 (컷인 한가운데가 원점). 그림의 총구 픽셀(1440, 642)을 배율 0.82로 옮긴 값
-@export var muzzle: Vector2 = Vector2(517.0, 151.0)
+## 총구 위치를 못 찾았을 때 쓸 값 (컷인 한가운데가 원점)
+@export var muzzle: Vector2 = Vector2(330.0, 170.0)
+## 리그의 총 노드에서 총구 끝까지의 거리(px). 총이 오른쪽을 향할 때 기준
+@export var muzzle_offset: Vector2 = Vector2(78.0, -6.0)
 ## 총알이 날아가는 속도(px/초)
 @export var pellet_speed: float = 560.0
 ## 날아가면서 위로 살짝 뜨는 정도(px/초). 음수가 위쪽
@@ -47,17 +53,16 @@ extends Node2D
 @export var shot_kick: float = 9.0
 ## 반동이 잦아드는 속도. 클수록 톡톡 끊어져 보인다
 @export var shot_decay: float = 15.0
-## 세 발을 1번 장면의 앞쪽 몇 %까지 안에서 쏠지. 1에 가까울수록 마지막 발이 장면 끝에 붙는다 —
+## 세 발을 1단계의 앞쪽 몇 %까지 안에서 쏠지. 1에 가까울수록 마지막 발이 장면 끝에 붙는다 —
 ## 너무 늦게 쏘면 총알이 화면 밖으로 나가기 전에 장면이 넘어가서 총알이 공중에서 사라져 보인다
 @export_range(0.1, 1.0, 0.05) var shot_spread: float = 0.8
 
-@export_group("2번 - 엄마 대사 / 느낌표")
+@export_group("2단계 - 엄마 대사 / 느낌표")
 ## 대사가 툭 떠오르는 데 걸리는 시간(초)
 @export var shout_pop: float = 0.18
 ## 대사가 떠오를 때 작게 시작하는 비율 (0.75면 75% 크기에서 시작해 제 크기로 커진다)
 @export var shout_from: float = 0.75
-## 느낌표가 튀어나오는 시점 (전체 길이 대비 비율). frame2_at보다 뒤여야 한다.
-## 0.31이면 대사가 뜨고 0.12초 뒤 — 대사가 다 떠오르는 순간 바로 이어서 튀어나온다
+## 느낌표가 튀어나오는 시점 (전체 길이 대비 비율). phase2_at보다 뒤여야 한다
 @export_range(0.0, 1.0, 0.01) var exclaim_at: float = 0.31
 ## 느낌표가 다 튀어나오는 데 걸리는 시간(초)
 @export var exclaim_pop: float = 0.22
@@ -69,8 +74,18 @@ extends Node2D
 @export var notice_punch: float = 0.05
 ## 당겨진 화면이 제자리로 돌아오는 데 걸리는 시간(초)
 @export var notice_settle: float = 0.35
+## 느낌표가 뜨는 순간 잼민이가 화들짝 뛰어오르는 높이(px)
+@export var startle_hop: float = 26.0
+## 놀라서 뒤로 젖히는 각도(도)
+@export var startle_lean_deg: float = -8.0
+## **엄마가 "밥 먹어!!" 하는 동안(2단계)만** 갈아 끼울 머리 그림. 비워두면 표정이 안 바뀐다.
+## 리그의 액션 표정(달리는 얼굴)과 별개다 — 그건 3단계에서 달릴 때 쓴다
+@export var shout_head_texture: Texture2D
+## 그 머리 그림의 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다 —
+## 세 머리 그림이 다 1536x1024 같은 캔버스라 보통 그대로 두면 맞는다
+@export var shout_head_scale: Vector2 = Vector2.ZERO
 
-@export_group("3번 - 달려감")
+@export_group("3단계 - 달려감")
 ## 잼민이가 왼쪽으로 달려가는 거리(px). 1100이면 끝나기 직전에 화면 왼쪽으로 완전히 사라진다
 @export var run_distance: float = 1100.0
 ## 달리기 가속 (1이면 등속, 클수록 처음엔 느리다가 확 튀어나간다)
@@ -80,7 +95,7 @@ extends Node2D
 @export var run_bob: float = 5.0
 ## 달려가는 동안 몇 번 튀는지
 @export var run_bob_cycles: float = 7.0
-## 앞으로 기울어진 각도(도). 리그를 scale.x 음수로 뒤집어 놨기 때문에 화면에서는 좌우가 반대로 보인다 —
+## 앞으로 기울어진 각도(도). 리그를 scale.x 음수로 뒤집기 때문에 화면에서는 좌우가 반대로 보인다 —
 ## 양수가 진행 방향(왼쪽)으로 숙이는 방향이다. 기울기가 반대로 보이면 부호만 뒤집으면 된다
 @export var run_lean_deg: float = 7.0
 ## 튈 때마다 기울기가 흔들리는 폭(도)
@@ -89,8 +104,8 @@ extends Node2D
 @export var run_zoom: float = 0.06
 ## 화면이 잼민이를 따라가는 거리(px). 그림이 오른쪽으로 밀리는 만큼 카메라가 왼쪽으로 따라가는 셈
 @export var run_drift: float = 18.0
-## 먼지가 피어오르는 높이 (컷인 한가운데가 원점). 그림의 발밑 픽셀 y=868을 옮긴 값
-@export var dust_ground: float = 330.0
+## 먼지가 피어오르는 높이 (컷인 한가운데가 원점). 잼민이 발밑 높이다
+@export var dust_ground: float = 343.0
 ## 먼지가 발보다 얼마나 뒤(오른쪽)에서 피는지(px)
 @export var dust_back: float = 40.0
 ## 먼지가 하나씩 늦게 피는 간격(초)
@@ -100,8 +115,6 @@ extends Node2D
 ## 먼지가 퍼지며 커지는 정도
 @export var dust_grow: float = 1.8
 
-## 장면 3장 (1번 -> 2번 -> 3번 순서). 씬에 없는 장면은 건너뛴다
-var _frames: Array[Sprite2D] = []
 ## 날아가는 비비탄들
 var _pellets: Array[Sprite2D] = []
 ## 발밑에서 피어오르는 먼지들
@@ -113,12 +126,21 @@ var _shout_rest_scale: Vector2 = Vector2.ONE
 ## 대사 옆에 붙는 빨간 말줄 두 획 — 소리가 저쪽에서 온다는 표시. 대사와 같이 떠오른다
 var _shout_mark: Sprite2D
 var _mark_rest_scale: Vector2 = Vector2.ONE
-## 3번 장면에서 실제로 달려가는 잼민이 (인게임과 같은 파츠 리그)
+## 세 장면을 다 연기하는 잼민이 (인게임과 같은 파츠 리그)
 var _runner: Node2D
-## 달리는 표정으로 바꿨는지 (한 번만 부르면 되는 것들)
-var _runner_started: bool = false
-## 러너가 씬에 놓여 있던 제자리 — 3번 그림에서 원래 서 있던 자리다
+## 러너가 씬에 놓여 있던 제자리와 제 크기 — 원래 그림에서 잼민이가 서 있던 자리다
 var _runner_rest: Vector2 = Vector2.ZERO
+var _runner_scale: Vector2 = Vector2.ONE
+## 지금 몇 발까지 반동을 먹였는지 (한 발에 한 번만 부르려고)
+var _shots_done: int = 0
+## 달리기 동작으로 이미 바꿨는지
+var _run_started: bool = false
+## 리그의 머리 스프라이트와 원래 그림·배율 — 2단계에만 밥소리 들은 표정으로 바꿨다 되돌린다
+var _head: Sprite2D = null
+var _head_rest_texture: Texture2D = null
+var _head_rest_scale: Vector2 = Vector2.ONE
+## 지금 밥소리 표정으로 바꿔 놨는지 (매 프레임 덮어쓰지 않으려고)
+var _shout_face_on: bool = false
 ## 느낌표가 씬에 놓여 있던 제자리와 제 크기 — 튀어나오는 연출이 여기서 시작해 여기로 끝난다.
 ## 씬 배율(0.82)을 무시하고 1.0으로 덮어쓰면 느낌표만 커져 버린다
 var _exclaim_rest: Vector2 = Vector2.ZERO
@@ -127,10 +149,6 @@ var _time: float = 0.0
 var _playing: bool = false
 
 func _ready() -> void:
-	for i in range(1, 4):
-		var frame: Sprite2D = get_node_or_null("Frame%d" % i)
-		if frame:
-			_frames.append(frame)
 	for i in range(3):
 		var pellet: Sprite2D = get_node_or_null("Pellets/Pellet%d" % i)
 		if pellet:
@@ -153,6 +171,12 @@ func _ready() -> void:
 	_runner = get_node_or_null("Runner")
 	if _runner:
 		_runner_rest = _runner.position
+		_runner_scale = Vector2(absf(_runner.scale.x), _runner.scale.y)
+		# 리그의 _ready가 먼저 돌기 때문에 여기서 읽는 값이 곧 "원래 머리"다
+		_head = _runner.get_node_or_null("Head") as Sprite2D
+		if _head:
+			_head_rest_texture = _head.texture
+			_head_rest_scale = _head.scale
 	_reset()
 
 ## 컷인 재생을 시작한다 (UltimateCutIn이 호출한다)
@@ -160,12 +184,17 @@ func play() -> void:
 	_time = 0.0
 	_playing = true
 	_reset()
+	# 총은 1·2단계 내내 들고 있다가 달려나갈 때 사라진다
+	if _runner and _runner.has_method("play_gun_motion"):
+		_runner.play_gun_motion(phase3_at * maxf(ramp_time, 0.001))
 
 ## 아직 아무 일도 안 일어난 상태로 되돌린다
 func _reset() -> void:
-	_show_frame(0)
 	position = Vector2.ZERO
 	scale = Vector2.ONE
+	_shots_done = 0
+	_run_started = false
+	_set_shout_face(false)
 	for pellet in _pellets:
 		pellet.visible = false
 	for dust in _dusts:
@@ -179,10 +208,11 @@ func _reset() -> void:
 		_shout_mark.visible = false
 		_shout_mark.scale = _mark_rest_scale
 	if _runner:
-		_runner.visible = false
+		_runner.visible = true
 		_runner.position = _runner_rest
 		_runner.rotation = 0.0
-		_runner_started = false
+		_runner.scale = _runner_scale            # 오른쪽(총 쏘는 방향)을 보고 선다
+		_runner.set("manual_speed_ratio", 0.0)   # 제자리에 서 있기
 		if _runner.has_method("set_action_face"):
 			_runner.set_action_face(false)
 
@@ -193,23 +223,22 @@ func _process(delta: float) -> void:
 	var total: float = maxf(ramp_time, 0.001)
 	var progress: float = clampf(_time / total, 0.0, 1.0)
 
-	var index: int = 0
-	if progress >= frame3_at:
-		index = 2
-	elif progress >= frame2_at:
-		index = 1
-	_show_frame(index)
-	_update_pellets(index, total)
-	_update_shout(index, total)
-	_update_exclaim(index, progress, total)
-	_update_runner(index, progress)
-	_update_dust(index, progress)
+	var phase: int = 0
+	if progress >= phase3_at:
+		phase = 2
+	elif progress >= phase2_at:
+		phase = 1
+	_update_pellets(phase, total)
+	_update_shout(phase, total)
+	_update_exclaim(phase, progress, total)
+	_update_runner(phase, progress, total)
+	_update_dust(phase, progress)
 
-	# 그림 자체는 정지 화면이라, 화면을 어떻게 흔드느냐가 곧 연출이 된다.
-	# 스프라이트를 화면보다 크게 잡아둬서(배율 0.82) 이만큼 밀려도 가장자리가 안 드러난다
+	# 배경은 정지 화면이라, 화면을 어떻게 흔드느냐가 곧 연출이 된다.
+	# 배경을 화면보다 크게 잡아둬서(배율 0.82) 이만큼 밀려도 가장자리가 안 드러난다
 	var offset: Vector2 = Vector2.ZERO
 	var zoom: float = 1.0
-	match index:
+	match phase:
 		0:
 			var kick: float = _recoil(total)
 			offset = Vector2(-kick, -kick * 0.25)
@@ -223,16 +252,26 @@ func _process(delta: float) -> void:
 	position = offset
 	scale = Vector2.ONE * zoom
 
-## i번째 총알이 발사되는 시각(초). 세 발이 1번 장면 안에 고르게 퍼지되
+## i번째 총알이 발사되는 시각(초). 세 발이 1단계 안에 고르게 퍼지되
 ## 마지막 발이 장면 끝에 붙지 않도록 shot_spread 비율 안에서 쏜다
 func _fire_time(i: int, total: float) -> float:
-	return frame2_at * total * (float(i) + 0.5) / float(maxi(shot_count, 1)) * shot_spread
+	return phase2_at * total * (float(i) + 0.5) / float(maxi(shot_count, 1)) * shot_spread
 
-## 총구에서 총알이 날아간다. 1번 장면이 아니면 전부 숨긴다
-func _update_pellets(index: int, total: float) -> void:
+## 총구 자리 — 리그가 들고 있는 총 노드에서 뽑는다. 총이 없으면 muzzle 값을 쓴다
+func _muzzle_pos() -> Vector2:
+	if _runner:
+		var gun: Sprite2D = _runner.get_node_or_null("Gun") as Sprite2D
+		if gun and gun.visible:
+			var facing: float = signf(_runner.scale.x)
+			return to_local(gun.global_position) + Vector2(muzzle_offset.x * facing, muzzle_offset.y)
+	return muzzle
+
+## 총구에서 총알이 날아간다. 1단계가 아니면 전부 숨긴다
+func _update_pellets(phase: int, total: float) -> void:
+	var from: Vector2 = _muzzle_pos()
 	for i in range(_pellets.size()):
 		var pellet: Sprite2D = _pellets[i]
-		if index != 0:
+		if phase != 0:
 			pellet.visible = false
 			continue
 		var since: float = _time - _fire_time(i, total)
@@ -240,7 +279,7 @@ func _update_pellets(index: int, total: float) -> void:
 			pellet.visible = false
 			continue
 		pellet.visible = true
-		pellet.position = muzzle + Vector2(pellet_speed * since, pellet_rise * since)
+		pellet.position = from + Vector2(pellet_speed * since, pellet_rise * since)
 
 ## 지금까지 쏜 총알들의 반동을 합친 값. 한 발 쏘면 확 밀렸다가 shot_decay 속도로 잦아든다
 func _recoil(total: float) -> float:
@@ -252,17 +291,17 @@ func _recoil(total: float) -> float:
 		kick += shot_kick * exp(-since * shot_decay)
 	return kick
 
-## 2번 장면에 들어서는 순간 엄마 대사가 작게 시작해 제 크기로 툭 떠오른다
-func _update_shout(index: int, total: float) -> void:
+## 2단계에 들어서는 순간 엄마 대사가 작게 시작해 제 크기로 툭 떠오른다
+func _update_shout(phase: int, total: float) -> void:
 	if _shout == null:
 		return
-	if index != 1:
+	if phase != 1:
 		_shout.visible = false
 		if _shout_mark:
 			_shout_mark.visible = false
 		return
 	_shout.visible = true
-	var u: float = clampf((_time - frame2_at * total) / maxf(shout_pop, 0.001), 0.0, 1.0)
+	var u: float = clampf((_time - phase2_at * total) / maxf(shout_pop, 0.001), 0.0, 1.0)
 	var grow: float = lerpf(shout_from, 1.0, u)
 	var fade: float = clampf(u * 3.0, 0.0, 1.0)
 	_shout.scale = _shout_rest_scale * grow
@@ -274,10 +313,10 @@ func _update_shout(index: int, total: float) -> void:
 		_shout_mark.modulate.a = fade
 
 ## 대사가 먼저 뜨고, 조금 뒤에 느낌표가 툭 튀어나온다
-func _update_exclaim(index: int, progress: float, total: float) -> void:
+func _update_exclaim(phase: int, progress: float, total: float) -> void:
 	if _exclaim == null:
 		return
-	if index != 1 or progress < exclaim_at:
+	if phase != 1 or progress < exclaim_at:
 		_exclaim.visible = false
 		return
 	_exclaim.visible = true
@@ -299,40 +338,78 @@ func _notice_left(total: float) -> float:
 		return 0.0
 	return clampf(1.0 - since / maxf(notice_settle, 0.001), 0.0, 1.0)
 
-## 3번 장면이 시작하고 얼마나 달렸는지 (0~1)
+## 3단계가 시작하고 얼마나 달렸는지 (0~1)
 func _run_progress(progress: float) -> float:
-	return clampf((progress - frame3_at) / maxf(1.0 - frame3_at, 0.001), 0.0, 1.0)
+	return clampf((progress - phase3_at) / maxf(1.0 - phase3_at, 0.001), 0.0, 1.0)
 
 ## 달린 시간 u일 때 제자리에서 왼쪽으로 얼마나 갔는지(px). 처음엔 느리다가 확 튀어나간다
 func _run_shift(u: float) -> float:
 	return -run_distance * pow(u, run_accel)
 
-## 잼민이가 왼쪽으로 달려나간다. 뛸 때마다 위로 튀고 몸이 앞뒤로 흔들린다
-func _update_runner(index: int, progress: float) -> void:
+## 잼민이 — 1단계는 서서 쏘고, 2단계는 놀라 펄쩍 뛰고, 3단계는 왼쪽으로 달려나간다
+func _update_runner(phase: int, progress: float, total: float) -> void:
 	if _runner == null:
 		return
-	if index != 2:
-		_runner.visible = false
+	match phase:
+		0:
+			# 쏘는 순간마다 리그에 반동을 먹인다 (한 발에 한 번만)
+			while _shots_done < shot_count and _time >= _fire_time(_shots_done, total):
+				_shots_done += 1
+				if _runner.has_method("gun_recoil"):
+					_runner.gun_recoil()
+			_set_shout_face(false)
+			_runner.position = _runner_rest
+			_runner.rotation = 0.0
+		1:
+			# 엄마가 부르는 동안은 "밥소리 들은" 표정으로 바꿔 둔다
+			_set_shout_face(true)
+			# 느낌표가 뜨는 순간 화들짝 — 뛰어올랐다가 곧 내려온다
+			var since: float = _time - exclaim_at * total
+			if since < 0.0:
+				_runner.position = _runner_rest
+				_runner.rotation = 0.0
+				return
+			var k: float = clampf(since / 0.34, 0.0, 1.0)
+			var hop: float = sin(k * PI)            # 0 -> 1 -> 0
+			_runner.position = _runner_rest + Vector2(0.0, -startle_hop * hop)
+			_runner.rotation = deg_to_rad(startle_lean_deg * hop)
+		2:
+			if not _run_started:
+				_run_started = true
+				_set_shout_face(false)
+				_runner.scale = Vector2(-_runner_scale.x, _runner_scale.y)   # 왼쪽을 보게 뒤집는다
+				_runner.set("manual_speed_ratio", 1.0)                       # 걷기 동작 켜기
+				if _runner.has_method("set_action_face"):
+					_runner.set_action_face(true)
+			var u: float = _run_progress(progress)
+			# 위로만 튀도록 sin의 절댓값을 쓴다 (땅을 딛는 순간이 아래쪽)
+			var bounce: float = absf(sin(u * run_bob_cycles * PI))
+			_runner.position = _runner_rest + Vector2(_run_shift(u), -run_bob * bounce)
+			_runner.rotation = deg_to_rad(run_lean_deg + run_sway_deg * sin(u * run_bob_cycles * PI * 2.0))
+
+## 머리 그림을 "밥소리 들은 표정"으로 바꿨다 되돌린다.
+## 리그의 set_action_face()와 달리 그림만 직접 갈아끼운다 — 컷인에서만 쓰는 표정이라
+## 리그(BodyRig)에 상태를 하나 더 만들 필요가 없고, 인게임 동작에도 영향이 없다
+func _set_shout_face(on: bool) -> void:
+	if _head == null or shout_head_texture == null:
 		return
-	_runner.visible = true
-	if not _runner_started:
-		_runner_started = true
-		# 달릴 때만 쓰는 표정으로 바꾼다 (리그에 action_head_texture가 있는 캐릭터만 반응한다)
-		if _runner.has_method("set_action_face"):
-			_runner.set_action_face(true)
-	var u: float = _run_progress(progress)
-	# 위로만 튀도록 sin의 절댓값을 쓴다 (땅을 딛는 순간이 아래쪽)
-	var hop: float = absf(sin(u * run_bob_cycles * PI))
-	_runner.position = _runner_rest + Vector2(_run_shift(u), -run_bob * hop)
-	_runner.rotation = deg_to_rad(run_lean_deg + run_sway_deg * sin(u * run_bob_cycles * PI * 2.0))
+	if on == _shout_face_on:
+		return
+	_shout_face_on = on
+	if on:
+		_head.texture = shout_head_texture
+		_head.scale = shout_head_scale if shout_head_scale != Vector2.ZERO else _head_rest_scale
+	else:
+		_head.texture = _head_rest_texture
+		_head.scale = _head_rest_scale
 
 ## 잼민이가 지나간 자리마다 먼지가 하나씩 남아 퍼지며 사라진다
-func _update_dust(index: int, progress: float) -> void:
+func _update_dust(phase: int, progress: float) -> void:
 	var u: float = _run_progress(progress)
-	var span: float = maxf(1.0 - frame3_at, 0.001) * maxf(ramp_time, 0.001)
+	var span: float = maxf(1.0 - phase3_at, 0.001) * maxf(ramp_time, 0.001)
 	for i in range(_dusts.size()):
 		var dust: Node2D = _dusts[i]
-		if index != 2:
+		if phase != 2:
 			dust.visible = false
 			continue
 		# 이 먼지가 피어난 시점의 잼민이 자리에 그대로 남는다
@@ -346,8 +423,3 @@ func _update_dust(index: int, progress: float) -> void:
 		dust.position = Vector2(_runner_rest.x + _run_shift(born_u) + dust_back + 30.0 * life, dust_ground - 12.0 * life)
 		dust.scale = Vector2.ONE * (0.4 + dust_grow * life)
 		dust.modulate.a = 1.0 - life
-
-## i번째 장면만 보이게 한다
-func _show_frame(i: int) -> void:
-	for k in range(_frames.size()):
-		_frames[k].visible = (k == i)

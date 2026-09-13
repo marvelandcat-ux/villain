@@ -1,36 +1,26 @@
 [gd_scene format=3 uid="uid://boang1lur17gm"]
 
 [ext_resource type="Script" uid="uid://cm1bycukouluh" path="res://ui/cutin/ChokbeopsonyeonCutIn.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://1sowu36wl8wm" path="res://sprite/축법소년/궁극기컷인/1번프레임.png" id="2"]
-[ext_resource type="Texture2D" uid="uid://eidii1746u40" path="res://sprite/축법소년/궁극기컷인/2번프레임.png" id="3"]
-[ext_resource type="Texture2D" uid="uid://duijb8sooyhen" path="res://sprite/축법소년/궁극기컷인/3번배경.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://dfypejfblk2yy" path="res://sprite/축법소년/궁극기컷인/1번배경.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://b5lyk6fj1d174" path="res://sprite/축법소년/궁극기컷인/느낌표.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://dojxgkkscjwaj" path="res://sprite/축법소년/총알.png" id="6"]
 [ext_resource type="PackedScene" uid="uid://b8n8uyugqh0hu" path="res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn" id="7"]
 [ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="8"]
 [ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/축법소년/궁극기컷인/말줄.png" id="9"]
+[ext_resource type="Texture2D" uid="uid://bnbj8mkqu6hme" path="res://sprite/축법소년/밥소리들은잼미니.png" id="10"]
 
 [node name="ChokbeopsonyeonCutIn" type="Node2D" unique_id=1610107903]
 script = ExtResource("1")
+shout_head_texture = ExtResource("10")
 
-[node name="Frame1" type="Sprite2D" parent="." unique_id=1192978694]
+[node name="Bg" type="Sprite2D" parent="." unique_id=1192978694]
 scale = Vector2(0.82, 0.82)
 texture = ExtResource("2")
 
-[node name="Frame2" type="Sprite2D" parent="." unique_id=279895241]
-scale = Vector2(0.82, 0.82)
-texture = ExtResource("3")
-
-[node name="Frame3" type="Sprite2D" parent="." unique_id=295636421]
-visible = false
-scale = Vector2(0.82, 0.82)
-texture = ExtResource("4")
-
 [node name="Runner" parent="." unique_id=674126307 instance=ExtResource("7")]
-visible = false
-position = Vector2(255, 231)
-scale = Vector2(-4.5, 4.5)
-manual_speed_ratio = 1.0
+position = Vector2(263, 213)
+scale = Vector2(3.9, 3.9)
+manual_speed_ratio = 0.0
 
 [node name="ShoutMark" type="Sprite2D" parent="." unique_id=1204375732]
 position = Vector2(93, -176.00002)
