@@ -126,12 +126,13 @@ position = Vector2(-10, -164)
 scale = Vector2(0.38, 0.38)
 texture = ExtResource("12")
 
-[node name="ShoutText" type="Label" parent="."]
+[node name="ShoutText" type="Label" parent="." unique_id=342240984]
 offset_left = -20.0
 offset_top = -320.0
 offset_right = 580.0
 offset_bottom = -140.0
 rotation = -0.052
+scale = Vector2(1.0326077, 1.1359252)
 pivot_offset = Vector2(300, 90)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.11, 0.08, 0.14, 1)
@@ -144,13 +145,9 @@ text = "준완아 니가 일진녀 몸
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ShoutMarkL" type="Sprite2D" parent="."]
-position = Vector2(120, -80)
-scale = Vector2(1.1, 1.1)
+[node name="ShoutMarkL" type="Sprite2D" parent="." unique_id=1198048608]
+position = Vector2(243, -112)
+rotation = 1.5132004
+scale = Vector2(1.826, 2.861)
 texture = ExtResource("16")
 flip_h = true
-
-[node name="ShoutMarkR" type="Sprite2D" parent="."]
-position = Vector2(345, -68)
-scale = Vector2(1.1, 1.1)
-texture = ExtResource("16")

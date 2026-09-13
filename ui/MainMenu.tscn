@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://ui/SubwayIllust.tscn" id="12_subway"]
 [ext_resource type="Texture2D" uid="uid://eqbyc2uejeay" path="res://sprite/메인메뉴/일러스트/지하철아저씨/지하철아저씨일러스트배경.png" id="13_subbg"]
 [ext_resource type="PackedScene" path="res://ui/AkpeulleoIllust.tscn" id="14_akp"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러배경.png" id="15_akpbg"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("7_blur")
@@ -91,7 +92,7 @@ visible = false
 material = SubResource("ShaderMaterial_bgblur")
 position = Vector2(717, 312)
 scale = Vector2(0.86, 0.86)
-texture = ExtResource("3_bg")
+texture = ExtResource("15_akpbg")
 
 
 [node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
