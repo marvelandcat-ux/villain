@@ -76,9 +76,12 @@ var p1_character_path: String = CHARACTERS.values()[0]
 var p2_character_path: String = CHARACTERS.values()[1]
 var selected_map_path: String = MAPS.values()[0]
 
-## "story" 또는 "pvp". story면 Stage가 P2를 AI로 붙이고 HUD가 P2 조작키를 숨긴다.
-## 스토리 모드는 2026-09-12 새로 짜는 중이라 지금은 장면 뼈대(ui/story/)만 있고 대전으로는 아직 안 이어진다
+## "story" 또는 "pvp". story면 Stage가 P2를 AI로 붙이고 HUD가 P2 조작키를 숨긴다
 var game_mode: String = "pvp"
+## **스토리 전투에서 이겼을 때 이어서 갈 장면**(2026-09-13). 스토리 장면(StoryFadeScene)이 대전으로 넘길 때
+## 자기 `battle_win_scene`을 여기에 담아 두고, `Stage`가 최종 승리 판정에서 이 경로로 넘어간다.
+## 비어 있으면 예전처럼 결과창(재시도/메뉴)에서 멈춘다 — 일반 대전은 이 값이 늘 비어 있다
+var story_next_scene: String = ""
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
 ## 0이면 시간 제한 없음

@@ -13,6 +13,12 @@ extends Node2D
 ## 자동으로 붙는다(Fighter.map_skill) — 캐릭터 씬 쪽은 전혀 안 건드려도 된다. Skill을 상속한
 ## 스크립트가 루트인 씬이어야 하고, 비워두면 그냥 일반 맵(맵 전용 스킬 없음)
 @export var map_skill_scene: PackedScene
+## 스토리 전투에서 이겼을 때 결과창을 보여주고 있는 시간(초). 지나면 이어지는 이야기 장면으로 넘어간다
+@export var story_win_delay: float = 1.8
+## (임시) 테스트용 — **스토리 전투 중 `S`를 누르면 이긴 것으로 치고 바로 다음 이야기로 넘어간다.**
+## 스토리 장면의 건너뛰기(`StoryFadeScene.debug_skip_key`)와 같은 키다. 스토리를 다 만들면 같이 지울 것.
+## **일반 대전에서는 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
+@export var debug_story_skip_key: bool = true
 
 var _p1: Fighter
 var _p2: Fighter
@@ -114,13 +120,54 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 		return
 	var winner_name: String = _p1.stats.character_name if p1_won else _p2.stats.character_name
 	result_screen.show_result(p1_won, winner_name)
+	# 스토리 전투를 이겼으면 결과창을 잠깐 보여준 뒤 이야기를 이어간다 (졌으면 예전처럼 재시도/메뉴)
+	if p1_won and GameState.game_mode == "story" and GameState.story_next_scene != "":
+		result_screen.hide_buttons()
+		await get_tree().create_timer(story_win_delay).timeout
+		if not is_inside_tree():
+			return   # 기다리는 동안 맵이 사라졌으면(재시도·메뉴 등) 아무 것도 하지 않는다
+		var next_scene: String = GameState.story_next_scene
+		GameState.story_next_scene = ""
+		if ResourceLoader.exists(next_scene):
+			get_tree().change_scene_to_file(next_scene)
+		else:
+			push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
 
 ## ESC(ui_cancel)를 누르면 일시정지 메뉴를 띄운다. 이 함수 자체가 get_tree().paused일 때는
 ## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
 ## 메뉴가 떠 있는 동안 다시 ESC를 눌러도 여기서 중복으로 또 띄우는 일은 없다
 func _unhandled_input(event: InputEvent) -> void:
+	if debug_story_skip_key and event is InputEventKey:
+		var key: InputEventKey = event
+		if key.pressed and not key.echo and (key.keycode == KEY_S or key.physical_keycode == KEY_S):
+			# **입력 처리 표시를 장면 전환보다 먼저 해야 한다** — change_scene_to_file 뒤에는
+			# 이 노드가 트리에서 빠져서 get_viewport()가 null이 된다(실제로 그 에러를 봤다)
+			if _can_debug_skip_story_battle():
+				get_viewport().set_input_as_handled()
+				_debug_skip_story_battle()
+				return
 	if event.is_action_pressed("ui_cancel"):
 		add_child(load("res://ui/PauseMenu.tscn").instantiate())
+
+## 지금 `S`로 스토리 전투를 건너뛸 수 있는 상태인지. 스토리 모드가 아니거나 이어질 장면이 없으면 false —
+## 그래야 일반 대전에서 `S`가 예전처럼 P1 방어 키로만 동작한다(`p1_down`이 S에 걸려 있다)
+func _can_debug_skip_story_battle() -> bool:
+	if _round_over or GameState.game_mode != "story" or GameState.story_next_scene == "":
+		return false
+	if not ResourceLoader.exists(GameState.story_next_scene):
+		push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % GameState.story_next_scene)
+		return false
+	return true
+
+## (임시) 스토리 전투를 이긴 것으로 치고 곧바로 다음 장면으로 넘어간다.
+## 부르기 전에 반드시 _can_debug_skip_story_battle()로 확인할 것
+func _debug_skip_story_battle() -> void:
+	_round_over = true
+	_freeze_controllers()
+	GameState.p1_round_wins = GameState.rounds_to_win   # 이긴 것으로 기록해 둔다
+	var next_scene: String = GameState.story_next_scene
+	GameState.story_next_scene = ""
+	get_tree().change_scene_to_file(next_scene)
 
 ## player_index는 사람이 조작할 때 어느 쪽 키(1P: A/D/W/F/G/H/R, 2P: 방향키/L/K/J/P)를 읽을지 정한다
 func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool, player_index: int) -> Fighter:

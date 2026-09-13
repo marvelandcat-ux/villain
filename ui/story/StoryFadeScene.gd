@@ -34,6 +34,9 @@ enum Transition { BLACK, CROSSFADE }
 ## 대전 규칙 — 먼저 몇 라운드를 따면 이기는지, 라운드 제한시간(초, 0이면 무제한)
 @export var battle_rounds: int = 2
 @export var battle_time_limit: int = 0
+## **그 대전에서 이겼을 때 이어서 갈 장면**(2026-09-13). Stage가 최종 승리 판정에서 여기로 넘어간다.
+## 비워두면 예전처럼 결과창(재시도/메뉴)에서 멈춘다
+@export_file("*.tscn") var battle_win_scene: String = ""
 ## 대화창(DialogueBox)이나 장소 카드(LocationCard)를 지정하면 그게 끝나야 나간다(hold_time도 지나야 함). 비우면 시간만 본다
 @export var dialogue: NodePath
 ## 다음 장면으로 넘길 때 전환 방식
@@ -164,14 +167,7 @@ func _open_next(crossfade: bool) -> void:
 	if not ResourceLoader.exists(next_scene):
 		push_warning("StoryFadeScene: 다음 장면을 못 찾았다 — %s" % next_scene)
 		return
-	if battle_p1 != "" and battle_p2 != "":
-		# 스토리에서 바로 대전으로 — 맵 씬(Stage)이 GameState를 보고 캐릭터를 소환한다
-		GameState.p1_character_path = battle_p1
-		GameState.p2_character_path = battle_p2
-		GameState.selected_map_path = next_scene
-		GameState.rounds_to_win = battle_rounds
-		GameState.time_limit_seconds = battle_time_limit
-		GameState.reset_round_wins()
+	_setup_battle()
 	if crossfade:
 		# 지금 화면을 찍어 두면 다음 장면이 _ready에서 맨 위에 덮고 서서히 투명하게 한다
 		var img: Image = get_viewport().get_texture().get_image()
@@ -179,12 +175,27 @@ func _open_next(crossfade: bool) -> void:
 		_carry_msec = Time.get_ticks_msec()
 	get_tree().change_scene_to_file(next_scene)
 
+## 다음 장면이 대전 맵이면 GameState에 대결 정보를 담아 둔다 (Stage가 이걸 보고 캐릭터를 소환한다).
+## **정식 진행과 디버그 건너뛰기(S) 둘 다 여기를 거쳐야 한다** — 예전엔 S로 건너뛰면 이걸 안 거쳐서
+## 대전에 엉뚱한 캐릭터(선택 화면 기본값)가 나왔다
+func _setup_battle() -> void:
+	if battle_p1 == "" or battle_p2 == "":
+		return
+	GameState.p1_character_path = battle_p1
+	GameState.p2_character_path = battle_p2
+	GameState.selected_map_path = next_scene
+	GameState.rounds_to_win = battle_rounds
+	GameState.time_limit_seconds = battle_time_limit
+	GameState.story_next_scene = battle_win_scene
+	GameState.reset_round_wins()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if debug_skip_key and event is InputEventKey:
 		var key: InputEventKey = event
 		if key.pressed and not key.echo and (key.keycode == KEY_S or key.physical_keycode == KEY_S):
 			if next_scene != "" and ResourceLoader.exists(next_scene):
 				_carry = null
+				_setup_battle()
 				get_viewport().set_input_as_handled()
 				get_tree().change_scene_to_file(next_scene)   # 임시 건너뛰기 — 페이드 없이 바로
 			return

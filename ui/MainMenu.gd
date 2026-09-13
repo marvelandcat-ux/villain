@@ -301,12 +301,14 @@ func _on_confirmed() -> void:
 ## 옛 흐름(에피소드 선택 -> 캐릭터 선택 -> 대전 -> 개과천선 -> 클리어)은 통째로 걷어냈다
 func _start_story() -> void:
 	GameState.game_mode = "story"
+	GameState.story_next_scene = ""   # 지난 판에서 남은 값이 있으면 지운다 (장면이 다시 채워준다)
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/story/StoryScene1.tscn")
 
 ## 대전 모드 — 방 설정(선취 라운드/시간제한)부터 고른다
 func _start_versus() -> void:
 	GameState.game_mode = "pvp"
+	GameState.story_next_scene = ""   # 일반 대전은 이야기로 이어지지 않는다
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
