@@ -1422,3 +1422,14 @@ func _lookback_reach() -> float:
 	elif progress < 0.7:
 		return 1.0
 	return (1.0 - progress) / 0.3
+
+## 손에 든 물건의 그림을 갈아끼운다 (주정뱅이 소주병 -> 깨진 소주병).
+## **위치·각도·배율은 그대로 두고 텍스처만 바꾼다** — 두 그림의 캔버스가 같아야 손에 쥔 자리가 안 어긋난다.
+## 무기를 안 든 캐릭터면 그냥 넘어간다
+func swap_held_texture(tex: Texture2D) -> void:
+	if tex == null or _hand_r_hold == null:
+		return
+	for child in _hand_r_hold.get_children():
+		if child is Sprite2D:
+			child.texture = tex
+			return

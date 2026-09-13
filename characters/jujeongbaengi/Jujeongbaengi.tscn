@@ -15,7 +15,9 @@
 [ext_resource type="Texture2D" uid="uid://xdq54maoshqt" path="res://sprite/주정뱅이/스킬로고/1번.png" id="13"]
 [ext_resource type="Texture2D" uid="uid://cy8uehv248537" path="res://sprite/주정뱅이/스킬로고/2번.png" id="14"]
 [ext_resource type="Texture2D" uid="uid://bjmtkm7ybrv0t" path="res://sprite/주정뱅이/스킬로고/궁극기.png" id="15"]
-[ext_resource type="PackedScene" uid="uid://cq8shardgl0ss" path="res://combat/GlassShard.tscn" id="16"]
+[ext_resource type="PackedScene" uid="uid://cq8splashliq0r" path="res://combat/LiquorSplash.tscn" id="16"]
+[ext_resource type="Texture2D" uid="uid://cf6crjewo2whw" path="res://sprite/주정뱅이/꺠진소주병.png" id="17"]
+[ext_resource type="PackedScene" uid="uid://cq8shardgl0ss" path="res://combat/GlassShard.tscn" id="18"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -44,6 +46,10 @@ shape = SubResource("CapsuleShape2D_body")
 script = ExtResource("3")
 miss_cooldown = 1.0
 windup = 0.16
+break_after_hits = 8
+broken_item_texture = ExtResource("17")
+break_debris_scene = ExtResource("18")
+break_debris_count = 5
 cooldown = 0.3
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]

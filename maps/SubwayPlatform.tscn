@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://burvaaypmgjfd"]
+[gd_scene load_steps=20 format=3 uid="uid://burvaaypmgjfd"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -12,6 +12,10 @@
 [ext_resource type="Script" path="res://maps/AISafeSpot.gd" id="10"]
 [ext_resource type="PackedScene" path="res://maps/FluorescentLight.tscn" id="11"]
 [ext_resource type="Script" path="res://maps/WindNewspaper.gd" id="12"]
+[ext_resource type="Script" path="res://maps/PlatformCrowd.gd" id="13"]
+[ext_resource type="Script" path="res://maps/Pigeon.gd" id="14"]
+[ext_resource type="Script" path="res://maps/SubwaySignBoard.gd" id="15"]
+[ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="16"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(220, 20)
@@ -222,6 +226,31 @@ region_enabled = true
 region_rect = Rect2(14, 287, 2143, 177)
 
 [node name="Track" type="Node2D" parent="." unique_id=1304679921]
+[node name="PlatformCrowd" type="Node2D" parent="DecoBackground"]
+position = Vector2(0, 218)
+script = ExtResource("13")
+
+[node name="SignBoard" type="Node2D" parent="DecoBackground"]
+position = Vector2(0, 143)
+script = ExtResource("15")
+
+[node name="Clip" type="Control" parent="DecoBackground/SignBoard"]
+clip_contents = true
+offset_left = -210.0
+offset_top = -22.0
+offset_right = 210.0
+offset_bottom = 22.0
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="DecoBackground/SignBoard/Clip"]
+offset_right = 420.0
+offset_bottom = 44.0
+theme_override_fonts/font = ExtResource("16")
+theme_override_font_sizes/font_size = 28
+text = "다음 열차가 곧 도착합니다  ·  안전선 뒤로 물러나 주십시오  ·  "
+vertical_alignment = 1
+mouse_filter = 2
+
 
 [node name="Rail" type="Sprite2D" parent="Track" unique_id=1250196383]
 position = Vector2(-580, 300)
@@ -313,6 +342,16 @@ script = ExtResource("12")
 [node name="Ground" type="StaticBody2D" parent="." unique_id=2100912680]
 position = Vector2(0, 320)
 
+[node name="DecoPigeons" type="Node2D" parent="."]
+
+[node name="Pigeon0" type="Node2D" parent="DecoPigeons"]
+position = Vector2(-330, 299)
+script = ExtResource("14")
+
+[node name="Pigeon1" type="Node2D" parent="DecoPigeons"]
+position = Vector2(365, 299)
+script = ExtResource("14")
+
 [node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=2068419616]
 shape = SubResource("RectangleShape2D_ground")
 
@@ -350,3 +389,4 @@ max_y = 190.0
 max_close_zoom = 1.35
 
 [node name="CombatHUD" parent="." unique_id=732218673 instance=ExtResource("2")]
+

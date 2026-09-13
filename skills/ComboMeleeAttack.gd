@@ -25,6 +25,17 @@ extends MeleeAttack
 ## 헛발질(빗맞음)했을 때만 도는 쿨타임(초). 음수면 기본 cooldown을 그대로 쓴다.
 ## 3타 마무리 쿨은 cooldown이라, 이 값으로 "못 맞췄을 때만" 더 크게 벌칙을 줄 수 있다
 @export var miss_cooldown: float = -1.0
+## 히트박스의 debris_scene(주정뱅이 술방울)을 **마무리 3타에서만** 뿌릴지.
+## 매 타 뿌리면 한 병으로 세 번 깨지는 꼴이라 어색하고 바닥에 계속 쌓인다
+@export var debris_final_hit_only: bool = true
+## 이만큼 맞히면 손에 든 무기가 부서진 그림으로 바뀐다(주정뱅이 소주병 -> 깨진 소주병). 0이면 안 부서진다.
+## 맞힌 횟수만 세고 헛친 건 안 센다. 라운드가 바뀌면 씬이 새로 만들어지면서 0부터 다시 센다
+@export var break_after_hits: int = 0
+## 부서진 뒤로 갈아끼울 그림. 원래 그림과 캔버스 크기가 같아야 손에 쥔 자리가 안 어긋난다
+@export var broken_item_texture: Texture2D
+## 부서지는 순간 명중 지점에 터뜨릴 파편 장면과 개수 (주정뱅이는 유리조각 5개)
+@export var break_debris_scene: PackedScene
+@export var break_debris_count: int = 5
 
 ## 지금 낼 타 (0=1타, 1=2타, 2=3타)
 var _step: int = 0
@@ -41,6 +52,9 @@ var _chain_left: float = 0.0
 ## 켜둔 히트박스를 끄기까지 남은 시간
 var _active_left: float = 0.0
 var _fighter: Fighter = null
+## 이 라운드에 술병으로 맞힌 횟수 / 이미 부서졌는지
+var _hits_landed: int = 0
+var _broken: bool = false
 
 func _ready() -> void:
 	super()   # start_on_cooldown 처리 (기본공격은 꺼져 있지만 규칙을 깨지 않는다)
@@ -48,8 +62,44 @@ func _ready() -> void:
 	hitbox.connected.connect(_on_hitbox_connected)
 
 func _on_hitbox_connected(_victim: Node) -> void:
+	_count_hit_for_break()
 	if _swinging and not _resolved:
 		_resolve(true)
+
+## 맞힌 횟수를 세다가 break_after_hits에 닿으면 무기를 깨뜨린다 — 한 라운드에 한 번뿐이다.
+## 방어에 막힌 한 방도 센다(병이 방패에 부딪힌 것도 부딪힌 것이다)
+func _count_hit_for_break() -> void:
+	if _broken or break_after_hits <= 0:
+		return
+	_hits_landed += 1
+	if _hits_landed < break_after_hits:
+		return
+	_broken = true
+	_swap_to_broken()
+	_spawn_break_debris()
+
+## 손에 든 무기 그림을 부서진 것으로 갈아끼운다 (리그에 그 기능이 없으면 그냥 넘어간다)
+func _swap_to_broken() -> void:
+	if broken_item_texture == null or not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("swap_held_texture"):
+		visual.swap_held_texture(broken_item_texture)
+
+## 깨지는 순간 명중 지점에 파편을 한꺼번에 터뜨린다. 떨어지고 사라지는 처리는 파편 쪽이 맡는다
+func _spawn_break_debris() -> void:
+	if break_debris_scene == null:
+		return
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	for i in break_debris_count:
+		var piece: Node = break_debris_scene.instantiate()
+		scene_root.add_child(piece)
+		if piece.has_method("setup"):
+			piece.setup(hitbox.global_position)
+		elif piece is Node2D:
+			piece.global_position = hitbox.global_position
 
 ## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다
 func can_use() -> bool:
@@ -145,6 +195,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.damage = fighter.compute_damage(combo_damage[step])
 	hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing, combo_knockback[step].y)
 	hitbox.pop_override = combo_pop[step]
+	hitbox.debris_enabled = (not debris_final_hit_only) or step == combo_damage.size() - 1
 	hitbox.source_fighter = fighter
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
 	# 이미 겹쳐 있는 상대도 이번 타에 다시 맞도록 잠깐 껐다 켜서 area_entered가 새로 발생하게 한다

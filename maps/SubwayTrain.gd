@@ -66,6 +66,14 @@ extends Node2D
 ## 통과하고 나면 (0.55, 0.45, 0.25) 호박색이 더해진다. 맵 조명을 바꾸면 "원하는 최종색 / 맵 조명"으로 다시 잡을 것
 @export var beam_color: Color = Color(0.625, 0.496, 0.263)
 
+## --- 화면 진동 (2026-09-12) ---
+## 경고등이 켜져 있는 동안 바닥이 낮게 울리는 세기(0~1). 화면 최대 흔들림 12px에 곱해진다
+@export var warning_shake: float = 0.12
+## 열차가 실제로 지나가는 동안 흔들리는 세기(0~1)
+@export var pass_shake: float = 0.5
+## 열차가 화면 한가운데(스테이지 중앙)에 가까울수록 더 흔들리는 정도 (0이면 지나가는 내내 같은 세기)
+@export var pass_shake_focus: float = 0.6
+
 ## 진행 중인 상태
 enum State { WAITING, WARNING, RUNNING }
 
@@ -148,6 +156,7 @@ func get_half_width() -> float:
 
 func _process(delta: float) -> void:
 	_timer -= delta
+	_shake_screen(delta)
 	match _state:
 		State.WAITING:
 			if _timer <= warning_duration:
@@ -275,3 +284,22 @@ func _set_hitbox_active(active: bool) -> void:
 	body.visible = active
 	if not active:
 		hitbox.clear_repeat_state()
+
+## 열차가 다가오고 지나가는 동안 화면을 흔든다.
+## **`add_trauma`가 아니라 `CameraRig.set_rumble()`을 쓴다** — add_trauma는 한 방 맞는 순간 충격이라
+## 매 프레임 부어도 감쇠(초당 3)에 밀려 하나도 안 쌓인다. 지속 진동은 바닥값을 까는 방식이라야 한다
+func _shake_screen(_delta: float) -> void:
+	var amount: float = 0.0
+	match _state:
+		State.WARNING:
+			amount = warning_shake
+		State.RUNNING:
+			# 열차가 스테이지 한가운데에 가까울수록 세게 — 멀리 있을 때부터 최대로 흔들면
+			# 지나가는 순간이 안 살아난다
+			var near: float = 1.0 - clampf(absf(body.position.x) / maxf(travel_x, 1.0), 0.0, 1.0)
+			amount = pass_shake * (1.0 - pass_shake_focus + pass_shake_focus * near)
+	if amount <= 0.0:
+		return
+	var cam: Node = get_tree().get_first_node_in_group("game_camera")
+	if cam and cam.has_method("set_rumble"):
+		cam.set_rumble(amount)
