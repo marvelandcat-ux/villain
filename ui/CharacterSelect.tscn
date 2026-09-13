@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="7"]
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="8"]
+[ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="9"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
 content_margin_left = 10.0
@@ -165,13 +166,26 @@ text = "P1(플레이어) 캐릭터를 선택하세요"
 horizontal_alignment = 1
 
 [node name="ThumbRow" type="Control" parent="Center/VBox" unique_id=373346689]
-custom_minimum_size = Vector2(700, 100)
+custom_minimum_size = Vector2(900, 100)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="TileChokbeopsonyeon" type="Button" parent="Center/VBox/ThumbRow" unique_id=800750107]
+[node name="TileGymBro" type="Button" parent="Center/VBox/ThumbRow"]
 layout_mode = 0
 offset_right = 150.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array()
+flip_h = true
+fill_color = Color(0.55, 0.6, 0.65, 1)
+display_text = "헬스장 빌런"
+character_key = "헬스장 빌런"
+
+[node name="TileChokbeopsonyeon" type="Button" parent="Center/VBox/ThumbRow" unique_id=800750107]
+layout_mode = 0
+offset_left = 100.0
+offset_right = 250.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -184,8 +198,8 @@ character_key = "촉법소년"
 
 [node name="TileAkpeulleo" type="Button" parent="Center/VBox/ThumbRow" unique_id=1868184841]
 layout_mode = 0
-offset_left = 100.0
-offset_right = 250.0
+offset_left = 200.0
+offset_right = 350.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -198,8 +212,8 @@ character_key = "악플러"
 
 [node name="TileJujeongbaengi" type="Button" parent="Center/VBox/ThumbRow" unique_id=299916865]
 layout_mode = 0
-offset_left = 200.0
-offset_right = 350.0
+offset_left = 300.0
+offset_right = 450.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -212,8 +226,8 @@ character_key = "주정뱅이"
 
 [node name="TileRandom" type="Button" parent="Center/VBox/ThumbRow" unique_id=428650708]
 layout_mode = 0
-offset_left = 300.0
-offset_right = 400.0
+offset_left = 400.0
+offset_right = 500.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -223,8 +237,8 @@ display_font_size = 28
 
 [node name="TileCatMom" type="Button" parent="Center/VBox/ThumbRow" unique_id=1502827823]
 layout_mode = 0
-offset_left = 350.0
-offset_right = 500.0
+offset_left = 450.0
+offset_right = 600.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -237,8 +251,8 @@ character_key = "고양이 아주머니"
 
 [node name="TileFloorNoise" type="Button" parent="Center/VBox/ThumbRow" unique_id=665046394]
 layout_mode = 0
-offset_left = 450.0
-offset_right = 600.0
+offset_left = 550.0
+offset_right = 700.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -251,8 +265,8 @@ character_key = "층간소음 청년"
 
 [node name="TileSubwayVillain" type="Button" parent="Center/VBox/ThumbRow" unique_id=327050201]
 layout_mode = 0
-offset_left = 550.0
-offset_right = 700.0
+offset_left = 650.0
+offset_right = 800.0
 offset_bottom = 90.0
 flat = true
 script = ExtResource("2")
@@ -260,6 +274,18 @@ fill_color = Color(0.3, 0.65, 0.55, 1)
 portrait_texture = ExtResource("7")
 name_text = "지하철 아저씨"
 character_key = "지하철 아저씨"
+
+[node name="TileIljin" type="Button" parent="Center/VBox/ThumbRow"]
+layout_mode = 0
+offset_left = 750.0
+offset_right = 900.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+fill_color = Color(0.25, 0.3, 0.5, 1)
+portrait_texture = ExtResource("9")
+name_text = "일진"
+character_key = "일진"
 
 [node name="ConfirmButton" type="Button" parent="Center/VBox" unique_id=861101007]
 layout_mode = 2

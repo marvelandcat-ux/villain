@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/잼민이 제압 씬/흐느끼는잼민이.png" id="5"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/사건파일양식.png" id="6"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/수사착수도장.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://bw4c7yj8nbgdq" path="res://sprite/storymode/경찰서/사건해결도장.png" id="7"]
 
 [node name="StoryScene11" type="Control"]
 layout_mode = 3
@@ -83,8 +83,8 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Stamp" type="Sprite2D" parent="CaseFile/Paper"]
-position = Vector2(400, 520)
-rotation = 0.2617994
+position = Vector2(1059, 498)
+rotation = -0.314159
 scale = Vector2(0.22, 0.22)
 texture = ExtResource("7")
 
