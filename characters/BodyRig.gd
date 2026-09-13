@@ -148,6 +148,13 @@ extends Node2D
 ## 켜면 콤보 2·3타 변주가 위아래로 크게 후리는 대신, 각도는 거의 그대로 두고
 ## 손이 뒤로 빠졌다가 앞으로 곧게 내질러진다. 기본은 꺼짐(다른 캐릭터 영향 없음)
 @export var attack_thrust: bool = false
+## 마지막 타에만 오른손 무기를 쥔다 — 평소·앞 타에는 `idle_weapon`(반대 손에 늘어뜨린 물건)이 보인다.
+## 일진처럼 "가방을 옆에 들고 다니다 주먹으로 때리고, 마지막에 가방으로 후려치는" 캐릭터용
+@export var weapon_on_final_hit: bool = false
+## 평소에 들고 있는 쪽 물건 노드 (weapon_on_final_hit이 켜져 있을 때만 쓴다)
+@export var idle_weapon: NodePath
+## 몇 번째 타를 마지막으로 볼지 (0=1타). 3타 콤보면 2
+@export var final_hit_index: int = 2
 ## 찌르기 캐릭터의 2타 — "아래에서 위로 올려치기". 1타 찌르기와 완전히 다른 궤적이어야
 ## 세 타가 한 동작으로 안 보인다. 각도 부호는 위와 같다(양수 raise=무기가 위로 감김)
 @export var thrust2_raise_deg: float = -40.0
@@ -459,9 +466,13 @@ func _process(delta: float) -> void:
 	# 숨쉬기 위상은 항상 진행 (가만히 서 있을 때만 화면에 반영된다)
 	_breathe_phase += delta * breathe_speed
 	_update_blocked_flash(delta)
-	# 두 손 잡기 — 공격이 도는 동안은 1로, 콤보가 끝나면 0으로 서서히 돌아간다
+	# 두 손 잡기 — 공격이 도는 동안은 1로, 콤보가 끝나면 0으로 서서히 돌아간다.
+	# weapon_on_final_hit이 켜져 있으면 **마지막 타에만** 왼손이 합류한다(앞 타는 한 손 주먹)
 	if attack_two_handed:
-		_grip_blend = move_toward(_grip_blend, 1.0 if _attack_time > 0.0 else 0.0, delta * attack_grip_speed)
+		var want_grip: bool = _attack_time > 0.0
+		if weapon_on_final_hit:
+			want_grip = want_grip and _attack_variant >= final_hit_index
+		_grip_blend = move_toward(_grip_blend, 1.0 if want_grip else 0.0, delta * attack_grip_speed)
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
@@ -694,6 +705,14 @@ func _apply_pose(speed_ratio: float) -> void:
 		elif _hold_hidden_by_clash:
 			_hand_r_hold.visible = true
 			_hold_hidden_by_clash = false
+	# 마지막 타에만 무기를 쥐는 캐릭터(일진 가방): 휘두르는 동안만 오른손 무기가 보이고,
+	# 그 외에는 반대 손에 늘어뜨린 쪽이 보인다 — 위의 숨기기 규칙보다 이쪽이 우선한다
+	if weapon_on_final_hit and _hand_r_hold:
+		var swinging_final: bool = _attack_time > 0.0 and _attack_variant >= final_hit_index
+		_hand_r_hold.visible = swinging_final
+		var idle: Node = get_node_or_null(idle_weapon)
+		if idle is CanvasItem:
+			idle.visible = not swinging_final
 
 	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
 	if _squashing:

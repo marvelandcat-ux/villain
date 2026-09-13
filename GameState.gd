@@ -11,6 +11,7 @@ const CHARACTERS := {
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
 	"헬스장 죽돌이": "res://characters/gymbro/GymBro.tscn",  # 뼈대만 있는 스텁 — 스킬 내용 미구현(오픈 이슈)
+	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
@@ -23,6 +24,7 @@ const CHARACTER_COLORS := {
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
 	"헬스장 죽돌이": Color(0.55, 0.6, 0.65),
+	"일진": Color(0.25, 0.3, 0.5),
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
@@ -35,6 +37,7 @@ const PORTRAITS := {
 	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
+	"일진": "res://sprite/일진/정면일진.png",
 }
 
 ## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.
