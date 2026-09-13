@@ -36,6 +36,9 @@ var source_fighter: Fighter:
 var _source_fighter: Fighter = null
 ## 주인이 "있었는지" 기억해둔다. 해제된 객체는 `== null`이 true라서 이걸로만 null과 구분할 수 있다
 var _has_source: bool = false
+## 이번 타에 debris_scene을 뿌릴지. 콤보 공격이 매 타 켜고 끈다 —
+## 주정뱅이 술방울은 마무리 3타에만 튄다(`ComboMeleeAttack.debris_final_hit_only`)
+var debris_enabled: bool = true
 ## repeat_interval을 쓸 때, 겹쳐 있는 Hurtbox마다 다음 타격까지 남은 시간 {Hurtbox: float}
 var _repeat_cooldowns: Dictionary = {}
 
@@ -81,8 +84,8 @@ func _try_hit(area: Area2D) -> bool:
 	if blocked:
 		_notify_blocked_by_guard()
 	_spawn_spark(area.global_position, kb)
-	if debris_scene != null:
-		_spawn_debris(area.global_position)
+	if debris_scene != null and debris_enabled:
+		_spawn_debris(area.global_position, kb)
 	_shake_camera()
 	var victim: Node = area.fighter
 	if blocked:
@@ -167,12 +170,18 @@ func _spawn_spark(pos: Vector2, launch_dir: Vector2 = Vector2.ZERO) -> void:
 	if launch_dir != Vector2.ZERO and spark.has_method("launch"):
 		spark.launch(launch_dir)
 
-## 명중 지점에 debris_scene을 스폰한다 (유리 파편 등). 파편이 바닥까지 떨어지는 처리는 스폰된 노드가 맡는다
-func _spawn_debris(pos: Vector2) -> void:
+## 명중 지점에 debris_scene을 스폰한다 (주정뱅이 술방울 등). 튀고 사라지는 처리는 스폰된 노드가 맡는다.
+## 때린 방향과 술 스택은 스폰한 쪽만 아는 값이라, _ready가 도는 add_child **전에** 미리 넣어준다
+func _spawn_debris(pos: Vector2, launch_dir: Vector2 = Vector2.ZERO) -> void:
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return
 	var debris: Node = debris_scene.instantiate()
+	if "burst_dir" in debris:
+		debris.burst_dir = launch_dir
+	# 술 스택이 많을수록 크게 튄다 — 스택이 눈에 안 보이는 값이라 연출로 드러내 준다
+	if "burst_power" in debris and _has_source and is_instance_valid(_source_fighter):
+		debris.burst_power = int(_source_fighter.custom_data.get("drink_stacks", 0))
 	scene_root.add_child(debris)
 	if debris.has_method("setup"):
 		debris.setup(pos)

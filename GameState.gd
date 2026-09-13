@@ -11,6 +11,7 @@ const CHARACTERS := {
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
 	"주인공": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로다 — 표시 이름만 바꿈. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
+	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
 ## **대전 선택 화면에는 안 띄우고 훈련장에서만 고를 수 있는 캐릭터**(2026-09-13 사용자 결정).
@@ -37,7 +38,8 @@ const CHARACTER_COLORS := {
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
 	"주인공": Color(0.55, 0.6, 0.65),
-	"경찰관": Color(0.2, 0.35, 0.7),   # 스토리 주인공(임시) — CHARACTERS 로스터엔 안 넣음
+	"일진": Color(0.25, 0.3, 0.5),
+	"경찰관": Color(0.2, 0.35, 0.7),   # 스토리 주인공 — 대전 로스터엔 없고 훈련장에서만 고른다
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
@@ -50,6 +52,7 @@ const PORTRAITS := {
 	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
+	"일진": "res://sprite/일진/정면일진.png",
 }
 
 ## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.

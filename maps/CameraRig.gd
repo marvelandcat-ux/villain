@@ -102,6 +102,12 @@ func _update_zoom(a: Vector2, b: Vector2, delta: float) -> void:
 func add_trauma(amount: float) -> void:
 	_trauma = clampf(_trauma + amount, 0.0, 1.0)
 
+## 계속되는 떨림(열차가 지나갈 때 등) — **이번 프레임에 유지할 세기(0~1)** 를 준다.
+## `add_trauma`는 "한 방 맞았다"는 순간 충격이라, 매 프레임 조금씩 부어도 감쇠(초당 shake_decay=3)가
+## 훨씬 커서 하나도 안 쌓인다. 지속되는 진동은 이 함수로 "바닥값"을 깔아줘야 한다
+func set_rumble(amount: float) -> void:
+	_trauma = maxf(_trauma, clampf(amount, 0.0, 1.0))
+
 ## 화면(offset)을 랜덤으로 흔들고 trauma를 서서히 줄인다. trauma가 0이면 offset을 원위치로 되돌린다
 func _apply_shake(delta: float) -> void:
 	if _trauma <= 0.0:
