@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4nf2lnn74mmk"
-path="res://.godot/imported/샷건악플러_밑그림.png-8f444597d538ea42ae27fec5912e66cc.ctex"
+uid="uid://c12sadat0lbks"
+path="res://.godot/imported/샷건준비_상반신.png-c1e5968f1822235b0170b955d63f960f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_밑그림.png"
-dest_files=["res://.godot/imported/샷건악플러_밑그림.png-8f444597d538ea42ae27fec5912e66cc.ctex"]
+source_file="res://sprite/메인메뉴/일러스트/악플러/샷건준비_상반신.png"
+dest_files=["res://.godot/imported/샷건준비_상반신.png-c1e5968f1822235b0170b955d63f960f.ctex"]
 
 [params]
 

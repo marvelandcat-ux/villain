@@ -12,9 +12,10 @@
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0006_오른손중지손가락.png" id="10"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0005_오른손약지손가락.png" id="11"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0004_오른손새끼손가락.png" id="12"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_밑그림.png" id="13"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_0000_샷건치는팔.png" id="14"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_상반신.png" id="15"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건준비악플러.png" id="13"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건준비_상반신.png" id="14"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_0001_레이어-1.png" id="15"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_상반신.png" id="16"]
 
 [node name="AkpeulleoIllust" type="Node2D"]
 script = ExtResource("1")
@@ -68,14 +69,23 @@ texture = ExtResource("4")
 [node name="Shotgun" type="Node2D" parent="."]
 visible = false
 
-[node name="Base" type="Sprite2D" parent="Shotgun"]
+[node name="Ready" type="Node2D" parent="Shotgun"]
+
+[node name="Base" type="Sprite2D" parent="Shotgun/Ready"]
 centered = false
 texture = ExtResource("13")
 
-[node name="Upper" type="Sprite2D" parent="Shotgun"]
+[node name="Upper" type="Sprite2D" parent="Shotgun/Ready"]
+centered = false
+texture = ExtResource("14")
+
+[node name="Hit" type="Node2D" parent="Shotgun"]
+visible = false
+
+[node name="Base" type="Sprite2D" parent="Shotgun/Hit"]
 centered = false
 texture = ExtResource("15")
 
-[node name="Arm" type="Sprite2D" parent="Shotgun"]
+[node name="Upper" type="Sprite2D" parent="Shotgun/Hit"]
 centered = false
-texture = ExtResource("14")
+texture = ExtResource("16")

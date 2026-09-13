@@ -9,21 +9,27 @@ extends Node2D
 ##
 ## 두 벌의 그림을 통째로 갈아 끼운다:
 ##  - `Typing` : 평소 자세. `Base`(_0010 완성 그림) + `Body`(_0009 상체) + 손가락 8개 + `Head`(_0008)
-##  - `Shotgun` : 샷건 치는 자세(표정도 다르다). `Base`(밑그림) + `Arm`(내리치는 팔)
+##  - `Shotgun/Ready` : 주먹을 번쩍 든 자세 (`샷건준비악플러.png`)
+##  - `Shotgun/Hit`   : 내리친 자세 (`샷건악플러_0001_레이어-1.png`). 표정도 다르다
 ##
-## 흐름은 **타자·낄낄(type_seconds) -> 팔 들기 -> 쾅 -> 씩씩거리기(pant_seconds) -> 다시 타자** 로 돈다.
+## 흐름은 **타자·낄낄(type_seconds) -> 주먹 들기(windup_time) -> 쾅 -> 씩씩거리기(pant_seconds)
+## -> 다시 타자** 로 돈다. 들기와 내리치기는 **그려진 두 장을 갈아 끼우는 2프레임 애니메이션**이다.
+##
+## (2026-09-14) 처음엔 팔 파츠 한 장을 잘라서 코드로 들어 올렸는데, 어깨 단면이 몸에서 떨어져 나와
+## 어색했다(사용자 지적). 주먹 든 자세 그림을 새로 받아서 **자세를 통째로 교체**하는 방식으로 바꿨고,
+## 관절 문제가 사라졌다. 잘라 쓰던 팔 조각(`샷건팔_어깨/전완`)과 메운 밑그림은 더 안 쓴다.
 ##
 ## **평소 자세의 손가락은 아래로만 누른다.** 파츠들이 `Typing/Base`와 100% 겹쳐 있어서(밑그림이 파츠를
 ## 지운 판이 아니다), 손가락을 위로 들면 밑그림의 손가락이 남아 **손가락이 두 개로 보인다**.
 ## 아래로 내리면 위쪽 빈자리를 밑그림의 같은 그림이 메워줘 이음매가 안 보인다.
 ##
-## **샷건 팔은 위로 든다.** 그래서 `Shotgun/Base`만은 팔을 지우고 메운 판을 따로 만들어 뒀다
-## (`샷건악플러_밑그림.png` — 받은 `_0001_레이어-1`에서 팔 알파를 3px 부풀려 지우고, 남은 픽셀 중
-##  가장 가까운 색으로 번지게(BFS) 채운 것). 주변이 전부 검은 후드·책상이라 메운 자리가 티가 안 난다.
+## 두 샷건 자세에는 각각 **상반신만 잘라낸 판(`*_상반신.png`, 원본 y=500에서 자름)** 을 원본 위에
+## 똑같이 겹쳐 뒀다. 이걸 `pant_pivot_y`를 축으로 세로로 늘이면 **책상·다리는 그대로 있고 어깨·머리만**
+## 오르내린다. 축에서 변위가 0이라 잘라낸 줄에 이음매가 안 생긴다.
 ##
 ## 파츠는 centered = false(회전축이 캔버스 왼쪽 위)라 **회전은 쓰지 않는다** — 돌리면 엉뚱한 데서 돈다.
 
-enum Phase { TYPE, WINDUP, SLAM, PANT }
+enum Phase { TYPE, WINDUP, PANT }
 
 @export_group("타자")
 ## 키를 누를 때 손가락이 내려가는 거리(px, 원본 캔버스 기준)
@@ -50,25 +56,20 @@ enum Phase { TYPE, WINDUP, SLAM, PANT }
 @export_group("낄낄대기")
 ## 머리가 자잘하게 떨리는 폭(px). 0이면 안 떤다
 @export var laugh_shake: float = 0.9
-## 1초에 몇 번 떠는지 — 12~16쯤이 "낄낄" 웃는 느낌이다
-@export var laugh_speed: float = 11.0
+## 1초에 몇 번 떠는지. 높이면 "낄낄" 잔웃음, 낮추면 여유롭게 어깨 들썩이는 느낌이 된다
+@export var laugh_speed: float = 5.0
 ## 몸도 같이 떠는 비율 (0 = 머리만, 1 = 머리와 같은 폭)
 @export_range(0.0, 1.0, 0.05) var laugh_body_ratio: float = 0.25
 
 @export_group("샷건")
 ## 타자·낄낄대기를 몇 초 하고 샷건으로 넘어가는지
 @export var type_seconds: float = 4.5
-## 팔을 위로 드는 데 걸리는 시간(초)과 드는 거리(px)
-@export var windup_time: float = 0.28
-@export var arm_lift: float = 55.0
-## 내리찍는 데 걸리는 시간(초). **짧아야 쾅이 된다**
-@export var slam_time: float = 0.07
-## 내리찍을 때 제자리보다 더 내려가는 거리(px). 여기서 튕겨 제자리로 돌아온다
-@export var arm_overshoot: float = 12.0
-## 내리찍은 뒤 팔이 제자리로 돌아오는 시간(초)
-@export var settle_time: float = 0.5
-## 내리찍는 순간 그림 전체가 흔들리는 크기(px)·잦아드는 시간(초)·1초당 진동 수
-@export var shake_amount: float = 9.0
+## 주먹을 든 자세로 버티는 시간(초). 이 동안 상반신이 조금 더 솟아오른다
+@export var windup_time: float = 0.34
+## 버티는 동안 상반신이 위로 솟는 비율 (0.018 = 1.8%)
+@export var windup_stretch: float = 0.018
+## 내리치는 순간 그림 전체가 흔들리는 크기(px)·잦아드는 시간(초)·1초당 진동 수
+@export var shake_amount: float = 11.0
 @export var shake_time: float = 0.45
 @export var shake_freq: float = 24.0
 
@@ -92,8 +93,10 @@ const FINGER_WEIGHT := [2.6, 1.9, 1.3, 1.0, 1.0, 1.3, 1.9, 2.6]
 @onready var _shotgun: Node2D = $Shotgun
 @onready var _head: Sprite2D = $Typing/Head
 @onready var _body: Sprite2D = $Typing/Body
-@onready var _arm: Sprite2D = $Shotgun/Arm
-@onready var _upper: Sprite2D = $Shotgun/Upper
+@onready var _ready_pose: Node2D = $Shotgun/Ready
+@onready var _hit_pose: Node2D = $Shotgun/Hit
+@onready var _ready_upper: Sprite2D = $Shotgun/Ready/Upper
+@onready var _hit_upper: Sprite2D = $Shotgun/Hit/Upper
 
 var _time: float = 0.0
 var _phase: int = Phase.TYPE
@@ -104,9 +107,8 @@ var _finger_timer: Array[float] = []
 var _finger_down: Array[bool] = []
 var _head_rest: Vector2 = Vector2.ZERO
 var _body_rest: Vector2 = Vector2.ZERO
-var _arm_rest: Vector2 = Vector2.ZERO
-var _shotgun_rest: Vector2 = Vector2.ZERO
-var _upper_rest: Vector2 = Vector2.ZERO
+var _ready_upper_rest: Vector2 = Vector2.ZERO
+var _hit_upper_rest: Vector2 = Vector2.ZERO
 ## 흔들림은 이 노드 자체를 밀어서 만든다 — 씬에 저장된 자리를 기준으로 되돌린다
 var _root_rest: Vector2 = Vector2.ZERO
 var _shake_left: float = 0.0
@@ -117,9 +119,8 @@ func _ready() -> void:
 	_root_rest = position
 	_head_rest = _head.position
 	_body_rest = _body.position
-	_arm_rest = _arm.position
-	_shotgun_rest = _shotgun.position
-	_upper_rest = _upper.position
+	_ready_upper_rest = _ready_upper.position
+	_hit_upper_rest = _hit_upper.position
 	# 이름이 Finger로 시작하는 자식을 트리 순서대로 모은다 — 씬에서 손가락을 빼거나 더해도 코드는 그대로다
 	for child in _typing.get_children():
 		if child is Sprite2D and String(child.name).begins_with("Finger"):
@@ -147,26 +148,15 @@ func _process(delta: float) -> void:
 			if _phase_time >= type_seconds:
 				_enter_shotgun()
 		Phase.WINDUP:
-			# 팔을 들어 올린다 (뒤로 갈수록 느려지게 — 힘을 모으는 느낌)
-			var up: float = 1.0 - pow(1.0 - clampf(_phase_time / maxf(windup_time, 0.01), 0.0, 1.0), 2.0)
-			_arm.position = _arm_rest + Vector2(0.0, -arm_lift * up)
-			_set_upper_stretch(0.0)
+			# 주먹 든 자세로 버틴다 — 상반신이 조금씩 더 솟아오르며 힘을 모은다
+			var up: float = clampf(_phase_time / maxf(windup_time, 0.01), 0.0, 1.0)
+			_stretch(_ready_upper, _ready_upper_rest, windup_stretch * up)
 			if _phase_time >= windup_time:
-				_phase = Phase.SLAM
-				_phase_time = 0.0
-		Phase.SLAM:
-			# 내리찍기 — 뒤로 갈수록 빨라지게(가속) 떨어뜨린다
-			var down: float = pow(clampf(_phase_time / maxf(slam_time, 0.01), 0.0, 1.0), 2.0)
-			_arm.position = _arm_rest + Vector2(0.0, lerpf(-arm_lift, arm_overshoot, down))
-			_set_upper_stretch(0.0)
-			if _phase_time >= slam_time:
 				_impact()
 		Phase.PANT:
-			# 팔은 튕긴 자리에서 제자리로 돌아오고, 몸은 크게 헐떡인다
-			var back: float = clampf(_phase_time / maxf(settle_time, 0.01), 0.0, 1.0)
-			_arm.position = _arm_rest + Vector2(0.0, arm_overshoot * (1.0 - back))
 			# 천천히 크게 들이쉬고 내쉰다 — 상반신만 위로 늘었다 제자리로
-			_set_upper_stretch(0.5 - 0.5 * cos(_phase_time * TAU / maxf(pant_period, 0.01)))
+			var breath: float = 0.5 - 0.5 * cos(_phase_time * TAU / maxf(pant_period, 0.01))
+			_stretch(_hit_upper, _hit_upper_rest, pant_stretch * breath)
 			if _phase_time >= pant_seconds:
 				_enter_typing()
 
@@ -176,35 +166,38 @@ func _enter_typing() -> void:
 	_phase_time = 0.0
 	_typing.visible = true
 	_shotgun.visible = false
-	_arm.position = _arm_rest
-	_set_upper_stretch(0.0)
+	_reset_poses()
 
-## 샷건 자세로 갈아 끼운다 — 표정까지 통째로 다른 그림이다
+## 주먹 든 자세로 갈아 끼운다 — 표정까지 통째로 다른 그림이다
 func _enter_shotgun() -> void:
 	_phase = Phase.WINDUP
 	_phase_time = 0.0
 	_typing.visible = false
 	_shotgun.visible = true
-	_arm.position = _arm_rest
-	_set_upper_stretch(0.0)
+	_reset_poses()
+	_ready_pose.visible = true
+	_hit_pose.visible = false
 
-## 팔이 바닥에 닿은 순간 — 그림 전체가 흔들리고 씩씩거리기로 넘어간다
+## 내리치는 순간 — 그림을 내리친 자세로 바꾸고, 화면이 흔들리고, 씩씩거리기로 넘어간다.
+## **자세 교체가 곧 타격 프레임**이라 중간 보간 없이 툭 바뀌는 게 맞다
 func _impact() -> void:
 	_phase = Phase.PANT
 	_phase_time = 0.0
+	_ready_pose.visible = false
+	_hit_pose.visible = true
 	_shake_left = shake_time
 
-## 샷건 자세의 숨 — **상반신만** pant_pivot_y를 축으로 위로 늘어난다(t = 0 제자리, 1 최대).
+func _reset_poses() -> void:
+	_stretch(_ready_upper, _ready_upper_rest, 0.0)
+	_stretch(_hit_upper, _hit_upper_rest, 0.0)
+
+## 상반신 판을 pant_pivot_y를 축으로 세로로 늘인다 (amount = 늘어나는 비율).
 ## 통째로 위아래로 옮기면 책상·다리까지 같이 떠서 화면이 흔들리는 것처럼 보인다(사용자 지적).
-## 축에서는 전혀 안 움직이고 위로 갈수록 많이 움직여서, 잘라낸 줄에 이음매가 생기지 않는다.
-## 팔도 같은 변환을 받아야 어깨에서 어긋나지 않는다
-func _set_upper_stretch(t: float) -> void:
-	var s: float = 1.0 + pant_stretch * clampf(t, 0.0, 1.0)
-	var shift: float = pant_pivot_y * (1.0 - s)
-	_upper.scale.y = s
-	_upper.position.y = _upper_rest.y + shift
-	_arm.scale.y = s
-	_arm.position.y += shift
+## 축에서는 전혀 안 움직이고 위로 갈수록 많이 움직여서, 잘라낸 줄에 이음매가 생기지 않는다
+func _stretch(part: Sprite2D, rest: Vector2, amount: float) -> void:
+	var factor: float = 1.0 + maxf(amount, 0.0)
+	part.scale.y = factor
+	part.position.y = rest.y + pant_pivot_y * (1.0 - factor)
 
 ## 타자 + 낄낄대기
 func _process_typing(delta: float) -> void:

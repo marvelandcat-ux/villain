@@ -51,6 +51,11 @@ extends Control
 @export var illust_swap_seconds: float = 10.0
 ## 다음 장으로 넘어갈 때 겹치며 바뀌는 시간(초). 0이면 툭 하고 바로 바뀐다
 @export var illust_fade_seconds: float = 0.9
+## 배경 위에 깔리는 어두운 판(`Scrim`)의 진하기. 왼쪽 메뉴 글씨가 배경에 묻히지 않게 하는 용도다
+@export_range(0.0, 1.0, 0.01) var scrim_alpha: float = 0.45
+## **이 일러스트들일 때는 어두운 판을 걷는다** (노드 이름). 배경 자체가 이미 어두워서
+## 덧씌우면 아무것도 안 보이는 경우에 쓴다 — 악플러(쓰레기방)가 그렇다
+@export var no_scrim_illusts: Array[String] = ["IllustAkpeulleo"]
 ## (임시) **S를 누르면 다음 일러스트로 바로 넘긴다.** 새로 넣은 일러스트를 확인할 때 쓰는 것이라
 ## 정식 출시 전에는 꺼야 한다
 @export var debug_illust_key: bool = true
@@ -60,6 +65,8 @@ extends Control
 @onready var _dex_button: Button = $DexButton
 ## 화면 전체를 덮는 검은 판 — 켜질 때 이게 걷히면서 화면이 열린다
 @onready var _screen_fade: ColorRect = $Fade
+## 배경 위 어두운 판 — 일러스트마다 진하기가 다를 수 있어서 매 프레임 맞춰준다
+@onready var _scrim: ColorRect = $Scrim
 ## 사선 메뉴 항목들 (트리 순서 = 위에서 아래 순서)
 var _menu_items: Array[Button] = []
 ## 지금 커서가 올라가 있는 항목 (없으면 null)
@@ -204,6 +211,8 @@ func _collect_illustrations() -> void:
 	_illust_index = 0
 	_illust_time = 0.0
 	_fading = false
+	if not _illusts.is_empty():
+		_scrim.color.a = _scrim_target(0)
 
 ## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null)
 func _pair_background(i: int) -> Node2D:
@@ -238,6 +247,12 @@ func _set_pair_alpha(i: int, alpha: float) -> void:
 		if node:
 			node.modulate.a = alpha
 
+## i번째 일러스트일 때 어두운 판이 얼마나 진해야 하는지
+func _scrim_target(i: int) -> float:
+	if i < 0 or i >= _illusts.size():
+		return scrim_alpha
+	return 0.0 if _illusts[i].name in no_scrim_illusts else scrim_alpha
+
 func _process(delta: float) -> void:
 	# 켜질 때: 타이틀에서 넘어온 검은 판이 서서히 걷힌다
 	if _screen_fade.color.a > 0.0:
@@ -254,11 +269,14 @@ func _process(delta: float) -> void:
 		# 가는 쪽과 오는 쪽이 겹치며 바뀐다
 		_set_pair_alpha(_illust_index, 1.0 - t)
 		_set_pair_alpha(_next_index, t)
+		# 어두운 판도 같이 넘어간다 — 안 그러면 배경만 바뀌고 어둡기가 툭 끊긴다
+		_scrim.color.a = lerpf(_scrim_target(_illust_index), _scrim_target(_next_index), t)
 		if t >= 1.0:
 			_hide_pair(_illust_index)
 			_illust_index = _next_index
 			_fading = false
 			_illust_time = 0.0
+			_scrim.color.a = _scrim_target(_illust_index)
 		return
 
 	_illust_time += delta
