@@ -1,0 +1,261 @@
+class_name IljinCutIn
+extends Node2D
+
+## 일진 궁극기 컷인 (2026-09-14) — **뒷골목에 서 있던 일진 패거리 중 친구 하나가 이쪽으로 걸어 나온다.**
+##
+## 화면 구성(뒤 -> 앞):
+##  - `Bg` : 일진궁극기배경 (담벼락 골목)
+##  - `Iljin` : 뒤쪽에서 담배 물고 웃고 있는 일진. 담배 연기가 피어오르고(`Iljin/Smoke`),
+##    **입을 뻐끔거리며 뭐라고 지껄인다**(얼굴 그림 두 장을 번갈아 끼우는 방식)
+##  - `Girl` : 일진 여자친구. 임시 스프라이트라 동작은 없고 **머리만 부들부들 떤다**
+##  - `Friend` : 앞으로 걸어오는 일진의 친구 — 이 컷인에서 유일하게 걸어오는 인물
+##  - `ShoutText` : 화면 위쪽 문구. 잼민이 컷인과 같은 글꼴(Jua)·흰 글씨에 두꺼운 어두운 외곽선이다.
+##    문구는 씬에서 바로 고칠 수 있다 — 지금은 팀원에게 보내는 인사말이 들어가 있다
+##  - `ShoutMarkL` / `ShoutMarkR` : 일진 머리 양옆의 **빨간 말줄**(잼민이 컷인에 쓴 `말줄.png`).
+##    같은 그림을 좌우로 뒤집어 한 쌍으로 놓았다 — 문구와 같이 툭 튀어나온다
+##
+## `Friend`의 연출은 그림을 여러 장 그리는 대신 **코드로 파츠를 흔들어서** 만든다(다른 컷인과 같은 방식):
+##  1. **제자리에서 점점 커지며 카메라 쪽으로 다가온다.** (2026-09-14) 처음엔 일진이 서 있는
+##     오른쪽 뒤에서 비스듬히 걸어왔는데, 옆으로 미끄러지는 것처럼 보인다고 해서 **정면으로 다가오게** 바꿨다.
+##     가로 이동은 없고 크기만 커진다 — 시작 자리는 `friend_start_offset`으로 살짝만 위로 띄워 둔다
+##  2. 걸을 때마다 **머리가 위아래로 통통** 튄다(`step_rate`, `head_bob_height`).
+##     (2026-09-14) 처음엔 몸 전체를 흔들었는데 통짜로 들썩여 어색해서, **몸은 다가오기만 하고
+##     머리만 흔들도록** 바꿨다. 몸도 같이 흔들고 싶으면 `body_bob_height`를 올리면 된다
+##  3. 두 손은 **번갈아 커졌다 작아진다** — 걸을 때 한쪽 팔은 앞으로(카메라 쪽 = 크게),
+##     반대쪽 팔은 뒤로(작게) 가는 걸 **크기 차이로** 흉내낸 것이다. 앞으로 나온 손은 바깥·아래로
+##     조금 나가고, 뒤로 간 손은 안쪽·위로 들어간다. 팔 그림이 없어도 이것만으로 걸어오는 것처럼 읽힌다.
+##     (2026-09-14) 처음엔 세게 부딪치는 박수였는데 과하다고 해서 이 방식으로 바꿨다
+##
+## (2026-09-14 조정) **움직이는 건 손의 x축과 몸의 위아래 통통뿐이다.**
+##  - 걸을 때 어깨가 좌우로 기우는 것(`sway_deg`)은 기본값 0으로 껐다 — 손의 좌우 움직임과 겹쳐서
+##    "양옆으로 막 흔들며 온다"로 보였다
+##  - **부딪힐 때 화면(루트)은 흔들지 않는다** — 몸만 살짝 부푼다
+##  - **천천히 걸어온다.** 대신 시작 크기(`friend_start_scale`)를 크게 잡아서, 멀리서 조그맣게
+##    시작해 확 커지는 게 아니라 **처음부터 어느 정도 크게 보이는 채로** 다가온다
+##  - 몸의 위아래 통통(`step_rate`)은 느리게, 손뼉(`clap_rate`)은 그보다 빠르게 —
+##    걸음보다 손이 바쁘게 움직여야 위협적으로 보인다
+##
+## 씬에 배치해 둔 위치가 "다 왔을 때"의 최종 자리다 — 크기·자리를 고치려면 `Friend`(와 그 자식들)를
+## 에디터에서 옮기면 되고, 이 스크립트는 손댈 필요가 없다.
+
+## 이 컷인이 필요로 하는 표시 시간(초). UltimateCutIn이 기본 hold_time 대신 이 값을 쓴다
+@export var cutin_duration: float = 2.2
+
+@export_group("다가오기")
+## 걸어오기 시작하는 자리 — **씬에 배치해 둔 최종 자리에서 이만큼 떨어진 곳**.
+## x를 0으로 두면 옆으로 안 새고 **정면으로만 다가온다**. y가 음수면 조금 위(=멀리)에서 시작한다.
+## Friend 노드를 옮겨도 같이 따라오므로 다시 잡을 필요가 없다
+@export var friend_start_offset: Vector2 = Vector2(0.0, -34.0)
+## 시작할 때의 크기 배율 (1.0 = 씬에 배치해 둔 최종 크기)
+@export var friend_start_scale: float = 0.82
+## 다 도착하는 시점 (전체 길이 대비 비율). 나머지 시간은 코앞에서 계속 손을 내지른다
+@export_range(0.1, 1.0, 0.01) var arrive_at: float = 0.85
+## 다가오는 가속 정도. 1이면 등속, 클수록 뒤에선 느리다가 코앞에서 확 다가온다
+@export var approach_curve: float = 1.4
+## 처음에 스르륵 나타나는 시간 (전체 길이 대비 비율). 뒤쪽 일진 위에 갑자기 겹쳐 뜨는 걸 막는다
+@export_range(0.0, 0.5, 0.01) var fade_in_at: float = 0.12
+
+@export_group("걸음")
+## 1초에 몇 걸음 걷는지
+@export var step_rate: float = 1.6
+## 한 걸음마다 **몸 전체**가 떠오르는 높이(px). **0이면 몸은 안 흔들리고 다가오기만 한다**
+@export var body_bob_height: float = 0.0
+## 한 걸음마다 **머리**가 떠오르는 높이(px, Friend 로컬 기준이라 다가올수록 같이 커진다)
+@export var head_bob_height: float = 20.0
+## 머리가 몸보다 늦게 따라오는 시간(초). 아주 조금만 줘도 목이 있는 것처럼 보인다
+@export var head_bob_lag: float = 0.06
+## 걸음마다 좌우로 기우는 각도(도) — 어깨를 흔들며 걷는 느낌
+@export var sway_deg: float = 0.0
+
+@export_group("팔 젓기")
+## 1초에 몇 바퀴 도는지 — 한 바퀴에 좌우 팔이 한 번씩 앞으로 나온다.
+## **`step_rate`의 절반**으로 두면 한 걸음에 팔이 한 번 바뀌어서 걸음과 딱 맞는다
+@export var arm_rate: float = 0.8
+## 앞으로 나온 손이 커지는 비율 (0.22 = 22% 크게, 반대쪽은 22% 작게)
+@export var arm_depth: float = 0.22
+## 앞으로 나온 손이 바깥으로 나가는 거리(px). 뒤로 간 손은 같은 만큼 안쪽으로 들어간다
+@export var arm_out: float = 12.0
+## 앞으로 나온 손이 아래로 내려가는 거리(px). 뒤로 간 손은 같은 만큼 위로 올라간다
+@export var arm_drop: float = 7.0
+
+@export_group("문구")
+## 문구가 뜨기 시작하는 시점(초)
+@export var shout_delay: float = 0.12
+## 문구가 툭 튀어나오는 시간(초)
+@export var shout_pop_time: float = 0.22
+## 튀어나올 때의 처음 크기 배율 (1보다 크면 크게 시작해 줄어들며 박힌다)
+@export var shout_pop_scale: float = 1.2
+
+@export_group("여자친구 떨기")
+## 머리가 떨리는 폭(px). 0이면 안 떤다
+@export var girl_shake: float = 1.1
+## 1초에 몇 번 떠는지 — 30 근처면 "부들부들"로 읽힌다
+@export var girl_shake_speed: float = 30.0
+## 떨면서 같이 흔들리는 각도(도)
+@export var girl_shake_deg: float = 0.45
+
+@export_group("일진 말하기")
+## 입 벌린 얼굴 그림. 비워두면 입을 안 움직인다.
+## 다문 얼굴(`Iljin/Head`에 씬에서 지정해 둔 그림)과 **같은 캔버스**여야 자리가 안 튄다
+@export var iljin_talk_texture: Texture2D
+## 입을 벌리고 있는 시간의 최소/최대(초) — 한 음절 길이
+@export var mouth_open_min: float = 0.05
+@export var mouth_open_max: float = 0.13
+## 입을 다물고 있는 시간의 최소/최대(초). 가끔 길게 쉬어야 기계적으로 안 보인다
+@export var mouth_close_min: float = 0.04
+@export var mouth_close_max: float = 0.16
+## 입을 벌릴 때 고개가 까딱하는 정도 (px 아래로 / 도)
+@export var talk_nod: float = 2.5
+@export var talk_nod_deg: float = 1.6
+## 입 모양이 매번 같은 순서로 안 나오게 하는 씨앗
+@export var talk_seed: int = 20260914
+
+@onready var _friend: Node2D = $Friend
+@onready var _hand_l: Sprite2D = $Friend/HandL
+@onready var _hand_r: Sprite2D = $Friend/HandR
+@onready var _iljin_head: Sprite2D = get_node_or_null("Iljin/Head")
+@onready var _friend_head: Sprite2D = get_node_or_null("Friend/Head")
+@onready var _girl_head: Sprite2D = get_node_or_null("Girl/Head")
+@onready var _shout: Label = get_node_or_null("ShoutText")
+@onready var _shout_marks: Array[Node] = [get_node_or_null("ShoutMarkL"), get_node_or_null("ShoutMarkR")]
+
+var _time: float = 0.0
+var _playing: bool = false
+## 씬에 배치해 둔 값(=최종 모습). _ready에서 기억해 두고 여기로 다가온다
+var _friend_rest_position: Vector2 = Vector2.ZERO
+var _friend_rest_scale: Vector2 = Vector2.ONE
+var _hand_l_rest: Vector2 = Vector2.ZERO
+var _hand_r_rest: Vector2 = Vector2.ZERO
+var _hand_l_rest_scale: Vector2 = Vector2.ONE
+var _hand_r_rest_scale: Vector2 = Vector2.ONE
+var _friend_head_rest: Vector2 = Vector2.ZERO
+var _girl_head_rest: Vector2 = Vector2.ZERO
+var _girl_head_rest_rotation: float = 0.0
+## 말줄의 씬 저장 크기 — 문구와 같이 커졌다 줄어들게 하려고 기억해 둔다
+var _shout_mark_rest_scale: Array[Vector2] = []
+## 일진 입 모양 — 다문 얼굴(씬에 지정된 그림)과 제자리를 기억해 두고 두 장을 번갈아 끼운다
+var _iljin_head_rest_texture: Texture2D = null
+var _iljin_head_rest_position: Vector2 = Vector2.ZERO
+var _iljin_head_rest_rotation: float = 0.0
+var _mouth_timer: float = 0.0
+var _mouth_open: bool = false
+var _talk_rng := RandomNumberGenerator.new()
+
+func _ready() -> void:
+	_friend_rest_position = _friend.position
+	_friend_rest_scale = _friend.scale
+	_hand_l_rest = _hand_l.position
+	_hand_r_rest = _hand_r.position
+	_hand_l_rest_scale = _hand_l.scale
+	_hand_r_rest_scale = _hand_r.scale
+	if _friend_head:
+		_friend_head_rest = _friend_head.position
+	if _girl_head:
+		_girl_head_rest = _girl_head.position
+		_girl_head_rest_rotation = _girl_head.rotation
+	if _iljin_head:
+		_iljin_head_rest_texture = _iljin_head.texture
+		_iljin_head_rest_position = _iljin_head.position
+		_iljin_head_rest_rotation = _iljin_head.rotation
+	_talk_rng.seed = talk_seed
+	for mark in _shout_marks:
+		_shout_mark_rest_scale.append((mark as Node2D).scale if mark else Vector2.ONE)
+
+## UltimateCutIn이 컷인을 띄우면 호출한다. 에디터에서 그냥 열면 최종 자세로 가만히 서 있는다
+func play() -> void:
+	_time = 0.0
+	_playing = true
+	_friend.modulate.a = 0.0
+	if _shout:
+		_shout.modulate.a = 0.0
+	for mark in _shout_marks:
+		if mark:
+			(mark as CanvasItem).modulate.a = 0.0
+
+func _process(delta: float) -> void:
+	if not _playing:
+		return
+	_time += delta
+	_update_talk(delta)
+	_update_girl_shake()
+	_update_shout()
+	var t: float = clampf(_time / maxf(cutin_duration, 0.01), 0.0, 1.0)
+
+	# --- 다가오기 ---
+	var walk: float = clampf(t / arrive_at, 0.0, 1.0)
+	# 뒤에선 천천히, 코앞에서 조금 더 빨리 (원근). approach_curve = 1이면 등속
+	var eased: float = pow(walk, approach_curve)
+	var scale_now: float = lerpf(friend_start_scale, 1.0, eased)   # 최종 scale은 아래 손뼉 반동까지 더해서 정한다
+	_friend.modulate.a = clampf(t / maxf(fade_in_at, 0.001), 0.0, 1.0)
+
+	# --- 걸음: 한 걸음마다 위로 떴다 내려온다 ---
+	var step_phase: float = _time * PI * step_rate
+	var hop: float = absf(sin(step_phase))
+	var bob: float = -hop * body_bob_height * scale_now
+	var start_position: Vector2 = _friend_rest_position + friend_start_offset
+	_friend.position = start_position.lerp(_friend_rest_position, eased) + Vector2(0.0, bob)
+	_friend.rotation = deg_to_rad(sway_deg) * sin(step_phase * 0.5)
+	# 머리는 몸을 따라 움직인 뒤 **거기서 더** 튄다. 조금 늦게(head_bob_lag) 따라와서 목이 있는 것처럼 보인다
+	if _friend_head:
+		var head_hop: float = absf(sin((_time - head_bob_lag) * PI * step_rate))
+		_friend_head.position = _friend_head_rest + Vector2(0.0, -head_hop * head_bob_height)
+
+	# --- 팔 젓기: 한쪽은 앞(크게), 반대쪽은 뒤(작게)로 번갈아 ---
+	# swing = +1 -> 왼손이 앞, -1 -> 오른손이 앞
+	var swing: float = sin(_time * TAU * arm_rate)
+	_hand_l.scale = _hand_l_rest_scale * (1.0 + arm_depth * swing)
+	_hand_r.scale = _hand_r_rest_scale * (1.0 - arm_depth * swing)
+	# 앞으로 나온 쪽이 바깥(왼손은 -x)·아래로, 뒤로 간 쪽이 안쪽·위로
+	_hand_l.position = _hand_l_rest + Vector2(-arm_out, arm_drop) * swing
+	_hand_r.position = _hand_r_rest + Vector2(arm_out, arm_drop) * -swing
+
+	_friend.scale = _friend_rest_scale * scale_now
+
+## 일진이 뭐라고 지껄이는 입 모양 — 얼굴 그림 두 장을 불규칙한 간격으로 번갈아 끼운다.
+## 일정한 박자로 켰다 껐다 하면 기계처럼 보여서, 벌리는 시간과 다무는 시간을 매번 다르게 뽑는다
+func _update_talk(delta: float) -> void:
+	if _iljin_head == null or iljin_talk_texture == null:
+		return
+	_mouth_timer -= delta
+	if _mouth_timer > 0.0:
+		return
+	_mouth_open = not _mouth_open
+	if _mouth_open:
+		_mouth_timer = _talk_rng.randf_range(mouth_open_min, mouth_open_max)
+		_iljin_head.texture = iljin_talk_texture
+		# 말할 때마다 고개를 까딱 — 입만 움직이면 인형 같아서 목도 같이 움직여야 말하는 것처럼 보인다
+		_iljin_head.position = _iljin_head_rest_position + Vector2(0.0, talk_nod)
+		_iljin_head.rotation = _iljin_head_rest_rotation + deg_to_rad(talk_nod_deg)
+	else:
+		_mouth_timer = _talk_rng.randf_range(mouth_close_min, mouth_close_max)
+		_iljin_head.texture = _iljin_head_rest_texture
+		_iljin_head.position = _iljin_head_rest_position
+		_iljin_head.rotation = _iljin_head_rest_rotation
+
+## 여자친구가 부들부들 떠는 연출 — 빠른 진동 두 개를 서로 다른 주기로 겹쳐서,
+## 한 방향으로만 왕복하지 않고 자잘하게 떨리는 것처럼 보이게 한다
+func _update_girl_shake() -> void:
+	if _girl_head == null or girl_shake <= 0.0:
+		return
+	var phase: float = _time * girl_shake_speed * TAU
+	_girl_head.position = _girl_head_rest + Vector2(sin(phase), sin(phase * 1.31 + 1.7) * 0.6) * girl_shake
+	_girl_head.rotation = _girl_head_rest_rotation + deg_to_rad(girl_shake_deg) * sin(phase * 0.83)
+
+## 문구 등장 — 크게 나타나 빠르게 줄어들며 박힌다(잼민이 컷인의 대사와 같은 느낌).
+## 에디터에서 그냥 열면 완성된 모습으로 가만히 있는다
+func _update_shout() -> void:
+	if _shout == null:
+		return
+	var p: float = clampf((_time - shout_delay) / maxf(shout_pop_time, 0.01), 0.0, 1.0)
+	_shout.modulate.a = p
+	# 뒤로 갈수록 느려지게(EASE_OUT) — 툭 튀어나와 자리를 잡는 맛
+	var settle: float = 1.0 - pow(1.0 - p, 3.0)
+	var pop: float = lerpf(shout_pop_scale, 1.0, settle)
+	_shout.scale = Vector2.ONE * pop
+	# 말줄도 같이 — 씬에 저장해 둔 크기를 기준으로 부풀렸다 제자리로
+	for i in range(_shout_marks.size()):
+		var mark: Node2D = _shout_marks[i] as Node2D
+		if mark == null:
+			continue
+		mark.modulate.a = p
+		mark.scale = _shout_mark_rest_scale[i] * pop

@@ -1,0 +1,156 @@
+[gd_scene format=3 uid="uid://vy8fuud4m8ky"]
+
+[ext_resource type="Script" uid="uid://dgi3x300ivk7" path="res://ui/cutin/IljinCutIn.gd" id="1"]
+[ext_resource type="Script" uid="uid://dp0gprankdrjw" path="res://ui/cutin/CutInSmoke.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://bavek1lxqvc2g" path="res://sprite/일진/일진궁극기배경.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://c2h30gw65fco" path="res://sprite/일진/웃는일진.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://blx0n0rkqua6n" path="res://sprite/일진/일진 몸.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="8"]
+[ext_resource type="Texture2D" uid="uid://ddwl7n442o0t" path="res://sprite/일진/일진의 여자친구/경멸하는여자일진.png" id="9"]
+[ext_resource type="Texture2D" uid="uid://ctel3dkq2gyq2" path="res://sprite/일진/일진의 여자친구/여자일진임시옷.png" id="10"]
+[ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="11"]
+[ext_resource type="Texture2D" uid="uid://dj37iy7xqqxv7" path="res://sprite/일진/일진의 친구1/화난일진친구.png" id="12"]
+[ext_resource type="Texture2D" uid="uid://b5vuab6l5gnf6" path="res://sprite/일진/일진의 친구1/일친 친구 몸.png" id="13"]
+[ext_resource type="Texture2D" uid="uid://byjm1q2ckwcbh" path="res://sprite/일진/입벌린일진정면.png" id="14"]
+[ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="15"]
+[ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/축법소년/궁극기컷인/말줄.png" id="16"]
+
+[node name="IljinCutIn" type="Node2D" unique_id=245726806]
+script = ExtResource("1")
+iljin_talk_texture = ExtResource("14")
+
+[node name="Bg" type="Sprite2D" parent="." unique_id=1543105224]
+scale = Vector2(0.8333, 0.8333)
+texture = ExtResource("3")
+
+[node name="Iljin" type="Node2D" parent="." unique_id=317374565]
+position = Vector2(170, 60)
+
+[node name="FootL" type="Sprite2D" parent="Iljin" unique_id=1292429978]
+position = Vector2(115.99999, 286)
+scale = Vector2(0.7066478, 0.77534693)
+texture = ExtResource("7")
+
+[node name="FootR" type="Sprite2D" parent="Iljin" unique_id=625215446]
+position = Vector2(-57.000004, 283.00003)
+scale = Vector2(0.66754204, 0.75554466)
+texture = ExtResource("7")
+flip_h = true
+
+[node name="Body" type="Sprite2D" parent="Iljin" unique_id=1976568892]
+position = Vector2(33.000004, 135)
+scale = Vector2(0.24006511, 0.21171877)
+texture = ExtResource("6")
+
+[node name="HandL" type="Sprite2D" parent="Iljin" unique_id=65942114]
+position = Vector2(-54, 90)
+scale = Vector2(0.57647055, 0.6137931)
+texture = ExtResource("4")
+
+[node name="Cigarette" type="Sprite2D" parent="Iljin" unique_id=258118115]
+position = Vector2(157, 170)
+rotation = 1.134
+scale = Vector2(0.066, 0.066)
+texture = ExtResource("8")
+
+[node name="HandR" type="Sprite2D" parent="Iljin" unique_id=1110622220]
+position = Vector2(139, 137)
+scale = Vector2(0.419, 0.419)
+texture = ExtResource("4")
+
+[node name="Head" type="Sprite2D" parent="Iljin" unique_id=1628551546]
+position = Vector2(33.999996, -8)
+scale = Vector2(0.172, 0.172)
+texture = ExtResource("5")
+
+[node name="Smoke" type="Node2D" parent="Iljin" unique_id=1123533856]
+position = Vector2(165, 148)
+script = ExtResource("2")
+
+[node name="Girl" type="Node2D" parent="." unique_id=1705402703]
+position = Vector2(467, 100)
+
+[node name="FootL" type="Sprite2D" parent="Girl" unique_id=1732347539]
+position = Vector2(-51.165005, 238.135)
+scale = Vector2(0.4711173, 0.55712897)
+texture = ExtResource("11")
+
+[node name="FootR" type="Sprite2D" parent="Girl" unique_id=231773947]
+position = Vector2(34.000008, 236.99998)
+scale = Vector2(0.47857556, 0.5112377)
+texture = ExtResource("11")
+flip_h = true
+
+[node name="Body" type="Sprite2D" parent="Girl" unique_id=1769270957]
+position = Vector2(-7.0000095, 116)
+scale = Vector2(0.4279534, 0.5256667)
+texture = ExtResource("10")
+
+[node name="HandL" type="Sprite2D" parent="Girl" unique_id=464883157]
+position = Vector2(-78, 152.00002)
+scale = Vector2(0.372, 0.372)
+texture = ExtResource("4")
+
+[node name="HandR" type="Sprite2D" parent="Girl" unique_id=1746496701]
+position = Vector2(52.000004, 82)
+scale = Vector2(0.45070598, 0.44117245)
+texture = ExtResource("4")
+
+[node name="Head" type="Sprite2D" parent="Girl" unique_id=1893364903]
+position = Vector2(-9.999997, 1.9999943)
+scale = Vector2(0.169, 0.169)
+texture = ExtResource("9")
+
+[node name="Friend" type="Node2D" parent="." unique_id=2055347008]
+position = Vector2(-193, 100)
+
+[node name="Body" type="Sprite2D" parent="Friend" unique_id=1684830901]
+position = Vector2(-5.1671658, 149.46313)
+scale = Vector2(0.33663204, 0.61649525)
+texture = ExtResource("13")
+
+[node name="HandL" type="Sprite2D" parent="Friend" unique_id=1152621105]
+position = Vector2(-165.62375, 168.6875)
+scale = Vector2(1.0426325, 0.9474137)
+texture = ExtResource("4")
+
+[node name="HandR" type="Sprite2D" parent="Friend" unique_id=105367616]
+position = Vector2(168, 166.00002)
+scale = Vector2(0.6387883, 0.6295345)
+texture = ExtResource("4")
+
+[node name="Head" type="Sprite2D" parent="Friend" unique_id=1427653721]
+position = Vector2(-10, -164)
+scale = Vector2(0.38, 0.38)
+texture = ExtResource("12")
+
+[node name="ShoutText" type="Label" parent="."]
+offset_left = -20.0
+offset_top = -320.0
+offset_right = 580.0
+offset_bottom = -140.0
+rotation = -0.052
+pivot_offset = Vector2(300, 90)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.11, 0.08, 0.14, 1)
+theme_override_constants/outline_size = 13
+theme_override_fonts/font = ExtResource("15")
+theme_override_font_sizes/font_size = 38
+text = "준완아 니가 일진녀 몸
+안넣어서 임시로 만들었어
+어때, 물론 발도 마찬가지"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ShoutMarkL" type="Sprite2D" parent="."]
+position = Vector2(120, -80)
+scale = Vector2(1.1, 1.1)
+texture = ExtResource("16")
+flip_h = true
+
+[node name="ShoutMarkR" type="Sprite2D" parent="."]
+position = Vector2(345, -68)
+scale = Vector2(1.1, 1.1)
+texture = ExtResource("16")

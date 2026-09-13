@@ -51,6 +51,9 @@ extends Control
 @export var illust_swap_seconds: float = 10.0
 ## 다음 장으로 넘어갈 때 겹치며 바뀌는 시간(초). 0이면 툭 하고 바로 바뀐다
 @export var illust_fade_seconds: float = 0.9
+## (임시) **S를 누르면 다음 일러스트로 바로 넘긴다.** 새로 넣은 일러스트를 확인할 때 쓰는 것이라
+## 정식 출시 전에는 꺼야 한다
+@export var debug_illust_key: bool = true
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
@@ -261,6 +264,12 @@ func _process(delta: float) -> void:
 	_illust_time += delta
 	if _illust_time < illust_swap_seconds:
 		return
+	_begin_swap()
+
+## 다음 일러스트로 넘어가기 시작한다 (시간이 다 됐을 때, 그리고 S를 눌렀을 때)
+func _begin_swap() -> void:
+	if _illusts.size() < 2 or _fading:
+		return
 	_next_index = (_illust_index + 1) % _illusts.size()
 	_fading = true
 	_fade_time = 0.0
@@ -334,5 +343,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	# 확인 창이 떠 있으면 그쪽이 ESC를 먹는다 (ConfirmPopup이 set_input_as_handled까지 처리)
 	if _confirm.visible:
 		return
+	# (임시) S를 누르면 다음 캐릭터 일러스트로 바로 넘어간다 — 새 일러스트를 확인하려고 10초씩
+	# 기다리지 않으려고 넣은 것이다. 정식 기능이 아니므로 나중에 지우거나 debug 플래그로 묶을 것
+	if debug_illust_key and event is InputEventKey:
+		var key: InputEventKey = event
+		var is_s: bool = key.keycode == KEY_S or key.physical_keycode == KEY_S
+		if key.pressed and not key.echo and is_s:
+			_begin_swap()
+			_illust_time = 0.0
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("ui_cancel"):
 		_ask("타이틀 화면으로 나가시겠습니까?", _go_title)
