@@ -10,8 +10,8 @@ extends CanvasLayer
 @onready var timer_label: Label = $TimerFrame/TimerBox/TimerLabel
 
 func setup(p1: Fighter, p2: Fighter) -> void:
-	p1_panel.bind(p1, "P1", false, 1)
-	p2_panel.bind(p2, "P2(AI)", true, 2)
+	p1_panel.bind(p1, false, 1)
+	p2_panel.bind(p2, true, 2)
 
 ## 라운드 스코어와(있다면) 남은 시간을 화면 중앙 상단에 표시한다.
 ## 시간은 GameState.time_limit_seconds(방 설정에서 고른 값)에서 Stage가 깎아 내려주는 값이라
