@@ -18,6 +18,18 @@ extends Sprite2D
 ## 장면이 시작하고 몇 초 뒤에 던지는지
 @export var throw_delay: float = 1.8
 
+## 던진 직후 몸이 앞으로 따라 나가는 거리(px). **0이면 제자리에서 그림만 바뀐다** —
+## 그림 두 장이 같은 캔버스라 자세만 바뀌고 몸이 안 움직여서 "던진 것 같지 않다"는 인상이 된다(사용자 지적).
+## 던지는 방향(+x)으로 살짝 밀어 주면 따라 나간 느낌(follow-through)이 난다
+@export var release_shift: Vector2 = Vector2(34.0, 0.0)
+## 앞으로 나가는 데 걸리는 시간(초). 짧아야 "휙" 하고 던진 것으로 읽힌다
+@export var release_shift_time: float = 0.1
+## 앞으로 나갔다가 되돌아오는 비율(0~1). 0이면 나간 자리에 그대로 선다.
+## 사람이 던지면 앞으로 쏠렸다가 살짝 중심을 되찾으므로 조금 남겨 두는 게 자연스럽다
+@export_range(0.0, 1.0, 0.05) var release_settle_ratio: float = 0.25
+## 되돌아오는 데 걸리는 시간(초)
+@export var release_settle_time: float = 0.3
+
 @export_group("돌")
 ## 날아갈 돌 (Sprite2D). 씬에서 **손에 돌이 있는 자리**에 놓아둘 것
 @export var rock: NodePath
@@ -51,6 +63,8 @@ extends Sprite2D
 
 var _rock: Sprite2D = null
 var _rock_start: Vector2 = Vector2.ZERO
+## 던지기 전 서 있던 자리 — 따라 나가는 연출의 기준
+var _base_pos: Vector2 = Vector2.ZERO
 ## 미리 만들어 두고 따라다니게만 하는 잔상들 (RidingBy와 같은 방식)
 var _ghosts: Array[Sprite2D] = []
 var _flying: bool = false
@@ -58,6 +72,7 @@ var _flying: bool = false
 func _ready() -> void:
 	if wind_up_texture:
 		texture = wind_up_texture
+	_base_pos = position
 	_rock = get_node_or_null(rock) as Sprite2D
 	if _rock:
 		_rock_start = _rock.position
@@ -111,6 +126,7 @@ func _process(_delta: float) -> void:
 func _release() -> void:
 	if release_texture:
 		texture = release_texture
+	_lunge()
 	if _rock == null:
 		return
 	_rock.position = _rock_start
@@ -138,3 +154,14 @@ func _hide_rock() -> void:
 	_flying = false
 	if _rock:
 		_rock.visible = false
+
+## 던진 직후 몸을 앞으로 밀어냈다가 조금 되돌린다
+func _lunge() -> void:
+	if release_shift == Vector2.ZERO:
+		return
+	var forward: Vector2 = _base_pos + release_shift
+	var lunge: Tween = create_tween()
+	lunge.tween_property(self, "position", forward, release_shift_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if release_settle_ratio > 0.0:
+		var settle: Vector2 = forward - release_shift * release_settle_ratio
+		lunge.tween_property(self, "position", settle, release_settle_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)

@@ -1,0 +1,72 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://bingatelixb7q" path="res://sprite/메인메뉴/일러스트/잼민이/잼민이일러스트배경.png" id="2"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="3"]
+[ext_resource type="Texture2D" uid="uid://bwqvcp7axe2hn" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/잼민이 제압 씬/엉엉우는잼민이.png" id="5"]
+
+[node name="StoryScene9" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.55
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("Hero"), NodePath("Kid")])
+fade_out_time = 0.8
+next_scene = "res://ui/story/StoryScene10.tscn"
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Hero" type="Sprite2D" parent="."]
+position = Vector2(354.4, 33)
+scale = Vector2(0.613, 0.613)
+texture = ExtResource("4")
+centered = false
+
+[node name="Kid" type="Sprite2D" parent="."]
+position = Vector2(417.4, 123.6)
+scale = Vector2(0.4075, 0.4075)
+texture = ExtResource("5")
+centered = false
+
+[node name="DialogueBox" parent="." instance=ExtResource("3")]
+layout_mode = 1
+speaker = "나레이션"
+lines = PackedStringArray("(주인공의 기지 발휘로 돌맹이를 던져 자전거를 멈추고 꼬마를 잡았다.)", "@enter Hero 0.35", "주인공|아저씨랑 경찰서 좀 가자꾸나", "@hide Hero 0.25", "@enter Kid 0.35", "꼬마|으아앙~~")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

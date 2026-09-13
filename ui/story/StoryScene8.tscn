@@ -15,7 +15,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
-hold_time = 3.5
+fade_in_time = 0.3
+hold_time = 1.5
+fade_out_time = 0.55
+next_scene = "res://ui/story/StoryScene9.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -53,13 +56,13 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Rock" type="Sprite2D" parent="Shake"]
-position = Vector2(255, 545)
-scale = Vector2(0.1, 0.1)
+position = Vector2(206, 568)
+scale = Vector2(0.153, 0.153)
 texture = ExtResource("5")
 script = ExtResource("2")
 bg = NodePath("../Bg")
 fall_texture = ExtResource("4")
-hit_delay = 2.0
+hit_delay = 0.45
 start_offset = Vector2(-1020, -70)
 fly_time = 0.26
 spin_turns = 1.5

@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/story/LocationCard.tscn" id="2"]
+
+[node name="StoryScene10" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.3
+hold_time = 0.0
+fade_out_time = 0.8
+next_scene = "res://ui/story/StoryScene11.tscn"
+dialogue = NodePath("LocationCard")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="LocationCard" parent="." instance=ExtResource("2")]
+layout_mode = 1
+subtitle = "사건 이후"
+title = "경찰서"
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

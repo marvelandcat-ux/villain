@@ -73,7 +73,11 @@ func _ready() -> void:
 	# 글자가 늘어나는 동안 줄바꿈 위치가 흔들리지 않게 — 줄 배치는 대사 전체로 먼저 정하고 글자만 가린다
 	_text_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	_current_speaker = speaker
-	_goto(0)
+	# **한 프레임 미뤄서 시작한다.** 자식의 _ready가 부모보다 먼저라, 여기서 바로 _goto(0)을 하면
+	# 첫 줄이 "@enter 인물" 같은 명령일 때 인물을 띄운 직후 부모(StoryFadeScene)의 _ready가
+	# `hide_on_start`로 다시 숨겨 버려서 아무 일도 안 일어난 것처럼 된다(사용자 지적).
+	# 지연 호출은 트리 전체의 _ready가 끝난 뒤에 실행돼서 순서가 뒤집히지 않는다
+	_goto.call_deferred(0)
 
 func is_finished() -> bool:
 	return _finished or lines.is_empty()

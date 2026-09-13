@@ -1,0 +1,104 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/대화창경찰서배경.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://bwqvcp7axe2hn" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/잼민이 제압 씬/흐느끼는잼민이.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/사건파일양식.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/수사착수도장.png" id="7"]
+
+[node name="StoryScene11" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.55
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("Room/Hero"), NodePath("Room/Kid"), NodePath("CaseFile"), NodePath("CaseFile/Paper/Stamp")])
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Room" type="Node2D" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="Room"]
+scale = Vector2(0.883978, 0.883978)
+texture = ExtResource("2")
+centered = false
+
+[node name="Hero" type="Sprite2D" parent="Room"]
+position = Vector2(354.4, 33)
+scale = Vector2(0.613, 0.613)
+texture = ExtResource("3")
+centered = false
+
+[node name="Kid" type="Sprite2D" parent="Room"]
+position = Vector2(417.4, 123.6)
+scale = Vector2(0.4075, 0.4075)
+texture = ExtResource("5")
+centered = false
+
+[node name="CaseFile" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="CaseFile"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Paper" type="TextureRect" parent="CaseFile"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("6")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Stamp" type="Sprite2D" parent="CaseFile/Paper"]
+position = Vector2(400, 520)
+rotation = 0.2617994
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("7")
+
+[node name="DialogueBox" parent="." instance=ExtResource("4")]
+layout_mode = 1
+speaker = "주인공"
+lines = PackedStringArray("@enter Room/Hero 0.35", "자 꼬마야 니가 잘못한 걸 이야기하고 앞으로 어떻게 할 건지도 이야기 해, 그럼 보내주마. 안그러면 부모님 모셔와야 할거야", "@hide Room/Hero 0.25", "@enter Room/Kid 0.35", "꼬마|앞으로는 자전거에 브레이크도 달고 헬멧도 쓸게요. 그리고 비비탄 총도 사람한테 안 쏠게요 ㅠㅠ.", "@hide Room/Kid 0.25", "@enter Room/Hero 0.35", "주인공|그래 이번만 특별히 보내줄게, 하지만 다음은 없단다.", "@hide Room/Hero 0.25", "@enter Room/Kid 0.35", "꼬마|네 ㅠ", "@exit Room/Kid 0.5 420", "나레이션|(경찰서를 떠나는 꼬마)", "@enter Room/Hero 0.35", "주인공|하...첫 사건부터 힘든걸....", "@show CaseFile 0.4", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
