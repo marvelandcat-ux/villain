@@ -13,11 +13,27 @@ extends Node2D
 ## @tool이라 에디터에서도 보여서 위치를 눈으로 잡을 수 있다 — 움직임은 게임에서만 돈다
 
 ## --- 모양 ---
+## 그림을 따로 안 지정했을 때 쓰는 기본 신문 두 장 (종이마다 하나를 무작위로 고른다)
+const DEFAULT_PAPER_TEXTURES: Array[Texture2D] = [
+	preload("res://sprite/맵/지하철역/신문.png"),
+	preload("res://sprite/맵/지하철역/신문2.png"),
+]
+## 그림에서 투명 여백을 뺀 영역 — 텍스처마다 한 번만 재서 모든 종이가 나눠 쓴다
+static var _used_rects: Dictionary = {}
+
 ## 펼쳤을 때 종이 크기(px)
-@export var paper_size: Vector2 = Vector2(26.0, 18.0)
+@export var paper_size: Vector2 = Vector2(24.0, 31.0)
 ## 종이 색 — 맵의 CanvasModulate(0.55, 0.58, 0.7)가 곱해져 푸르스름하게 어두워지므로 조금 밝게 잡았다.
 ## 전단지는 노랑·분홍으로 바꿔 쓴다
 @export var paper_color: Color = Color(0.97, 0.95, 0.88)
+## 종이 그림 후보. 비워 두면 DEFAULT_PAPER_TEXTURES(신문·신문2)를 쓰고,
+## 그것도 없으면 예전처럼 도형으로 그린다
+@export var paper_textures: Array[Texture2D] = []
+## 종이마다 명도를 몇 단계로 나눌지 — 3이면 흰색 / 조금 어두움 / 더 어두움 중 하나를 고른다.
+## 전부 같은 흰 종이면 복사해 붙인 티가 난다
+@export var shade_steps: int = 3
+## 가장 어두운 단계의 밝기 (1.0 = 원본 색 그대로)
+@export_range(0.5, 1.0, 0.01) var shade_min: float = 0.84
 ## 바닥에 누워 있을 때 세로로 눌리는 비율 — 옆에서 보면 누운 종이는 얇다
 @export_range(0.1, 1.0, 0.05) var lie_flat: float = 0.4
 
@@ -95,9 +111,14 @@ var _rest_y: float = 0.0
 ## 이번 열차에서 이미 크게 한 번 떴는지 — 지나가는 내내 크게 튀면 트램펄린처럼 보인다
 var _gusted: bool = false
 var _train: SubwayTrain
+## 이 종이가 고른 그림·잘라 쓸 영역·명도
+var _tex: Texture2D = null
+var _region: Rect2 = Rect2()
+var _shade: float = 1.0
 
 func _ready() -> void:
 	_look = Vector2(1.0, lie_flat)
+	_pick_look()
 	if Engine.is_editor_hint():
 		return
 	# 놓인 자리 바로 밑이 이 종이가 누워 있는 면이다
@@ -243,6 +264,9 @@ func _half_height() -> float:
 ## 임시 도형: 접힌 신문 한 장. 누워 있거나 옆으로 뒤집혀 얇아졌을 땐 글자 줄을 안 그린다 — 뭉개져 보인다.
 ## 좌표에 _look을 직접 곱해서 그린다 — scale로 누르면 외곽선 두께까지 같이 얇아진다
 func _draw() -> void:
+	if _tex != null:
+		_draw_sprite()
+		return
 	var w: float = paper_size.x * 0.5
 	var h: float = paper_size.y * 0.5
 	var corners: PackedVector2Array = _quad(Rect2(-w, -h, w * 2.0, h * 2.0))
@@ -262,6 +286,38 @@ func _draw() -> void:
 	var outline: PackedVector2Array = corners.duplicate()
 	outline.append(corners[0])
 	draw_polyline(outline, Color.BLACK, 1.5)
+
+## 이 종이가 쓸 그림과 명도를 고른다. 에디터에서는 늘 첫 장·원래 밝기라 배치할 때 흔들리지 않는다
+func _pick_look() -> void:
+	var pool: Array[Texture2D] = paper_textures if not paper_textures.is_empty() else DEFAULT_PAPER_TEXTURES
+	if not pool.is_empty():
+		_tex = pool[0] if Engine.is_editor_hint() else pool[randi() % pool.size()]
+		if _tex != null:
+			_region = _used_rect_of(_tex)
+	if shade_steps > 1 and not Engine.is_editor_hint():
+		_shade = lerpf(1.0, shade_min, float(randi() % shade_steps) / float(shade_steps - 1))
+
+## 그림의 투명 여백을 뺀 영역. 한 번 잰 값을 텍스처 경로로 기억해둔다 —
+## 종이마다 다시 재면 큰 PNG를 여러 번 푸는 꼴이 된다
+static func _used_rect_of(tex: Texture2D) -> Rect2:
+	var key: String = tex.resource_path
+	if _used_rects.has(key):
+		return _used_rects[key]
+	var rect := Rect2(Vector2.ZERO, tex.get_size())
+	var img: Image = tex.get_image()
+	if img != null:
+		var used: Rect2i = img.get_used_rect()
+		if used.size.x > 0 and used.size.y > 0:
+			rect = Rect2(used)
+	_used_rects[key] = rect
+	return rect
+
+## 신문 그림 한 장. 뒤집힘·눕기(_look)는 좌표 배율로 넣는다 — 노드 scale은 @tool이라 씬에 저장돼 버린다
+func _draw_sprite() -> void:
+	var col := Color(paper_color.r * _shade, paper_color.g * _shade, paper_color.b * _shade, paper_color.a)
+	draw_set_transform(Vector2.ZERO, 0.0, _look)
+	draw_texture_rect_region(_tex, Rect2(-paper_size * 0.5, paper_size), _region, col)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 ## 사각형 네 모서리에 지금 배율(_look)을 곱한 다각형
 func _quad(r: Rect2) -> PackedVector2Array:
