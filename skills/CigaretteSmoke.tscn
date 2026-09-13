@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://ciggysmoke001"]
+
+[ext_resource type="Script" path="res://skills/CigaretteSmoke.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_smoke"]
+size = Vector2(190, 60)
+
+[node name="CigaretteSmoke" type="Area2D"]
+monitoring = false
+monitorable = false
+script = ExtResource("1")
+repeat_interval = 0.5
+
+[node name="Collision" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_smoke")

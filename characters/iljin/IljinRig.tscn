@@ -8,16 +8,21 @@
 [ext_resource type="Texture2D" uid="uid://ulvntt11xpba" path="res://sprite/일진/힘든일진.png" id="6_weary"]
 [ext_resource type="Texture2D" uid="uid://cl80226s80f5m" path="res://sprite/일진/신남일진.png" id="7_action"]
 [ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="8_foot"]
+[ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="9_cig"]
+[ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smokeface"]
 
 [node name="BodyRig" instance=ExtResource("1_rig")]
 attack_thrust = true
 attack_two_handed = true
 weapon_on_final_hit = true
+weapon_node = NodePath("HandRHold/Bag")
+drink_head_tilt_deg = 0.0
 idle_weapon = NodePath("HandL/BagIdle")
 final_hit_index = 2
 hurt_head_texture = ExtResource("5_hurt")
 hurt_head_scale = Vector2(0.0434, 0.0434)
-action_head_texture = ExtResource("7_action")
+action_head_texture = ExtResource("10_smokeface")
+action_head_scale = Vector2(0.0448, 0.0448)
 weary_head_texture = ExtResource("6_weary")
 weary_head_scale = Vector2(0.0439, 0.0439)
 
@@ -50,3 +55,9 @@ show_behind_parent = true
 position = Vector2(20, 45)
 scale = Vector2(0.1795, 0.1795)
 texture = ExtResource("4_bag")
+
+[node name="Cigarette" type="Sprite2D" parent="HandRHold" index="1"]
+visible = false
+position = Vector2(7, -1)
+scale = Vector2(0.0142, 0.0142)
+texture = ExtResource("9_cig")

@@ -605,6 +605,11 @@ func is_busy() -> bool:
 func start_busy(duration: float) -> void:
 	_busy_time = maxf(_busy_time, duration)
 
+## 걸려 있던 행동 잠금을 그 자리에서 푼다 — 스킬이 예정보다 일찍 끝났을 때 쓴다.
+## (일진 어깨 들이박기: 상대를 받아 올린 순간 돌진이 끝나므로, 남은 잠금을 풀어야 평타로 바로 이어진다)
+func end_busy() -> void:
+	_busy_time = 0.0
+
 ## 씬에 SkillClashManager가 있으면(1대1 대전 맵) 반환하고, 없으면(훈련장 등) null
 func _get_clash_manager() -> Node:
 	return get_tree().get_first_node_in_group("skill_clash_manager")

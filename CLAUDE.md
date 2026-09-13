@@ -204,6 +204,20 @@
   - 예(지하철 아저씨 머리, 2026-09-06): 옛 1376x1143(유효 1136x953)·`scale (0.0528, 0.0577)` = 59.98x54.99 → 새 762x651(유효 698x597)이라 `scale (0.085932, 0.092107)` / `position (-1.48, -33.63)`
 - 새로 받은 캐릭터 그림은 배경이 흰색인 경우가 많다. **"흰색이면 다 지우기" 금지, 바깥 테두리에서 번지는 flood fill로 지울 것** — 지하철 아저씨·층간소음 청년처럼 흰 머리카락이 있으면 단순 색상 제거로 머리카락까지 날아감(검은 외곽선에 막혀 flood fill은 안전)
 
+### 일진 (2026-09-13 추가 — 7번째 캐릭터)
+
+`characters/iljin/Iljin.tscn` + `IljinRig.tscn`, `stats/IljinStats.tres`(이동속도 275), 그림은 `sprite/일진/`.
+`GameState`의 CHARACTERS·CHARACTER_COLORS(남색)·PORTRAITS와 `ui/PortraitFrames.tscn`(7번째 칸)에 등록 완료.
+
+- **리그 값**: 머리 `일진머리.png` 배율 0.0481 / 위치 (-1.88, -34.05) = 화면 48.7px, 몸 `일진 몸.png` (0.035, 0.03968) = 33x30, 발 `일진발.png`(공용 발과 캔버스·모양이 같아 텍스처만 교체), 손은 공용
+- **표정**: 피격 `일진 아픈`(0.0434) / 힘듬 `힘든일진`(0.0439) / 액션 슬롯은 **스킬이 그때그때 넣는다**(아래 함정)
+- **기본공격(F)**: `attack_thrust` 3타 — 1·2타 주먹, **3타에 두 손으로 가방 내려찍기**. 평소 가방(`일진 무기.png` = 클러치백)은 **왼손에 가로로** 들고 있고(`HandL/BagIdle`, `show_behind_parent`로 손보다 뒤, 손은 `z_index 1`), 마지막 타에만 오른손 가방(`HandRHold/Bag`)이 나타난다
+- **스킬1 담배 연기(G)** `CigaretteSmokeSkill.gd` + `CigaretteSmoke.tscn` — 쿨 10초. `windup`(0.45초) 뒤 입에 물고(손 담배 숨김 + 얼굴 `담배 일진`) `duration`(5초) 동안 앞으로 연기. `reach` 190px, 0.5초마다 2 데미지 + 넉백 (95, -35), 그동안 `start_busy`로 공격·스킬 잠김(이동은 됨). 연기는 맵에 붙고 매 프레임 입을 따라간다. 손 올리는 동작은 주정뱅이 마시기 모션 재사용(`drink_duration`을 windup x4로 맞추고, `drink_head_tilt_deg`는 0으로 꺼서 고개를 안 젖힌다)
+- **스킬2 어깨 들이박기(H)** `ShoulderChargeSkill.gd` — 쿨 6초. 0.4초 x 560 = 최대 224px 돌진(얼굴 `신남일진`, `ChargeWind.gd` 바람 줄 + 잔상). 맞으면 **둘 다 같은 `launch_speed`(440 = 약 84px)로 뜨고 상대만 1초 기절**(`StunStars`). 가드로 막으면 안 뜬다. 돌진이 끝나면 `end_busy()`로 잠금을 바로 풀어 **평타 연계가 된다**
+  - ⚠️ `take_damage`는 넉백을 기존 속도에 **더하므로**(`velocity.y +=`) 그냥 두면 둘의 높이가 어긋난다 → 받은 뒤 양쪽 `velocity`를 같은 값으로 덮어쓴다
+- **공용 `BodyRig`에 넣은 기능 3개(전부 기본 꺼짐이라 다른 캐릭터는 영향 없음)**: `weapon_on_final_hit`(+`weapon_node`/`idle_weapon`/`final_hit_index`) = 마지막 타에만 무기를 쥔다, `set_charging()` = 돌진 자세(두 손 모으고 앞으로 기울기, 기울기에 facing 부호를 곱한다), `Fighter.end_busy()` = 잠금 즉시 해제
+- **⚠️ 액션 표정 슬롯은 하나뿐이다.** 스킬이 `action_head_texture`를 런타임에 갈아끼우는 방식이라, **표정을 쓰는 스킬은 자기 얼굴을 직접 지정해야 한다**(`smoke_face` / `charge_face`). 안 그러면 앞서 쓴 스킬의 얼굴이 그대로 나온다(실제로 돌진 뒤 담배를 피우면 신남 얼굴이 나오는 버그가 났다)
+
 ## 스킬 로고 (쿨타임 HUD)
 
 각 스킬 노드의 `Skill.icon`(`@export var icon: Texture2D`)에 그림을 넣으면 `ui/SkillCooldownIcon.gd`가 HUD 슬롯에 깔고 쿨타임만큼 아래에서 위로 차오르게 그림. 비우면 캐릭터 색 사각형이 같은 방식 — 로고 없어도 정상 동작하므로 그려진 것부터 넣으면 된다.

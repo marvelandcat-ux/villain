@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/IljinStats.tres" id="2"]
@@ -6,6 +6,11 @@
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
 [ext_resource type="PackedScene" path="res://characters/iljin/IljinRig.tscn" id="6"]
+[ext_resource type="Script" path="res://skills/CigaretteSmokeSkill.gd" id="7"]
+[ext_resource type="PackedScene" path="res://skills/CigaretteSmoke.tscn" id="8"]
+[ext_resource type="Script" path="res://skills/ShoulderChargeSkill.gd" id="9"]
+[ext_resource type="Texture2D" uid="uid://cl80226s80f5m" path="res://sprite/일진/신남일진.png" id="7_action_face"]
+[ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smoke_face"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -43,3 +48,16 @@ script = ExtResource("4")
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox"]
 shape = SubResource("RectangleShape2D_hitbox")
+
+[node name="Skill1" type="Node" parent="."]
+script = ExtResource("7")
+cooldown = 10.0
+smoke_scene = ExtResource("8")
+smoke_face = ExtResource("10_smoke_face")
+smoke_face_scale = Vector2(0.0448, 0.0448)
+
+[node name="Skill2" type="Node" parent="."]
+script = ExtResource("9")
+cooldown = 6.0
+charge_face = ExtResource("7_action_face")
+charge_face_scale = Vector2(0.0486, 0.0486)

@@ -155,6 +155,9 @@ extends Node2D
 @export var idle_weapon: NodePath
 ## 몇 번째 타를 마지막으로 볼지 (0=1타). 3타 콤보면 2
 @export var final_hit_index: int = 2
+## 마지막 타에만 보일 무기 노드 (비워 두면 HandRHold 전체를 숨긴다).
+## HandRHold에 담배처럼 따로 껐다 켜는 물건이 같이 달려 있으면 이걸 지정해야 그 물건이 안 딸려 숨는다
+@export var weapon_node: NodePath
 ## 찌르기 캐릭터의 2타 — "아래에서 위로 올려치기". 1타 찌르기와 완전히 다른 궤적이어야
 ## 세 타가 한 동작으로 안 보인다. 각도 부호는 위와 같다(양수 raise=무기가 위로 감김)
 @export var thrust2_raise_deg: float = -40.0
@@ -257,6 +260,17 @@ extends Node2D
 @export var guard_head_deg: float = 6.0
 ## 방어 자세가 켜지고 꺼지는 빠르기 (클수록 즉각적)
 @export var guard_blend_speed: float = 16.0
+
+## --- 어깨 들이박기 자세 (일진 스킬2) ---
+## 돌진할 때 두 손을 모으는 자리 (앞이 +x — 리그 전체가 좌우 반전되므로 방향 부호는 안 곱한다)
+@export var charge_hand_r_pos: Vector2 = Vector2(31.0, 0.0)
+@export var charge_hand_l_pos: Vector2 = Vector2(24.0, 7.0)
+## 모은 손의 각도(도)
+@export var charge_hand_deg: float = -25.0
+## 몸·머리가 앞으로 기우는 각도(도)
+@export var charge_lean_deg: float = 15.0
+## 자세가 섞이는 빠르기(1/초)
+@export var charge_blend_speed: float = 16.0
 ## 줄을 잡은 두 손이 돌아가는 각도(도)
 @export var reel_hand_deg: float = -22.0
 ## 마우스를 던지고 줄을 당기는 동안 손에 든 물건(악플러 키보드 등)을 숨긴다 —
@@ -421,6 +435,9 @@ var _blocked_flash_span: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
 var _guard_target: float = 0.0
+## 돌진 자세 섞임(0~1)과 목표값
+var _charge_blend: float = 0.0
+var _charge_target: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
@@ -504,6 +521,7 @@ func _process(delta: float) -> void:
 	# 줄 당기는 자세는 목표로 서서히 오가고, 당기는 박자는 그 자세일 때만 진행된다
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
+	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
 	if _reel_blend > 0.001:
 		_reel_phase += delta * reel_tug_speed
 	else:
@@ -673,6 +691,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _guard_blend > 0.001:
 		_pose_guard()
 
+	# 어깨 들이박기 — 두 손을 앞으로 모으고 몸·머리를 앞으로 기울인다 (방어 자세 다음이라 우선한다)
+	if _charge_blend > 0.001:
+		_pose_charge()
+
 	# 자전거를 타는 동안엔 두 발이 페달을 밟고, 두 손이 핸들바를 잡는다 (걷기 동작을 덮어쓴다)
 	if _bike and _ride_blend > 0.3:
 		_pose_pedal()
@@ -709,7 +731,9 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 그 외에는 반대 손에 늘어뜨린 쪽이 보인다 — 위의 숨기기 규칙보다 이쪽이 우선한다
 	if weapon_on_final_hit and _hand_r_hold:
 		var swinging_final: bool = _attack_time > 0.0 and _attack_variant >= final_hit_index
-		_hand_r_hold.visible = swinging_final
+		var weapon: Node = _hand_r_hold if weapon_node.is_empty() else get_node_or_null(weapon_node)
+		if weapon is CanvasItem:
+			weapon.visible = swinging_final
 		var idle: Node = get_node_or_null(idle_weapon)
 		if idle is CanvasItem:
 			idle.visible = not swinging_final
@@ -1452,3 +1476,27 @@ func swap_held_texture(tex: Texture2D) -> void:
 		if child is Sprite2D:
 			child.texture = tex
 			return
+
+## 어깨 들이박기 자세를 켜고 끈다 (일진 스킬2). 자세는 _charge_blend로 서서히 섞인다
+func set_charging(on: bool) -> void:
+	_charge_target = 1.0 if on else 0.0
+
+## 두 손을 앞으로 모으고 몸·머리를 앞으로 기울인다.
+## **기울기에 facing 부호를 곱한다** — 좌우 반전이 scale.x = -1이라 회전 각도는 그대로 남기 때문에,
+## 안 곱하면 왼쪽을 보는 캐릭터가 뒤로 넘어간다(클래시 자세와 같은 이유)
+func _pose_charge() -> void:
+	var t: float = _charge_blend
+	var sgn: float = 1.0
+	if _fighter != null and is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
+		sgn = signf(_fighter.facing)
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(charge_hand_r_pos, t)
+		_hand_r.rotation = lerpf(_hand_r.rotation, deg_to_rad(charge_hand_deg), t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(charge_hand_l_pos, t)
+		_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(charge_hand_deg), t)
+	var lean: float = deg_to_rad(charge_lean_deg) * t * sgn
+	if _body:
+		_body.rotation = lean
+	if _head:
+		_head.rotation = lerpf(_head.rotation, lean, t)
