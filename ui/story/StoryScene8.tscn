@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Script" path="res://ui/story/RockHit.gd" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/잼민이 제압 씬/잼민이자전거공원질주.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/잼민이 제압 씬/잼민이돌맞고넘어지는장면.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://dns6ujplaqdc4" path="res://sprite/storymode/잼민이 제압 씬/날아가는돌.png" id="5"]
+
+[node name="StoryScene8" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+hold_time = 3.5
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Shake" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="Shake"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -34.0
+offset_top = -34.0
+offset_right = 34.0
+offset_bottom = 34.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Rock" type="Sprite2D" parent="Shake"]
+position = Vector2(255, 545)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("5")
+script = ExtResource("2")
+bg = NodePath("../Bg")
+fall_texture = ExtResource("4")
+hit_delay = 2.0
+start_offset = Vector2(-1020, -70)
+fly_time = 0.26
+spin_turns = 1.5
+shake_target = NodePath("..")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://cjvpgx5wvlv2i" path="res://sprite/storymode/잼민이 제압 씬/공원풀숲.png" id="2"]
 [ext_resource type="Script" uid="uid://bb0kwyvde14pf" path="res://ui/story/PopUpLayer.gd" id="3"]
-[ext_resource type="Texture2D" uid="uid://boe7hcfo5ci7m" path="res://sprite/storymode/잼민이 제압 씬/머리내민경찰관_0000_레이어-1.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://cdpqfr67eht1a" path="res://sprite/storymode/잼민이 제압 씬/풀숲머리2.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://xtrb7laikit6" path="res://sprite/storymode/잼민이 제압 씬/풀숲_앞.png" id="5"]
 [ext_resource type="Script" uid="uid://ckfqa48hiybhb" path="res://ui/story/RidingBy.gd" id="6"]
 [ext_resource type="Texture2D" uid="uid://mtrn5pp1el4o" path="res://sprite/storymode/잼민이 제압 씬/잼민이자전거타고있기오른발위버전.png" id="7"]
@@ -45,17 +45,10 @@ texture = ExtResource("2")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Head" type="TextureRect" parent="." unique_id=1929121386]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
+[node name="Head" type="Sprite2D" parent="."]
+position = Vector2(450, 267)
+scale = Vector2(0.136, 0.136)
 texture = ExtResource("4")
-expand_mode = 1
-stretch_mode = 6
 script = ExtResource("3")
 after = NodePath("../Kid")
 delay = 1.25

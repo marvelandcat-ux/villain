@@ -10,7 +10,7 @@ const CHARACTERS := {
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
-	"주인공": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로다 — 표시 이름만 바꿈. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
+	"헬스장 빌런": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로고 표시 이름만 바꿨다. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
 	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
@@ -18,7 +18,7 @@ const CHARACTERS := {
 ## 스토리에서만 쓰는데 스킬 3칸이 아직 빈 껍데기라, 대전 로스터에 올리면 고른 사람이 손해를 본다.
 ## 스킬을 다 만들면 위 CHARACTERS로 옮기고 여기서 지우면 된다
 const TRAINING_ONLY_CHARACTERS := {
-	"경찰관": "res://characters/police/Police.tscn",
+	"주인공": "res://characters/police/Police.tscn",
 }
 
 ## 훈련장 드롭다운에 쓰는 전체 목록 = 대전 로스터 + 훈련장 전용.
@@ -37,9 +37,9 @@ const CHARACTER_COLORS := {
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
-	"주인공": Color(0.55, 0.6, 0.65),
+	"헬스장 빌런": Color(0.55, 0.6, 0.65),
 	"일진": Color(0.25, 0.3, 0.5),
-	"경찰관": Color(0.2, 0.35, 0.7),   # 스토리 주인공 — 대전 로스터엔 없고 훈련장에서만 고른다
+	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 

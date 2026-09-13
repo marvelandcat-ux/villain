@@ -41,10 +41,14 @@ func _fill_side(box: ColorRect, image: TextureRect, name_label: Label, character
 	else:
 		image.texture = null
 
-## 캐릭터 씬 경로로 GameState.CHARACTERS에 등록된 표시 이름을 역으로 찾는다
+## 캐릭터 씬 경로로 등록된 표시 이름을 역으로 찾는다.
+## **대전 로스터(CHARACTERS)뿐 아니라 훈련장 전용 캐릭터까지 봐야 한다** —
+## 스토리 주인공(경찰)이 `TRAINING_ONLY_CHARACTERS`에 있어서, 예전엔 여기서 못 찾고
+## 이름이 "?"로, 상자 색이 회색(DEFAULT_COLOR)으로 떴다(2026-09-14 발견)
 func _find_character_name(path: String) -> String:
-	for character_name in GameState.CHARACTERS.keys():
-		if GameState.CHARACTERS[character_name] == path:
+	var roster: Dictionary = GameState.training_characters()
+	for character_name in roster.keys():
+		if roster[character_name] == path:
 			return character_name
 	return "?"
 

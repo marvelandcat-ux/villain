@@ -17,7 +17,11 @@ extends Node2D
 @export var story_win_delay: float = 1.8
 ## (임시) 테스트용 — **스토리 전투 중 `S`를 누르면 이긴 것으로 치고 바로 다음 이야기로 넘어간다.**
 ## 스토리 장면의 건너뛰기(`StoryFadeScene.debug_skip_key`)와 같은 키다. 스토리를 다 만들면 같이 지울 것.
-## **일반 대전에서는 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
+##
+## **⚠️ `S`는 P1 방어 키(`p1_down`)이기도 하다.** 그래서 스토리 전투에서 방어하려고 S를 누르면 전투가 그 자리에서 끝난다 —
+## 한 번 겪고 Shift+S로 바꿨다가, **테스트가 번거로워서 사용자가 다시 그냥 `S`로 돌려 달라고 했다**(2026-09-14).
+## 스토리 전투에서 방어를 테스트해야 할 땐 맵 루트의 `debug_story_skip_key`를 잠깐 끄면 된다.
+## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
 @export var debug_story_skip_key: bool = true
 
 var _p1: Fighter
@@ -139,7 +143,8 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 func _unhandled_input(event: InputEvent) -> void:
 	if debug_story_skip_key and event is InputEventKey:
 		var key: InputEventKey = event
-		if key.pressed and not key.echo and (key.keycode == KEY_S or key.physical_keycode == KEY_S):
+		var is_s: bool = key.keycode == KEY_S or key.physical_keycode == KEY_S
+		if key.pressed and not key.echo and is_s:
 			# **입력 처리 표시를 장면 전환보다 먼저 해야 한다** — change_scene_to_file 뒤에는
 			# 이 노드가 트리에서 빠져서 get_viewport()가 null이 된다(실제로 그 에러를 봤다)
 			if _can_debug_skip_story_battle():
