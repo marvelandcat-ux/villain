@@ -1,8 +1,6 @@
 class_name CharacterSelect
 extends Control
 
-## 목록 타일 크기
-const TILE_SIZE := Vector2(100, 90)
 ## 위쪽 큰 미리보기 상자 크기 (CharacterSelect.tscn의 P1/P2 PreviewBox custom_minimum_size와 같은 값 — 정사각형)
 const PREVIEW_BOX_SIZE := Vector2(300, 300)
 
@@ -12,12 +10,17 @@ const PREVIEW_BOX_SIZE := Vector2(300, 300)
 ## 대전 모드(pvp) 전용 화면이다. P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
 ## (예전엔 옛 스토리 모드도 이 화면을 같이 썼는데, 2026-09-12 스토리 모드를 새로 짜면서 그 분기를 걷어냈다)
 ## 아래쪽 캐릭터 목록에서 하나를 누르면 위쪽 P1/P2 미리보기 칸에 이름과 색이 채워지는 방식
+##
+## 목록 칸(ThumbRow 밑 FanTile들)은 코드로 만들지 않고 씬에 캐릭터마다 별개의 노드로 미리 놓아뒀다 —
+## 사다리꼴 모양이 서로 이어지도록 칸마다 corners(꼭짓점)를 직접 잡아둔 것이라, 모양을 바꾸고 싶으면
+## 에디터에서 그 노드의 corners/position을 직접 조절하면 된다(FanTile.gd 참고. 일반 칸은 전부 같은
+## 평행사변형 모양이라 하나를 복사-붙여넣기해서 새 칸을 만들 수 있다). 여기서는 character_key를 보고
+## 어떤 GameState.CHARACTERS 캐릭터인지 연결만 한다 — character_key가 빈 칸은 "?" 랜덤 칸으로 취급
 
 @onready var status_label: Label = $Center/VBox/StatusLabel
-@onready var thumb_row: HBoxContainer = $Center/VBox/ThumbRow
+@onready var thumb_row: Control = $Center/VBox/ThumbRow
 @onready var confirm_button: Button = $Center/VBox/ConfirmButton
 @onready var back_button: Button = $Center/VBox/BackButton
-@onready var p2_name_label: Label = $Center/VBox/PreviewRow/P2Side/P2NameLabel
 @onready var p1_preview_box: ColorRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
 @onready var p1_preview_image: TextureRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewImage
 @onready var p1_preview_label: Label = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewLabel
@@ -31,74 +34,20 @@ var _pending_character: String = ""
 var _thumb_buttons: Dictionary = {}  # {character_name: Button} — 선택 강조 표시용
 var _is_spinning: bool = false
 
+## 씬에 미리 놓아둔 FanTile들을 훑어서 character_key로 어떤 캐릭터인지 확인하고 클릭 시그널을 연결한다.
+## 칸의 모양·위치는 전부 씬(.tscn)에 이미 정해져 있으므로 여기서는 안 건드린다
 func _ready() -> void:
-	for character_name in GameState.CHARACTERS.keys():
-		var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
-		var button := _make_tile(character_name, color, 14, _on_character_picked.bind(character_name))
-		thumb_row.add_child(button)
-		_thumb_buttons[character_name] = button
-	## 격자 맨 끝에 놓이는 "?" 칸 — 누를 때마다 캐릭터 하나를 무작위로 골라 미리보기에 반영한다(다른 칸처럼 확정은 별도)
-	thumb_row.add_child(_make_tile("?", GameState.DEFAULT_COLOR, 28, _on_random_pressed))
+	for child in thumb_row.get_children():
+		if not (child is FanTile):
+			continue
+		var tile: FanTile = child
+		if tile.character_key == "":
+			tile.pressed.connect(_on_random_pressed)
+		else:
+			tile.pressed.connect(_on_character_picked.bind(tile.character_key))
+			_thumb_buttons[tile.character_key] = tile
 
 	status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
-
-func _make_tile(label: String, color: Color, font_size: int, callback: Callable) -> Button:
-	var button := Button.new()
-	button.clip_text = false
-	_apply_tile_style(button, color)
-	button.pressed.connect(callback)
-
-	if GameState.has_portrait(label):
-		# 초상화가 있는 캐릭터는 글자 대신 그림으로 채우고, 이름은 하단에 작게 걸친다
-		var image := TextureRect.new()
-		image.texture = GameState.portrait_texture(label)
-		image.anchor_right = 1.0
-		image.anchor_bottom = 1.0
-		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		button.clip_contents = true
-		button.add_child(image)
-		# 편집 씬(PortraitFrames.tscn)에서 잡은 배율·위치를 타일 크기에 맞춰 적용. 넘치는 부분은 타일이 잘라낸다
-		GameState.frame_portrait(image, label, TILE_SIZE)
-
-		var name_label := Label.new()
-		name_label.text = label
-		name_label.anchor_right = 1.0
-		name_label.anchor_top = 1.0
-		name_label.anchor_bottom = 1.0
-		name_label.offset_top = -20
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		name_label.add_theme_font_size_override("font_size", 12)
-		name_label.add_theme_constant_override("outline_size", 4)
-		name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-		button.add_child(name_label)
-	else:
-		button.text = label
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", font_size)
-
-	return button
-
-func _apply_tile_style(button: Button, color: Color) -> void:
-	button.custom_minimum_size = Vector2(100, 90)
-	# hover/pressed/focus(마우스로 올렸거나 키보드로 이동해 지금 고르고 있는 칸)는 두꺼운 흰 테두리로 강조해서
-	# "지금 뭘 고르는 중인지"가 한눈에 구분되게 한다 (MapSelect의 칸 강조와 같은 방식)
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var is_highlighted: bool = state != "normal"
-		var style := StyleBoxFlat.new()
-		style.bg_color = color * (1.15 if state == "hover" else (0.8 if state == "pressed" else 1.0))
-		var border_width: int = 4 if is_highlighted else 0
-		style.border_width_left = border_width
-		style.border_width_right = border_width
-		style.border_width_top = border_width
-		style.border_width_bottom = border_width
-		style.border_color = Color(1, 1, 1)
-		style.corner_radius_top_left = 6
-		style.corner_radius_top_right = 6
-		style.corner_radius_bottom_left = 6
-		style.corner_radius_bottom_right = 6
-		button.add_theme_stylebox_override(state, style)
 
 ## 목록에서 캐릭터를 눌러도 바로 확정되지 않고, 미리보기 칸에만 반영된다.
 ## 실제로 P1/P2에 배정되는 건 "확정" 버튼을 눌렀을 때(_on_confirm_pressed)뿐이다
@@ -149,7 +98,9 @@ func _on_random_pressed() -> void:
 	confirm_button.disabled = true
 	_set_thumb_buttons_disabled(true)
 
-	var keys: Array = GameState.CHARACTERS.keys()
+	# GameState.CHARACTERS 전체가 아니라 실제로 이 화면에 칸이 있는 캐릭터만 후보로 삼는다 —
+	# 로컬 대전에서 뺀 캐릭터(주인공 등)는 칸 자체가 없으므로 랜덤에도 안 나와야 한다
+	var keys: Array = _thumb_buttons.keys()
 	var start_index: int = randi() % keys.size()
 	var spin_count: int = keys.size() * 3  # 최소 3바퀴는 돌고 멈추게
 	var final_key: String = keys[start_index]

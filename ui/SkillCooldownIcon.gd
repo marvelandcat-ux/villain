@@ -39,7 +39,6 @@ var _skill: Skill
 ## 다 찬 순간 1이 됐다가 0으로 줄어드는 연출용 값
 var _pop: float = 0.0
 var _was_ready: bool = true
-var _pulse_time: float = 0.0
 ## 슬롯마다 테두리 색을 따로 주기 위해 복제해 둔 스타일박스
 var _style: StyleBoxFlat
 
@@ -87,11 +86,13 @@ func _process(delta: float) -> void:
 	_was_ready = is_ready
 
 	if is_ready:
-		_pulse_time += delta
-		var pulse: float = 0.72 + 0.28 * sin(_pulse_time * PULSE_SPEED)
+		# 슬롯마다 자기가 다 찬 시점부터 세면 스킬을 쓴 타이밍에 따라 서로 다른 박자로 반짝인다.
+		# 그래서 각 슬롯의 경과 시간이 아니라 엔진 전체의 공용 시계를 써서, 다 찬 슬롯끼리는
+		# 항상 같은 박자로 함께 반짝이게 한다
+		var pulse_time: float = Time.get_ticks_msec() / 1000.0
+		var pulse: float = 0.72 + 0.28 * sin(pulse_time * PULSE_SPEED)
 		_style.border_color = Color(READY_BORDER.r * pulse, READY_BORDER.g * pulse, READY_BORDER.b * pulse)
 	else:
-		_pulse_time = 0.0
 		_style.border_color = COOLDOWN_BORDER
 
 	if _pop > 0.0:

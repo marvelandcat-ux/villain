@@ -1,123 +1,272 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dhbn4opf0cua0"]
 
-[ext_resource type="Script" path="res://ui/CharacterSelect.gd" id="1"]
+[ext_resource type="Script" uid="uid://cgxmg1r72ps80" path="res://ui/CharacterSelect.gd" id="1"]
+[ext_resource type="Script" uid="uid://bmebft5pykdb0" path="res://ui/FanTile.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://dm5gc2chybuoe" path="res://sprite/축법소년/축법소년 정면.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="8"]
 
-[node name="CharacterSelect" type="Control"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+content_margin_left = 10.0
+content_margin_top = 4.0
+content_margin_right = 10.0
+content_margin_bottom = 4.0
+bg_color = Color(0.16, 0.16, 0.19, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.6, 0.6, 0.65, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="CharacterSelect" type="Control" unique_id=2015749065]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1247258621]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.09, 0.09, 0.11, 1)
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Center" type="CenterContainer" parent="." unique_id=1357486935]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="VBox" type="VBoxContainer" parent="Center"]
+[node name="VBox" type="VBoxContainer" parent="Center" unique_id=1119348342]
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="PreviewRow" type="HBoxContainer" parent="Center/VBox"]
+[node name="PreviewRow" type="HBoxContainer" parent="Center/VBox" unique_id=716750468]
 layout_mode = 2
 theme_override_constants/separation = 0
 alignment = 1
 
-[node name="P1Side" type="VBoxContainer" parent="Center/VBox/PreviewRow"]
+[node name="P1Side" type="VBoxContainer" parent="Center/VBox/PreviewRow" unique_id=2118722982]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="P1NameLabel" type="Label" parent="Center/VBox/PreviewRow/P1Side"]
+[node name="P1NameHeader" type="PanelContainer" parent="Center/VBox/PreviewRow/P1Side" unique_id=798819612]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="P1NameLabel" type="Label" parent="Center/VBox/PreviewRow/P1Side/P1NameHeader" unique_id=1883377516]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "P1 SELECT"
 horizontal_alignment = 1
 
-[node name="P1PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P1Side"]
+[node name="P1PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P1Side" unique_id=574715931]
 custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 color = Color(0.35, 0.35, 0.4, 1)
 
-[node name="P1PreviewImage" type="TextureRect" parent="Center/VBox/PreviewRow/P1Side/P1PreviewBox"]
+[node name="P1PreviewImage" type="TextureRect" parent="Center/VBox/PreviewRow/P1Side/P1PreviewBox" unique_id=140674009]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 expand_mode = 1
 stretch_mode = 6
 
-[node name="P1PreviewLabel" type="Label" parent="Center/VBox/PreviewRow/P1Side/P1PreviewBox"]
-anchor_right = 1.0
+[node name="P1PreviewLabel" type="Label" parent="Center/VBox/PreviewRow/P1Side/P1PreviewBox" unique_id=750208307]
+layout_mode = 0
 anchor_top = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -40
-theme_override_font_sizes/font_size = 28
-theme_override_constants/outline_size = 6
+offset_top = -40.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 28
 text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="VsLabel" type="Label" parent="Center/VBox/PreviewRow"]
-custom_minimum_size = Vector2(300, 300)
+[node name="VsSide" type="VBoxContainer" parent="Center/VBox/PreviewRow" unique_id=2070690386]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="VsHeader" type="PanelContainer" parent="Center/VBox/PreviewRow/VsSide" unique_id=63562016]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="VsHeaderLabel" type="Label" parent="Center/VBox/PreviewRow/VsSide/VsHeader" unique_id=408055963]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "VS"
+horizontal_alignment = 1
+
+[node name="VsGraphic" type="Label" parent="Center/VBox/PreviewRow/VsSide" unique_id=375628519]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 48
 text = "VS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="P2Side" type="VBoxContainer" parent="Center/VBox/PreviewRow"]
+[node name="P2Side" type="VBoxContainer" parent="Center/VBox/PreviewRow" unique_id=179218960]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="P2NameLabel" type="Label" parent="Center/VBox/PreviewRow/P2Side"]
+[node name="P2NameHeader" type="PanelContainer" parent="Center/VBox/PreviewRow/P2Side" unique_id=88684694]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="P2NameLabel" type="Label" parent="Center/VBox/PreviewRow/P2Side/P2NameHeader" unique_id=1432771344]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "P2"
 horizontal_alignment = 1
 
-[node name="P2PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P2Side"]
+[node name="P2PreviewBox" type="ColorRect" parent="Center/VBox/PreviewRow/P2Side" unique_id=615475351]
 custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 color = Color(0.35, 0.35, 0.4, 1)
 
-[node name="P2PreviewImage" type="TextureRect" parent="Center/VBox/PreviewRow/P2Side/P2PreviewBox"]
+[node name="P2PreviewImage" type="TextureRect" parent="Center/VBox/PreviewRow/P2Side/P2PreviewBox" unique_id=938506669]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 expand_mode = 1
 stretch_mode = 6
 
-[node name="P2PreviewLabel" type="Label" parent="Center/VBox/PreviewRow/P2Side/P2PreviewBox"]
-anchor_right = 1.0
+[node name="P2PreviewLabel" type="Label" parent="Center/VBox/PreviewRow/P2Side/P2PreviewBox" unique_id=1212923467]
+layout_mode = 0
 anchor_top = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -40
-theme_override_font_sizes/font_size = 28
-theme_override_constants/outline_size = 6
+offset_top = -40.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 28
 text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="Center/VBox"]
+[node name="StatusLabel" type="Label" parent="Center/VBox" unique_id=12168546]
 layout_mode = 2
 text = "P1(플레이어) 캐릭터를 선택하세요"
 horizontal_alignment = 1
 
-[node name="ThumbRow" type="HBoxContainer" parent="Center/VBox"]
+[node name="ThumbRow" type="Control" parent="Center/VBox" unique_id=373346689]
+custom_minimum_size = Vector2(700, 100)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_constants/separation = 10
 
-[node name="ConfirmButton" type="Button" parent="Center/VBox"]
+[node name="TileChokbeopsonyeon" type="Button" parent="Center/VBox/ThumbRow" unique_id=800750107]
+layout_mode = 0
+offset_right = 150.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array()
+flip_h = true
+fill_color = Color(0.95, 0.85, 0.2, 1)
+portrait_texture = ExtResource("3")
+name_text = "촉법소년"
+character_key = "촉법소년"
+
+[node name="TileAkpeulleo" type="Button" parent="Center/VBox/ThumbRow" unique_id=1868184841]
+layout_mode = 0
+offset_left = 100.0
+offset_right = 250.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array()
+flip_h = true
+fill_color = Color(0.85, 0.25, 0.25, 1)
+portrait_texture = ExtResource("4")
+name_text = "악플러"
+character_key = "악플러"
+
+[node name="TileJujeongbaengi" type="Button" parent="Center/VBox/ThumbRow" unique_id=299916865]
+layout_mode = 0
+offset_left = 200.0
+offset_right = 350.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array()
+flip_h = true
+fill_color = Color(0.8, 0.5, 0.2, 1)
+portrait_texture = ExtResource("5")
+name_text = "주정뱅이"
+character_key = "주정뱅이"
+
+[node name="TileRandom" type="Button" parent="Center/VBox/ThumbRow" unique_id=428650708]
+layout_mode = 0
+offset_left = 300.0
+offset_right = 400.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array(0, 0, 100, 0, 50, 90, 50, 90)
+display_text = "?"
+display_font_size = 28
+
+[node name="TileCatMom" type="Button" parent="Center/VBox/ThumbRow" unique_id=1502827823]
+layout_mode = 0
+offset_left = 350.0
+offset_right = 500.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array()
+lean = null
+fill_color = Color(0.9, 0.55, 0.7, 1)
+portrait_texture = ExtResource("6")
+name_text = "고양이 아주머니"
+character_key = "고양이 아주머니"
+
+[node name="TileFloorNoise" type="Button" parent="Center/VBox/ThumbRow" unique_id=665046394]
+layout_mode = 0
+offset_left = 450.0
+offset_right = 600.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+corners = PackedVector2Array()
+lean = null
+fill_color = Color(0.3, 0.5, 0.85, 1)
+portrait_texture = ExtResource("8")
+name_text = "층간소음 청년"
+character_key = "층간소음 청년"
+
+[node name="TileSubwayVillain" type="Button" parent="Center/VBox/ThumbRow" unique_id=327050201]
+layout_mode = 0
+offset_left = 550.0
+offset_right = 700.0
+offset_bottom = 90.0
+flat = true
+script = ExtResource("2")
+fill_color = Color(0.3, 0.65, 0.55, 1)
+portrait_texture = ExtResource("7")
+name_text = "지하철 아저씨"
+character_key = "지하철 아저씨"
+
+[node name="ConfirmButton" type="Button" parent="Center/VBox" unique_id=861101007]
 layout_mode = 2
 disabled = true
 text = "확정"
 
-[node name="BackButton" type="Button" parent="Center/VBox"]
+[node name="BackButton" type="Button" parent="Center/VBox" unique_id=1446522417]
 layout_mode = 2
 text = "방 설정으로 (ESC)"
 
