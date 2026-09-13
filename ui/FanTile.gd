@@ -80,6 +80,9 @@ extends Button
 func _ready() -> void:
 	flat = true
 	focus_mode = Control.FOCUS_ALL
+	# Button 기본 포커스 테두리는 칸 모양(폴리곤)이 아니라 사각형 bounding box를 따라 그려져서,
+	# 평행사변형 옆으로 흰 테두리가 튀어나와 보인다. 그 자리는 _draw()의 draw_polyline이 대신 맡으므로 꺼둔다
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	if not Engine.is_editor_hint():
 		for sig in [mouse_entered, mouse_exited, focus_entered, focus_exited, button_down, button_up]:
 			sig.connect(queue_redraw)
