@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-character_name = "헬스장 죽돌이"
+character_name = "주인공"
 max_hp = 100
 move_speed = 245.0
 attack_multiplier = 1.0
