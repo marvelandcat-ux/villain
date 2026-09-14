@@ -8,7 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="7"]
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="8"]
-[ext_resource type="Texture2D" path="res://sprite/캐릭터선택/P1배경.png" id="9_bg"]
+[ext_resource type="Texture2D" path="res://sprite/대전모드/배경.png" id="9_bg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
 content_margin_left = 10.0

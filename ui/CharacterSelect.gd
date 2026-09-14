@@ -10,8 +10,8 @@ const PREVIEW_RIG_SCALE := 2.8
 const PREVIEW_RIG_ORIGIN := Vector2(150, 210)
 
 ## P1/P2 차례에 따라 바뀌는 배경 그림
-const P1_BACKGROUND := "res://sprite/캐릭터선택/P1배경.png"
-const P2_BACKGROUND := "res://sprite/캐릭터선택/P2배경.png"
+const P1_BACKGROUND := "res://sprite/대전모드/배경.png"
+const P2_BACKGROUND := "res://sprite/대전모드/배경2.png"
 
 ## 대전 모드(pvp) 전용 화면이다. P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
 ## (예전엔 옛 스토리 모드도 이 화면을 같이 썼는데, 2026-09-12 스토리 모드를 새로 짜면서 그 분기를 걷어냈다)

@@ -1,7 +1,7 @@
 [gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://ui/RoomSettings.gd" id="1"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/배경프로토.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://sprite/대전모드/트레이닝룸.png" id="2_bg"]
 [ext_resource type="Shader" path="res://ui/cutin/blur.gdshader" id="3_blur"]
 [ext_resource type="FontFile" path="res://fonts/Jua-Regular.ttf" id="4_font"]
 

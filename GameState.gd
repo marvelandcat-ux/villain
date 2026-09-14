@@ -243,6 +243,14 @@ func character_rig_scene(character_name: String) -> PackedScene:
 		return null
 	return load(CHARACTER_RIGS[character_name])
 
+## p1_character_path/p2_character_path처럼 저장된 씬 경로로 CHARACTERS에서 표시 이름을 역으로 찾는다.
+## 못 찾으면 빈 문자열
+func character_name_for_path(scene_path: String) -> String:
+	for character_name in CHARACTERS:
+		if CHARACTERS[character_name] == scene_path:
+			return character_name
+	return ""
+
 ## 초상화 TextureRect를 box_size 상자 안에서 캐릭터별로 프레이밍한다.
 ## image는 상자를 꽉 채우는 앵커(anchor_right=1, anchor_bottom=1)에 놓여 있다고 가정한다.
 ## 편집 씬(PortraitFrames.tscn)에서 얼굴 네모가 프레임 안에서 차지한 위치·크기 비율을
