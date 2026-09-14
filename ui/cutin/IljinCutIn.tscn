@@ -9,7 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="7"]
 [ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://ddwl7n442o0t" path="res://sprite/일진/일진의 여자친구/경멸하는여자일진.png" id="9"]
-[ext_resource type="Texture2D" uid="uid://ctel3dkq2gyq2" path="res://sprite/일진/일진의 여자친구/여자일진임시옷.png" id="10"]
+[ext_resource type="Texture2D" uid="uid://yfmaeomankes" path="res://sprite/일진/일진의 여자친구/일진옷.png" id="10"]
 [ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="11"]
 [ext_resource type="Texture2D" uid="uid://dj37iy7xqqxv7" path="res://sprite/일진/일진의 친구1/화난일진친구.png" id="12"]
 [ext_resource type="Texture2D" uid="uid://b5vuab6l5gnf6" path="res://sprite/일진/일진의 친구1/일친 친구 몸.png" id="13"]
@@ -22,7 +22,7 @@
 
 [node name="IljinCutIn" type="Node2D" unique_id=245726806]
 script = ExtResource("1")
-cutin_duration = 2.6
+cutin_duration = 3.9
 spit_gather_pose = NodePath("Friend/SpitGatherPose")
 spit_face_pose = NodePath("Friend/SpitFacePose")
 spit_node = NodePath("Spit")
@@ -47,8 +47,8 @@ texture = ExtResource("7")
 flip_h = true
 
 [node name="Body" type="Sprite2D" parent="Iljin" unique_id=1976568892]
-position = Vector2(33.000004, 135)
-scale = Vector2(0.24006511, 0.21171877)
+position = Vector2(35.000004, 137)
+scale = Vector2(0.2122034, 0.20329587)
 texture = ExtResource("6")
 
 [node name="HandL" type="Sprite2D" parent="Iljin" unique_id=65942114]
@@ -80,19 +80,19 @@ script = ExtResource("2")
 position = Vector2(467, 100)
 
 [node name="FootL" type="Sprite2D" parent="Girl" unique_id=1732347539]
-position = Vector2(-51.165005, 238.135)
-scale = Vector2(0.4711173, 0.55712897)
+position = Vector2(-47, 240.135)
+scale = Vector2(0.42458093, 0.5175249)
 texture = ExtResource("11")
 
 [node name="FootR" type="Sprite2D" parent="Girl" unique_id=231773947]
-position = Vector2(34.000008, 236.99998)
-scale = Vector2(0.47857556, 0.5112377)
+position = Vector2(26.000002, 240.99998)
+scale = Vector2(0.42364523, 0.49324253)
 texture = ExtResource("11")
 flip_h = true
 
 [node name="Body" type="Sprite2D" parent="Girl" unique_id=1769270957]
-position = Vector2(-7.0000095, 116)
-scale = Vector2(0.4279534, 0.5256667)
+position = Vector2(-9.999989, 108)
+scale = Vector2(0.13533568, 0.19360936)
 texture = ExtResource("10")
 
 [node name="HandL" type="Sprite2D" parent="Girl" unique_id=464883157]
@@ -153,10 +153,10 @@ texture = ExtResource("19")
 flip_h = true
 
 [node name="ShoutText" type="Label" parent="." unique_id=342240984]
-offset_left = -20.0
-offset_top = -320.0
-offset_right = 580.0
-offset_bottom = -140.0
+offset_left = -52.0
+offset_top = -313.0
+offset_right = 544.4269
+offset_bottom = -134.07193
 rotation = -0.052
 scale = Vector2(1.0326077, 1.1359252)
 pivot_offset = Vector2(300, 90)
@@ -164,10 +164,8 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.11, 0.08, 0.14, 1)
 theme_override_constants/outline_size = 13
 theme_override_fonts/font = ExtResource("15")
-theme_override_font_sizes/font_size = 38
-text = "준완아 니가 일진녀 몸
-안넣어서 임시로 만들었어
-어때, 물론 발도 마찬가지"
+theme_override_font_sizes/font_size = 54
+text = "야 손 좀 봐라."
 horizontal_alignment = 1
 vertical_alignment = 1
 

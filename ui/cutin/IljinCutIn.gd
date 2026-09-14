@@ -6,7 +6,10 @@ extends Node2D
 ## 화면 구성(뒤 -> 앞):
 ##  - `Bg` : 일진궁극기배경 (담벼락 골목)
 ##  - `Iljin` : 뒤쪽에서 담배 물고 웃고 있는 일진. 담배 연기가 피어오르고(`Iljin/Smoke`),
-##    **입을 뻐끔거리며 뭐라고 지껄인다**(얼굴 그림 두 장을 번갈아 끼우는 방식)
+##    **정해진 박자로 입을 뻐끔거리며 뭐라고 지껄이고**(얼굴 그림 두 장을 번갈아 끼우는 방식),
+##    다 지껄이면 **입을 다물고 천천히 숨만 쉰다**.
+##    박자는 "한 번 벌렸다 닫고 -> `talk_pause`만큼 쉬고 -> 네 번 벌렸다 닫기"로,
+##    `_ready`에서 입 벌리는 구간 목록을 미리 만들어 두고 시간만 보고 켠다(무작위 아님)
 ##  - `Girl` : 일진 여자친구. 임시 스프라이트라 동작은 없고 **머리만 부들부들 떤다**
 ##  - `Friend` : 앞으로 걸어오는 일진의 친구 — 이 컷인에서 유일하게 걸어오는 인물
 ##  - `ShoutText` : 화면 위쪽 문구. 잼민이 컷인과 같은 글꼴(Jua)·흰 글씨에 두꺼운 어두운 외곽선이다.
@@ -15,7 +18,8 @@ extends Node2D
 ##    같은 그림을 좌우로 뒤집어 한 쌍으로 놓았다 — 문구와 같이 툭 튀어나온다
 ##
 ## `Friend`의 연출은 그림을 여러 장 그리는 대신 **코드로 파츠를 흔들어서** 만든다(다른 컷인과 같은 방식):
-##  0. **출발 전에 옆을 보고 침을 한 번 뱉는다.** 침 모으는 얼굴 -> 뱉는 얼굴(둘 다 옆을 보는 그림)로
+##  0. **일진이 다 지껄일 때까지 정면을 보고 서 있다가**(`spit_after_talk`) 옆을 보고 침을 한 번 뱉는다.
+##     침 모으는 얼굴 -> 뱉는 얼굴(둘 다 옆을 보는 그림)로
 ##     바꾸고, 그 순간 침(`Spit`)이 **일진이 없는 쪽(왼쪽)** 으로 날아가다 사라진다.
 ##     침 뱉는 두 얼굴은 **`Friend/SpitGatherPose` / `Friend/SpitFacePose` 노드에 그대로 놓여 있다** —
 ##     에디터에서 보이는 그 자리·각도·좌우반전·크기가 그대로 재생된다. 각도를 바꾸고 싶으면
@@ -68,6 +72,11 @@ extends Node2D
 ## (그림·자리·각도·좌우반전·크기를 통째로 머리에 옮긴다). 게임이 시작되면 이 노드들은 숨긴다
 @export var spit_gather_pose: NodePath
 @export var spit_face_pose: NodePath
+## 침 뱉기 전에 **정면을 보고 서 있는** 시간(초). `spit_after_talk`가 켜져 있으면 이 값 대신
+## 일진이 다 지껄이는 시각을 쓴다
+@export var spit_front_time: float = 0.4
+## 켜면 **일진이 입을 다무는 순간** 침을 뱉기 시작한다 (위 `spit_front_time`은 무시)
+@export var spit_after_talk: bool = true
 ## 침을 모으는 시간(초)과, 뱉고 나서 걷기 시작할 때까지의 시간(초)
 @export var spit_gather_time: float = 0.4
 @export var spit_hold_time: float = 0.26
@@ -117,22 +126,26 @@ extends Node2D
 ## 입 벌린 얼굴 그림. 비워두면 입을 안 움직인다.
 ## 다문 얼굴(`Iljin/Head`에 씬에서 지정해 둔 그림)과 **같은 캔버스**여야 자리가 안 튄다
 @export var iljin_talk_texture: Texture2D
-## 입을 벌리고 있는 시간의 최소/최대(초) — 한 음절 길이
-@export var mouth_open_min: float = 0.05
-@export var mouth_open_max: float = 0.13
-## 입을 다물고 있는 시간의 최소/최대(초). 가끔 길게 쉬어야 기계적으로 안 보인다
-@export var mouth_close_min: float = 0.04
-@export var mouth_close_max: float = 0.16
-## 입을 벌릴 때 고개가 까딱하는 정도 (px 아래로 / 도)
+## 입을 한 번 벌렸다 닫는 데 걸리는 시간(초)
+@export var talk_open_time: float = 0.13
+@export var talk_close_time: float = 0.11
+## 먼저 몇 번 벌렸다 닫는지 -> 얼마나 쉬는지(초) -> 그 뒤 몇 번 더 벌렸다 닫는지.
+## 사용자가 정한 박자는 "한 번 -> 0.4초 -> 네 번"이다
+@export var talk_first_count: int = 1
+@export var talk_pause: float = 0.4
+@export var talk_second_count: int = 4
 @export var talk_nod: float = 2.5
 @export var talk_nod_deg: float = 1.6
-## 입 모양이 매번 같은 순서로 안 나오게 하는 씨앗
-@export var talk_seed: int = 20260914
+## 입 다문 뒤 숨쉴 때 머리가 오르내리는 폭(px)과 한 번 왕복하는 시간(초).
+## 몸은 그 절반만 움직여서 어깨가 따라 들썩이는 것처럼 보이게 한다
+@export var iljin_breath: float = 3.2
+@export var iljin_breath_period: float = 2.4
 
 @onready var _friend: Node2D = $Friend
 @onready var _hand_l: Sprite2D = $Friend/HandL
 @onready var _hand_r: Sprite2D = $Friend/HandR
 @onready var _iljin_head: Sprite2D = get_node_or_null("Iljin/Head")
+@onready var _iljin_body: Sprite2D = get_node_or_null("Iljin/Body")
 @onready var _friend_head: Sprite2D = get_node_or_null("Friend/Head")
 @onready var _girl_head: Sprite2D = get_node_or_null("Girl/Head")
 @onready var _spit: Node = get_node_or_null(spit_node) if spit_node != NodePath() else null
@@ -167,9 +180,12 @@ var _shout_mark_rest_scale: Array[Vector2] = []
 var _iljin_head_rest_texture: Texture2D = null
 var _iljin_head_rest_position: Vector2 = Vector2.ZERO
 var _iljin_head_rest_rotation: float = 0.0
-var _mouth_timer: float = 0.0
+var _iljin_body_rest_position: Vector2 = Vector2.ZERO
 var _mouth_open: bool = false
-var _talk_rng := RandomNumberGenerator.new()
+## 입을 벌리고 있는 구간 목록 (x = 시작 시각, y = 끝 시각). _ready에서 박자대로 미리 만든다
+var _mouth_windows: Array[Vector2] = []
+## 마지막으로 입을 다무는 시각 — 이 뒤로는 숨만 쉬고, 친구도 이때부터 침을 뱉는다
+var _talk_end: float = 0.0
 
 func _ready() -> void:
 	_friend_rest_position = _friend.position
@@ -195,7 +211,9 @@ func _ready() -> void:
 		_iljin_head_rest_texture = _iljin_head.texture
 		_iljin_head_rest_position = _iljin_head.position
 		_iljin_head_rest_rotation = _iljin_head.rotation
-	_talk_rng.seed = talk_seed
+	if _iljin_body:
+		_iljin_body_rest_position = _iljin_body.position
+	_build_mouth_windows()
 	for mark in _shout_marks:
 		_shout_mark_rest_scale.append((mark as Node2D).scale if mark else Vector2.ONE)
 
@@ -258,24 +276,65 @@ func _process(delta: float) -> void:
 
 ## 일진이 뭐라고 지껄이는 입 모양 — 얼굴 그림 두 장을 불규칙한 간격으로 번갈아 끼운다.
 ## 일정한 박자로 켰다 껐다 하면 기계처럼 보여서, 벌리는 시간과 다무는 시간을 매번 다르게 뽑는다
-func _update_talk(delta: float) -> void:
-	if _iljin_head == null or iljin_talk_texture == null:
+## 입 벌리는 구간을 박자대로 미리 만든다 — "한 번 -> 쉬고 -> 네 번".
+## 매 프레임 무작위로 뽑는 대신 시각만 보고 켜서, 몇 번을 언제 벌릴지 정확히 맞출 수 있다
+func _build_mouth_windows() -> void:
+	_mouth_windows.clear()
+	var cycle: float = talk_open_time + talk_close_time
+	var at: float = 0.0
+	for i in range(maxi(talk_first_count, 0)):
+		_mouth_windows.append(Vector2(at, at + talk_open_time))
+		at += cycle
+	at += maxf(talk_pause, 0.0)
+	for i in range(maxi(talk_second_count, 0)):
+		_mouth_windows.append(Vector2(at, at + talk_open_time))
+		at += cycle
+	# 마지막으로 입을 닫는 시각 (마지막 벌림 + 닫는 시간)
+	_talk_end = at - talk_close_time if not _mouth_windows.is_empty() else 0.0
+	_talk_end = maxf(_talk_end, 0.0)
+
+func _update_talk(_delta: float) -> void:
+	if _iljin_head == null:
 		return
-	_mouth_timer -= delta
-	if _mouth_timer > 0.0:
+	# 다 지껄였으면 입을 다물고 숨만 쉰다
+	if _time >= _talk_end or iljin_talk_texture == null:
+		_close_iljin_mouth()
+		_breathe_iljin()
 		return
-	_mouth_open = not _mouth_open
-	if _mouth_open:
-		_mouth_timer = _talk_rng.randf_range(mouth_open_min, mouth_open_max)
+	var open_now: bool = false
+	for window in _mouth_windows:
+		if _time >= window.x and _time < window.y:
+			open_now = true
+			break
+	if open_now == _mouth_open:
+		return
+	_mouth_open = open_now
+	if open_now:
 		_iljin_head.texture = iljin_talk_texture
 		# 말할 때마다 고개를 까딱 — 입만 움직이면 인형 같아서 목도 같이 움직여야 말하는 것처럼 보인다
 		_iljin_head.position = _iljin_head_rest_position + Vector2(0.0, talk_nod)
 		_iljin_head.rotation = _iljin_head_rest_rotation + deg_to_rad(talk_nod_deg)
 	else:
-		_mouth_timer = _talk_rng.randf_range(mouth_close_min, mouth_close_max)
 		_iljin_head.texture = _iljin_head_rest_texture
 		_iljin_head.position = _iljin_head_rest_position
 		_iljin_head.rotation = _iljin_head_rest_rotation
+
+## 입을 다문 기본 얼굴로 되돌린다 (이미 다물고 있으면 아무 일도 안 한다)
+func _close_iljin_mouth() -> void:
+	if not _mouth_open:
+		return
+	_mouth_open = false
+	if _iljin_head_rest_texture:
+		_iljin_head.texture = _iljin_head_rest_texture
+	_iljin_head.rotation = _iljin_head_rest_rotation
+
+## 입 다문 뒤의 숨 — 머리가 천천히 오르내리고 몸은 그 절반만 따라 움직인다.
+## 아주 조금만 움직여야 "가만히 서서 숨 쉬는" 것으로 보인다
+func _breathe_iljin() -> void:
+	var wave: float = sin(_time * TAU / maxf(iljin_breath_period, 0.01)) * iljin_breath
+	_iljin_head.position = _iljin_head_rest_position + Vector2(0.0, wave)
+	if _iljin_body:
+		_iljin_body.position = _iljin_body_rest_position + Vector2(0.0, wave * 0.5)
 
 ## 여자친구가 부들부들 떠는 연출 — 빠른 진동 두 개를 서로 다른 주기로 겹쳐서,
 ## 한 방향으로만 왕복하지 않고 자잘하게 떨리는 것처럼 보이게 한다
@@ -306,10 +365,14 @@ func _update_shout() -> void:
 		mark.scale = _shout_mark_rest_scale[i] * pop
 
 ## 걷기 시작하기까지 걸리는 시간(초) — 침을 안 뱉으면 0이라 바로 걷는다
+## 친구가 정면을 보고 서 있는 시간 — 켜져 있으면 일진이 입을 다무는 시각에 맞춘다
+func _front_wait_time() -> float:
+	return _talk_end if spit_after_talk else spit_front_time
+
 func _spit_lead_time() -> float:
 	if not spit_enabled:
 		return 0.0
-	return spit_gather_time + spit_hold_time
+	return _front_wait_time() + spit_gather_time + spit_hold_time
 
 ## 출발 전 침 뱉기 — 얼굴을 "모으기 -> 뱉기 -> 원래(화난)"로 바꾸고, 뱉는 순간 침을 날린다.
 ## **_process의 맨 끝에서 부른다** — 걸음 코드가 매 프레임 머리 자리를 다시 잡기 때문에,
@@ -317,7 +380,11 @@ func _spit_lead_time() -> float:
 func _update_spit() -> void:
 	if not spit_enabled or _friend_head == null:
 		return
-	if _time < spit_gather_time:
+	var front: float = _front_wait_time()
+	if _time < front:
+		_restore_head_pose()   # 아직 정면 — 화난 얼굴로 가만히 서 있는다
+		return
+	if _time < front + spit_gather_time:
 		_apply_head_pose(_gather_pose)
 		return
 	if _time < _spit_lead_time():

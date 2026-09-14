@@ -59,6 +59,11 @@ func _setup_graphics_audio_controls() -> void:
 
 	volume_slider.value = GameState.master_volume
 	volume_value_label.text = "%d%%" % round(GameState.master_volume * 100)
+	# 빌드에서는 소리를 통째로 꺼 뒀으므로(GameState.MUTE_IN_BUILD) 슬라이더를 만져도 아무 일도 안 난다 —
+	# 헛돌게 두면 고장난 줄 아니까 아예 못 만지게 하고 "음소거"라고 알려준다
+	if GameState.is_audio_muted():
+		volume_slider.editable = false
+		volume_value_label.text = "음소거"
 
 func _on_fullscreen_toggled(enabled: bool) -> void:
 	GameState.set_fullscreen(enabled)

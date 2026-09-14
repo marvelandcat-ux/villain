@@ -53,6 +53,9 @@ extends Control
 @export var illust_fade_seconds: float = 0.9
 ## 배경 위에 깔리는 어두운 판(`Scrim`)의 진하기. 왼쪽 메뉴 글씨가 배경에 묻히지 않게 하는 용도다
 @export_range(0.0, 1.0, 0.01) var scrim_alpha: float = 0.45
+## **여기 적은 일러스트는 아예 안 보여준다** (노드 이름). 씬에는 그대로 두고 순환에서만 뺀다 —
+## 아직 손볼 데가 남은 일러스트를 지우지 않고 잠깐 감출 때 쓴다. 짝이 되는 배경도 같이 빠진다
+@export var hidden_illusts: Array[String] = ["IllustCatMom"]
 ## **이 일러스트들일 때는 어두운 판을 걷는다** (노드 이름). 배경 자체가 이미 어두워서
 ## 덧씌우면 아무것도 안 보이는 경우에 쓴다 — 악플러(쓰레기방)가 그렇다
 @export var no_scrim_illusts: Array[String] = ["IllustAkpeulleo"]
@@ -198,11 +201,25 @@ func _animate_menu(delta: float) -> void:
 ## 이름이 "Illust"/"Background"로 시작하는 자식을 트리 순서대로 모으고, 첫 짝만 남기고 숨긴다.
 ## "Fx"로 시작하는 효과판은 여기서 안 모은다 — 트리 순서가 아니라 이름으로 짝짓는다(_pair_effect 참고)
 func _collect_illustrations() -> void:
+	# 먼저 트리 순서대로 다 모은 뒤(일러스트 i번 <-> 배경 i번이 짝),
+	# hidden_illusts에 든 것만 **짝째로** 빼낸다. 한쪽만 빼면 그 뒤 번호가 밀려 짝이 어긋난다
+	var all_illusts: Array[Node2D] = []
+	var all_backgrounds: Array[Node2D] = []
 	for child in get_children():
 		if child is Node2D and child.name.begins_with("Illust"):
-			_illusts.append(child)
+			all_illusts.append(child)
 		elif child is Node2D and child.name.begins_with("Background"):
-			_backgrounds.append(child)
+			all_backgrounds.append(child)
+	for i in range(all_illusts.size()):
+		var illust: Node2D = all_illusts[i]
+		var background: Node2D = all_backgrounds[i] if i < all_backgrounds.size() else null
+		if illust.name in hidden_illusts:
+			illust.visible = false
+			if background:
+				background.visible = false
+			continue
+		_illusts.append(illust)
+		_backgrounds.append(background)
 	for i in range(_illusts.size()):
 		if i == 0:
 			_show_pair(i, 1.0)
@@ -214,7 +231,8 @@ func _collect_illustrations() -> void:
 	if not _illusts.is_empty():
 		_scrim.color.a = _scrim_target(0)
 
-## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null)
+## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null).
+## `_collect_illustrations`에서 이미 짝을 맞춰 담아 뒀으므로 같은 번호를 그대로 쓴다
 func _pair_background(i: int) -> Node2D:
 	return _backgrounds[i] if i < _backgrounds.size() else null
 

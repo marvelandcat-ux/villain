@@ -110,6 +110,14 @@ const SETTINGS_PATH := "user://settings.cfg"
 const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 const DEFAULT_MASTER_VOLUME := 1.0
 
+## (임시) **내보낸 빌드에서는 소리를 전부 끈다.** 아직 효과음·배경음악이 정리 전이라
+## 발표·제출용 빌드에서 아무 소리도 안 나게 하려는 것이다. **에디터에서는 그대로 들린다** —
+## 작업하면서는 소리를 확인할 수 있어야 하니까. 소리를 다 넣고 나면 이 값을 false로 바꾸면 된다.
+##
+## 볼륨 값(master_volume)은 그대로 두고 **Master 버스만 음소거**한다 — 나중에 켰을 때
+## 사용자가 맞춰 둔 볼륨이 그대로 살아 있다
+const MUTE_IN_BUILD := true
+
 var is_fullscreen: bool = false
 var resolution_index: int = 0
 var master_volume: float = DEFAULT_MASTER_VOLUME
@@ -123,6 +131,7 @@ var _portrait_rect_size: Dictionary = {}
 func _ready() -> void:
 	_load_env()
 	_load_settings()
+	_apply_build_mute()
 	_load_portrait_frames()
 
 ## 새 대전을 시작하기 전에 라운드 스코어를 초기화한다
@@ -187,18 +196,50 @@ func reset_keybindings() -> void:
 		_apply_keybind(action, keycode)
 		_save_setting("keybinds", action, keycode)
 
-## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다
+## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다.
+## **창 모드로 돌아올 때는 저장해 둔 해상도를 다시 적용한다** — 안 그러면 전체화면 크기 그대로 남는다
 func set_fullscreen(enabled: bool) -> void:
 	is_fullscreen = enabled
 	get_window().mode = Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED
+	if not enabled:
+		_apply_window_size()
 	_save_setting("graphics", "fullscreen", enabled)
 
 ## ui/Settings.gd의 해상도 드롭다운이 호출한다. 전체화면 중에는 창 크기를 바꿔도 의미가 없어서 창모드일 때만 실제로 적용한다
 func set_resolution(index: int) -> void:
 	resolution_index = clampi(index, 0, RESOLUTIONS.size() - 1)
 	if not is_fullscreen:
-		get_window().size = RESOLUTIONS[resolution_index]
+		_apply_window_size()
 	_save_setting("graphics", "resolution_index", resolution_index)
+
+## 지금 고른 해상도를 창에 실제로 적용하고 화면 가운데로 옮긴다.
+##
+## **모니터보다 큰 해상도는 고르지 못하게 한 칸씩 내려간다** — 1920x1080 모니터에서 2560x1440을 고르면
+## 창의 절반이 화면 밖으로 나가 제목표시줄까지 안 보이게 된다.
+##
+## **에디터에서 실행하면 크기가 안 바뀔 수 있다.** Godot 4.4부터 게임 창을 에디터 안에 끼워서(Embed)
+## 띄우는 게 기본이라, 그 창은 에디터가 크기를 쥐고 있어서 코드로 바꿔도 안 먹는다.
+## 에디터 Game 탭의 "Embed Game on Play"를 끄거나, **내보낸 빌드에서 확인하면 정상 동작한다**
+func _apply_window_size() -> void:
+	var window := get_window()
+	var usable: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	var target: Vector2i = RESOLUTIONS[resolution_index]
+	# 화면에 안 들어가면 들어가는 것 중 가장 큰 걸로 내려간다
+	for i in range(resolution_index, -1, -1):
+		if RESOLUTIONS[i].x <= usable.size.x and RESOLUTIONS[i].y <= usable.size.y:
+			target = RESOLUTIONS[i]
+			break
+	window.size = target
+	window.position = usable.position + (usable.size - target) / 2
+
+## 지금 소리가 꺼져 있어야 하는 상태인지 (내보낸 빌드 + MUTE_IN_BUILD).
+## `OS.has_feature("editor")`는 에디터에서 실행할 때만 true라 빌드와 구분된다
+func is_audio_muted() -> bool:
+	return MUTE_IN_BUILD and not OS.has_feature("editor")
+
+## Master 버스 음소거를 지금 상태에 맞춘다
+func _apply_build_mute() -> void:
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), is_audio_muted())
 
 ## ui/Settings.gd의 마스터 볼륨 슬라이더가 호출한다(0.0~1.0). 엔진의 Master 버스 자체를 조절하기 때문에
 ## 지금은 재생 중인 소리가 없어도, 나중에 효과음·배경음악이 추가되면 바로 이 값이 적용된다
@@ -206,6 +247,7 @@ func set_master_volume(volume: float) -> void:
 	master_volume = clampf(volume, 0.0, 1.0)
 	var bus_index := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(master_volume))
+	_apply_build_mute()   # 볼륨을 만져도 빌드에서는 계속 꺼진 채로 둔다
 	_save_setting("audio", "master_volume", master_volume)
 
 ## PortraitFrames.tscn을 인스턴스해서 각 캐릭터 프레임 안 "Portrait" 노드의 텍스처와,

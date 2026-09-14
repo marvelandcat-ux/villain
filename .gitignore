@@ -17,3 +17,8 @@ mono_crash.*.json
 
 # 로컬 시크릿 — API 키 등은 절대 커밋하지 않는다 (.env.example 참고)
 .env
+
+# 내보낸 빌드 결과물 — 소스가 아니라 **소스로 만들어내는 것**이라 git에 넣지 않는다.
+# zip 하나가 180MB라 GitHub의 파일당 100MB 제한에 걸려서, 커밋하면 push 자체가 막힌다.
+# 팀원에게 빌드를 줘야 하면 GitHub Releases(파일당 2GB)나 드라이브로 보낼 것
+build/
