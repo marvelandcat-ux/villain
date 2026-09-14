@@ -1,8 +1,18 @@
 class_name Settings
 extends Control
 
-## 설정 화면 — 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
+## 설정 화면 — 메인 메뉴 위에 팝업(카드)으로 덮어 씌워진다. 뒤의 메인 메뉴는 Scrim(반투명 검정)을 통해
+## 살짝 비쳐 보인다. 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
 ## 그래픽·오디오는 GameState가 즉시 적용 + 저장하고, 조작키는 여기서 바로 재배정 가능(GameState.rebind_action)
+
+## 닫기 버튼을 누르거나 ESC를 눌러 팝업이 닫힐 때(슬라이드 연출이 끝난 뒤 나온다).
+## 부르는 쪽(MainMenu)이 포커스를 되돌리고 가려뒀던 버튼을 다시 보여주는 데 쓴다
+signal closed
+
+## 열릴 때 화면 위에서 미끄러져 내려오는 데 걸리는 시간(초)
+@export var open_time: float = 0.35
+## 닫힐 때 다시 위로 미끄러져 올라가는 시간(초) — 여는 것보다 살짝 빠른 게 답답하지 않다
+@export var close_time: float = 0.25
 
 ## 액션 이름 뒷부분(p1_/p2_ 접두사 제외) -> 화면에 보여줄 한국어 라벨
 const ACTION_LABELS := {
@@ -12,26 +22,36 @@ const ACTION_LABELS := {
 const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate"]
 
 @onready var tab_buttons := {
-	"graphics": $HeaderCenter/HeaderVBox/TabRow/GraphicsTabButton,
-	"audio": $HeaderCenter/HeaderVBox/TabRow/AudioTabButton,
-	"controls": $HeaderCenter/HeaderVBox/TabRow/ControlsTabButton,
+	"graphics": $Card/CardVBox/HeaderVBox/TabRow/GraphicsTabButton,
+	"audio": $Card/CardVBox/HeaderVBox/TabRow/AudioTabButton,
+	"controls": $Card/CardVBox/HeaderVBox/TabRow/ControlsTabButton,
 }
 @onready var panels := {
-	"graphics": $BodyCenter/BodyVBox/GraphicsPanel,
-	"audio": $BodyCenter/BodyVBox/AudioPanel,
-	"controls": $BodyCenter/BodyVBox/ControlsPanel,
+	"graphics": $Card/CardVBox/BodyVBox/GraphicsPanel,
+	"audio": $Card/CardVBox/BodyVBox/AudioPanel,
+	"controls": $Card/CardVBox/BodyVBox/ControlsPanel,
 }
 
-@onready var fullscreen_check: CheckButton = $BodyCenter/BodyVBox/GraphicsPanel/FullscreenRow/FullscreenCheck
-@onready var resolution_option: OptionButton = $BodyCenter/BodyVBox/GraphicsPanel/ResolutionRow/ResolutionOption
-@onready var volume_slider: HSlider = $BodyCenter/BodyVBox/AudioPanel/VolumeRow/VolumeSlider
-@onready var volume_value_label: Label = $BodyCenter/BodyVBox/AudioPanel/VolumeRow/VolumeValueLabel
-@onready var p1_column: VBoxContainer = $BodyCenter/BodyVBox/ControlsPanel/Columns/P1Column
-@onready var p2_column: VBoxContainer = $BodyCenter/BodyVBox/ControlsPanel/Columns/P2Column
+@onready var fullscreen_check: CheckButton = $Card/CardVBox/BodyVBox/GraphicsPanel/FullscreenRow/FullscreenCheck
+@onready var resolution_option: OptionButton = $Card/CardVBox/BodyVBox/GraphicsPanel/ResolutionRow/ResolutionOption
+@onready var volume_slider: HSlider = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeSlider
+@onready var volume_value_label: Label = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeValueLabel
+@onready var p1_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P1Column
+@onready var p2_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P2Column
 
 ## 지금 새 키 입력을 기다리고 있는 액션 이름. 빈 문자열이면 대기 중이 아님
 var _listening_action: String = ""
 var _key_buttons: Dictionary = {}  # {action: Button}
+
+@onready var _card: Control = $Card
+@onready var _scrim: ColorRect = $Scrim
+
+## Scrim이 다 깔렸을 때의 진하기(씬에 저장된 값을 기억해뒀다가 그만큼까지 어두워진다)
+var _scrim_target_alpha: float = 0.55
+## 연출이 얼마나 진행됐는지(초). 음수면 연출 중이 아니다
+var _anim_time: float = -1.0
+## 지금 여는 중인지(false면 닫는 중)
+var _opening: bool = true
 
 func _ready() -> void:
 	for suffix in ROWS:
@@ -40,6 +60,33 @@ func _ready() -> void:
 		p2_column.add_child(_make_key_row("p2_" + suffix, ACTION_LABELS[suffix]))
 	_setup_graphics_audio_controls()
 	_show_tab("graphics")
+	tab_buttons["graphics"].grab_focus()
+	_scrim_target_alpha = _scrim.color.a
+	_opening = true
+	_anim_time = 0.0
+	_apply_slide(0.0)
+
+## u=0이면 화면 위로 완전히 벗어난 상태, u=1이면 제자리(카드가 화면을 꽉 채운 상태)
+func _apply_slide(u: float) -> void:
+	var shift: float = lerpf(-get_viewport_rect().size.y, 0.0, u)
+	_card.offset_top = shift
+	_card.offset_bottom = shift
+	_scrim.color.a = _scrim_target_alpha * u
+
+func _process(delta: float) -> void:
+	if _anim_time < 0.0:
+		return
+	var duration: float = open_time if _opening else close_time
+	_anim_time = minf(_anim_time + delta, duration)
+	var t: float = _anim_time / maxf(duration, 0.001)
+	# 뒤로 갈수록 느려지게(감속) — 툭 내려왔다가 사뿐히 멈추는 느낌
+	var eased: float = 1.0 - pow(1.0 - t, 3.0)
+	_apply_slide(eased if _opening else 1.0 - eased)
+	if _anim_time >= duration:
+		_anim_time = -1.0
+		if not _opening:
+			closed.emit()
+			queue_free()
 
 ## 탭 버튼을 누르면 그 탭의 패널만 보이고 나머지는 숨긴다. 버튼 자체도 선택된 탭만 밝게 눌린 느낌으로 표시한다
 func _show_tab(tab_name: String) -> void:
@@ -121,9 +168,18 @@ func _on_reset_pressed() -> void:
 	for action in _key_buttons.keys():
 		_key_buttons[action].text = _key_display_text(action)
 
+## 닫는 연출(위로 슬라이드 아웃)을 시작한다 — 다 끝나면 _process가 closed를 보내고 스스로를 지운다.
+## 이미 닫는 중이면 두 번 눌러도 무시한다
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+	if _anim_time >= 0.0 and not _opening:
+		return
+	_opening = false
+	_anim_time = 0.0
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _listening_action == "" and event.is_action_pressed("ui_cancel"):
+	if _listening_action != "":
+		return
+	if event.is_action_pressed("ui_cancel"):
+		# 여기서 처리했다고 알려야 뒤쪽 메인 메뉴의 ESC(타이틀로 나가기)가 같이 발동하지 않는다
+		get_viewport().set_input_as_handled()
 		_on_back_pressed()
