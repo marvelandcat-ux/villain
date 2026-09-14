@@ -14,6 +14,6 @@ func _execute(fighter: Fighter) -> void:
 
 	var opponent := fighter.find_opponent()
 	if opponent:
-		opponent.apply_temp_multiplier("jump_multiplier", jump_multiplier, duration)
+		opponent.apply_temp_multiplier("jump_multiplier", jump_multiplier, duration, true)   # 궁극기는 방어를 뚫는다
 		# 다리 풀린 느낌으로 보라색으로 물듦
 		opponent.set_tint("jump_debuff", Color(0.75, 0.6, 0.85), duration)

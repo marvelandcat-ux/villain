@@ -43,6 +43,6 @@ func _play_shout_motion(fighter: Fighter) -> void:
 func _on_cone_hit(area: Area2D, screamer: Fighter) -> void:
 	if not (area is Hurtbox) or area.fighter == screamer:
 		return
-	area.fighter.apply_temp_multiplier("jump_multiplier", jump_multiplier, debuff_duration)
+	area.fighter.apply_temp_multiplier("jump_multiplier", jump_multiplier, debuff_duration, true)   # 궁극기는 방어를 뚫는다(피해만 막힌다)
 	# 다리 풀린 느낌으로 보라색으로 물듦
 	area.fighter.set_tint("jump_debuff", Color(0.75, 0.6, 0.85), debuff_duration)

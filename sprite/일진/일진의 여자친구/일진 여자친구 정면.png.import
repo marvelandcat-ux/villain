@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://hvlanltsumld"
-path="res://.godot/imported/일진 여자친구 머리.png-16ae03435c65dc5cb2ff4b239839a90a.ctex"
+uid="uid://b5m8hm6pma36w"
+path="res://.godot/imported/일진 여자친구 정면.png-b826961af099b37471959148be3b0ef1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/일진/일진의 여자친구/일진 여자친구 머리.png"
-dest_files=["res://.godot/imported/일진 여자친구 머리.png-16ae03435c65dc5cb2ff4b239839a90a.ctex"]
+source_file="res://sprite/일진/일진의 여자친구/일진 여자친구 정면.png"
+dest_files=["res://.godot/imported/일진 여자친구 정면.png-b826961af099b37471959148be3b0ef1.ctex"]
 
 [params]
 

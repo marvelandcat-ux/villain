@@ -250,7 +250,13 @@ func _hit_ground(from: Vector2, to: Vector2) -> bool:
 ## 잡는 순간 — 데미지를 조금 주고, 상대 수평 이동을 잡아채 끌어오기 시작한다
 ## 마우스가 상대 몸에 닿았는가 — 날아갈 때와 되감길 때가 같은 기준을 쓴다
 func _touches_opponent() -> bool:
-	return is_instance_valid(_opponent) and _mouse_pos.distance_to(_opponent.global_position) < catch_radius
+	if not is_instance_valid(_opponent):
+		return false
+	# **방어 중인 상대는 아예 안 잡힌다.** 잡아놓고 데미지만 0으로 막으면 끌려오는 건 그대로라
+	# "1초 무적"이 무적이 아니게 된다. 안 잡히면 마우스는 그냥 지나쳐 날아가다 손으로 되감긴다
+	if _opponent.blocks_debuff():
+		return false
+	return _mouse_pos.distance_to(_opponent.global_position) < catch_radius
 
 func _grab() -> void:
 	_state = STATE_REEL

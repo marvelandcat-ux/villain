@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ctel3dkq2gyq2"
-path="res://.godot/imported/여자일진임시옷.png-6bc8a1baf7615f577dbfcbfc576fd4f8.ctex"
+uid="uid://kalrb3t3jecf"
+path="res://.godot/imported/아픈 일진의 여자친구.png-5ab0a19f8609703f4c734be21211e218.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/일진/일진의 여자친구/여자일진임시옷.png"
-dest_files=["res://.godot/imported/여자일진임시옷.png-6bc8a1baf7615f577dbfcbfc576fd4f8.ctex"]
+source_file="res://sprite/일진/일진의 여자친구/아픈 일진의 여자친구.png"
+dest_files=["res://.godot/imported/아픈 일진의 여자친구.png-5ab0a19f8609703f4c734be21211e218.ctex"]
 
 [params]
 

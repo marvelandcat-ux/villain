@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/IljinStats.tres" id="2"]
@@ -9,7 +9,9 @@
 [ext_resource type="Script" path="res://skills/CigaretteSmokeSkill.gd" id="7"]
 [ext_resource type="PackedScene" path="res://skills/CigaretteSmoke.tscn" id="8"]
 [ext_resource type="Script" path="res://skills/ShoulderChargeSkill.gd" id="9"]
-[ext_resource type="Script" path="res://skills/Skill.gd" id="11"]
+[ext_resource type="Script" path="res://skills/IljinCrewUltimate.gd" id="11"]
+[ext_resource type="PackedScene" path="res://characters/iljin/IljinFriend.tscn" id="12_friend"]
+[ext_resource type="PackedScene" path="res://characters/iljin/IljinGirlfriend.tscn" id="13_girlfriend"]
 [ext_resource type="Texture2D" uid="uid://cl80226s80f5m" path="res://sprite/일진/신남일진.png" id="7_action_face"]
 [ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smoke_face"]
 
@@ -66,3 +68,6 @@ charge_face_scale = Vector2(0.0486, 0.0486)
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("11")
 cooldown = 50.0
+start_on_cooldown = true
+friend_scene = ExtResource("12_friend")
+girlfriend_scene = ExtResource("13_girlfriend")

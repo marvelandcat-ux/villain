@@ -33,10 +33,14 @@ const DEFAULT_JUMP_VELOCITY: float = -430.0
 const DEFAULT_AIR_JUMP_VELOCITY: float = -510.0
 
 ## --- 방향키 두 번 대시 (전 캐릭터 공용, 스킬이 아니라 기본 조작이다) ---
-## 대시하는 동안의 수평 속도(px/초). 걷기(240~270)의 두 배 반쯤
-const DEFAULT_DASH_SPEED: float = 700.0
-## 대시가 유지되는 시간(초). 속도 x 시간이 곧 이동 거리라 기본값은 126px = 몸통 폭의 약 4배
-const DEFAULT_DASH_DURATION: float = 0.18
+## 대시하는 동안의 수평 속도(px/초). 걷기(240~275)의 약 다섯 배.
+## **2026-09-14에 700 -> 1400으로 올렸다**(사용자 요청 "훨씬 빠르게") — 700은 걷기의 2.6배뿐이라
+## 순간이동하듯 "슉" 빠지는 맛이 없었다
+const DEFAULT_DASH_SPEED: float = 1400.0
+## 대시가 유지되는 시간(초). **속도 x 시간이 곧 이동 거리다** — 1400 x 0.16 = 224px(몸통 폭의 약 5.6배).
+## 속도를 올리면서 시간을 0.18에서 줄인 이유: 그대로 두면 252px까지 가서 화면의 5분의 1을 한 번에 건너뛰고,
+## 조작이 돌아오기까지도 그만큼 오래 걸린다
+const DEFAULT_DASH_DURATION: float = 0.16
 ## 다음 대시까지 기다리는 시간(초)
 const DEFAULT_DASH_COOLDOWN: float = 3.0
 ## 대시 중 잔상을 남기는 간격(초)
@@ -44,7 +48,7 @@ const DASH_TRAIL_INTERVAL: float = 0.04
 
 ## --- 아래 키 방어 (전 캐릭터 공용) ---
 ## 아래 키를 누른 순간 켜져서 이 시간(초) 동안 유지된다. 누르고 있는 게 아니라 한 번 눌러 발동하는 방식
-const DEFAULT_GUARD_DURATION: float = 1.2
+const DEFAULT_GUARD_DURATION: float = 1.0
 ## 방어가 끝나고 다음 방어까지 기다리는 시간(초)
 const DEFAULT_GUARD_COOLDOWN: float = 5.0
 ## 기본공격이 상대 방어에 막혔을 때 기본공격이 잠기는 시간(초).
@@ -308,13 +312,68 @@ func _play_hit_reaction(knockback: Vector2, amount: int) -> void:
 	var visual: Node2D = get_node_or_null("Visual")
 	if visual == null:
 		return
+	# 이미 굴러가는 중이면 기울기를 얹지 않는다 — 매 프레임 도는 각도와 트윈이 서로 각도를 뺏어
+	# 덜덜 떨린다. 구르기가 끝나면 일어서는 트윈이 알아서 각도를 정리한다
+	if _tumble_left > 0.0:
+		return
 	var dir: float = signf(knockback.x)
 	if dir == 0.0:
 		dir = -facing   # 수평 넉백이 없으면 뒤로(바라보는 반대쪽) 기운다
 	var lean_deg: float = clampf(HIT_LEAN_BASE_DEG + amount * HIT_LEAN_PER_DAMAGE, 0.0, HIT_LEAN_MAX_DEG)
-	var tween := create_tween()
-	tween.tween_property(visual, "rotation", deg_to_rad(dir * lean_deg), 0.05)
-	tween.tween_property(visual, "rotation", 0.0, 0.22)
+	# 이 트윈을 기억해둔다 — 뒤이어 크게 날아가는 타(발차기 마무리)가 들어오면 몸을 굴려야 하는데,
+	# 이 기울기 트윈이 살아 있으면 매 프레임 rotation을 도로 제자리로 끌어당겨 구르기가 안 보인다
+	if _lean_tween != null and _lean_tween.is_valid():
+		_lean_tween.kill()
+	_lean_tween = create_tween()
+	_lean_tween.tween_property(visual, "rotation", deg_to_rad(dir * lean_deg), 0.05)
+	_lean_tween.tween_property(visual, "rotation", 0.0, 0.22)
+
+## --- 크게 날아갈 때 구르기 (촉법소년 3타 발차기 등) ---
+## 구르기가 끝난 뒤 똑바로 서기까지 걸리는 시간(초)
+const TUMBLE_RECOVER := 0.16
+## 날아오른 직후 이만큼(초)은 바닥 판정을 보지 않는다 — 맞은 그 프레임엔 아직 발이 땅에 닿아 있어서,
+## 바로 검사하면 구르기가 시작하자마자 끝나버린다
+const TUMBLE_GROUND_GRACE := 0.14
+
+## 피격 기울기 트윈 (구르기가 시작되면 꺼야 한다)
+var _lean_tween: Tween = null
+## 남은 구르기 시간(초)과 도는 속도(라디안/초)
+var _tumble_left: float = 0.0
+var _tumble_speed: float = 0.0
+var _tumble_grace: float = 0.0
+
+## 몸이 빙글빙글 돌면서 날아간다. turns=도는 바퀴 수, duration=도는 시간(초),
+## spin_dir=도는 방향(+1이면 시계방향 = 오른쪽으로 날아갈 때). **바닥에 닿으면 그 자리에서 멈춘다**
+func play_launch_tumble(turns: float, duration: float, spin_dir: float) -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null or turns <= 0.0 or duration <= 0.0:
+		return
+	if _lean_tween != null and _lean_tween.is_valid():
+		_lean_tween.kill()
+	var dir: float = 1.0 if spin_dir >= 0.0 else -1.0
+	_tumble_left = duration
+	_tumble_grace = TUMBLE_GROUND_GRACE
+	_tumble_speed = dir * TAU * turns / duration
+
+## 매 물리 프레임 — 구르는 중이면 몸을 돌리고, 끝나거나 착지하면 똑바로 세운다
+func _update_tumble(delta: float) -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		_tumble_left = 0.0
+		return
+	_tumble_grace = maxf(_tumble_grace - delta, 0.0)
+	_tumble_left = maxf(_tumble_left - delta, 0.0)
+	var landed: bool = _tumble_grace <= 0.0 and is_on_floor()
+	if _tumble_left <= 0.0 or landed:
+		_tumble_left = 0.0
+		# 돌던 각도를 -180~180도로 접어두고 가까운 쪽으로 일어선다 (안 접으면 몇 바퀴를 되감는다)
+		visual.rotation = wrapf(visual.rotation, -PI, PI)
+		if _lean_tween != null and _lean_tween.is_valid():
+			_lean_tween.kill()
+		_lean_tween = create_tween()
+		_lean_tween.tween_property(visual, "rotation", 0.0, TUMBLE_RECOVER)
+		return
+	visual.rotation += _tumble_speed * delta
 
 ## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
 func _play_hurt_face() -> void:
@@ -399,8 +458,24 @@ func grant_invincibility(duration: float) -> void:
 	is_invincible = true
 	_after(duration, func(): is_invincible = false)
 
-## duration초 동안 공포 상태로 만든다 (기본공격/스킬 사용 불가, 이동은 가능)
-func apply_fear(duration: float) -> void:
+## 지금 이 캐릭터에게 디버프(둔화·공포·그랩 등)를 걸 수 있는지. true면 튕겨낸다.
+##
+## **방어 중에는 어떤 디버프도 안 걸린다** — 데미지·넉백만 막고 둔화·공포·그랩이 그대로 들어가면
+## "1초 무적"이 무적이 아니게 된다(막았는데 유선 마우스에 끌려가는 식).
+## **단 궁극기는 예외다 — 피해는 막히지만 디버프는 뚫고 들어간다.** 궁을 쓰고도 아무 일이 없으면
+## 긴 쿨(20~50초)을 쓸 이유가 없어지므로, 궁에만 "막아도 한 대는 남는다"를 남겨둔 것이다.
+##
+## **맵 기믹(열차·모래사장·왕관)은 이 함수를 안 거친다** — 예전처럼 방어와 무관하게 걸린다
+func blocks_debuff(from_ultimate: bool = false) -> bool:
+	if is_invincible:
+		return true
+	return is_guarding and not from_ultimate
+
+## duration초 동안 공포 상태로 만든다 (기본공격/스킬 사용 불가, 이동은 가능).
+## 방어 중이면 안 걸린다 — 궁극기가 거는 공포만 뚫고 들어온다
+func apply_fear(duration: float, from_ultimate: bool = false) -> void:
+	if blocks_debuff(from_ultimate):
+		return
 	is_feared = true
 	set_tint("fear", Color(0.75, 0.75, 1.0), duration)
 	_after(duration, func(): is_feared = false)
@@ -425,7 +500,7 @@ func can_guard() -> bool:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
 
-## 아래 키를 **누른 순간** 호출한다 — guard_duration(1.2초) 동안 보호막이 켜지고
+## 아래 키를 **누른 순간** 호출한다 — guard_duration(1.0초) 동안 보호막이 켜지고
 ## 그 사이에 들어오는 공격은 전부 무효가 된다. 실제로 켜졌으면 true.
 ## 공중에서도 켜지고, 켜져 있는 동안엔 이동·점프·공격·스킬이 전부 막힌다(무적의 대가)
 func start_guard() -> bool:
@@ -730,15 +805,23 @@ func _recompute_modifier(property: String) -> void:
 		result *= value
 	set(property, result)
 
-## property에 duration초 동안만 유지되는 임시 배수 효과를 건다 (자동으로 id를 발급하고 만료 처리)
-func apply_temp_multiplier(property: String, value: float, duration: float) -> void:
+## property에 duration초 동안만 유지되는 임시 배수 효과를 건다 (자동으로 id를 발급하고 만료 처리).
+##
+## **스킬이 거는 디버프는 전부 이 함수를 지난다** — 방어 차단도 여기 한 곳에서만 한다.
+## `set_modifier`를 직접 부르는 쪽(맵 기믹·자기 자신 버프)은 이 검사를 안 거친다
+func apply_temp_multiplier(property: String, value: float, duration: float, from_ultimate: bool = false) -> void:
+	if blocks_debuff(from_ultimate):
+		return
 	var id := _next_modifier_id
 	_next_modifier_id += 1
 	set_modifier(property, id, value)
 	_after(duration, func(): clear_modifier(property, id))
 
-## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지)
-func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
+## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지).
+## 방어 중에 걸면 아예 안 붙는다 — 걸어두기만 하고 방어가 풀린 뒤 터지면 막은 의미가 없다
+func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int, from_ultimate: bool = false) -> void:
+	if blocks_debuff(from_ultimate):
+		return
 	for i in range(ticks):
 		_after(tick_interval * (i + 1), func(): take_damage(damage_per_tick))
 
@@ -756,6 +839,9 @@ func apply_physics(delta: float) -> void:
 	if _hitstun_time > 0.0:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
 		velocity.x = move_toward(velocity.x, 0.0, HITSTUN_FRICTION * delta)
+	# 크게 날아가는 중이면 몸이 빙글빙글 돈다 (시간이 다 되거나 바닥에 닿으면 알아서 일어선다)
+	if _tumble_left > 0.0:
+		_update_tumble(delta)
 	if _combo_timer > 0.0:
 		_combo_timer = maxf(_combo_timer - delta, 0.0)
 	if not is_on_floor():
