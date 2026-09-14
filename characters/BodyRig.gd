@@ -322,6 +322,17 @@ extends Node2D
 @export var weary_head_texture: Texture2D
 ## 지친 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var weary_head_scale: Vector2 = Vector2.ZERO
+
+## 처치당했을 때(HP 0) 바뀌는 표정 — 눈이 X로 변한 얼굴. 비워두면 표정이 안 바뀐다.
+## 처치 연출(`Stage`가 부르는 `play_knockout`)에서만 쓴다
+@export var ko_head_texture: Texture2D
+## 그 그림의 배율 (0,0이면 원래 머리 배율 그대로)
+@export var ko_head_scale: Vector2 = Vector2.ZERO
+## 처치 연출에서 파츠가 흩어지는 정도 — 사진 포즈처럼 머리는 위로, 손·발은 뒤로 처진다.
+## 리그 전체가 회전하며 날아가므로 이 값은 로컬 좌표 기준이다
+@export var ko_head_offset: Vector2 = Vector2(0, -6)
+@export var ko_hand_offset: Vector2 = Vector2(-10, 8)
+@export var ko_foot_offset: Vector2 = Vector2(-12, 6)
 ## HP 비율이 이 값 이하로 떨어지면 지친 얼굴이 된다 (0.3 = 30% 이하). 회복하면 다시 원래 얼굴로 돌아온다
 @export_range(0.0, 1.0, 0.05) var weary_hp_ratio: float = 0.3
 
@@ -445,6 +456,8 @@ var _action_face_on: bool = false
 ## 지금 HP가 얼마 안 남아 지친 얼굴 상태인지 (weary_hp_ratio 이하로 떨어지면 true)
 var _weary_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
+## 처치 연출 중인지 — 켜지면 걷기·표정 갱신을 전부 멈추고 쓰러진 자세를 유지한다
+var _knocked_out: bool = false
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
@@ -467,6 +480,8 @@ func _ready() -> void:
 		_bike.visible = false
 
 func _process(delta: float) -> void:
+	if _knocked_out:
+		return   # 쓰러진 자세를 코드가 매 프레임 되돌리지 않도록 리그 갱신을 통째로 멈춘다
 	var speed_ratio: float = 0.0
 	# Fighter 없이(미리보기 도구 등) 띄운 경우엔 그냥 바닥에 서 있는 것으로 친다
 	var on_floor: bool = true
@@ -1271,7 +1286,7 @@ func play_hurt_face() -> void:
 ## 없으면 현재 상태(액션/취함/맨정신)에 맞는 기본 머리로 돌아간다.
 ## 피격 > 토하기 순으로 우선한다(맞는 게 더 급한 상황이라)
 func _restore_head() -> void:
-	if _head == null:
+	if _head == null or _knocked_out:
 		return
 	if _hurt_time > 0.0 and hurt_head_texture != null:
 		_head.texture = hurt_head_texture
@@ -1321,7 +1336,7 @@ func update_hp_ratio(ratio: float) -> void:
 ## 술 스택은 토하기 사거리를 정하는 핵심 정보라 빈사 상태에서도 취한 얼굴이 보여야 한다.
 ## 그래서 지친 얼굴은 "맨정신인데 HP가 얼마 안 남았을 때"만 뜬다
 func _apply_base_head() -> void:
-	if _head == null:
+	if _head == null or _knocked_out:
 		return
 	if _action_face_on and action_head_texture != null:
 		_head.texture = action_head_texture
@@ -1500,3 +1515,33 @@ func _pose_charge() -> void:
 		_body.rotation = lean
 	if _head:
 		_head.rotation = lerpf(_head.rotation, lean, t)
+
+## 처치 연출 — HP가 0이 된 캐릭터를 "눈 X" 표정으로 바꾸고 파츠를 흩뜨린 뒤,
+## 그 자세로 굳힌다(리그 갱신을 멈춘다). 실제로 날려보내는 건 Stage가 한다.
+## `ko_head_texture`가 비어 있으면 표정만 그대로 두고 자세만 잡는다.
+##
+## `trail_dir`은 **손·발이 처질 방향(로컬 기준, -1이면 왼쪽)** 이다. 좌우 반전이 `scale.x = -1`이라
+## 로컬 +x는 늘 바라보는 쪽이므로, Stage가 "날아가는 방향 x 바라보는 방향"을 계산해 넘겨준다
+func play_knockout(trail_dir: float = 1.0) -> void:
+	if _knocked_out:
+		return
+	_knocked_out = true
+	var flip: float = -1.0 if trail_dir < 0.0 else 1.0
+	if _head:
+		if ko_head_texture:
+			_head.texture = ko_head_texture
+			_head.scale = ko_head_scale if ko_head_scale != Vector2.ZERO else _head_rest_scale
+		_head.position += ko_head_offset
+	# 손·발은 날아가는 반대쪽으로 처진다 — 관성이 남은 것처럼 보이게
+	var hand_offset := Vector2(ko_hand_offset.x * flip, ko_hand_offset.y)
+	var foot_offset := Vector2(ko_foot_offset.x * flip, ko_foot_offset.y)
+	if _hand_l:
+		_hand_l.position += hand_offset
+	if _hand_r:
+		_hand_r.position += hand_offset
+	if _hand_r_hold:
+		_hand_r_hold.position += hand_offset
+	if _foot_l:
+		_foot_l.position += foot_offset
+	if _foot_r:
+		_foot_r.position += foot_offset

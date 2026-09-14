@@ -10,12 +10,14 @@
 [ext_resource type="Texture2D" uid="uid://gk66bpxkxs4d" path="res://sprite/축법소년/축법소년 다치다.png" id="8_hurtface"]
 [ext_resource type="Texture2D" uid="uid://c6k234qtqgk5a" path="res://sprite/축법소년/막대 사탕.png" id="9_candy"]
 [ext_resource type="Texture2D" uid="uid://vx1uoqskg6c8" path="res://sprite/축법소년/힘든 축법소년.png" id="10_wearyface"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/잼민이 처치표정.png" id="11_koface"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 action_head_texture = ExtResource("7_dashface")
 action_head_scale = Vector2(0.052, 0.052)
 weary_head_texture = ExtResource("10_wearyface")
 hurt_head_texture = ExtResource("8_hurtface")
+ko_head_texture = ExtResource("11_koface")
 attack_raise_deg = -20.0
 attack_swing_deg = 45.0
 attack_raise_offset = Vector2(-8, 6)

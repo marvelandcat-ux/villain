@@ -24,9 +24,31 @@ extends Node2D
 ## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
 @export var debug_story_skip_key: bool = true
 
+@export_group("처치 연출")
+## 켜면 **패배한 캐릭터가 화면이 느려진 채 날아가는 연출**을 보여준 뒤에 결과창이 뜬다.
+## 마지막으로 맞은 방향의 반대쪽(=넉백 방향)으로 빙글 돌며 날아간다
+@export var knockout_effect: bool = true
+## 이 연출을 쓸 캐릭터 이름 (CharacterStats.character_name). **비우면 전원**.
+## 지금은 스토리에서 잼민이가 쓰러질 때만 쓰기로 해서 촉법소년만 넣어 뒀다
+@export var knockout_characters: Array[String] = ["촉법소년"]
+## 스토리 모드에서만 연출을 쓸지. 끄면 일반 대전에서도 나온다
+@export var knockout_story_only: bool = true
+## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다
+@export var knockout_time_scale: float = 0.35
+## 맞은 순간 딱 멈춰 있는 시간(초) — 타격감을 주는 정지
+@export var knockout_hitstop: float = 0.07
+## 날아가는 시간(초)과 가로/세로 거리(px). 세로는 음수가 위로 뜨는 양이다
+@export var knockout_fly_time: float = 0.62
+@export var knockout_fly_x: float = 900.0
+@export var knockout_fly_up: float = -260.0
+## 날아가면서 도는 바퀴 수
+@export var knockout_spin_turns: float = 1.2
+
 var _p1: Fighter
 var _p2: Fighter
 var _round_over: bool = false
+## 처치 연출을 재생하는 중 — 끝날 때까지 승패 판정을 멈춰둔다
+var _knockout_playing: bool = false
 ## "3, 2, 1, FIGHT!" 카운트다운이 끝날 때까지 true — HP/링아웃 판정과 제한시간 감소를 같이 멈춰둔다
 var _countdown_active: bool = true
 ## 이번 라운드 남은 시간 (GameState.time_limit_seconds가 0이면 시간 제한 없음)
@@ -72,7 +94,7 @@ func _ready() -> void:
 ## 신호에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 순서에 따라
 ## 이미 죽은 쪽이 승자로 판정되는 문제가 있어서, 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정한다
 func _process(delta: float) -> void:
-	if _round_over or _countdown_active:
+	if _round_over or _countdown_active or _knockout_playing:
 		return
 	for f in [_p1, _p2]:
 		if f and is_instance_valid(f) and f.global_position.y > ring_out_y:
@@ -81,9 +103,9 @@ func _process(delta: float) -> void:
 		var p1_dead: bool = _p1.current_hp <= 0
 		var p2_dead: bool = _p2.current_hp <= 0
 		if p1_dead and p2_dead:
-			_end_round(false, true)
+			_finish_round(false, true)
 		else:
-			_end_round(not p1_dead, false)
+			_finish_round(not p1_dead, false)
 		return
 	if GameState.time_limit_seconds > 0:
 		_round_time_left -= delta
@@ -97,6 +119,74 @@ func _process(delta: float) -> void:
 				_end_round(false, false)
 			else:
 				_end_round(false, true)
+
+## 라운드가 끝났을 때 제일 먼저 들어오는 곳 — 처치 연출이 있으면 그걸 먼저 보여주고 결과로 넘긴다.
+## `_knockout_playing` 동안 `_process`의 판정을 멈춰서 연출 중에 같은 라운드가 두 번 끝나지 않게 한다
+func _finish_round(p1_won: bool, is_draw: bool) -> void:
+	var loser: Fighter = _p2 if p1_won else _p1
+	if not is_draw and _wants_knockout(loser):
+		_knockout_playing = true
+		_freeze_controllers()
+		await _play_knockout(loser)
+		_knockout_playing = false
+	_end_round(p1_won, is_draw)
+
+## 이 캐릭터가 쓰러질 때 처치 연출을 쓸지
+func _wants_knockout(loser: Fighter) -> bool:
+	if not knockout_effect or loser == null or not is_instance_valid(loser):
+		return false
+	if knockout_story_only and GameState.game_mode != "story":
+		return false
+	if knockout_characters.is_empty():
+		return true
+	return loser.stats != null and loser.stats.character_name in knockout_characters
+
+## 처치 연출 — **화면이 느려지면서, 마지막으로 맞은 반대 방향으로 빙글 돌며 날아간다.**
+##
+## 리그(`Visual`)의 표정을 "눈 X"로 바꾸고 파츠를 흩뜨린 뒤(`BodyRig.play_knockout`),
+## 캐릭터의 물리를 끄고 **직접 자리를 옮긴다** — CharacterBody2D의 이동·중력에 맡기면 벽·바닥에 걸려서
+## 화면 밖까지 안 나간다.
+##
+## 시간 배속(`Engine.time_scale`)을 낮추면 Tween도 같이 느려지므로, 아래 시간들은 **느려진 시간 기준**이다
+## (0.35배속에서 0.62초짜리 트윈은 실제로 약 1.8초 걸린다). 연출이 끝나면 배속을 반드시 1로 되돌린다
+func _play_knockout(loser: Fighter) -> void:
+	var direction: float = loser.last_hit_direction
+	if direction == 0.0:
+		direction = -loser.facing
+	var visual: Node = loser.get_node_or_null("Visual")
+	if visual and visual.has_method("play_knockout"):
+		# 리그는 좌우 반전(scale.x = -1)이라 로컬 +x가 늘 바라보는 쪽이다 —
+		# 손·발이 날아가는 반대쪽으로 처지도록 방향을 바라보는 쪽 기준으로 바꿔 넘긴다
+		visual.play_knockout(direction * loser.facing)
+	loser.velocity = Vector2.ZERO
+	loser.set_physics_process(false)
+	# 카메라가 날아가는 쪽을 따라가면 승자가 화면 밖으로 밀려난다 —
+	# "fighters" 그룹에서 빼면 CameraRig가 둘 다 못 찾아 그 자리에 멈춘다
+	loser.remove_from_group("fighters")
+	var camera: Camera2D = get_viewport().get_camera_2d()
+	if camera and camera.has_method("add_trauma"):
+		camera.add_trauma(0.7)
+	Engine.time_scale = maxf(knockout_time_scale, 0.05)
+	# 맞은 순간 딱 멈췄다가 날아간다. **트윈 안에서 tween_interval로 하면 안 된다** —
+	# set_parallel(true) 뒤에 붙는 트위너들이 그 간격과도 병렬로 돌아서 멈춤이 무시된다
+	if knockout_hitstop > 0.0:
+		await get_tree().create_timer(knockout_hitstop).timeout
+		if not is_instance_valid(loser):
+			Engine.time_scale = 1.0
+			return
+	var start: Vector2 = loser.global_position
+	var goal: Vector2 = start + Vector2(direction * knockout_fly_x, knockout_fly_up)
+	var flight: Tween = loser.create_tween()
+	flight.set_parallel(true)
+	flight.tween_property(loser, "global_position", goal, knockout_fly_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	flight.tween_property(loser, "rotation", deg_to_rad(direction * 360.0 * knockout_spin_turns), knockout_fly_time).set_trans(Tween.TRANS_LINEAR)
+	flight.tween_property(loser, "modulate:a", 0.0, knockout_fly_time).set_delay(knockout_fly_time * 0.55)
+	await flight.finished
+	Engine.time_scale = 1.0
+
+## 연출 도중에 맵을 벗어나도(메뉴로 나가기 등) 시간 배속이 느린 채로 남지 않게 한다
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 ## 한 라운드가 끝났을 때 호출. 승수를 갱신하고, rounds_to_win에 도달했으면 최종 결과를,
 ## 아니면 라운드 중간 배너를 보여준 뒤 같은 맵에서 다음 라운드를 새로 시작한다(씬 리로드로 HP/위치 초기화)

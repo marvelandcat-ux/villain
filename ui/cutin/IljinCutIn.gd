@@ -15,6 +15,12 @@ extends Node2D
 ##    같은 그림을 좌우로 뒤집어 한 쌍으로 놓았다 — 문구와 같이 툭 튀어나온다
 ##
 ## `Friend`의 연출은 그림을 여러 장 그리는 대신 **코드로 파츠를 흔들어서** 만든다(다른 컷인과 같은 방식):
+##  0. **출발 전에 옆을 보고 침을 한 번 뱉는다.** 침 모으는 얼굴 -> 뱉는 얼굴(둘 다 옆을 보는 그림)로
+##     바꾸고, 그 순간 침(`Spit`)이 **일진이 없는 쪽(왼쪽)** 으로 날아가다 사라진다.
+##     침 뱉는 두 얼굴은 **`Friend/SpitGatherPose` / `Friend/SpitFacePose` 노드에 그대로 놓여 있다** —
+##     에디터에서 보이는 그 자리·각도·좌우반전·크기가 그대로 재생된다. 각도를 바꾸고 싶으면
+##     그 노드를 에디터에서 돌리면 되고 코드는 손댈 필요가 없다(게임에선 시작할 때 숨긴다).
+##     다 뱉으면 정면(화난 얼굴)으로 돌아와 걷기 시작한다
 ##  1. **제자리에서 점점 커지며 카메라 쪽으로 다가온다.** (2026-09-14) 처음엔 일진이 서 있는
 ##     오른쪽 뒤에서 비스듬히 걸어왔는데, 옆으로 미끄러지는 것처럼 보인다고 해서 **정면으로 다가오게** 바꿨다.
 ##     가로 이동은 없고 크기만 커진다 — 시작 자리는 `friend_start_offset`으로 살짝만 위로 띄워 둔다
@@ -54,6 +60,19 @@ extends Node2D
 @export var approach_curve: float = 1.4
 ## 처음에 스르륵 나타나는 시간 (전체 길이 대비 비율). 뒤쪽 일진 위에 갑자기 겹쳐 뜨는 걸 막는다
 @export_range(0.0, 0.5, 0.01) var fade_in_at: float = 0.12
+
+@export_group("침 뱉기")
+## 출발 전에 침을 뱉을지
+@export var spit_enabled: bool = true
+## 침 모으는 자세 / 뱉는 자세를 담아 둔 Sprite2D. **에디터에 보이게 놓아둔 그 모습 그대로** 재생한다
+## (그림·자리·각도·좌우반전·크기를 통째로 머리에 옮긴다). 게임이 시작되면 이 노드들은 숨긴다
+@export var spit_gather_pose: NodePath
+@export var spit_face_pose: NodePath
+## 침을 모으는 시간(초)과, 뱉고 나서 걷기 시작할 때까지의 시간(초)
+@export var spit_gather_time: float = 0.4
+@export var spit_hold_time: float = 0.26
+## 날아갈 침 (CutInSpit). 씬에서 **입 앞**에 놓아둘 것
+@export var spit_node: NodePath
 
 @export_group("걸음")
 ## 1초에 몇 걸음 걷는지
@@ -116,6 +135,9 @@ extends Node2D
 @onready var _iljin_head: Sprite2D = get_node_or_null("Iljin/Head")
 @onready var _friend_head: Sprite2D = get_node_or_null("Friend/Head")
 @onready var _girl_head: Sprite2D = get_node_or_null("Girl/Head")
+@onready var _spit: Node = get_node_or_null(spit_node) if spit_node != NodePath() else null
+@onready var _gather_pose: Sprite2D = get_node_or_null(spit_gather_pose) as Sprite2D
+@onready var _face_pose: Sprite2D = get_node_or_null(spit_face_pose) as Sprite2D
 @onready var _shout: Label = get_node_or_null("ShoutText")
 @onready var _shout_marks: Array[Node] = [get_node_or_null("ShoutMarkL"), get_node_or_null("ShoutMarkR")]
 
@@ -129,6 +151,14 @@ var _hand_r_rest: Vector2 = Vector2.ZERO
 var _hand_l_rest_scale: Vector2 = Vector2.ONE
 var _hand_r_rest_scale: Vector2 = Vector2.ONE
 var _friend_head_rest: Vector2 = Vector2.ZERO
+## 친구의 원래(화난) 얼굴 모습 — 침 뱉기가 끝나면 이걸로 돌아간다.
+## 자리(position)는 걸음 코드가 매 프레임 다시 잡으므로 여기서 되돌리지 않는다
+var _friend_head_rest_texture: Texture2D = null
+var _friend_head_rest_flip: bool = false
+var _friend_head_rest_rotation: float = 0.0
+var _friend_head_rest_scale: Vector2 = Vector2.ONE
+## 침을 이미 뱉었는지 (한 번만 날린다)
+var _spit_done: bool = false
 var _girl_head_rest: Vector2 = Vector2.ZERO
 var _girl_head_rest_rotation: float = 0.0
 ## 말줄의 씬 저장 크기 — 문구와 같이 커졌다 줄어들게 하려고 기억해 둔다
@@ -150,6 +180,14 @@ func _ready() -> void:
 	_hand_r_rest_scale = _hand_r.scale
 	if _friend_head:
 		_friend_head_rest = _friend_head.position
+		_friend_head_rest_texture = _friend_head.texture
+		_friend_head_rest_flip = _friend_head.flip_h
+		_friend_head_rest_rotation = _friend_head.rotation
+		_friend_head_rest_scale = _friend_head.scale
+	# 자세 노드는 배치용이라 게임에선 숨긴다 (에디터에선 보인 채로 두고 각도를 맞추면 된다)
+	for pose in [_gather_pose, _face_pose]:
+		if pose:
+			pose.visible = false
 	if _girl_head:
 		_girl_head_rest = _girl_head.position
 		_girl_head_rest_rotation = _girl_head.rotation
@@ -182,7 +220,12 @@ func _process(delta: float) -> void:
 	var t: float = clampf(_time / maxf(cutin_duration, 0.01), 0.0, 1.0)
 
 	# --- 다가오기 ---
-	var walk: float = clampf(t / arrive_at, 0.0, 1.0)
+	# 침을 다 뱉은 뒤부터 걷기 시작한다. 걷는 구간은 [침 끝난 시각 ~ 도착 시각]
+	var walk_start: float = _spit_lead_time()
+	var walk_end: float = maxf(cutin_duration * arrive_at, walk_start + 0.01)
+	var walk: float = clampf((_time - walk_start) / (walk_end - walk_start), 0.0, 1.0)
+	# 걷기 전에는 팔·머리도 가만히 있어야 한다 — 제자리에서 팔만 흔들면 어색하다
+	var moving: float = clampf((_time - walk_start) / 0.15, 0.0, 1.0)
 	# 뒤에선 천천히, 코앞에서 조금 더 빨리 (원근). approach_curve = 1이면 등속
 	var eased: float = pow(walk, approach_curve)
 	var scale_now: float = lerpf(friend_start_scale, 1.0, eased)   # 최종 scale은 아래 손뼉 반동까지 더해서 정한다
@@ -191,18 +234,18 @@ func _process(delta: float) -> void:
 	# --- 걸음: 한 걸음마다 위로 떴다 내려온다 ---
 	var step_phase: float = _time * PI * step_rate
 	var hop: float = absf(sin(step_phase))
-	var bob: float = -hop * body_bob_height * scale_now
+	var bob: float = -hop * body_bob_height * scale_now * moving
 	var start_position: Vector2 = _friend_rest_position + friend_start_offset
 	_friend.position = start_position.lerp(_friend_rest_position, eased) + Vector2(0.0, bob)
-	_friend.rotation = deg_to_rad(sway_deg) * sin(step_phase * 0.5)
+	_friend.rotation = deg_to_rad(sway_deg) * sin(step_phase * 0.5) * moving
 	# 머리는 몸을 따라 움직인 뒤 **거기서 더** 튄다. 조금 늦게(head_bob_lag) 따라와서 목이 있는 것처럼 보인다
 	if _friend_head:
 		var head_hop: float = absf(sin((_time - head_bob_lag) * PI * step_rate))
-		_friend_head.position = _friend_head_rest + Vector2(0.0, -head_hop * head_bob_height)
+		_friend_head.position = _friend_head_rest + Vector2(0.0, -head_hop * head_bob_height * moving)
 
 	# --- 팔 젓기: 한쪽은 앞(크게), 반대쪽은 뒤(작게)로 번갈아 ---
 	# swing = +1 -> 왼손이 앞, -1 -> 오른손이 앞
-	var swing: float = sin(_time * TAU * arm_rate)
+	var swing: float = sin(_time * TAU * arm_rate) * moving
 	_hand_l.scale = _hand_l_rest_scale * (1.0 + arm_depth * swing)
 	_hand_r.scale = _hand_r_rest_scale * (1.0 - arm_depth * swing)
 	# 앞으로 나온 쪽이 바깥(왼손은 -x)·아래로, 뒤로 간 쪽이 안쪽·위로
@@ -210,6 +253,8 @@ func _process(delta: float) -> void:
 	_hand_r.position = _hand_r_rest + Vector2(arm_out, arm_drop) * -swing
 
 	_friend.scale = _friend_rest_scale * scale_now
+	# 침 뱉는 자세는 걸음 코드가 잡아 놓은 머리 자리를 덮어써야 하므로 맨 마지막에 적용한다
+	_update_spit()
 
 ## 일진이 뭐라고 지껄이는 입 모양 — 얼굴 그림 두 장을 불규칙한 간격으로 번갈아 끼운다.
 ## 일정한 박자로 켰다 껐다 하면 기계처럼 보여서, 벌리는 시간과 다무는 시간을 매번 다르게 뽑는다
@@ -259,3 +304,46 @@ func _update_shout() -> void:
 			continue
 		mark.modulate.a = p
 		mark.scale = _shout_mark_rest_scale[i] * pop
+
+## 걷기 시작하기까지 걸리는 시간(초) — 침을 안 뱉으면 0이라 바로 걷는다
+func _spit_lead_time() -> float:
+	if not spit_enabled:
+		return 0.0
+	return spit_gather_time + spit_hold_time
+
+## 출발 전 침 뱉기 — 얼굴을 "모으기 -> 뱉기 -> 원래(화난)"로 바꾸고, 뱉는 순간 침을 날린다.
+## **_process의 맨 끝에서 부른다** — 걸음 코드가 매 프레임 머리 자리를 다시 잡기 때문에,
+## 먼저 부르면 침 뱉는 자세의 자리가 그 값에 덮어써진다
+func _update_spit() -> void:
+	if not spit_enabled or _friend_head == null:
+		return
+	if _time < spit_gather_time:
+		_apply_head_pose(_gather_pose)
+		return
+	if _time < _spit_lead_time():
+		_apply_head_pose(_face_pose)
+		if not _spit_done:
+			_spit_done = true
+			if _spit and _spit.has_method("launch"):
+				_spit.launch()
+		return
+	_restore_head_pose()
+
+## 자세 노드에 놓아둔 모습을 머리에 그대로 옮긴다 (에디터에서 보이는 그대로가 게임 화면이 된다)
+func _apply_head_pose(pose: Sprite2D) -> void:
+	if pose == null:
+		return
+	if pose.texture:
+		_friend_head.texture = pose.texture
+	_friend_head.position = pose.position
+	_friend_head.rotation = pose.rotation
+	_friend_head.scale = pose.scale
+	_friend_head.flip_h = pose.flip_h
+
+## 원래 얼굴로 되돌린다. **자리는 안 건드린다** — 걸음 코드가 매 프레임 정하기 때문
+func _restore_head_pose() -> void:
+	if _friend_head_rest_texture:
+		_friend_head.texture = _friend_head_rest_texture
+	_friend_head.rotation = _friend_head_rest_rotation
+	_friend_head.scale = _friend_head_rest_scale
+	_friend_head.flip_h = _friend_head_rest_flip

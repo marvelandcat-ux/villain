@@ -16,9 +16,16 @@
 [ext_resource type="Texture2D" uid="uid://byjm1q2ckwcbh" path="res://sprite/일진/입벌린일진정면.png" id="14"]
 [ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="15"]
 [ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/축법소년/궁극기컷인/말줄.png" id="16"]
+[ext_resource type="Script" uid="uid://bx51fcgm80bb1" path="res://ui/cutin/CutInSpit.gd" id="17"]
+[ext_resource type="Texture2D" uid="uid://cl8h0cp33vlx7" path="res://sprite/일진/일진의 친구1/침을 모은 일진의 친구.png" id="18"]
+[ext_resource type="Texture2D" uid="uid://dtm86dawkkm2g" path="res://sprite/일진/일진의 친구1/일진 친구의 침뱉는.png" id="19"]
 
 [node name="IljinCutIn" type="Node2D" unique_id=245726806]
 script = ExtResource("1")
+cutin_duration = 2.6
+spit_gather_pose = NodePath("Friend/SpitGatherPose")
+spit_face_pose = NodePath("Friend/SpitFacePose")
+spit_node = NodePath("Spit")
 iljin_talk_texture = ExtResource("14")
 
 [node name="Bg" type="Sprite2D" parent="." unique_id=1543105224]
@@ -103,6 +110,10 @@ position = Vector2(-9.999997, 1.9999943)
 scale = Vector2(0.169, 0.169)
 texture = ExtResource("9")
 
+[node name="Spit" type="Node2D" parent="." unique_id=1922771813]
+position = Vector2(-337, 22)
+script = ExtResource("17")
+
 [node name="Friend" type="Node2D" parent="." unique_id=2055347008]
 position = Vector2(-193, 100)
 
@@ -125,6 +136,21 @@ texture = ExtResource("4")
 position = Vector2(-10, -164)
 scale = Vector2(0.38, 0.38)
 texture = ExtResource("12")
+
+[node name="SpitGatherPose" type="Sprite2D" parent="Friend" unique_id=1856383403]
+position = Vector2(-10, -164)
+rotation = 0.20943952
+scale = Vector2(0.38, 0.38)
+texture = ExtResource("18")
+flip_h = true
+
+[node name="SpitFacePose" type="Sprite2D" parent="Friend" unique_id=2029874077]
+visible = false
+position = Vector2(-10, -164)
+rotation = -0.2565634
+scale = Vector2(0.38, 0.38)
+texture = ExtResource("19")
+flip_h = true
 
 [node name="ShoutText" type="Label" parent="." unique_id=342240984]
 offset_left = -20.0
