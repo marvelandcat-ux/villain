@@ -4,8 +4,14 @@ extends Control
 ## 위쪽 큰 미리보기 상자 크기 (CharacterSelect.tscn의 P1/P2 PreviewBox custom_minimum_size와 같은 값 — 정사각형)
 const PREVIEW_BOX_SIZE := Vector2(300, 300)
 
-## 초상화의 그림·배율·위치는 전부 ui/PortraitFrames.tscn에서 읽는다(GameState가 로드해둠).
-## 그 씬을 에디터에서 열어 각 캐릭터 얼굴을 프레임 안에서 조절하면 여기 선택 화면에 그대로 반영된다
+## 인게임 리그는 아주 작게(몸 33x30 / 머리 55x55) 그려져 있어서, 상자 안에서 잘 보이도록 이만큼 키운다
+const PREVIEW_RIG_SCALE := 2.8
+## 상자 안에서 리그 원점이 놓일 자리 — x는 가운데, y는 발이 상자 아래쪽 근처(이름표 아래)에 오도록 잡은 값
+const PREVIEW_RIG_ORIGIN := Vector2(150, 210)
+
+## P1/P2 차례에 따라 바뀌는 배경 그림
+const P1_BACKGROUND := "res://sprite/캐릭터선택/P1배경.png"
+const P2_BACKGROUND := "res://sprite/캐릭터선택/P2배경.png"
 
 ## 대전 모드(pvp) 전용 화면이다. P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
 ## (예전엔 옛 스토리 모드도 이 화면을 같이 썼는데, 2026-09-12 스토리 모드를 새로 짜면서 그 분기를 걷어냈다)
@@ -17,15 +23,14 @@ const PREVIEW_BOX_SIZE := Vector2(300, 300)
 ## 평행사변형 모양이라 하나를 복사-붙여넣기해서 새 칸을 만들 수 있다). 여기서는 character_key를 보고
 ## 어떤 GameState.CHARACTERS 캐릭터인지 연결만 한다 — character_key가 빈 칸은 "?" 랜덤 칸으로 취급
 
+@onready var background: Sprite2D = $Background
 @onready var status_label: Label = $Center/VBox/StatusLabel
 @onready var thumb_row: Control = $Center/VBox/ThumbRow
 @onready var confirm_button: Button = $Center/VBox/ConfirmButton
 @onready var back_button: Button = $Center/VBox/BackButton
-@onready var p1_preview_box: ColorRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
-@onready var p1_preview_image: TextureRect = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewImage
+@onready var p1_preview_box: Control = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
 @onready var p1_preview_label: Label = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewLabel
-@onready var p2_preview_box: ColorRect = $Center/VBox/PreviewRow/P2Side/P2PreviewBox
-@onready var p2_preview_image: TextureRect = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewImage
+@onready var p2_preview_box: Control = $Center/VBox/PreviewRow/P2Side/P2PreviewBox
 @onready var p2_preview_label: Label = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewLabel
 
 var _picking_p1: bool = true
@@ -33,6 +38,9 @@ var _picking_p1: bool = true
 var _pending_character: String = ""
 var _thumb_buttons: Dictionary = {}  # {character_name: Button} — 선택 강조 표시용
 var _is_spinning: bool = false
+## 지금 P1/P2 미리보기 상자에 떠 있는 리그 인스턴스 — 캐릭터가 바뀌면 이걸 지우고 새로 만든다
+var _p1_rig: Node2D = null
+var _p2_rig: Node2D = null
 
 ## 씬에 미리 놓아둔 FanTile들을 훑어서 character_key로 어떤 캐릭터인지 확인하고 클릭 시그널을 연결한다.
 ## 칸의 모양·위치는 전부 씬(.tscn)에 이미 정해져 있으므로 여기서는 안 건드린다
@@ -45,9 +53,11 @@ func _ready() -> void:
 			tile.pressed.connect(_on_random_pressed)
 		else:
 			tile.pressed.connect(_on_character_picked.bind(tile.character_key))
+			tile.gui_input.connect(_on_tile_gui_input.bind(tile.character_key))
 			_thumb_buttons[tile.character_key] = tile
 
 	status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
+	background.texture = load(P1_BACKGROUND)
 
 ## 목록에서 캐릭터를 눌러도 바로 확정되지 않고, 미리보기 칸에만 반영된다.
 ## 실제로 P1/P2에 배정되는 건 "확정" 버튼을 눌렀을 때(_on_confirm_pressed)뿐이다
@@ -64,29 +74,44 @@ func _focus_thumb(character_name: String) -> void:
 	if button:
 		button.grab_focus()
 
-## 미리보기 칸에 캐릭터 이름·색·초상화를 반영한다(선택 확정 여부와는 무관 — 룰렛 연출 중에도 이걸로 화면을 갱신함)
-func _show_preview(character_name: String) -> void:
-	var color: Color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
-	if _picking_p1:
-		p1_preview_box.color = color
-		p1_preview_label.text = character_name
-		_apply_portrait(p1_preview_image, character_name)
-	else:
-		p2_preview_box.color = color
-		p2_preview_label.text = character_name
-		_apply_portrait(p2_preview_image, character_name)
-
-## 초상화 그림이 있는 캐릭터면 TextureRect에 채워 보여주고, 없으면 비워서 뒤의 색상 배경(P#PreviewBox)이 그대로 보이게 한다
-func _apply_portrait(image: TextureRect, character_name: String) -> void:
-	if not GameState.has_portrait(character_name):
-		image.texture = null
+## 칸을 더블클릭하면 고르는 동시에 바로 확정한다 — "확정" 버튼을 따로 누를 필요 없이 한 번에 넘어간다.
+## FanTile은 Button.pressed로는 더블클릭을 구분 못 해서, 원시 입력(gui_input)에서 직접 확인한다
+func _on_tile_gui_input(event: InputEvent, character_name: String) -> void:
+	if _is_spinning:
 		return
-	image.texture = GameState.portrait_texture(character_name)
-	var parent_box := image.get_parent()
-	if parent_box is Control:
-		parent_box.clip_contents = true
-	# 그리드 타일과 같은 편집 씬 값으로 프레이밍 (큰 미리보기 상자 크기에 맞춰 환산)
-	GameState.frame_portrait(image, character_name, PREVIEW_BOX_SIZE)
+	if event is InputEventMouseButton and event.pressed and event.double_click:
+		_on_character_picked(character_name)
+		_on_confirm_pressed()
+
+## 미리보기 칸에 캐릭터 이름·전신을 반영한다(선택 확정 여부와는 무관 — 룰렛 연출 중에도 이걸로 화면을 갱신함).
+## P1은 기본 방향(오른쪽), P2는 좌우로 뒤집어서 — 화면 가운데(VS)를 마주 보게 한다
+func _show_preview(character_name: String) -> void:
+	if _picking_p1:
+		p1_preview_label.text = character_name
+		_p1_rig = _apply_rig_preview(p1_preview_box, _p1_rig, character_name, 1.0)
+	else:
+		p2_preview_label.text = character_name
+		_p2_rig = _apply_rig_preview(p2_preview_box, _p2_rig, character_name, -1.0)
+
+## 캐릭터의 인게임 몸(BodyRig)을 미리보기 상자에 띄운다 — 상자는 더 이상 색칠된 네모가 아니라 빈 Control이고,
+## 그 위에 실제 대전에서 쓰는 리그를 얹어 "인게임에서 보이는 그대로"의 전신을 보여준다.
+## Fighter가 없으니 BodyRig.gd는 걷지 않고 가만히 서서 숨쉬는 동작만 돈다 — 정지 미리보기로 딱 좋다.
+## old_rig가 있으면 먼저 지우고, 새로 만든 인스턴스를 돌려준다(호출하는 쪽이 다음 번 old_rig로 넘겨줌).
+## facing이 음수면 좌우로 뒤집는다 — BodyRig는 Fighter가 없을 땐 scale.x 부호를 안 건드리므로
+## 여기서 한 번 정해두면 계속 그 방향을 유지한다
+func _apply_rig_preview(box: Control, old_rig: Node2D, character_name: String, facing: float) -> Node2D:
+	if is_instance_valid(old_rig):
+		old_rig.queue_free()
+	if not GameState.has_character_rig(character_name):
+		return null
+	var scene: PackedScene = GameState.character_rig_scene(character_name)
+	var rig: Node2D = scene.instantiate()
+	box.add_child(rig)
+	box.move_child(rig, 0)  # 이름표(P#PreviewLabel)보다 먼저 그려서 이름표가 캐릭터 위에 뜨게 한다
+	box.clip_contents = true
+	rig.scale = Vector2(PREVIEW_RIG_SCALE * facing, PREVIEW_RIG_SCALE)
+	rig.position = PREVIEW_RIG_ORIGIN
+	return rig
 
 ## 슬롯머신처럼 캐릭터가 빠르게 바뀌다가 점점 느려지며 멈추는 연출. 멈춘 결과가 그대로 임시 선택(pending)이 된다.
 ## 대기는 이 노드(CharacterSelect)의 자식 Timer로 만들어서, 연출 도중 뒤로 나가 씬이 정리되면
@@ -139,6 +164,7 @@ func _on_confirm_pressed() -> void:
 		_pending_character = ""
 		confirm_button.disabled = true
 		_update_highlight()
+		background.texture = load(P2_BACKGROUND)
 	else:
 		GameState.p2_character_path = path
 		get_tree().change_scene_to_file("res://ui/MapSelect.tscn")

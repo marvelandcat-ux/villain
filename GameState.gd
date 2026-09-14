@@ -38,6 +38,18 @@ const PORTRAITS := {
 	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
 }
 
+## 실제 대전에서 쓰는 몸(BodyRig) 씬 — 캐릭터 선택창의 큰 미리보기 칸에 "인게임 캐릭터 전신"으로 띄운다.
+## Fighter 없이 이 씬만 인스턴스하면 BodyRig.gd가 부모를 Fighter로 못 찾아 조용히 idle(숨쉬기)만 돈다 —
+## 그 자체가 딱 미리보기로 쓰기 좋은 정지 동작이라 별도 처리가 필요 없다. 6명 전원 등록되어 있다
+const CHARACTER_RIGS := {
+	"촉법소년": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
+	"악플러": "res://characters/akpeulleo/AkpeulleoRig.tscn",
+	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
+	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
+	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
+	"층간소음 청년": "res://characters/floornoise/FloorNoiseRig.tscn",
+}
+
 ## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.
 ## 게임은 이 씬에서 초상화 텍스처·배율·위치를 그대로 읽어 쓰므로 "에디터에서 보이는 대로" 게임에 나온다
 const PORTRAIT_FRAMES_PATH := "res://ui/PortraitFrames.tscn"
@@ -220,6 +232,16 @@ func has_portrait(character_name: String) -> bool:
 ## 이 캐릭터의 초상화 텍스처 (없으면 null)
 func portrait_texture(character_name: String) -> Texture2D:
 	return _portrait_texture.get(character_name, null)
+
+## 이 캐릭터의 인게임 몸(BodyRig) 씬이 등록돼 있는지
+func has_character_rig(character_name: String) -> bool:
+	return CHARACTER_RIGS.has(character_name)
+
+## 인게임 몸(BodyRig) 씬 (없으면 null) — 호출하는 쪽이 instantiate()해서 쓴다
+func character_rig_scene(character_name: String) -> PackedScene:
+	if not CHARACTER_RIGS.has(character_name):
+		return null
+	return load(CHARACTER_RIGS[character_name])
 
 ## 초상화 TextureRect를 box_size 상자 안에서 캐릭터별로 프레이밍한다.
 ## image는 상자를 꽉 채우는 앵커(anchor_right=1, anchor_bottom=1)에 놓여 있다고 가정한다.

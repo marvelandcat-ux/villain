@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://0s1twbhkoyrh"]
+[gd_scene format=3 uid="uid://c8mm3c2nkh56x"]
 
 [ext_resource type="Script" uid="uid://dot451lndensg" path="res://ui/MainMenu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/MenuIllust.tscn" id="2_illust"]
@@ -322,9 +322,7 @@ text = "방향키/마우스로 선택 · ESC로 타이틀로"
 
 [node name="ConfirmPopup" parent="." unique_id=511114147 instance=ExtResource("4_confirm")]
 visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -351,5 +349,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
