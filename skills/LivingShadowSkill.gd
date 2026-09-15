@@ -29,7 +29,7 @@ func use(fighter: Fighter) -> void:
 		return
 	if not super.can_use():
 		return
-	cooldown_left = cooldown
+	cooldown_left = effective_cooldown()
 	if lock_duration > 0.0 and fighter:
 		fighter.start_busy(lock_duration)
 	_throw_shadow(fighter)

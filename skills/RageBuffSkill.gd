@@ -26,7 +26,7 @@ func _execute(fighter: Fighter) -> void:
 	# 스킬을 누른 직후부터 바로 빨라진 게 느껴진다
 	if fighter.basic_attack:
 		fighter.basic_attack.cooldown_override = basic_attack_cooldown
-		fighter.basic_attack.cooldown_left = minf(fighter.basic_attack.cooldown_left, basic_attack_cooldown)
+		fighter.basic_attack.cooldown_left = minf(fighter.basic_attack.cooldown_left, fighter.basic_attack.effective_cooldown())
 	# 열받아서 씩씩거리는 동안 붉으락푸르락한 오라 + 분노한 표정
 	fighter.set_tint("rage", Color(1.0, 0.55, 0.35), duration)
 	var visual: Node2D = fighter.get_node_or_null("Visual")

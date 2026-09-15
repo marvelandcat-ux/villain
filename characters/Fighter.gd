@@ -409,8 +409,11 @@ func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
 ## 지금 방어를 켤 수 있는지. 쿨타임이 남았거나 이미 방어 중이거나,
-## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다
+## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다.
+## 방 설정에서 껐으면(GameState.guard_enabled) 아예 못 켠다
 func can_guard() -> bool:
+	if not GameState.guard_enabled:
+		return false
 	if _guard_cooldown_left > 0.0 or _guard_time > 0.0:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
@@ -471,8 +474,11 @@ func guard_cooldown_ratio() -> float:
 	return clampf(_guard_cooldown_left / guard_cooldown, 0.0, 1.0)
 
 ## 지금 대시를 쓸 수 있는지. 쿨타임이 남았거나, 경직·붙잡힘 상태거나,
-## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다
+## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다.
+## 방 설정에서 껐으면(GameState.dash_enabled) 아예 못 쓴다
 func can_dash() -> bool:
+	if not GameState.dash_enabled:
+		return false
 	if _dash_cooldown_left > 0.0 or _dash_time > 0.0:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null
