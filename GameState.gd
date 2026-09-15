@@ -79,7 +79,7 @@ const MAPS := {
 ## `scene`이 비어 있으면 아직 안 만든 자리(고를 수 없음)다. 새 이야기를 만들면 그 줄의 scene만 채우면 된다.
 ## **한 번도 클리어하지 않은 에피소드는 목록에서 이름 대신 자물쇠로 보인다**(사용자 지정, 2026-09-15)
 const STORY_EPISODES := [
-	{"id": "ep1", "name": "브레이크 없는 꼬마", "scene": "res://ui/story/StoryScene1.tscn"},
+	{"id": "ep1", "name": "EP.1-첫 임무", "scene": "res://ui/story/StoryScene1.tscn"},
 	{"id": "ep2", "name": "에피소드 2", "scene": ""},
 	{"id": "ep3", "name": "에피소드 3", "scene": ""},
 	{"id": "ep4", "name": "에피소드 4", "scene": ""},
