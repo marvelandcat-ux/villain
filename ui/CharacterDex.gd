@@ -82,6 +82,8 @@ extends Control
 @export var tile_hover_scale: float = 1.06
 ## 그 크기로 따라붙는 빠르기. 클수록 빠릿하다
 @export var tile_hover_speed: float = 14.0
+## 뒤로가기(◀) 화살표에 커서를 올렸을 때 커지는 배율
+@export var back_hover_scale: float = 1.18
 
 @export_group("방향키")
 ## 꾹 누르고 있을 때 **첫 반복까지 기다리는 시간**(초)
@@ -127,6 +129,10 @@ func _ready() -> void:
 	if _back_button and not _back_button.pressed.is_connected(_on_back_pressed):
 		_back_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		_back_button.pressed.connect(_on_back_pressed)
+		# 가운데를 기준으로 커지게 — 안 그러면 왼쪽 위 모서리에 붙어서 오른아래로만 자란다
+		_back_button.pivot_offset = _back_button.size * 0.5
+		_back_button.mouse_entered.connect(_on_back_hover.bind(true))
+		_back_button.mouse_exited.connect(_on_back_hover.bind(false))
 	_focus_area = "tabs"
 	_set_mode("character")
 
@@ -418,6 +424,16 @@ func _enter_tiles() -> void:
 		_select(_selected_key if keys.has(_selected_key) else keys[0])
 
 ## 왼쪽 위 ◀ — 상세를 보고 있으면 목록으로, 목록이면 메인 메뉴로. ESC와 같은 동작이다
+## 화살표에 커서가 올라가고 내려갈 때 살짝 부풀렸다 되돌린다
+func _on_back_hover(entered: bool) -> void:
+	if not is_instance_valid(_back_button):
+		return
+	# 크기가 뒤늦게 잡히는 경우가 있어 들어올 때마다 중심을 다시 잡아준다
+	_back_button.pivot_offset = _back_button.size * 0.5
+	var goal: Vector2 = Vector2.ONE * (back_hover_scale if entered else 1.0)
+	var tw: Tween = create_tween()
+	tw.tween_property(_back_button, "scale", goal, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
 func _on_back_pressed() -> void:
 	if _detail.visible:
 		_close_detail()

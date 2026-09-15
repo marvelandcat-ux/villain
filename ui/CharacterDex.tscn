@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://brkkw7gf1nxtb" path="res://ui/CharacterDex.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://varwyq7fwy26" path="res://sprite/UI/메뉴사선_임시.png" id="2_slant"]
 [ext_resource type="Shader" uid="uid://dh555gjrhuuq2" path="res://ui/outline.gdshader" id="3_outline"]
-[ext_resource type="Texture2D" uid="uid://cci2cn5fu7kqf" path="res://sprite/메인메뉴/배경프로토.png" id="4_bg"]
+[ext_resource type="Texture2D" path="res://sprite/도감/캐릭터도감뒷배경.png" id="4_bg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="5_blur"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
@@ -14,7 +14,7 @@ shader_parameter/line_alpha = 0.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("5_blur")
-shader_parameter/blur_amount = 6.0
+shader_parameter/blur_amount = 0.0
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_title"]
 
@@ -74,7 +74,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.04, 0.03, 0.07, 0.62)
+color = Color(0.04, 0.03, 0.07, 0.3)
 
 [node name="BackButton" type="Button" parent="." unique_id=770001001]
 layout_mode = 0
