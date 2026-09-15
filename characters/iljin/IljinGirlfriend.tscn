@@ -1,15 +1,23 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://characters/iljin/IljinCrewMember.gd" id="1"]
 [ext_resource type="PackedScene" path="res://characters/iljin/IljinGirlfriendRig.tscn" id="2"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="3"]
+[ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
 height = 60.0
 
-[node name="IljinGirlfriend" type="StaticBody2D"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kick"]
+size = Vector2(34, 30)
+
+[node name="IljinGirlfriend" type="CharacterBody2D"]
 script = ExtResource("1")
+walk_to_opponent = true
+kick_enabled = true
+face_opponent = true
+head_aim_max_deg = 0.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_body")
@@ -21,3 +29,11 @@ script = ExtResource("3")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
 shape = SubResource("CapsuleShape2D_body")
+
+[node name="Hitbox" type="Area2D" parent="."]
+monitoring = false
+monitorable = false
+script = ExtResource("4")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="Hitbox"]
+shape = SubResource("RectangleShape2D_kick")

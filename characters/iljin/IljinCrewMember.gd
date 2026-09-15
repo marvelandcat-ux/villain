@@ -1,15 +1,19 @@
 class_name IljinCrewMember
-extends StaticBody2D
+extends CharacterBody2D
 
 ## 일진 궁극기로 불려 나온 패거리 한 명 (친구 / 여자친구).
 ##
-## **StaticBody2D라 몸으로 길을 막는다** — 일진도 상대도 통과하지 못한다.
+## **몸이 캐릭터와 똑같이 논다(2026-09-15)** — 중력을 받아 떨어지고, 맞으면 넉백에 밀리고,
+## 바닥·벽·발판에 막힌다. 몸으로 길도 막아서 일진도 상대도 통과하지 못한다.
 ## 맞으면 HP가 깎이고, 다 깎이면 스르륵 사라진다.
 ##
-## **Fighter로 만들지 않은 이유:** Fighter의 `_ready()`는 자신을 "fighters" 그룹에 넣어서
+## **처음엔 StaticBody2D였다** — 그 자리에 붙박인 "HP 있는 벽"이라 중력도 넉백도 안 받았다.
+## 사용자 요청으로 `CharacterBody2D`로 바꾸면서 중력·마찰·`move_and_slide()`를 직접 돌린다.
+##
+## **그래도 Fighter로 만들지는 않는다.** Fighter의 `_ready()`는 자신을 "fighters" 그룹에 넣어서
 ## 카메라가 따라가고 AI가 상대로 착각하게 만들고, 그 위에 `_ignore_other_fighters()`가
-## **캐릭터끼리의 몸 충돌을 꺼버려서 오히려 통과해 버린다**. 여기서 필요한 건 HP 있는 벽이라
-## 별개 노드로 두는 쪽이 짧고 안전하다.
+## **캐릭터끼리의 몸 충돌을 꺼버려서 오히려 통과해 버린다**.
+## 그룹 밖에 있으므로 상대 Fighter는 예외를 안 걸고 그대로 부딪힌다.
 
 ## 이만큼 맞으면 사라진다
 @export var max_hp: int = 30
@@ -17,6 +21,9 @@ extends StaticBody2D
 @export var fade_out: float = 0.35
 ## 맞았을 때 빨갛게 물드는 시간(초)
 @export var flash_time: float = 0.12
+## 넉백이 마찰로 잦아드는 빠르기(px/초²). 캐릭터 경직 마찰(`Fighter.HITSTUN_FRICTION`)과 같은 값이다 —
+## 패거리는 조작 입력이 없으니 캐릭터처럼 "경직이 풀리면 멈추는" 대신 계속 마찰만 받는다
+@export var knockback_friction: float = 900.0
 
 ## --- 침 뱉기 (친구 전용) ---
 ## **`spit_scene`이 비어 있으면 아무것도 안 한다** — 여자친구는 비워둬서 그냥 서 있기만 한다.
@@ -45,6 +52,33 @@ extends StaticBody2D
 @export var spit_face_scale: Vector2 = Vector2.ZERO
 ## 뱉는 얼굴이 유지되는 시간(초)
 @export var spit_face_time: float = 0.35
+
+## --- 상대에게 걸어가기 (여자친구) ---
+## 켜면 **좀비처럼 상대 쪽으로 계속 걸어간다.** 대시·방어·점프는 안 한다(사용자 지정)
+@export var walk_to_opponent: bool = false
+## 걷는 속도(px/초)
+@export var walk_speed: float = 150.0
+## 상대와 이 거리(px) 안이면 멈춘다 — 발차기 사거리보다 조금 짧게 잡아 붙어서 차게 한다
+@export var walk_stop_distance: float = 38.0
+## 넉백을 맞은 뒤 다시 걷기까지 굳어 있는 시간(초).
+## **0으로 두면 안 된다** — 맞자마자 걸어가서 넉백이 없던 일이 된다(그네 튕김과 같은 함정)
+@export var knockback_stun: float = 0.35
+
+## --- 발차기 (여자친구) ---
+## 켜면 상대가 사거리 안에 들어왔을 때 발로 찬다. 자세는 리그의 발차기 모션(`attack_kick_hit`)을 쓴다
+@export var kick_enabled: bool = false
+@export var kick_damage: int = 6
+## 발이 닿는 거리(px)와 세로로 인정하는 범위(px)
+@export var kick_range: float = 46.0
+@export var kick_height: float = 48.0
+## 다음 발차기까지 쉬는 시간(초)
+@export var kick_interval: float = 1.6
+## 예비동작 / 판정이 켜진 시간 / 뒤끝(초). **이 동안은 걷지 않는다**.
+## `kick_windup`은 리그 `attack_duration`의 40%와 맞춰야 발이 다 뻗은 순간에 판정이 나간다(0.5 x 0.4 = 0.2)
+@export var kick_windup: float = 0.2
+@export var kick_active: float = 0.12
+@export var kick_recover: float = 0.2
+@export var kick_knockback: Vector2 = Vector2(260.0, -150.0)
 
 ## --- 상대 조준 (침 뱉는 쪽만 켠다) ---
 ## 켜면 **매 프레임** 상대를 향해 몸을 돌리고 머리로 겨눈다. 침·경고 파선도 그 방향으로 나간다
@@ -78,6 +112,13 @@ var _face_left: float = 0.0
 var _warning: Node2D = null
 ## 지금 겨누고 있는 방향(단위 벡터). 머리·파선·침이 전부 이 값을 따라간다
 var _aim: Vector2 = Vector2.RIGHT
+## 넉백을 맞고 굳어 있는 남은 시간 / 발차기 동작 남은 시간 / 판정이 켜진 남은 시간 / 다음 발차기까지 쿨
+var _stun_left: float = 0.0
+var _kick_left: float = 0.0
+var _kick_active_left: float = 0.0
+var _kick_cd: float = 0.0
+var _kick_fired: bool = false
+@onready var _kick_hitbox: Hitbox = get_node_or_null("Hitbox")
 
 func _ready() -> void:
 	current_hp = max_hp
@@ -114,6 +155,8 @@ func _process(delta: float) -> void:
 	# **매 프레임 상대를 따라본다** — 상대가 반대편으로 돌아가도 등을 보인 채 엉뚱한 데 뱉지 않는다
 	if face_opponent:
 		_track_opponent()
+	if kick_enabled:
+		_update_kick(delta)
 	if spit_scene == null:
 		return
 	# 뱉는 얼굴은 잠깐만 — 시간이 지나면 기본 얼굴로 돌아간다
@@ -181,6 +224,58 @@ func _fire_spit() -> void:
 	if spit.has_method("aim"):
 		spit.aim(_aim)
 
+## 발차기 — 사거리 안에 상대가 있으면 예비동작 뒤에 판정을 잠깐 켠다.
+## 자세는 리그의 발차기 모션이 맡는다(`attack_kick_hit`을 0으로 두고 `play_attack_swing(0)`)
+func _update_kick(delta: float) -> void:
+	_kick_cd = maxf(_kick_cd - delta, 0.0)
+	# 판정 창이 지나면 히트박스를 끈다
+	if _kick_active_left > 0.0:
+		_kick_active_left = maxf(_kick_active_left - delta, 0.0)
+		if _kick_active_left <= 0.0:
+			_set_kick_hitbox(false)
+	# 동작이 도는 중 — 예비동작이 끝나는 순간에 딱 한 번 판정을 켠다
+	if _kick_left > 0.0:
+		_kick_left = maxf(_kick_left - delta, 0.0)
+		if not _kick_fired and _kick_left <= kick_active + kick_recover:
+			_kick_fired = true
+			_fire_kick()
+		return
+	if _kick_cd > 0.0 or _stun_left > 0.0:
+		return
+	var foe: Fighter = _find_opponent()
+	if foe == null:
+		return
+	if absf(foe.global_position.x - global_position.x) > kick_range:
+		return
+	if absf(foe.global_position.y - global_position.y) > kick_height:
+		return
+	_kick_left = kick_windup + kick_active + kick_recover
+	_kick_fired = false
+	if _visual and _visual.has_method("play_attack_swing"):
+		_visual.play_attack_swing(0)
+
+## 발이 다 뻗은 순간 — 앞쪽에 판정을 켠다
+func _fire_kick() -> void:
+	if _kick_hitbox == null:
+		return
+	_kick_hitbox.damage = kick_damage
+	_kick_hitbox.knockback = Vector2(kick_knockback.x * _facing(), kick_knockback.y)
+	# **주인을 일진으로 넘긴다** — 그래야 "캐릭터의 공격"이 돼서 방어로 막히고,
+	# 일진 자신과 다른 패거리(immune_source가 일진)는 안 맞는다
+	_kick_hitbox.source_fighter = _owner_fighter if is_instance_valid(_owner_fighter) else null
+	_kick_hitbox.global_position = global_position + Vector2(kick_range * _facing(), 0.0)
+	_kick_hitbox.clear_repeat_state()
+	_set_kick_hitbox(true)
+	_kick_active_left = kick_active
+	_kick_cd = kick_interval
+
+## 물리 연산 중에 켜고 끄면 Godot이 막으므로 deferred로 미룬다
+func _set_kick_hitbox(on: bool) -> void:
+	if _kick_hitbox == null:
+		return
+	_kick_hitbox.set_deferred("monitoring", on)
+	_kick_hitbox.set_deferred("monitorable", on)
+
 ## 상대를 향해 몸을 돌리고(좌우) 머리로 겨눈다(위아래). 매 프레임 부른다
 func _track_opponent() -> void:
 	var foe: Fighter = _find_opponent()
@@ -244,11 +339,63 @@ func _clear_face() -> void:
 	if _visual and _visual.has_method("set_action_face"):
 		_visual.set_action_face(false)
 
-## Hurtbox가 넘겨주는 피해. **넉백은 안 받는다** — 그 자리에 버티고 선 몸이라 밀려나면 길막이 풀린다
-func take_damage(amount: int, _knockback: Vector2 = Vector2.ZERO, _pop_override: float = -1.0, _ignore_guard: bool = false) -> void:
+## 중력·마찰·이동. **캐릭터와 같은 중력(`Fighter.gravity`)을 쓴다** — 훈련장에서 중력을 바꾸면 같이 따라간다.
+## 쓰러지는 중에는 건드리지 않는다(판정·충돌을 이미 껐으므로 그대로 두면 바닥을 뚫고 내려간다)
+func _physics_process(delta: float) -> void:
+	if _dying:
+		return
+	if not is_on_floor():
+		velocity.y += Fighter.gravity * delta
+	if _stun_left > 0.0:
+		_stun_left = maxf(_stun_left - delta, 0.0)
+	# 좀비처럼 상대 쪽으로 계속 걸어간다 — 맞고 굳은 동안과 발차기 중에는 멈춘다
+	if walk_to_opponent and _stun_left <= 0.0 and _kick_left <= 0.0:
+		_walk_toward_opponent(delta)
+	else:
+		# 조작 입력이 없으니 넉백은 마찰로만 잦아든다
+		velocity.x = move_toward(velocity.x, 0.0, knockback_friction * delta)
+	move_and_slide()
+	_update_walk_pose()
+
+## 상대 쪽으로 걸어간다. 붙었으면 멈춘다(계속 밀면 상대를 밀고 다니는 꼴이 된다)
+func _walk_toward_opponent(delta: float) -> void:
+	var foe: Fighter = _find_opponent()
+	if foe == null:
+		velocity.x = move_toward(velocity.x, 0.0, knockback_friction * delta)
+		return
+	var dx: float = foe.global_position.x - global_position.x
+	velocity.x = signf(dx) * walk_speed if absf(dx) > walk_stop_distance else 0.0
+
+## 리그에 "지금 얼마나 빨리 걷는지"를 알려줘야 걷기 동작이 나온다.
+## 리그는 원래 부모 Fighter의 속도를 보는데 패거리는 Fighter가 아니라서, 컷인이 쓰는
+## `manual_speed_ratio` 통로로 직접 넣어준다(Fighter가 있으면 무시되므로 캐릭터엔 영향 없다)
+func _update_walk_pose() -> void:
+	if not walk_to_opponent or _visual == null or not ("manual_speed_ratio" in _visual):
+		return
+	_visual.manual_speed_ratio = clampf(absf(velocity.x) / maxf(walk_speed, 1.0), 0.0, 1.0)
+
+## 맞은 순간 캐릭터와 **같은 식**으로 넉백을 받는다(`Fighter.take_damage`의 계산을 그대로 옮긴 것).
+## 수평은 `KNOCKBACK_MULTIPLIER`만큼 키워 더하고, 위로는 데미지 비례 팝업만큼 띄운다
+func _apply_knockback(knockback: Vector2, amount: int, pop_override: float) -> void:
+	if knockback == Vector2.ZERO:
+		return
+	# 맞은 뒤 잠깐 굳는다 — 안 굳으면 다음 프레임에 걷기가 velocity.x를 덮어써서 넉백이 사라진다
+	_stun_left = maxf(_stun_left, knockback_stun)
+	velocity.x += knockback.x * Fighter.KNOCKBACK_MULTIPLIER
+	velocity.y += knockback.y
+	var pop: float = pop_override
+	if pop < 0.0:
+		pop = clampf(Fighter.HIT_POP_BASE + amount * Fighter.HIT_POP_PER_DAMAGE, 0.0, Fighter.HIT_POP_MAX)
+	if pop > 0.0:
+		velocity.y = minf(velocity.y, -pop)
+
+## Hurtbox가 넘겨주는 피해. **넉백도 캐릭터와 똑같이 받는다**(2026-09-15) —
+## 예전엔 그 자리에 버티는 벽이라 넉백을 무시했다
+func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0, _ignore_guard: bool = false) -> void:
 	if _dying:
 		return
 	current_hp = maxi(current_hp - amount, 0)
+	_apply_knockback(knockback, amount, pop_override)
 	_flash()
 	_play_hurt_face()
 	_update_hp_face()

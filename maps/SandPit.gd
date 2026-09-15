@@ -28,7 +28,8 @@ func _physics_process(_delta: float) -> void:
 	for area in get_overlapping_areas():
 		if not (area is Hurtbox):
 			continue
-		var fighter: Fighter = area.fighter
+		# Hurtbox 주인이 Fighter가 아닐 수 있다(일진 패거리) — as로 받으면 아니면 null이라 아래에서 걸러진다
+		var fighter := area.fighter as Fighter
 		if fighter == null or not is_instance_valid(fighter):
 			continue
 		# 놀이터의 왕은 모래에 안 빠진다. now에 안 넣으면 아래 정리 루프가 알아서 둔화를 풀어준다
