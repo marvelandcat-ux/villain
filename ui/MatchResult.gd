@@ -20,6 +20,12 @@ func show_round_result(p1_won: bool, is_draw: bool, p1_wins: int, p2_wins: int) 
 	var round_text: String = "무승부" if is_draw else ("P1 라운드 승!" if p1_won else "P2 라운드 승!")
 	title_label.text = "%s  (%d : %d)" % [round_text, p1_wins, p2_wins]
 
+## 스토리처럼 자동으로 다음 장면으로 이어질 때는 버튼을 숨긴다 — 누를 틈을 주면
+## 넘어가는 도중에 재시도가 눌려서 두 장면이 겹칠 수 있다
+func hide_buttons() -> void:
+	retry_button.visible = false
+	menu_button.visible = false
+
 func _on_retry_pressed() -> void:
 	get_tree().reload_current_scene()
 

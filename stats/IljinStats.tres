@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CharacterStats" format=3]
+
+[ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/cutin/IljinCutIn.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+character_name = "일진"
+move_speed = 275.0
+ultimate_cutin_scene = ExtResource("2")

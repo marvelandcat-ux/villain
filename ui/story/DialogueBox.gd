@@ -8,7 +8,7 @@ extends Control
 ## 두 창 사이 6px 틈, 대사창 위쪽엔 얇은 밝은 선. 글꼴은 나눔고딕(`fonts/NanumGothic-Regular.ttf`)
 ## 장면마다 이 씬(DialogueBox.tscn)을 인스턴스로 올리고 `speaker` / `lines`만 채우면 된다.
 ##  - 대사는 **한 글자씩 타다닥 찍힌다**(`chars_per_second`). 문장부호 뒤에선 잠깐 쉰다(`punct_pause`)
-##  - **스페이스바 또는 마우스 좌·우 클릭**으로 넘긴다(사용자 지정, 휠 제외). 찍히는 중에 누르면 그 대사를 한 번에 다 보여주고,
+##  - **스페이스바 / Z / X 또는 마우스 좌·우 클릭**으로 넘긴다(사용자 지정, 휠 제외). 찍히는 중에 누르면 그 대사를 한 번에 다 보여주고,
 ##    다 나온 뒤 누르면 다음 줄. 줄이 다 떨어지면 `finished`
 ##  - 대사 앞에 "이름|" 을 붙이면 그 대사부터 말하는 사람이 바뀐다 (예: "민원인|저기요...") — 이후 대사도 그 이름을 이어 쓴다
 ##  - 말하는 사람이 비어 있으면 이름창을 숨긴다(내레이션)
@@ -24,7 +24,7 @@ extends Control
 ##  - "@exit 노드 [초] [px]" : 옆으로 미끄러지며 사라짐(기본 0.45초, 오른쪽 420px, 점점 빨라짐 — 도망가는 느낌).
 ##                          음수 px면 왼쪽으로. 사라진 뒤 원래 자리로 되돌려 놓아서 나중에 다시 등장시킬 수 있다
 ##  - "@close [초]"      : 대화창을 서서히 없앤다(기본 0.3초). 뒤에 줄이 없으면 대화 끝, 뒤에 대사가 오면 대화창이 다시 나타난다
-##  - "@waitkey"         : 스페이스나 클릭을 할 때까지 기다린다 — 대화창이 닫혀 있어도 받는다
+##  - "@waitkey"         : 넘기는 키(스페이스/Z/X)나 클릭을 할 때까지 기다린다 — 대화창이 닫혀 있어도 받는다
 ##  - "@pause 초"        : 그만큼 가만히 기다린다
 ##  - "@stamp 노드 [초]" : 도장 쾅 — 크게(2.3배) 살짝 더 돌아간 채 나타나 [초](기본 0.14초) 만에 제자리로 줄며 찍히고,
 ##                         찍히는 순간 그 노드의 **부모**(보통 종이)가 짧게 흔들린다. 노드는 Node2D(Sprite2D)여야 한다
@@ -47,6 +47,11 @@ signal line_changed(index: int)
 @export var center_text: bool = false
 ## 이 이름으로 말할 때만 가운데 맞춤 — 지문(나레이션)은 가운데, 인물 대사는 왼쪽 정렬(사용자 요청)
 @export var center_speakers: PackedStringArray = PackedStringArray(["나레이션"])
+
+## 대사를 넘기는 키 — 스페이스 / Z / X (2026-09-15에 사용자 요청으로 Z·X 추가).
+## keycode와 physical_keycode를 둘 다 보므로 한글 입력 상태에서도 그대로 먹는다.
+## 키를 더 늘리려면 이 목록에만 넣으면 된다 — 받는 자리가 _unhandled_input 한 군데뿐이다
+const ADVANCE_KEYS := [KEY_SPACE, KEY_Z, KEY_X]
 
 ## 명령이 돌려주는 값: 바로 다음 줄로 / 스페이스를 기다림 (양수면 그 시간 기다린 뒤 다음 줄로)
 const _CMD_NEXT: float = -1.0
@@ -73,7 +78,11 @@ func _ready() -> void:
 	# 글자가 늘어나는 동안 줄바꿈 위치가 흔들리지 않게 — 줄 배치는 대사 전체로 먼저 정하고 글자만 가린다
 	_text_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	_current_speaker = speaker
-	_goto(0)
+	# **한 프레임 미뤄서 시작한다.** 자식의 _ready가 부모보다 먼저라, 여기서 바로 _goto(0)을 하면
+	# 첫 줄이 "@enter 인물" 같은 명령일 때 인물을 띄운 직후 부모(StoryFadeScene)의 _ready가
+	# `hide_on_start`로 다시 숨겨 버려서 아무 일도 안 일어난 것처럼 된다(사용자 지적).
+	# 지연 호출은 트리 전체의 _ready가 끝난 뒤에 실행돼서 순서가 뒤집히지 않는다
+	_goto.call_deferred(0)
 
 func is_finished() -> bool:
 	return _finished or lines.is_empty()
@@ -268,11 +277,13 @@ func _process(delta: float) -> void:
 	_text_label.visible_characters = -1 if _shown >= _total else _shown
 
 func _unhandled_input(event: InputEvent) -> void:
-	# 스페이스바 또는 마우스 좌·우 클릭으로 넘긴다(사용자 지정). 꾹 누를 때 반복 입력(echo)과 휠은 무시
+	# 스페이스바·Z·X 또는 마우스 좌·우 클릭으로 넘긴다(사용자 지정). 꾹 누를 때 반복 입력(echo)과 휠은 무시
 	var pressed: bool = false
 	if event is InputEventKey:
 		var key: InputEventKey = event
-		pressed = key.pressed and not key.echo and (key.keycode == KEY_SPACE or key.physical_keycode == KEY_SPACE)
+		var code: int = key.keycode
+		var phys: int = key.physical_keycode
+		pressed = key.pressed and not key.echo and (ADVANCE_KEYS.has(code) or ADVANCE_KEYS.has(phys))
 	elif event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		pressed = mb.pressed and (mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_RIGHT)

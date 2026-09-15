@@ -51,12 +51,25 @@ extends Control
 @export var illust_swap_seconds: float = 10.0
 ## 다음 장으로 넘어갈 때 겹치며 바뀌는 시간(초). 0이면 툭 하고 바로 바뀐다
 @export var illust_fade_seconds: float = 0.9
+## 배경 위에 깔리는 어두운 판(`Scrim`)의 진하기. 왼쪽 메뉴 글씨가 배경에 묻히지 않게 하는 용도다
+@export_range(0.0, 1.0, 0.01) var scrim_alpha: float = 0.45
+## **여기 적은 일러스트는 아예 안 보여준다** (노드 이름). 씬에는 그대로 두고 순환에서만 뺀다 —
+## 아직 손볼 데가 남은 일러스트를 지우지 않고 잠깐 감출 때 쓴다. 짝이 되는 배경도 같이 빠진다
+@export var hidden_illusts: Array[String] = ["IllustCatMom"]
+## **이 일러스트들일 때는 어두운 판을 걷는다** (노드 이름). 배경 자체가 이미 어두워서
+## 덧씌우면 아무것도 안 보이는 경우에 쓴다 — 악플러(쓰레기방)가 그렇다
+@export var no_scrim_illusts: Array[String] = ["IllustAkpeulleo"]
+## (임시) **S를 누르면 다음 일러스트로 바로 넘긴다.** 새로 넣은 일러스트를 확인할 때 쓰는 것이라
+## 정식 출시 전에는 꺼야 한다
+@export var debug_illust_key: bool = true
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
 @onready var _dex_button: Button = $DexButton
 ## 화면 전체를 덮는 검은 판 — 켜질 때 이게 걷히면서 화면이 열린다
 @onready var _screen_fade: ColorRect = $Fade
+## 배경 위 어두운 판 — 일러스트마다 진하기가 다를 수 있어서 매 프레임 맞춰준다
+@onready var _scrim: ColorRect = $Scrim
 ## 사선 메뉴 항목들 (트리 순서 = 위에서 아래 순서)
 var _menu_items: Array[Button] = []
 ## 지금 커서가 올라가 있는 항목 (없으면 null)
@@ -193,11 +206,25 @@ func _animate_menu(delta: float) -> void:
 ## 이름이 "Illust"/"Background"로 시작하는 자식을 트리 순서대로 모으고, 첫 짝만 남기고 숨긴다.
 ## "Fx"로 시작하는 효과판은 여기서 안 모은다 — 트리 순서가 아니라 이름으로 짝짓는다(_pair_effect 참고)
 func _collect_illustrations() -> void:
+	# 먼저 트리 순서대로 다 모은 뒤(일러스트 i번 <-> 배경 i번이 짝),
+	# hidden_illusts에 든 것만 **짝째로** 빼낸다. 한쪽만 빼면 그 뒤 번호가 밀려 짝이 어긋난다
+	var all_illusts: Array[Node2D] = []
+	var all_backgrounds: Array[Node2D] = []
 	for child in get_children():
 		if child is Node2D and child.name.begins_with("Illust"):
-			_illusts.append(child)
+			all_illusts.append(child)
 		elif child is Node2D and child.name.begins_with("Background"):
-			_backgrounds.append(child)
+			all_backgrounds.append(child)
+	for i in range(all_illusts.size()):
+		var illust: Node2D = all_illusts[i]
+		var background: Node2D = all_backgrounds[i] if i < all_backgrounds.size() else null
+		if illust.name in hidden_illusts:
+			illust.visible = false
+			if background:
+				background.visible = false
+			continue
+		_illusts.append(illust)
+		_backgrounds.append(background)
 	for i in range(_illusts.size()):
 		if i == 0:
 			_show_pair(i, 1.0)
@@ -206,8 +233,11 @@ func _collect_illustrations() -> void:
 	_illust_index = 0
 	_illust_time = 0.0
 	_fading = false
+	if not _illusts.is_empty():
+		_scrim.color.a = _scrim_target(0)
 
-## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null)
+## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null).
+## `_collect_illustrations`에서 이미 짝을 맞춰 담아 뒀으므로 같은 번호를 그대로 쓴다
 func _pair_background(i: int) -> Node2D:
 	return _backgrounds[i] if i < _backgrounds.size() else null
 
@@ -240,6 +270,12 @@ func _set_pair_alpha(i: int, alpha: float) -> void:
 		if node:
 			node.modulate.a = alpha
 
+## i번째 일러스트일 때 어두운 판이 얼마나 진해야 하는지
+func _scrim_target(i: int) -> float:
+	if i < 0 or i >= _illusts.size():
+		return scrim_alpha
+	return 0.0 if _illusts[i].name in no_scrim_illusts else scrim_alpha
+
 func _process(delta: float) -> void:
 	# 켜질 때: 타이틀에서 넘어온 검은 판이 서서히 걷힌다
 	if _screen_fade.color.a > 0.0:
@@ -256,15 +292,24 @@ func _process(delta: float) -> void:
 		# 가는 쪽과 오는 쪽이 겹치며 바뀐다
 		_set_pair_alpha(_illust_index, 1.0 - t)
 		_set_pair_alpha(_next_index, t)
+		# 어두운 판도 같이 넘어간다 — 안 그러면 배경만 바뀌고 어둡기가 툭 끊긴다
+		_scrim.color.a = lerpf(_scrim_target(_illust_index), _scrim_target(_next_index), t)
 		if t >= 1.0:
 			_hide_pair(_illust_index)
 			_illust_index = _next_index
 			_fading = false
 			_illust_time = 0.0
+			_scrim.color.a = _scrim_target(_illust_index)
 		return
 
 	_illust_time += delta
 	if _illust_time < illust_swap_seconds:
+		return
+	_begin_swap()
+
+## 다음 일러스트로 넘어가기 시작한다 (시간이 다 됐을 때, 그리고 S를 눌렀을 때)
+func _begin_swap() -> void:
+	if _illusts.size() < 2 or _fading:
 		return
 	_next_index = (_illust_index + 1) % _illusts.size()
 	_fading = true
@@ -305,13 +350,15 @@ func _on_confirmed() -> void:
 ## 스토리 모드 — 2026-09-12 새로 짜는 중. 지금은 검은 화면 장면(ui/story/)이 페이드로 이어지는 뼈대만 있다.
 ## 옛 흐름(에피소드 선택 -> 캐릭터 선택 -> 대전 -> 개과천선 -> 클리어)은 통째로 걷어냈다
 func _start_story() -> void:
-	GameState.game_mode = "story"
-	GameState.reset_round_wins()
-	get_tree().change_scene_to_file("res://ui/story/StoryScene1.tscn")
+	# 모드·진행도 초기화와 장면 전환은 GameState.start_story()가 한다 —
+	# 일시정지 화면의 스토리 목록에서 고를 때도 같은 함수를 쓰므로 시작 경로가 하나로 모인다
+	if not GameState.start_story("ep1"):
+		push_warning("MainMenu: ep1 스토리 장면을 못 찾았다")
 
 ## 대전 모드 — 방 설정(선취 라운드/시간제한)부터 고른다
 func _start_versus() -> void:
 	GameState.game_mode = "pvp"
+	GameState.story_next_scene = ""   # 일반 대전은 이야기로 이어지지 않는다
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
@@ -364,5 +411,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	# 여기 있는 검사는 혹시 놓쳤을 때를 대비한 이중 방어다
 	if _confirm.visible or _settings_popup != null:
 		return
+	# (임시) S를 누르면 다음 캐릭터 일러스트로 바로 넘어간다 — 새 일러스트를 확인하려고 10초씩
+	# 기다리지 않으려고 넣은 것이다. 정식 기능이 아니므로 나중에 지우거나 debug 플래그로 묶을 것
+	if debug_illust_key and event is InputEventKey:
+		var key: InputEventKey = event
+		var is_s: bool = key.keycode == KEY_S or key.physical_keycode == KEY_S
+		if key.pressed and not key.echo and is_s:
+			_begin_swap()
+			_illust_time = 0.0
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("ui_cancel"):
 		_ask("타이틀 화면으로 나가시겠습니까?", _go_title)

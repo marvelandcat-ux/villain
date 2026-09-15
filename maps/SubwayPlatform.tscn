@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://burvaaypmgjfd"]
+[gd_scene format=3 uid="uid://burvaaypmgjfd"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -9,10 +9,14 @@
 [ext_resource type="Texture2D" uid="uid://8dsgnn757hfa" path="res://sprite/맵/지하철역/지하철선로.png" id="7"]
 [ext_resource type="Texture2D" uid="uid://bpq00y7pcriss" path="res://sprite/맵/지하철역/등받이.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://d3apxkvb3r2x6" path="res://sprite/맵/지하철역/지하철아래.png" id="9"]
-[ext_resource type="Script" path="res://maps/AISafeSpot.gd" id="10"]
+[ext_resource type="Script" uid="uid://cfx3ojbuw52e2" path="res://maps/AISafeSpot.gd" id="10"]
+[ext_resource type="PackedScene" path="res://maps/FluorescentLight.tscn" id="11"]
+[ext_resource type="Script" uid="uid://bvcyaig8lfg0g" path="res://maps/WindNewspaper.gd" id="12"]
+[ext_resource type="Script" uid="uid://dpo1pqrfpj8x" path="res://maps/SubwaySignBoard.gd" id="15"]
+[ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="16"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
-size = Vector2(220, 20)
+size = Vector2(192, 27)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(1120, 40)
@@ -24,8 +28,8 @@ size = Vector2(40, 900)
 script = ExtResource("1")
 stage_width = 1080.0
 
-[node name="CanvasModulate" type="CanvasModulate" parent="."]
-color = Color(0.55, 0.58, 0.7, 1)
+[node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=801279361]
+color = Color(0.88, 0.9, 0.96, 1)
 
 [node name="DecoBackground" type="Node2D" parent="." unique_id=1132276878]
 z_index = -10
@@ -106,11 +110,26 @@ color = Color(0.2431, 0.2431, 0.5569, 1)
 polygon = PackedVector2Array(-1000, 0, 1000, 0, 1000, 57, -1000, 57)
 
 [node name="StationSign" type="Sprite2D" parent="DecoBackground" unique_id=1308559977]
-position = Vector2(0, 25)
+position = Vector2(0.99999994, 25.000002)
 scale = Vector2(0.496278, 0.496278)
 texture = ExtResource("6")
 region_enabled = true
 region_rect = Rect2(88, 184, 2015, 325)
+
+[node name="FluorescentLight0" parent="DecoBackground" unique_id=476836328 instance=ExtResource("11")]
+position = Vector2(-470, -30)
+
+[node name="FluorescentLight1" parent="DecoBackground" unique_id=305639570 instance=ExtResource("11")]
+position = Vector2(-310, -30)
+
+[node name="FluorescentLight2" parent="DecoBackground" unique_id=257308454 instance=ExtResource("11")]
+position = Vector2(310, -30)
+flicker_interval_min = 1.5
+flicker_interval_max = 4.0
+long_off_chance = 0.4
+
+[node name="FluorescentLight3" parent="DecoBackground" unique_id=1435408178 instance=ExtResource("11")]
+position = Vector2(470, -30)
 
 [node name="PlatformEdge0" type="Sprite2D" parent="DecoBackground" unique_id=349320149]
 position = Vector2(-1800, 220.55)
@@ -204,6 +223,30 @@ centered = false
 region_enabled = true
 region_rect = Rect2(14, 287, 2143, 177)
 
+[node name="SignBoard" type="Node2D" parent="DecoBackground" unique_id=481723870]
+position = Vector2(-15, -98)
+script = ExtResource("15")
+
+[node name="Clip" type="Control" parent="DecoBackground/SignBoard" unique_id=792089010]
+clip_contents = true
+layout_mode = 3
+anchors_preset = 0
+offset_left = -210.0
+offset_top = -22.0
+offset_right = 210.0
+offset_bottom = 22.0
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="DecoBackground/SignBoard/Clip" unique_id=148512256]
+modulate = Color(1, 0.78, 0.28, 1)
+layout_mode = 0
+offset_right = 649.0
+offset_bottom = 44.0
+theme_override_fonts/font = ExtResource("16")
+theme_override_font_sizes/font_size = 28
+text = "다음 열차가 곧 도착합니다  ·  안전선 뒤로 물러나 주십시오  ·  "
+vertical_alignment = 1
+
 [node name="Track" type="Node2D" parent="." unique_id=1304679921]
 
 [node name="Rail" type="Sprite2D" parent="Track" unique_id=1250196383]
@@ -218,6 +261,7 @@ region_rect = Rect2(14, 287, 2143, 177)
 position = Vector2(-280, 165)
 
 [node name="BenchLeftCollision" type="CollisionShape2D" parent="BenchLeft" unique_id=1345798617]
+position = Vector2(-1, 9.5)
 shape = SubResource("RectangleShape2D_bench")
 one_way_collision = true
 
@@ -233,6 +277,7 @@ region_rect = Rect2(144, 245, 1157, 596)
 position = Vector2(280, 165)
 
 [node name="BenchRightCollision" type="CollisionShape2D" parent="BenchRight" unique_id=1797060182]
+position = Vector2(-1, 8)
 shape = SubResource("RectangleShape2D_bench")
 one_way_collision = true
 
@@ -244,16 +289,38 @@ centered = false
 region_enabled = true
 region_rect = Rect2(144, 245, 1157, 596)
 
-[node name="AISafeSpotLeft" type="Marker2D" parent="."]
+[node name="AISafeSpotLeft" type="Marker2D" parent="." unique_id=850010224]
 position = Vector2(-280, 155)
 script = ExtResource("10")
 
-[node name="AISafeSpotRight" type="Marker2D" parent="."]
+[node name="AISafeSpotRight" type="Marker2D" parent="." unique_id=1015571670]
 position = Vector2(280, 155)
 script = ExtResource("10")
 
 [node name="DecoSubwayTrain" parent="." unique_id=7725255 instance=ExtResource("4")]
 position = Vector2(-29, 259)
+
+[node name="DecoWindPapers" type="Node2D" parent="." unique_id=1472853106]
+
+[node name="Paper0" type="Node2D" parent="DecoWindPapers" unique_id=1172574816]
+position = Vector2(-470, 292.8)
+script = ExtResource("12")
+
+[node name="Paper3" type="Node2D" parent="DecoWindPapers" unique_id=1437806765]
+position = Vector2(70, 292.8)
+script = ExtResource("12")
+
+[node name="Paper5" type="Node2D" parent="DecoWindPapers" unique_id=1869271167]
+position = Vector2(440, 292.8)
+script = ExtResource("12")
+
+[node name="PaperBenchLeft" type="Node2D" parent="DecoWindPapers" unique_id=298959105]
+position = Vector2(-251, 152)
+script = ExtResource("12")
+
+[node name="PaperBenchRight" type="Node2D" parent="DecoWindPapers" unique_id=1958726652]
+position = Vector2(317, 152)
+script = ExtResource("12")
 
 [node name="Ground" type="StaticBody2D" parent="." unique_id=2100912680]
 position = Vector2(0, 320)

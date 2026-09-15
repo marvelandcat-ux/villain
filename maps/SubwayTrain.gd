@@ -62,8 +62,17 @@ extends Node2D
 ## 열차 한가운데 창문은 곧게 서고, 앞뒤 끝으로 갈수록 바깥으로 눕는다 —
 ## 빛이 열차에서 퍼져나가는 것처럼 보이게 하는 값. 0이면 전부 곧게 선다
 @export var beam_tilt: float = 0.35
-## 빛기둥 색 — window_glow와 마찬가지로 CanvasModulate를 통과할 것을 감안해 미리 따뜻하게 잡은 값
-@export var beam_color: Color = Color(1.0, 0.769, 0.361)
+## 빛기둥 색 — 맵의 CanvasModulate(0.88, 0.9, 0.96)가 더하기 빛에도 곱해지므로 그만큼 미리 나눠둔 값.
+## 통과하고 나면 (0.55, 0.45, 0.25) 호박색이 더해진다. 맵 조명을 바꾸면 "원하는 최종색 / 맵 조명"으로 다시 잡을 것
+@export var beam_color: Color = Color(0.625, 0.496, 0.263)
+
+## --- 화면 진동 (2026-09-12) ---
+## 경고등이 켜져 있는 동안 바닥이 낮게 울리는 세기(0~1). 화면 최대 흔들림 12px에 곱해진다
+@export var warning_shake: float = 0.12
+## 열차가 실제로 지나가는 동안 흔들리는 세기(0~1)
+@export var pass_shake: float = 0.5
+## 열차가 화면 한가운데(스테이지 중앙)에 가까울수록 더 흔들리는 정도 (0이면 지나가는 내내 같은 세기)
+@export var pass_shake_focus: float = 0.6
 
 ## 진행 중인 상태
 enum State { WAITING, WARNING, RUNNING }
@@ -112,6 +121,8 @@ const WINDOW_RECTS: Array[Rect2] = [
 func _ready() -> void:
 	# AIController가 "ai_danger_zone" 그룹으로 찾아서 is_dangerous()를 물어보고 피신 여부를 판단한다
 	add_to_group("ai_danger_zone")
+	# 신문지 날림(WindNewspaper) 같은 장식 연출이 "subway_train" 그룹으로 찾아서 바람 위치를 묻는다
+	add_to_group("subway_train")
 	_timer = first_delay
 	hitbox.damage = damage
 	hitbox.repeat_interval = hit_interval
@@ -127,8 +138,25 @@ func _ready() -> void:
 func is_dangerous() -> bool:
 	return _state != State.WAITING
 
+## 지금 선로를 달리고 있는지 — 신문지 날림 같은 장식 연출이 바람을 일으킬지 볼 때 쓴다(WindNewspaper)
+func is_running() -> bool:
+	return _state == State.RUNNING
+
+## 진행 방향 (1 = 오른쪽으로, -1 = 왼쪽으로)
+func get_direction() -> int:
+	return _direction
+
+## 열차 몸통 한가운데의 월드 x 좌표
+func get_body_x() -> float:
+	return body.global_position.x
+
+## 열차 몸통 길이의 절반(px)
+func get_half_width() -> float:
+	return TRAIN_HALF_WIDTH
+
 func _process(delta: float) -> void:
 	_timer -= delta
+	_shake_screen(delta)
 	match _state:
 		State.WAITING:
 			if _timer <= warning_duration:
@@ -256,3 +284,22 @@ func _set_hitbox_active(active: bool) -> void:
 	body.visible = active
 	if not active:
 		hitbox.clear_repeat_state()
+
+## 열차가 다가오고 지나가는 동안 화면을 흔든다.
+## **`add_trauma`가 아니라 `CameraRig.set_rumble()`을 쓴다** — add_trauma는 한 방 맞는 순간 충격이라
+## 매 프레임 부어도 감쇠(초당 3)에 밀려 하나도 안 쌓인다. 지속 진동은 바닥값을 까는 방식이라야 한다
+func _shake_screen(_delta: float) -> void:
+	var amount: float = 0.0
+	match _state:
+		State.WARNING:
+			amount = warning_shake
+		State.RUNNING:
+			# 열차가 스테이지 한가운데에 가까울수록 세게 — 멀리 있을 때부터 최대로 흔들면
+			# 지나가는 순간이 안 살아난다
+			var near: float = 1.0 - clampf(absf(body.position.x) / maxf(travel_x, 1.0), 0.0, 1.0)
+			amount = pass_shake * (1.0 - pass_shake_focus + pass_shake_focus * near)
+	if amount <= 0.0:
+		return
+	var cam: Node = get_tree().get_first_node_in_group("game_camera")
+	if cam and cam.has_method("set_rumble"):
+		cam.set_rumble(amount)

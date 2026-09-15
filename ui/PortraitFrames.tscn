@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="7"]
 
 [sub_resource type="AtlasTexture" id="a1"]
 atlas = ExtResource("1")
@@ -30,6 +31,10 @@ region = Rect2(16, 24, 1226, 1182)
 [sub_resource type="AtlasTexture" id="a4"]
 atlas = ExtResource("4")
 region = Rect2(0, 35, 1281, 1136)
+
+[sub_resource type="AtlasTexture" id="a7"]
+atlas = ExtResource("7")
+region = Rect2(59, 85, 1136, 1078)
 
 [node name="PortraitFrames" type="Control" unique_id=1388920640]
 layout_mode = 3
@@ -103,8 +108,10 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="고양이 아주머니" unique_id=1188157913]
 layout_mode = 0
-offset_right = 200.0
-offset_bottom = 180.0
+offset_left = -25.0
+offset_top = -8.0
+offset_right = 222.30159
+offset_bottom = 185.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a6")
 expand_mode = 1
@@ -142,5 +149,24 @@ offset_right = 200.0
 offset_bottom = 184.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="일진" type="Panel" parent="." unique_id=1847235317]
+clip_contents = true
+layout_mode = 0
+offset_left = 1330.0
+offset_top = 10.0
+offset_right = 1530.0
+offset_bottom = 190.0
+
+[node name="Portrait" type="TextureRect" parent="일진" unique_id=1886382632]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 9.0
+offset_right = 197.0
+offset_bottom = 177.0
+pivot_offset = Vector2(100, 90)
+texture = SubResource("a7")
 expand_mode = 1
 stretch_mode = 5

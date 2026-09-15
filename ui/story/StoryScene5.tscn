@@ -21,6 +21,7 @@ hide_on_start = Array[NodePath]([NodePath("Hero"), NodePath("Kid")])
 next_scene = "res://maps/Playground.tscn"
 battle_p1 = "res://characters/police/Police.tscn"
 battle_p2 = "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn"
+battle_win_scene = "res://ui/story/StoryScene6.tscn"
 
 [node name="Background" type="ColorRect" parent="." unique_id=1558858319]
 layout_mode = 1

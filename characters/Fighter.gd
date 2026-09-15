@@ -16,6 +16,10 @@ signal basic_attack_used
 ## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
 signal damaged(amount: int, knockback: Vector2)
 
+## 마지막으로 맞았을 때 밀려난 가로 방향(+1 오른쪽, 0이면 아직 안 맞음).
+## 처치 연출(Stage)이 이 방향으로 날려보낸다 — "맞은 방향의 반대쪽"이 곧 넉백 방향이다
+var last_hit_direction: float = 0.0
+
 ## 캐릭터 고정 수치
 @export var stats: CharacterStats
 
@@ -285,6 +289,12 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	_update_hp_face()
 	# 실제로 깎였을 때만 — 가드로 전부 막았으면 "맞았다"고 치지 않는다
 	if reduced_amount > 0:
+		# 처치 연출이 "마지막으로 맞은 반대쪽(=넉백 방향)"으로 날려보낼 때 쓴다.
+		# 수평 넉백이 없는 공격이면 바라보던 반대쪽으로 친다
+		if not is_zero_approx(knockback.x):
+			last_hit_direction = signf(knockback.x)
+		elif last_hit_direction == 0.0:
+			last_hit_direction = -facing
 		damaged.emit(reduced_amount, knockback)
 	if current_hp <= 0:
 		died.emit()
@@ -617,6 +627,11 @@ func is_busy() -> bool:
 ## 더 긴 잠금이 이미 걸려 있으면 짧은 걸로 줄어들지 않게 둘 중 큰 값을 쓴다
 func start_busy(duration: float) -> void:
 	_busy_time = maxf(_busy_time, duration)
+
+## 걸려 있던 행동 잠금을 그 자리에서 푼다 — 스킬이 예정보다 일찍 끝났을 때 쓴다.
+## (일진 어깨 들이박기: 상대를 받아 올린 순간 돌진이 끝나므로, 남은 잠금을 풀어야 평타로 바로 이어진다)
+func end_busy() -> void:
+	_busy_time = 0.0
 
 ## 씬에 SkillClashManager가 있으면(1대1 대전 맵) 반환하고, 없으면(훈련장 등) null
 func _get_clash_manager() -> Node:

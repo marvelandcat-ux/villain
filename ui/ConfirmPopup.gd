@@ -37,6 +37,11 @@ var _opening: bool = true
 var _closing_result: String = ""
 
 func _ready() -> void:
+	# **화면 전체 크기로 다시 잡아 준다.** 부모 씬에 인스턴스로 놓다가 앵커가 좌상단(preset 0)으로
+	# 저장되면 이 Control이 0x0이 되고, 가운데 정렬(CenterContainer)이 0x0 안에서 이뤄져서
+	# 창이 화면 왼쪽 위 구석에 붙어 버린다(2026-09-14 빌드에서 발견). 여기서 한 번 바로잡으면
+	# 나중에 에디터가 또 앵커를 건드려도 실행할 땐 항상 가운데에 뜬다
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_backdrop_alpha = _backdrop.color.a
 	hide()
 

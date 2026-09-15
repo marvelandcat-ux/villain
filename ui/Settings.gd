@@ -39,6 +39,13 @@ const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skil
 @onready var p1_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P1Column
 @onready var p2_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P2Column
 
+## 닫혔을 때 (오버레이로 열렸을 때만 의미가 있다)
+signal closed
+
+## **다른 화면 위에 얹어서 연 것인지.** 켜면 "뒤로"·ESC가 메인 메뉴로 가지 않고 자기만 닫는다.
+## 일시정지 화면의 "설정"이 이 방식으로 연다 — 대전 중에 장면을 바꿀 수 없기 때문이다
+@export var overlay_mode: bool = false
+
 ## 지금 새 키 입력을 기다리고 있는 액션 이름. 빈 문자열이면 대기 중이 아님
 var _listening_action: String = ""
 var _key_buttons: Dictionary = {}  # {action: Button}
@@ -85,8 +92,13 @@ func _process(delta: float) -> void:
 	if _anim_time >= duration:
 		_anim_time = -1.0
 		if not _opening:
-			closed.emit()
-			queue_free()
+			# 일시정지 화면 위에 얹혀 열린 경우엔 화면을 바꾸지 않고 자기만 닫는다 —
+			# 여기서 장면을 바꾸면 하던 대전이 통째로 날아간다
+			if overlay_mode:
+				closed.emit()
+				queue_free()
+			else:
+				get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
 ## 탭 버튼을 누르면 그 탭의 패널만 보이고 나머지는 숨긴다. 버튼 자체도 선택된 탭만 밝게 눌린 느낌으로 표시한다
 func _show_tab(tab_name: String) -> void:
@@ -106,6 +118,11 @@ func _setup_graphics_audio_controls() -> void:
 
 	volume_slider.value = GameState.master_volume
 	volume_value_label.text = "%d%%" % round(GameState.master_volume * 100)
+	# 빌드에서는 소리를 통째로 꺼 뒀으므로(GameState.MUTE_IN_BUILD) 슬라이더를 만져도 아무 일도 안 난다 —
+	# 헛돌게 두면 고장난 줄 아니까 아예 못 만지게 하고 "음소거"라고 알려준다
+	if GameState.is_audio_muted():
+		volume_slider.editable = false
+		volume_value_label.text = "음소거"
 
 func _on_fullscreen_toggled(enabled: bool) -> void:
 	GameState.set_fullscreen(enabled)
@@ -168,7 +185,8 @@ func _on_reset_pressed() -> void:
 	for action in _key_buttons.keys():
 		_key_buttons[action].text = _key_display_text(action)
 
-## 닫는 연출(위로 슬라이드 아웃)을 시작한다 — 다 끝나면 _process가 closed를 보내고 스스로를 지운다.
+## 닫는 연출(위로 슬라이드 아웃)을 시작한다 — 다 끝나면 _process가 overlay_mode를 보고
+## (오버레이면) closed를 보내고 스스로를 지우거나, (아니면) 메인 메뉴로 장면을 바꾼다.
 ## 이미 닫는 중이면 두 번 눌러도 무시한다
 func _on_back_pressed() -> void:
 	if _anim_time >= 0.0 and not _opening:
@@ -177,9 +195,9 @@ func _on_back_pressed() -> void:
 	_anim_time = 0.0
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _listening_action != "":
-		return
-	if event.is_action_pressed("ui_cancel"):
-		# 여기서 처리했다고 알려야 뒤쪽 메인 메뉴의 ESC(타이틀로 나가기)가 같이 발동하지 않는다
+	if _listening_action == "" and event.is_action_pressed("ui_cancel"):
+		# **먹었다는 표시를 닫기 전에 해야 한다** — 일시정지 화면 위에 얹혀 있을 때 이걸 빼먹으면
+		# 뒤에 있는 PauseMenu도 같은 ESC를 받아서 설정과 일시정지가 한꺼번에 닫힌다.
+		# 그리고 _on_back_pressed()가 장면을 바꾼 뒤에는 get_viewport()가 null이라 순서를 뒤집으면 에러가 난다
 		get_viewport().set_input_as_handled()
 		_on_back_pressed()

@@ -1,0 +1,91 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/AkpeulleoIllust.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0010_레이어-1.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0009_레이어-2.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0008_머리.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0000_왼손새끼손가락.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0001_왼손약지손가락.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0002_왼손중지손가락.png" id="7"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0003_왼손검지손가락.png" id="8"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0007_오른손검지손가락.png" id="9"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0006_오른손중지손가락.png" id="10"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0005_오른손약지손가락.png" id="11"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러스트_0004_오른손새끼손가락.png" id="12"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건준비악플러.png" id="13"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건준비_상반신.png" id="14"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_0001_레이어-1.png" id="15"]
+[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/샷건악플러_상반신.png" id="16"]
+
+[node name="AkpeulleoIllust" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Typing" type="Node2D" parent="."]
+
+[node name="Base" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("2")
+
+[node name="Body" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("3")
+
+[node name="FingerLPinky" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("5")
+
+[node name="FingerLRing" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("6")
+
+[node name="FingerLMiddle" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("7")
+
+[node name="FingerLIndex" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("8")
+
+[node name="FingerRIndex" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("9")
+
+[node name="FingerRMiddle" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("10")
+
+[node name="FingerRRing" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("11")
+
+[node name="FingerRPinky" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("12")
+
+[node name="Head" type="Sprite2D" parent="Typing"]
+centered = false
+texture = ExtResource("4")
+
+[node name="Shotgun" type="Node2D" parent="."]
+visible = false
+
+[node name="Ready" type="Node2D" parent="Shotgun"]
+
+[node name="Base" type="Sprite2D" parent="Shotgun/Ready"]
+centered = false
+texture = ExtResource("13")
+
+[node name="Upper" type="Sprite2D" parent="Shotgun/Ready"]
+centered = false
+texture = ExtResource("14")
+
+[node name="Hit" type="Node2D" parent="Shotgun"]
+visible = false
+
+[node name="Base" type="Sprite2D" parent="Shotgun/Hit"]
+centered = false
+texture = ExtResource("15")
+
+[node name="Upper" type="Sprite2D" parent="Shotgun/Hit"]
+centered = false
+texture = ExtResource("16")

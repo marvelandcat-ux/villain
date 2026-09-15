@@ -13,6 +13,8 @@
 [ext_resource type="Texture2D" uid="uid://bnhkpr66dqxtp" path="res://sprite/메인메뉴/일러스트/캣맘/캣맘찐배경.png" id="11_catbg"]
 [ext_resource type="PackedScene" path="res://ui/SubwayIllust.tscn" id="12_subway"]
 [ext_resource type="Texture2D" uid="uid://eqbyc2uejeay" path="res://sprite/메인메뉴/일러스트/지하철아저씨/지하철아저씨일러스트배경.png" id="13_subbg"]
+[ext_resource type="PackedScene" path="res://ui/AkpeulleoIllust.tscn" id="14_akp"]
+[ext_resource type="Texture2D" uid="uid://7ux3ssorxah5" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러배경.png" id="15_akpbg"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("7_blur")
@@ -86,6 +88,13 @@ scale = Vector2(0.86, 0.86)
 texture = ExtResource("11_catbg")
 flip_h = true
 
+[node name="BackgroundAkpeulleo" type="Sprite2D" parent="." unique_id=1468739723]
+modulate = Color(2.6, 2.55, 2.45, 1)
+material = SubResource("ShaderMaterial_bgblur")
+position = Vector2(717, 312)
+scale = Vector2(0.86, 0.86)
+texture = ExtResource("15_akpbg")
+
 [node name="Scrim" type="ColorRect" parent="." unique_id=1739643074]
 layout_mode = 0
 anchor_right = 1.0
@@ -107,7 +116,8 @@ position = Vector2(596.00006, 77)
 scale = Vector2(0.5137, 0.5137)
 
 [node name="Illust" parent="." unique_id=1203593728 instance=ExtResource("2_illust")]
-position = Vector2(657.64, 124)
+visible = false
+position = Vector2(628.64, 124)
 scale = Vector2(0.46, 0.46)
 
 [node name="IllustSubway" parent="." unique_id=1547897417 instance=ExtResource("12_subway")]
@@ -119,6 +129,10 @@ scale = Vector2(0.538, 0.538)
 visible = false
 position = Vector2(641, 19.37)
 scale = Vector2(0.502, 0.502)
+
+[node name="IllustAkpeulleo" parent="." unique_id=286506023 instance=ExtResource("14_akp")]
+position = Vector2(557, 93)
+scale = Vector2(0.51, 0.51)
 
 [node name="TitleLabel" type="Label" parent="." unique_id=1857719501]
 layout_mode = 0
@@ -322,7 +336,10 @@ text = "방향키/마우스로 선택 · ESC로 타이틀로"
 
 [node name="ConfirmPopup" parent="." unique_id=511114147 instance=ExtResource("4_confirm")]
 visible = false
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -345,6 +362,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 text = "도감"
 
 [node name="Fade" type="ColorRect" parent="." unique_id=1040822673]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
