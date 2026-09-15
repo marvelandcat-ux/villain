@@ -38,6 +38,10 @@ func _find_target(fighter: Fighter) -> Fighter:
 	var opponent: Fighter = fighter.find_opponent()
 	if opponent == null or not is_instance_valid(opponent):
 		return null
+	# **방어 중인 상대는 못 잡는다** — 잡히면 데미지가 0이어도 붙들려 있는 동안 무방비가 된다.
+	# null을 돌려주면 _suplex가 "허공 잡기" 쪽으로 흘러가 동작만 재생하고 끝난다
+	if opponent.blocks_debuff():
+		return null
 	var dx: float = opponent.global_position.x - fighter.global_position.x
 	if absf(dx) > _grab_reach(fighter) or signf(dx) != fighter.facing:
 		return null

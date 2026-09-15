@@ -14,6 +14,9 @@ func _execute(fighter: Fighter) -> void:
 	if opponent == null:
 		return
 	var dx: float = opponent.global_position.x - fighter.global_position.x
+	# 방어 중인 상대에게는 안 통한다 — 색만 물들고 느려지지는 않으면 "걸린 줄 알았는데 아니었다"가 된다
+	if opponent.blocks_debuff():
+		return
 	if absf(dx) <= range and signf(dx) == fighter.facing:
 		opponent.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, duration)
 		# 도발당해서 느려진 상대는 노랗게 물든다

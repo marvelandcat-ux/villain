@@ -24,6 +24,18 @@ signal connected(victim: Node)
 ## 콤보 앞 타격이 상대를 공중에 날려버려 다음 타가 헛치는 걸 막을 때 0으로 둔다
 @export var pop_override: float = -1.0
 
+## --- 히트스톱(타격 정지) ---
+## 명중하는 순간 **화면 전체가** 멈추는 시간(초) = 이 값 + 데미지 x `hitstop_per_damage`(최대 `hitstop_max`).
+## 맞은 쪽만 굳는 경직(`Fighter._hitstun_time`)과는 **다른 것**이다 — 때린 쪽·이펙트·카메라까지 같이 멈춰서
+## 주먹이 상대를 그냥 통과하지 않고 "쿵" 하고 부딪힌 것처럼 보인다. 0으로 두면 그 히트박스는 안 멈춘다
+@export var hitstop_time: float = 0.022
+## 데미지 1당 더 멈추는 시간(초) — 센 공격일수록 길게 멈춘다
+@export var hitstop_per_damage: float = 0.002
+## 아무리 세도 이 이상은 안 멈춘다(초). 너무 길면 조작이 끊긴 것처럼 느껴진다
+@export var hitstop_max: float = 0.06
+## 멈춘 동안의 시간 배속. 0에 가까울수록 완전히 정지한다 (정확히 0은 피한다)
+const HITSTOP_SCALE: float = 0.0001
+
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
 var source_fighter: Fighter:
@@ -83,6 +95,7 @@ func _try_hit(area: Area2D) -> bool:
 		return false
 	if blocked:
 		_notify_blocked_by_guard()
+	_apply_hitstop()
 	_spawn_spark(area.global_position, kb)
 	if debris_scene != null and debris_enabled:
 		_spawn_debris(area.global_position, kb)
@@ -106,8 +119,12 @@ func _try_hit(area: Area2D) -> bool:
 func _is_blocked_by_guard(hurtbox: Hurtbox) -> bool:
 	if not _has_source:
 		return false
-	var victim: Fighter = hurtbox.fighter
-	return victim != null and victim.is_guarding
+	# **타입을 안 붙인다** — Hurtbox의 부모가 Fighter가 아닐 수 있다(일진 패거리처럼 HP만 있는 몸).
+	# `Fighter`로 받으면 그 순간 타입 에러가 나므로, 방어 여부는 프로퍼티가 있는지 보고 읽는다
+	var victim = hurtbox.fighter
+	if victim == null or not ("is_guarding" in victim):
+		return false
+	return victim.is_guarding
 
 ## 막혔을 때 때린 쪽에게 알린다 — 때린 손과 거기 든 무기가 잠깐 빨갛게 깜빡이고
 ## 그 동안 기본공격이 안 나간다. **기본공격이 막혔을 때만이라** 이 히트박스가
@@ -146,6 +163,31 @@ func _shake_camera() -> void:
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("add_trauma"):
 		cam.add_trauma(float(damage) * shake_per_damage)
+
+## 맞는 순간 화면 전체를 아주 잠깐 멈춘다(히트스톱). 데미지가 클수록 길게 멈춘다.
+##
+## **`repeat_interval`이 켜진 판정은 건너뛴다** — 열차·담배 연기처럼 겹쳐 있는 동안 계속 때리는 판정은
+## 맞을 때마다 멈추면 화면이 끊기는 것처럼 보인다.
+##
+## 되돌리는 콜백이 **노드를 하나도 붙잡지 않으므로**(`Engine.time_scale`은 전역이다) 히트박스가 먼저
+## 사라져도 "Lambda capture was freed" 함정에 걸리지 않고, 시간이 멈춘 채로 남지도 않는다
+func _apply_hitstop() -> void:
+	if hitstop_time <= 0.0 or repeat_interval > 0.0:
+		return
+	# 이미 느려져 있으면(연달아 맞았거나 KO 슬로모션 중) 겹쳐 걸지 않는다 —
+	# 겹치면 나중 것이 먼저 풀리면서 KO 연출의 배속까지 1로 되돌려버린다
+	if Engine.time_scale < 0.5:
+		return
+	var hold: float = minf(hitstop_time + float(damage) * hitstop_per_damage, hitstop_max)
+	Engine.time_scale = HITSTOP_SCALE
+	# **ignore_time_scale = true가 핵심이다** — 배속을 0에 가깝게 낮춰놔서 보통 타이머는 영영 안 끝난다.
+	# process_always = true라 클래시·컷인처럼 트리가 멈춘 동안에도 제때 풀린다
+	get_tree().create_timer(hold, true, false, true).timeout.connect(
+		func() -> void:
+			# **되돌리기 전에 아직 내가 멈춰둔 상태인지 확인한다** — 멈춰 있는 사이에 KO가 나면
+			# Stage가 배속을 슬로모션(0.35)으로 바꿔놓는데, 그걸 모르고 1로 되돌리면 처치 연출이 그냥 빨라진다
+			if Engine.time_scale <= HITSTOP_SCALE * 2.0:
+				Engine.time_scale = 1.0)
 
 ## 판정을 껐다 켤 때(열차가 지나가고 다음 열차가 올 때) 반복 타격 쿨타임을 초기화한다
 func clear_repeat_state() -> void:

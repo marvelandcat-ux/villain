@@ -109,6 +109,10 @@ extends Node2D
 ## 하강 자세로 바뀌고 풀리는 빠르기
 @export var fall_blend_speed: float = 10.0
 
+## 가만히 있을 때 나오는 idle 모션(머리 긁기 / 뒤돌아보기)을 아예 끈다.
+## 일진 궁극기의 패거리처럼 **가만히 서 있어야 하는 몸**은 이걸 꺼둔다 — 배경 인물이 혼자
+## 머리를 긁고 뒤를 돌아보면 시선을 뺏는다
+@export var idle_gestures: bool = true
 ## 조작 없이 가만히 서 있을 때, 이 시간(초)이 지나면 idle 모션(머리 긁기 또는 뒤돌아보기)이 랜덤으로 하나 나온다 (생동감용)
 @export var idle_motion_delay: float = 5.0
 ## 머리 긁는 동작 하나의 전체 길이(초)
@@ -169,6 +173,51 @@ extends Node2D
 @export var thrust3_swing_deg: float = 130.0
 @export var thrust3_raise_offset: Vector2 = Vector2(-26, -22)
 @export var thrust3_slam_offset: Vector2 = Vector2(16, 6)
+
+## --- 발차기 마무리 (촉법소년 3타) ---
+## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
+## 켜면 그 타에서 손 스윙 대신 앞발이 뻗어나가고, 팔은 균형 잡는 동작만 한다
+@export var attack_kick_hit: int = -1
+## 차는 발(앞발)이 다 뻗었을 때 가 있는 자리 — 제자리 기준, +x가 바라보는 쪽
+@export var kick_foot_offset: Vector2 = Vector2(30.0, -20.0)
+## 다 뻗었을 때 발끝 각도(도). 음수면 발끝이 위로 들린다
+@export var kick_foot_deg: float = -75.0
+## 무릎을 접는 예비동작에서 발이 뒤로 당겨지는 양 (뻗는 거리에 대한 비율)
+@export var kick_windup_ratio: float = 0.35
+## 디디는 발(뒷발)이 버티느라 뒤로 밀리는 양
+@export var kick_back_foot_offset: Vector2 = Vector2(-10.0, 2.0)
+## 찰 때 몸이 뒤로 젖혀지는 각도(도). 음수가 뒤로 젖히는 쪽
+@export var kick_lean_deg: float = -15.0
+## 균형 잡느라 오른손이 뒤로 빠지는 양
+@export var kick_hand_offset: Vector2 = Vector2(-16.0, -8.0)
+
+## --- 드롭킥 (촉법소년 3타) ---
+## 뛰어올라 몸을 눕히고 두 발을 모아 차는 자세. 스킬(`ComboMeleeAttack`)이 `play_dropkick()`으로 켜고,
+## 실제로 땅에 닿은 순간 `dropkick_land()`로 알려주면 넘어졌다 일어난다.
+## **몸을 눕히는 건 루트 rotation이 아니라 조각을 하나씩 돌려서 한다** — 루트 rotation은
+## Fighter가 피격 기울기·구르기에 쓰고 있어서 같이 쓰면 서로 각도를 뺏어 덜덜 떨린다
+## 공중에서 몸이 눕는 각도(도). 음수가 등을 뒤로 눕히는 쪽 (0이면 선 채로 찬다)
+@export var dropkick_air_deg: float = -65.0
+## 착지해서 넘어졌을 때 각도(도). 여기서부터 0도(선 자세)까지 일어난다
+@export var dropkick_down_deg: float = -86.0
+## 눕는 자세가 완성되기까지 걸리는 시간(초)
+@export var dropkick_lay_time: float = 0.12
+## 누운 동안 몸 전체가 아래로 내려가는 양 — 안 내리면 허리 높이에 붕 뜬 것처럼 보인다
+@export var dropkick_shift: Vector2 = Vector2(0.0, 6.0)
+## 넘어져 있는 동안 더 내려가는 양 (바닥에 누운 높이)
+@export var dropkick_down_shift: Vector2 = Vector2(0.0, 16.0)
+## 일어나기 전에 바닥에 누워 있는 구간 (일어나는 전체 시간 대비 비율)
+@export var dropkick_down_hold: float = 0.3
+## 앞발이 뻗어나가는 자리 (제자리 기준, +x가 바라보는 쪽)
+@export var dropkick_foot_offset: Vector2 = Vector2(16.0, -8.0)
+## 뒷발을 앞발 옆에 붙이는 보정 — 두 발을 모으는 값이라 앞발 오프셋에 더해진다
+@export var dropkick_foot_gap: Vector2 = Vector2(18.0, -5.0)
+## 모아 뻗은 두 발의 각도(도)
+@export var dropkick_foot_deg: float = -8.0
+## 두 손이 뒤로 빠지는 양
+@export var dropkick_hand_offset: Vector2 = Vector2(-14.0, -4.0)
+## 몸이 도는 중심 (리그 원점 기준 — 대략 허리)
+@export var dropkick_pivot: Vector2 = Vector2(0.0, 4.0)
 
 ## 술 마시기 동작 전체 길이(초). 올리기 → 마시기 → 내리기가 이 안에서 다 일어난다
 @export var drink_duration: float = 1.1
@@ -300,6 +349,14 @@ extends Node2D
 @export var blocked_flash_cycles: float = 6.0
 ## 가장 옅어졌을 때의 투명도 (1이면 투명도는 안 변하고 색만 바뀐다)
 @export_range(0.0, 1.0, 0.05) var blocked_flash_min_alpha: float = 0.3
+## 기본공격이 잠긴 동안 **몸 전체**에 두르는 빨간 테두리 색 (2026-09-14 추가 — 손만 빨개지니 잘 안 보였다).
+## 손·무기만 깜빡이던 예전 연출은 그대로 있고 그 위에 테두리가 더해진다
+@export var blocked_outline_color: Color = Color(1.0, 0.12, 0.12)
+## 테두리 두께 — **화면 픽셀 기준**이다. 파츠마다 배율이 달라서(머리 0.048 / 손 0.11 / 몸 0.035)
+## 코드가 각 파츠의 배율로 나눠 셰이더에 넣는다. 0으로 두면 테두리 없이 예전 연출만 나간다
+@export var blocked_outline_px: float = 3.0
+## 깜빡임이 가장 옅을 때의 테두리 진하기. 0이면 완전히 사라졌다 나타나서 "잠겨 있다"가 끊겨 보인다
+@export_range(0.0, 1.0, 0.05) var blocked_outline_min: float = 0.45
 
 @export var hurt_face_duration: float = 0.45
 ## 아파하는 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
@@ -443,12 +500,38 @@ var _blocked_flash_left: float = 0.0
 var _grip_blend: float = 0.0
 ## 이번 깜빡임의 전체 길이(초) — Fighter가 넘겨준 잠금 시간이 들어온다
 var _blocked_flash_span: float = 0.0
+## --- 머리 부들부들 떨기 (악플러 열등감) ---
+## 좌우로 까딱거리는 각도(도). "약간 떨리는" 정도라 크게 주면 고개를 젓는 것처럼 보인다
+@export var head_shake_angle_deg: float = 4.0
+## 같이 흔들리는 거리(px). x는 좌우, y는 위아래
+@export var head_shake_offset: Vector2 = Vector2(1.6, 1.1)
+## 떨리는 빠르기(라디안/초). 클수록 잘게 부들거린다
+@export var head_shake_speed: float = 34.0
+
+## 기본공격이 잠긴 동안 파츠에 붙였다 떼는 빨간 테두리 셰이더
+const BLOCKED_OUTLINE_SHADER := preload("res://combat/BlockedOutline.gdshader")
+## 지금 빨간 테두리가 걸려 있는 파츠들 (끝날 때 material을 떼어내야 해서 들고 있는다)
+var _blocked_outline_parts: Array = []
+## 머리 떨림 남은 시간과 전체 시간(초)
+var _head_shake_left: float = 0.0
+var _head_shake_span: float = 0.0
+## 머리 조준 각도(라디안) — 밖에서 넣어준다
+var _head_aim: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
 var _guard_target: float = 0.0
 ## 돌진 자세 섞임(0~1)과 목표값
 var _charge_blend: float = 0.0
 var _charge_target: float = 0.0
+## 드롭킥 단계 (0=안 함, 1=공중에서 두 발 뻗기, 2=넘어졌다 일어나는 중)
+var _dk_stage: int = 0
+## 드롭킥 자세 섞임(0~1) / 몸이 누운 각도(라디안) / 몸이 내려간 양
+var _dk_blend: float = 0.0
+var _dk_angle: float = 0.0
+var _dk_shift: Vector2 = Vector2.ZERO
+## 일어나기까지 남은 시간과 전체 시간(초)
+var _dk_getup_left: float = 0.0
+var _dk_getup_total: float = 0.0
 ## 지금 술 머금은 얼굴 상태인지 (술 스택이 남아있는 동안 true)
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
@@ -537,6 +620,9 @@ func _process(delta: float) -> void:
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
 	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
+	_update_dropkick(delta)
+	if _head_shake_left > 0.0:
+		_head_shake_left = maxf(_head_shake_left - delta, 0.0)
 	if _reel_blend > 0.001:
 		_reel_phase += delta * reel_tug_speed
 	else:
@@ -551,7 +637,8 @@ func _process(delta: float) -> void:
 	_fall_blend = move_toward(_fall_blend, 1.0 if falling else 0.0, delta * fall_blend_speed)
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
-	var idle: bool = on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
+	# idle_gestures를 끄면 여기서 바로 false가 되어 아래 "취소" 가지로 빠진다 — 모션이 아예 안 나온다
+	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -635,11 +722,18 @@ func _apply_pose(speed_ratio: float) -> void:
 	var hand_amt: float = breathe_amount * breathe_hand_ratio * idle_f
 	for part in [_body, _head]:
 		if part:
-			part.position.y = _rest_positions[part].y + bob + body_breathe
+			# **x도 같이 제자리로 되돌린다.** 예전엔 y만 잡았는데, 머리·몸통의 x를 매 프레임 건드리는
+			# 자세(드롭킥처럼 조각을 통째로 돌리는 것)가 생기면 그 값이 프레임마다 쌓여서
+			# 머리가 화면 밖으로 날아간다. 손·발은 원래 x를 매 프레임 다시 잡아 이 문제가 없었다
+			part.position = Vector2(_rest_positions[part].x, _rest_positions[part].y + bob + body_breathe)
 	if _hand_r:
 		_hand_r.position.y = _rest_positions[_hand_r].y + bob + sin(_breathe_phase + breathe_hand_phase) * hand_amt
 	if _hand_l:
 		_hand_l.position.y = _rest_positions[_hand_l].y + bob + sin(_breathe_phase + breathe_hand_phase + 0.5) * hand_amt
+	# 몸통 기울기도 머리·오른손과 같이 매 프레임 제자리로 되돌린다 — 아래에서 발차기·돌진 자세가
+	# 덮어쓰고, 그 동작이 끝나면 기울기가 남지 않고 저절로 풀린다
+	if _body:
+		_body.rotation = 0.0
 	# 술 마시기·두 손 잡기가 매 프레임 덮어쓰므로, 오른손 회전과 마찬가지로 여기서 한 번 제자리로 되돌려둔다
 	if _head:
 		# 하강 중이면 고개를 아래로 숙인다 (마시기 동작이 있으면 아래에서 덮어써서 그쪽이 우선한다)
@@ -671,6 +765,11 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
 	if _attack_time > 0.0:
 		_pose_attack_hand()
+
+	# 그 타가 발차기면 두 발·몸통도 차는 자세로 덮어쓴다 (손은 위에서 이미 균형 자세를 잡았다).
+	# 드롭킥이 돌고 있으면 건너뛴다 — 아래 드롭킥 자세가 두 발을 따로 잡으므로 두 번 손대면 싸운다
+	if _attack_time > 0.0 and attack_kick_hit >= 0 and _attack_variant == attack_kick_hit and _dk_blend <= 0.001:
+		_pose_kick()
 
 	# 마시는 중이면 머리와 오른손을 술 마시는 자세로 덮어쓴다 (공격보다 나중이라 우선한다)
 	if _drink_time > 0.0:
@@ -709,6 +808,19 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 어깨 들이박기 — 두 손을 앞으로 모으고 몸·머리를 앞으로 기울인다 (방어 자세 다음이라 우선한다)
 	if _charge_blend > 0.001:
 		_pose_charge()
+
+	# 드롭킥 — 두 발을 모아 앞으로 뻗고 두 손은 뒤로 뺀다 (몸을 눕히는 건 맨 아래에서 한꺼번에)
+	if _dk_blend > 0.001:
+		_pose_dropkick()
+
+	# 머리 부들부들 (악플러 열등감) — 다른 자세가 잡아놓은 머리 위에 떨림만 **더한다**.
+	# 자세를 덮어쓰지 않고 더하기만 하므로 걷다가 써도, 공격 중에 써도 그대로 얹힌다
+	if _head_shake_left > 0.0:
+		_pose_head_shake()
+
+	# 머리 조준 (일진 친구가 상대를 겨눌 때) — 위아래 각도만 더한다
+	if not is_zero_approx(_head_aim) and _head:
+		_head.rotation += _head_aim
 
 	# 자전거를 타는 동안엔 두 발이 페달을 밟고, 두 손이 핸들바를 잡는다 (걷기 동작을 덮어쓴다)
 	if _bike and _ride_blend > 0.3:
@@ -752,6 +864,11 @@ func _apply_pose(speed_ratio: float) -> void:
 		var idle: Node = get_node_or_null(idle_weapon)
 		if idle is CanvasItem:
 			idle.visible = not swinging_final
+
+	# 드롭킥: 위에서 잡아놓은 자세를 통째로 눕힌다. 손에 든 물건(HandRHold)이 손 위치를 이미 복사해간
+	# 다음이라 여기서 같이 돌려야 사탕이 몸에서 떨어져 나가지 않는다
+	if absf(_dk_angle) > 0.0001 or _dk_shift.length_squared() > 0.0001:
+		_lay_down(_dk_angle, _dk_shift)
 
 	# 점프/착지 스쿼시를 루트 크기에 반영한다 (몸 전체가 늘거나 눌린다). 좌우 방향(scale.x 부호)은 유지한다
 	if _squashing:
@@ -820,6 +937,9 @@ func _pose_attack_hand() -> void:
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
 ## 각도 부호: 음수=반시계(무기가 위로), 양수=시계(아래로)
 func _attack_variant_params() -> Dictionary:
+	# 발로 차는 타에서는 손에 든 무기를 휘두르지 않는다 — 팔은 균형만 잡는다
+	if attack_kick_hit >= 0 and _attack_variant == attack_kick_hit:
+		return _kick_arm_params()
 	if attack_thrust:
 		return _thrust_variant_params()
 	if attack_two_handed:
@@ -909,6 +1029,148 @@ func _thrust_variant_params() -> Dictionary:
 				"raise_off": attack_raise_offset,
 				"slam_off": attack_slam_offset,
 			}
+
+## 발로 차는 타의 팔 동작. 무기를 휘두르는 대신 오른손이 뒤로 빠졌다가 돌아온다 —
+## 차는 발과 반대쪽으로 팔이 빠져야 균형을 잡는 것처럼 보인다
+func _kick_arm_params() -> Dictionary:
+	return {
+		"raise_deg": 0.0,
+		"swing_deg": -16.0,
+		"raise_off": kick_hand_offset * 0.4,
+		"slam_off": kick_hand_offset,
+	}
+
+## 발차기 자세 — 앞발(오른발)이 무릎을 접었다가(①) 앞으로 쭉 뻗고(②) 제자리로 돌아온다(③).
+## 손 스윙과 **같은 구간 비율**(ATTACK_STRIKE_START/END)을 쓰므로, 히트박스가 켜지는 순간에
+## 발이 가장 멀리 뻗어 있다. 뻗는 정도(reach)는 예비동작에서 음수(뒤로 접음)가 된다
+func _pose_kick() -> void:
+	var progress: float = 1.0 - _attack_time / attack_duration
+	var reach: float
+	if progress < ATTACK_STRIKE_START:
+		# ① 무릎을 뒤로 접는다 (끝으로 갈수록 느려지게)
+		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
+		reach = lerpf(0.0, -kick_windup_ratio, p)
+	elif progress < ATTACK_STRIKE_END:
+		# ② 확 뻗어 찬다 (실제로 때리는 구간)
+		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
+		reach = lerpf(-kick_windup_ratio, 1.0, p * p)
+	else:
+		# ③ 발을 내리고 제자리로
+		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		reach = lerpf(1.0, 0.0, p)
+	# 뻗은 만큼만(음수 구간은 0) 발끝을 들고 몸을 젖힌다 — 접는 동안 발끝까지 돌면 어색하다
+	var out: float = maxf(reach, 0.0)
+	if _foot_r:
+		_foot_r.position = _rest_positions[_foot_r] + kick_foot_offset * reach
+		_foot_r.rotation = deg_to_rad(kick_foot_deg) * out
+	if _foot_l:
+		_foot_l.position = _rest_positions[_foot_l] + kick_back_foot_offset * out
+	# **기울기에 facing 부호를 곱한다** — 좌우 반전이 scale.x = -1이라 회전 각도는 그대로 남기 때문에,
+	# 안 곱하면 왼쪽을 보는 캐릭터가 반대로 젖혀진다 (돌진·클래시 자세와 같은 이유)
+	var sgn: float = 1.0
+	if _fighter != null and is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
+		sgn = signf(_fighter.facing)
+	var lean: float = deg_to_rad(kick_lean_deg) * out * sgn
+	if _body:
+		_body.rotation = lean
+	if _head:
+		_head.rotation += lean * 0.5
+
+## 머리를 조준 각도만큼 더 기울인다(라디안). 0이면 원래대로.
+##
+## **각도는 "바라보는 쪽을 0으로 본 위아래 각"을 그대로 주면 된다** — 좌우 반전이 `scale.x = -1`이라
+## 로컬 회전도 같이 뒤집혀서, 왼쪽을 볼 때도 같은 값이 같은 방향(아래=양수)으로 보인다.
+## 다른 자세를 덮어쓰지 않고 **더하기만** 하므로 걷기·떨림과 같이 나갈 수 있다
+func set_head_aim(radians: float) -> void:
+	_head_aim = radians
+
+## 머리를 duration(초) 동안 부들부들 떨게 한다 (악플러 열등감). 이미 떨고 있으면 시간을 다시 채운다
+func play_head_shake(duration: float) -> void:
+	if duration <= 0.0:
+		return
+	_head_shake_span = duration
+	_head_shake_left = duration
+
+## 떨림을 머리 자세에 **더한다**(덮어쓰지 않는다). 시작·끝에서 부드럽게 커졌다 잦아든다
+func _pose_head_shake() -> void:
+	if _head == null:
+		return
+	# 남은 시간 비율로 봉우리 하나(sin)를 그려서, 시작 0 -> 가운데 최대 -> 끝 0이 되게 한다.
+	# 이게 없으면 발동하는 순간과 끝나는 순간에 머리가 툭 튄다
+	var env: float = sin(clampf(_head_shake_left / maxf(_head_shake_span, 0.001), 0.0, 1.0) * PI)
+	var phase: float = (_head_shake_span - _head_shake_left) * head_shake_speed
+	_head.rotation += deg_to_rad(head_shake_angle_deg) * sin(phase) * env
+	# 가로·세로를 서로 어긋난 주기로 흔들어야 한 방향으로 까딱거리지 않고 "부들부들"해 보인다
+	_head.position += Vector2(
+		head_shake_offset.x * sin(phase * 1.37),
+		head_shake_offset.y * sin(phase * 0.83)) * env
+
+## 드롭킥을 시작한다 — 뛰어오른 순간 스킬이 부른다. 땅에 닿으면 `dropkick_land()`로 알려줘야 한다
+func play_dropkick() -> void:
+	_dk_stage = 1
+
+## 착지했다고 알린다 — getup_time(초) 동안 바닥에 넘어졌다가 일어난다
+func dropkick_land(getup_time: float) -> void:
+	_dk_stage = 2
+	_dk_getup_total = maxf(getup_time, 0.05)
+	_dk_getup_left = _dk_getup_total
+	_dk_blend = 1.0
+
+## 드롭킥을 도중에 끊는다 (맞아서 취소됐을 때) — 남은 자세가 빠르게 풀린다
+func dropkick_end() -> void:
+	_dk_stage = 0
+
+## 드롭킥 단계에 따라 누운 각도·내려간 양·자세 섞임을 매 프레임 갱신한다
+func _update_dropkick(delta: float) -> void:
+	match _dk_stage:
+		1:
+			# 뛰어올라 두 발을 뻗는다 — dropkick_lay_time 안에 자세가 완성된다
+			_dk_blend = minf(_dk_blend + delta / maxf(dropkick_lay_time, 0.01), 1.0)
+			_dk_angle = deg_to_rad(dropkick_air_deg) * _dk_blend
+			_dk_shift = dropkick_shift * _dk_blend
+		2:
+			# 넘어졌다 일어난다 — 앞쪽 dropkick_down_hold 동안은 누워 있고 나머지 시간에 몸을 세운다
+			_dk_getup_left = maxf(_dk_getup_left - delta, 0.0)
+			var done: float = 1.0 - _dk_getup_left / maxf(_dk_getup_total, 0.001)
+			var rise: float = clampf((done - dropkick_down_hold) / maxf(1.0 - dropkick_down_hold, 0.001), 0.0, 1.0)
+			rise = rise * rise * (3.0 - 2.0 * rise)   # 시작·끝이 부드럽게
+			_dk_angle = lerpf(deg_to_rad(dropkick_down_deg), 0.0, rise)
+			_dk_shift = dropkick_down_shift.lerp(Vector2.ZERO, rise)
+			_dk_blend = 1.0 - rise   # 일어나면서 뻗었던 두 발도 같이 접힌다
+			if _dk_getup_left <= 0.0:
+				_dk_stage = 0
+		_:
+			# 안 쓰는 동안엔 남은 자세가 빠르게 풀린다 (도중에 끊겼을 때도 부드럽게 돌아온다)
+			_dk_blend = maxf(_dk_blend - delta * 8.0, 0.0)
+			_dk_angle = move_toward(_dk_angle, 0.0, delta * 12.0)
+			_dk_shift = _dk_shift.move_toward(Vector2.ZERO, delta * 90.0)
+
+## 두 발을 모아 앞으로 뻗고 두 손은 뒤로 뺀 자세. 눕히는 건 `_lay_down()`이 따로 맡는다
+func _pose_dropkick() -> void:
+	var t: float = _dk_blend
+	if _foot_r:
+		_foot_r.position = _foot_r.position.lerp(_rest_positions[_foot_r] + dropkick_foot_offset, t)
+		_foot_r.rotation = lerpf(_foot_r.rotation, deg_to_rad(dropkick_foot_deg), t)
+	if _foot_l:
+		# 뒷발은 앞발 옆에 붙는다 — 제자리가 뒤쪽(x가 음수)이라 gap만큼 더 당겨야 두 발이 모인다
+		_foot_l.position = _foot_l.position.lerp(_rest_positions[_foot_l] + dropkick_foot_offset + dropkick_foot_gap, t)
+		_foot_l.rotation = lerpf(_foot_l.rotation, deg_to_rad(dropkick_foot_deg), t)
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(_rest_positions[_hand_r] + dropkick_hand_offset, t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(_rest_positions[_hand_l] + dropkick_hand_offset, t)
+
+## 지금 잡혀 있는 자세를 통째로 `angle`만큼 눕히고 `shift`만큼 내린다.
+## 조각의 **로컬 좌표**에서 돌리므로 좌우 반전(scale.x = -1)에 저절로 맞는다 — 방향 부호를 곱하면 안 된다
+func _lay_down(angle: float, shift: Vector2) -> void:
+	var c: float = cos(angle)
+	var s: float = sin(angle)
+	for part in [_foot_l, _foot_r, _body, _head, _hand_l, _hand_r, _hand_r_hold]:
+		if part == null:
+			continue
+		var p: Vector2 = part.position - dropkick_pivot
+		part.position = dropkick_pivot + Vector2(p.x * c - p.y * s, p.x * s + p.y * c) + shift
+		part.rotation += angle
 
 ## 후려치는 동안 손이 지나가는 길을 아래로 부풀린다. 예비동작 위치에서 내려찍는 위치로 가는
 ## 직선의 수직(아래쪽) 방향으로 밀어내며, sin이라 출발·도착에서는 0이라 튀지 않는다
@@ -1250,6 +1512,8 @@ func play_vomit_face() -> void:
 func play_weapon_blocked(duration: float = -1.0) -> void:
 	_blocked_flash_span = duration if duration > 0.0 else blocked_flash_duration
 	_blocked_flash_left = _blocked_flash_span
+	# 3초 안에 또 막히면 여기로 다시 들어온다 — 붙어 있던 셰이더를 떼고 새로 붙인다
+	_set_blocked_outline(true)
 
 ## 깜빡임을 매 프레임 갱신한다. 원래색(흰색 modulate) <-> blocked_flash_color를 오가면서
 ## 투명도도 같이 오르내린다 — 색이 진해질 때 가장 옅어져서 "지지직거리는" 느낌이 난다.
@@ -1260,17 +1524,68 @@ func _update_blocked_flash(delta: float) -> void:
 		return
 	_blocked_flash_left = maxf(_blocked_flash_left - delta, 0.0)
 	var tint: Color = Color.WHITE   # 끝났으면 원래 색으로 되돌린다
+	var wave: float = 0.0
 	if not is_zero_approx(_blocked_flash_left):
 		# 0(원래색) -> 1(빨강) -> 0 을 blocked_flash_cycles번 왕복. cos이라 양 끝에서 부드럽게 멈춘다
 		var elapsed: float = _blocked_flash_span - _blocked_flash_left
 		var span: float = maxf(_blocked_flash_span, 0.001)
-		var wave: float = 0.5 - 0.5 * cos(elapsed / span * TAU * blocked_flash_cycles)
+		wave = 0.5 - 0.5 * cos(elapsed / span * TAU * blocked_flash_cycles)
 		tint = Color.WHITE.lerp(blocked_flash_color, wave)
 		tint.a = lerpf(1.0, blocked_flash_min_alpha, wave)
 	if _hand_r:
 		_hand_r.modulate = tint
 	if _hand_r_hold:
 		_hand_r_hold.modulate = tint
+	# 몸 전체 빨간 테두리도 같은 박자로 진해졌다 옅어진다. 다 끝나면 셰이더를 떼어낸다
+	if _blocked_flash_left <= 0.0:
+		_set_blocked_outline(false)
+	else:
+		_update_blocked_outline(lerpf(blocked_outline_min, 1.0, wave))
+
+## 테두리를 두를 대상 — **손에 든 무기만**(2026-09-14 사용자 요청으로 몸 전체에서 줄였다).
+## 머리·몸·손은 빼고, 오른손에 매달린 물건(소주병·키보드·사탕)과 평소 반대 손에 들고 있는
+## 무기(일진 가방)만 두른다. 손 자체가 빨개지는 건 예전 `modulate` 깜빡임이 그대로 맡는다
+func _blocked_outline_targets() -> Array:
+	var list: Array = []
+	# HandRHold는 Node2D라 자기 그림이 없다 — 매달린 자식 스프라이트를 넣는다
+	if _hand_r_hold:
+		for child in _hand_r_hold.get_children():
+			if child is Sprite2D:
+				list.append(child)
+	# 마지막 타에만 무기를 쥐는 캐릭터는 평소엔 반대 손에 늘어뜨린 쪽이 보인다(일진 가방)
+	if not idle_weapon.is_empty():
+		var idle: Node = get_node_or_null(idle_weapon)
+		if idle is Sprite2D:
+			list.append(idle)
+	return list
+
+## 빨간 테두리를 켜고 끈다. 켤 때 파츠마다 ShaderMaterial을 새로 붙이고 끌 때 떼어낸다 —
+## 잠기지 않은 동안에는 material이 아예 없으므로 평소 셰이더 비용이 0이다
+func _set_blocked_outline(on: bool) -> void:
+	for part in _blocked_outline_parts:
+		if is_instance_valid(part):
+			part.material = null
+	_blocked_outline_parts.clear()
+	if not on or blocked_outline_px <= 0.0:
+		return
+	_blocked_outline_parts = _blocked_outline_targets()
+	for part in _blocked_outline_parts:
+		var mat := ShaderMaterial.new()
+		mat.shader = BLOCKED_OUTLINE_SHADER
+		mat.set_shader_parameter("outline_color", blocked_outline_color)
+		part.material = mat
+
+## 깜빡임에 맞춰 테두리 진하기를 갱신한다. **두께는 매 프레임 다시 넣는다** —
+## 표정이 바뀌면 머리 배율이 달라져서(hurt_head_scale 등) 화면상 두께가 같이 변하기 때문이다
+func _update_blocked_outline(amount: float) -> void:
+	for part in _blocked_outline_parts:
+		if not is_instance_valid(part):
+			continue
+		var mat: ShaderMaterial = part.material as ShaderMaterial
+		if mat == null:
+			continue
+		mat.set_shader_parameter("outline_width", blocked_outline_px / maxf(absf(part.scale.x), 0.0001))
+		mat.set_shader_parameter("outline_alpha", amount)
 
 ## 피격 표정 — 맞은 순간 잠깐 아파하는 얼굴로 바꾼다. Fighter.take_damage가 호출한다.
 ## hurt_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다

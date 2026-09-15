@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" uid="uid://ctq0hy1jurkaa" path="res://sprite/일진/일진의 친구1/일진의 친구.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://b5vuab6l5gnf6" path="res://sprite/일진/일진의 친구1/일친 친구 몸.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://chpjsgto7t383" path="res://sprite/일진/일진의 친구1/일진의 친구 발.png" id="4_foot"]
+[ext_resource type="Texture2D" uid="uid://b01pqlbcqohr2" path="res://sprite/일진/일진의 친구1/일진의 친구 손.png" id="5_hand"]
+[ext_resource type="Texture2D" uid="uid://h1wjbyi8uiuw" path="res://sprite/일진/일진의 친구1/아픈 일진의 친구.png" id="6_hurt"]
+[ext_resource type="Texture2D" uid="uid://ccwdwoefhbwb7" path="res://sprite/일진/일진의 친구1/일진의 친구 힘듬.png" id="7_weary"]
+
+[node name="BodyRig" instance=ExtResource("1_rig")]
+idle_gestures = false
+hurt_head_texture = ExtResource("6_hurt")
+weary_head_texture = ExtResource("7_weary")
+weary_head_scale = Vector2(0.0461, 0.0461)
+
+[node name="FootL" parent="." index="0"]
+texture = ExtResource("4_foot")
+
+[node name="FootR" parent="." index="1"]
+texture = ExtResource("4_foot")
+
+[node name="Body" parent="." index="2"]
+position = Vector2(-0.14, 0.93)
+scale = Vector2(0.04167, 0.05181)
+texture = ExtResource("3_body")
+
+[node name="HandL" parent="." index="3"]
+texture = ExtResource("5_hand")
+
+[node name="HandR" parent="." index="4"]
+texture = ExtResource("5_hand")
+
+[node name="Head" parent="." index="6"]
+position = Vector2(-2.95, -33.38)
+scale = Vector2(0.05, 0.05)
+texture = ExtResource("2_head")

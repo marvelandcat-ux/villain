@@ -16,6 +16,13 @@ extends Skill
 @export var default_dust_color: Color = Color(0.3, 0.26, 0.22, 0.9)
 ## 뒷바퀴 위치(캐릭터 원점 기준) — x는 진행 반대쪽(뒤)이라 음수, y는 바닥 높이. x는 진행 방향으로 반전된다
 @export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
+## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출). 끄면 예전처럼 잔상·먼지만
+@export var wind_lines: bool = true
+## 타입을 안 붙이고 preload로 가져온다 — 새 class_name은 전역 클래스 캐시가 갱신되기 전엔
+## 못 찾아서 파싱 에러가 난다(ShoulderChargeSkill이 ChargeWind를 가져오는 것과 같은 이유)
+const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
+var _wind = null
+
 ## 적을 들이받으면 적이 입는 데미지
 @export var enemy_hit_damage: int = 10
 ## 적을 들이받으면 촉법소년 자신도 입는 데미지 (자전거는 브레이크가 없다)
@@ -73,6 +80,19 @@ func _execute(fighter: Fighter) -> void:
 		if visual.has_method("set_action_face"):
 			visual.set_action_face(true)
 	_spawn_afterimage(fighter)
+	_start_wind(fighter)
+
+## 몸 주위로 흐르는 바람 줄을 띄운다 — **맵에 붙이고 시전자를 따라다니게 한다**
+## (캐릭터의 자식으로 달면 좌우 반전에 같이 뒤집혀서 바람이 진행 방향과 반대로 흐른다)
+func _start_wind(fighter: Fighter) -> void:
+	if not wind_lines:
+		return
+	var parent: Node = fighter.get_parent()
+	if parent == null:
+		return
+	_wind = CHARGE_WIND.new()
+	parent.add_child(_wind)
+	_wind.setup(fighter, _direction, dash_duration)
 
 ## 돌진 중 매 물리 프레임 적용할 수평 속도 (Fighter.apply_physics에서 호출)
 func get_move_velocity_x() -> float:
@@ -153,6 +173,10 @@ func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
 
 func _end_dash(fighter: Fighter) -> void:
 	fighter.movement_override = null
+	# 벽·적에 부딪혀 일찍 끝났을 수도 있다 — 남은 바람 줄은 흩어질 때까지 그리고 스스로 사라진다
+	if is_instance_valid(_wind):
+		_wind.stop()
+	_wind = null
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual:
 		# 자전거를 뒤로 빼며 사라지게 한다. 스쿼시를 안 걸었던 캐릭터만 크기를 되돌린다
