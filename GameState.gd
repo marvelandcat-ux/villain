@@ -75,6 +75,18 @@ const MAPS := {
 	"공사현장 (내리찍기)": "res://maps/CollapsingApartment.tscn",
 }
 
+## 스토리 에피소드 목록 — **일시정지 화면의 스토리 목록이 이 순서 그대로 쓴다.**
+## `scene`이 비어 있으면 아직 안 만든 자리(고를 수 없음)다. 새 이야기를 만들면 그 줄의 scene만 채우면 된다.
+## **한 번도 클리어하지 않은 에피소드는 목록에서 이름 대신 자물쇠로 보인다**(사용자 지정, 2026-09-15)
+const STORY_EPISODES := [
+	{"id": "ep1", "name": "브레이크 없는 꼬마", "scene": "res://ui/story/StoryScene1.tscn"},
+	{"id": "ep2", "name": "에피소드 2", "scene": ""},
+	{"id": "ep3", "name": "에피소드 3", "scene": ""},
+	{"id": "ep4", "name": "에피소드 4", "scene": ""},
+	{"id": "ep5", "name": "에피소드 5", "scene": ""},
+	{"id": "ep6", "name": "에피소드 6", "scene": ""},
+]
+
 var p1_character_path: String = CHARACTERS.values()[0]
 var p2_character_path: String = CHARACTERS.values()[1]
 var selected_map_path: String = MAPS.values()[0]
@@ -85,6 +97,11 @@ var game_mode: String = "pvp"
 ## 자기 `battle_win_scene`을 여기에 담아 두고, `Stage`가 최종 승리 판정에서 이 경로로 넘어간다.
 ## 비어 있으면 예전처럼 결과창(재시도/메뉴)에서 멈춘다 — 일반 대전은 이 값이 늘 비어 있다
 var story_next_scene: String = ""
+## **지금 진행 중인 스토리 에피소드 id.** 일시정지 화면 오른쪽 위에 이 에피소드 이름이 뜨고,
+## 마지막 장면에 닿으면 이 id가 클리어로 기록된다. 대전 모드면 빈 문자열
+var current_story_id: String = ""
+## 한 번이라도 끝까지 본 에피소드 id들 (user://settings.cfg의 [story] cleared에 저장)
+var story_cleared: PackedStringArray = PackedStringArray()
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
 ## 0이면 시간 제한 없음
@@ -139,6 +156,42 @@ func reset_round_wins() -> void:
 	p1_round_wins = 0
 	p2_round_wins = 0
 
+## 스토리 에피소드 하나를 시작한다 — 모드·진행도를 맞추고 그 에피소드의 첫 장면으로 넘어간다.
+## scene이 비어 있는(아직 안 만든) 에피소드면 아무 일도 안 하고 false를 돌려준다
+func start_story(episode_id: String) -> bool:
+	var episode: Dictionary = story_episode(episode_id)
+	var scene: String = episode.get("scene", "")
+	if scene == "" or not ResourceLoader.exists(scene):
+		return false
+	game_mode = "story"
+	current_story_id = episode_id
+	story_next_scene = ""   # 지난 판에서 남은 값이 있으면 지운다 (장면이 다시 채워준다)
+	reset_round_wins()
+	get_tree().change_scene_to_file(scene)
+	return true
+
+## id로 에피소드 한 줄을 찾는다. 없으면 빈 Dictionary
+func story_episode(episode_id: String) -> Dictionary:
+	for episode in STORY_EPISODES:
+		if episode["id"] == episode_id:
+			return episode
+	return {}
+
+## 지금 진행 중인 에피소드 이름 (대전 모드거나 못 찾으면 빈 문자열)
+func current_story_name() -> String:
+	return story_episode(current_story_id).get("name", "")
+
+## 한 번이라도 끝까지 봤는지 — 일시정지 화면 목록이 자물쇠를 걸지 말지 결정하는 기준
+func is_story_cleared(episode_id: String) -> bool:
+	return episode_id in story_cleared
+
+## 에피소드를 클리어로 기록하고 바로 저장한다. 이미 기록돼 있으면 아무 일도 안 한다
+func mark_story_cleared(episode_id: String) -> void:
+	if episode_id == "" or is_story_cleared(episode_id):
+		return
+	story_cleared.append(episode_id)
+	_save_setting("story", "cleared", story_cleared)
+
 ## res://.env 파일을 한 줄씩 읽어서 KEY=VALUE 형식을 파싱한다 (# 시작 줄은 주석으로 무시)
 func _load_env() -> void:
 	var path := "res://.env"
@@ -169,6 +222,7 @@ func _load_settings() -> void:
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
+	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 
 ## user://settings.cfg의 한 항목을 갱신한다. 매번 새로 열고 닫아서 다른 항목을 덮어쓰지 않는다
 func _save_setting(section: String, key: String, value) -> void:

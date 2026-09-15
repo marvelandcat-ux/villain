@@ -29,6 +29,13 @@ const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skil
 @onready var p1_column: VBoxContainer = $BodyCenter/BodyVBox/ControlsPanel/Columns/P1Column
 @onready var p2_column: VBoxContainer = $BodyCenter/BodyVBox/ControlsPanel/Columns/P2Column
 
+## 닫혔을 때 (오버레이로 열렸을 때만 의미가 있다)
+signal closed
+
+## **다른 화면 위에 얹어서 연 것인지.** 켜면 "뒤로"·ESC가 메인 메뉴로 가지 않고 자기만 닫는다.
+## 일시정지 화면의 "설정"이 이 방식으로 연다 — 대전 중에 장면을 바꿀 수 없기 때문이다
+@export var overlay_mode: bool = false
+
 ## 지금 새 키 입력을 기다리고 있는 액션 이름. 빈 문자열이면 대기 중이 아님
 var _listening_action: String = ""
 var _key_buttons: Dictionary = {}  # {action: Button}
@@ -127,8 +134,18 @@ func _on_reset_pressed() -> void:
 		_key_buttons[action].text = _key_display_text(action)
 
 func _on_back_pressed() -> void:
+	# 일시정지 화면 위에 얹혀 열린 경우엔 화면을 바꾸지 않고 자기만 닫는다 —
+	# 여기서 장면을 바꾸면 하던 대전이 통째로 날아간다
+	if overlay_mode:
+		closed.emit()
+		queue_free()
+		return
 	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _listening_action == "" and event.is_action_pressed("ui_cancel"):
+		# **먹었다는 표시를 닫기 전에 해야 한다** — 일시정지 화면 위에 얹혀 있을 때 이걸 빼먹으면
+		# 뒤에 있는 PauseMenu도 같은 ESC를 받아서 설정과 일시정지가 한꺼번에 닫힌다.
+		# 그리고 _on_back_pressed()가 장면을 바꾼 뒤에는 get_viewport()가 null이라 순서를 뒤집으면 에러가 난다
+		get_viewport().set_input_as_handled()
 		_on_back_pressed()

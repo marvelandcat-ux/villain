@@ -345,10 +345,10 @@ func _on_confirmed() -> void:
 ## 스토리 모드 — 2026-09-12 새로 짜는 중. 지금은 검은 화면 장면(ui/story/)이 페이드로 이어지는 뼈대만 있다.
 ## 옛 흐름(에피소드 선택 -> 캐릭터 선택 -> 대전 -> 개과천선 -> 클리어)은 통째로 걷어냈다
 func _start_story() -> void:
-	GameState.game_mode = "story"
-	GameState.story_next_scene = ""   # 지난 판에서 남은 값이 있으면 지운다 (장면이 다시 채워준다)
-	GameState.reset_round_wins()
-	get_tree().change_scene_to_file("res://ui/story/StoryScene1.tscn")
+	# 모드·진행도 초기화와 장면 전환은 GameState.start_story()가 한다 —
+	# 일시정지 화면의 스토리 목록에서 고를 때도 같은 함수를 쓰므로 시작 경로가 하나로 모인다
+	if not GameState.start_story("ep1"):
+		push_warning("MainMenu: ep1 스토리 장면을 못 찾았다")
 
 ## 대전 모드 — 방 설정(선취 라운드/시간제한)부터 고른다
 func _start_versus() -> void:

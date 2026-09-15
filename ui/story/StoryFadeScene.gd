@@ -15,7 +15,8 @@ extends Control
 ##    — 검은 화면은 "시간이 흘렀다·다른 장면이다"로 읽혀서, 경찰서 도착 -> 안으로 들어가는 이어진 흐름엔 크로스페이드가 맞다
 ##  - `reveal`: 들어오는 전환이 끝난 뒤 **순서대로** 나타날 노드들(인물 -> 대화창). 아래에서 조금 올라오며 나타난다.
 ##    배경·인물·대화창이 한꺼번에 뜨는 것보다 이 순서가 비주얼 노벨에서 자연스럽다
-## ESC를 누르면 메인 메뉴로 나간다 — 다른 화면들처럼 언제든 빠져나갈 길이 있어야 한다.
+## **ESC를 누르면 일시정지 화면(`ui/PauseMenu.tscn`)이 뜬다**(2026-09-15 사용자 요청 — 예전엔 바로 메인 메뉴로 나갔다).
+## 메인 메뉴로 나가는 길은 그 화면의 "메인메뉴로" 항목에 있다.
 
 enum Transition { BLACK, CROSSFADE }
 
@@ -43,6 +44,12 @@ enum Transition { BLACK, CROSSFADE }
 @export var out_transition: Transition = Transition.BLACK
 ## 앞 장면이 크로스페이드로 넘겨줬을 때 겹쳐 사라지는 시간(초)
 @export var crossfade_time: float = 0.7
+## **이 장면에 닿으면 지금 진행 중인 에피소드를 "클리어"로 기록한다**(2026-09-15).
+## 이야기의 마지막 장면에만 켜 두면 된다 — 기록은 user://settings.cfg에 남아서
+## 다음에 켰을 때 일시정지 화면의 스토리 목록에서 자물쇠가 풀린다.
+## 장면 끝이 아니라 **_ready에서** 기록하는 이유: 마지막 장면은 next_scene이 비어 있어서
+## "끝났다"는 시점이 따로 없고, 여기까지 왔으면 이미 다 본 것이기 때문이다
+@export var clears_story: bool = false
 ## 들어오는 전환이 끝난 뒤 순서대로 나타날 노드들 (Node2D 또는 Control)
 @export var reveal: Array[NodePath] = []
 ## reveal 노드 하나가 나오기 시작한 뒤 다음 노드가 나오기까지(초)
@@ -93,6 +100,8 @@ func _ready() -> void:
 		item.visible = true   # 배치하느라 에디터 눈 아이콘으로 꺼 둔 채 저장했어도 게임에선 나타나게
 		item.modulate.a = 0.0
 		item.set("position", pos + Vector2(0.0, reveal_rise))
+	if clears_story:
+		GameState.mark_story_cleared(GameState.current_story_id)
 	if _carry != null and Time.get_ticks_msec() - _carry_msec < 3000:
 		# 앞 장면 마지막 화면을 맨 위(마지막 자식)에 덮는다 — 첫 프레임부터 덮여 있어서 새 장면이 번쩍 보이지 않는다
 		_overlay = TextureRect.new()
@@ -200,5 +209,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_tree().change_scene_to_file(next_scene)   # 임시 건너뛰기 — 페이드 없이 바로
 			return
 	if event.is_action_pressed("ui_cancel"):
-		_carry = null
-		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+		# **ESC는 메인 메뉴로 나가는 게 아니라 일시정지 화면을 띄운다**(2026-09-15 사용자 요청).
+		# 메인 메뉴로 나가는 길은 그 화면의 "메인메뉴로" 항목에 그대로 있다 — 실수로 ESC를 눌러
+		# 보던 이야기가 통째로 날아가지 않게 한 단계를 둔 것이다.
+		# 일시정지 화면이 `get_tree().paused`를 켜면 이 장면은 멈추므로(process_mode 기본값)
+		# 페이드·대사 타자도 그 자리에서 멈췄다가 "계속하기"에서 이어진다
+		get_viewport().set_input_as_handled()
+		add_child(load("res://ui/PauseMenu.tscn").instantiate())
