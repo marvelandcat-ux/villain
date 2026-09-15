@@ -5,6 +5,7 @@
 [ext_resource type="Shader" uid="uid://dh555gjrhuuq2" path="res://ui/outline.gdshader" id="3_outline"]
 [ext_resource type="Texture2D" path="res://sprite/도감/캐릭터도감뒷배경.png" id="4_bg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="5_blur"]
+[ext_resource type="Script" path="res://ui/CharacterDetail.gd" id="6_detail"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("3_outline")
@@ -15,6 +16,35 @@ shader_parameter/line_alpha = 0.0
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("5_blur")
 shader_parameter/blur_amount = 0.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skillbox"]
+bg_color = Color(0.09, 0.07, 0.13, 0.88)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.62, 0.58, 0.72, 0.55)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_slotline"]
+shader = ExtResource("3_outline")
+shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_width = 2.0
+shader_parameter/line_alpha = 0.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tabbar"]
+bg_color = Color(0.05, 0.04, 0.08, 0.78)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_demo"]
+bg_color = Color(0.04, 0.03, 0.06, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.47, 0.6, 0.5)
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_title"]
 
@@ -237,3 +267,143 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+script = ExtResource("6_detail")
+slant_texture = ExtResource("2_slant")
+outline_material = SubResource("ShaderMaterial_slotline")
+
+[node name="NameLabel" type="Label" parent="Detail"]
+layout_mode = 0
+offset_left = 86.0
+offset_top = 18.0
+offset_right = 590.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
+theme_override_font_sizes/font_size = 52
+text = "촉법소년"
+vertical_alignment = 1
+
+[node name="SkillList" type="Control" parent="Detail"]
+layout_mode = 0
+offset_left = -46.0
+offset_top = 176.0
+offset_right = 344.0
+offset_bottom = 500.0
+mouse_filter = 2
+
+[node name="SkillBox" type="Panel" parent="Detail"]
+layout_mode = 0
+offset_left = 366.0
+offset_top = 128.0
+offset_right = 712.0
+offset_bottom = 638.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_skillbox")
+
+[node name="SkillTitle" type="Label" parent="Detail/SkillBox"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 12.0
+offset_right = 328.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "스킬명"
+autowrap_mode = 2
+
+[node name="DemoFrame" type="Panel" parent="Detail/SkillBox"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 96.0
+offset_right = 328.0
+offset_bottom = 336.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_demo")
+
+[node name="DemoVideo" type="VideoStreamPlayer" parent="Detail/SkillBox/DemoFrame"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand = true
+loop = true
+
+[node name="DemoImage" type="TextureRect" parent="Detail/SkillBox/DemoFrame"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DemoHint" type="Label" parent="Detail/SkillBox/DemoFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.5, 0.47, 0.6, 1)
+theme_override_font_sizes/font_size = 18
+text = "시연 영상 준비 중"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SkillDesc" type="Label" parent="Detail/SkillBox"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 352.0
+offset_right = 328.0
+offset_bottom = 496.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 17
+text = "스킬 설명"
+autowrap_mode = 3
+
+[node name="Showcase" type="Control" parent="Detail"]
+layout_mode = 0
+offset_left = 748.0
+offset_top = 104.0
+offset_right = 1232.0
+offset_bottom = 614.0
+mouse_filter = 2
+
+[node name="TabBackdrop" type="Panel" parent="Detail"]
+layout_mode = 0
+offset_left = 806.0
+offset_top = 538.0
+offset_right = 1170.0
+offset_bottom = 596.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tabbar")
+
+[node name="ViewTabs" type="HBoxContainer" parent="Detail"]
+layout_mode = 0
+offset_left = 812.0
+offset_top = 542.0
+offset_right = 1164.0
+offset_bottom = 592.0
+theme_override_constants/separation = 12
+
+[node name="Ingame" type="Button" parent="Detail/ViewTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 18
+text = "인 게임 모습"
+flat = true
+
+[node name="Illust" type="Button" parent="Detail/ViewTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 18
+text = "일러스트"
+flat = true

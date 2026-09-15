@@ -22,3 +22,9 @@ extends Resource
 @export_range(1, 5, 1) var speed_rating: int = 3
 ## 도감 상세 설명 (여러 줄 가능)
 @export_multiline var description: String = ""
+
+## --- 도감 상세창 오른쪽 큰 평행사변형에 들어가는 그림 두 장 (아래 탭으로 갈아 낀다)
+## "인 게임 모습" — 실제 대전 중 서 있는 전신. 대전 화면을 찍어서 배경만 지운 한 장이면 된다
+@export var dex_ingame_texture: Texture2D
+## "일러스트" — 메인메뉴에 쓰는 것 같은 그려 둔 일러스트
+@export var dex_illust_texture: Texture2D

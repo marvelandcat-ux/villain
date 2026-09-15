@@ -18,6 +18,11 @@ extends Node
 @export var skill_name: String = ""
 ## 도감에 뜨는 한 줄 설명. 조작키와 쿨타임은 도감이 알아서 붙이므로 **효과만** 적으면 된다
 @export_multiline var description: String = ""
+## 도감 상세창의 시연 칸에 넣을 **반복 재생 영상**. Godot 4는 Ogg Theora(.ogv)만 재생한다
+## (mp4/webm 불가). 녹화본을 `ffmpeg -i 원본 -c:v libtheora -q:v 7 -an 결과.ogv`로 바꿔서 물리면 된다
+@export var demo_video: VideoStream
+## 영상이 없을 때 대신 보여줄 정지 그림 (스프라이트시트 아니고 한 장짜리)
+@export var demo_image: Texture2D
 ## 켜면 라운드가 시작될 때 이 스킬이 **쿨타임을 물고 시작한다**(바로 못 쓴다).
 ## 궁극기를 라운드 초반부터 던지지 못하게 하는 용도 — 전 캐릭터 궁극기에 켜져 있다.
 ##

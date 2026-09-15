@@ -304,11 +304,36 @@ func _on_tile_pressed(key: String) -> void:
 		return
 	_select(key)
 
-func _open_detail(_key: String) -> void:
-	_detail.visible = true
+## 상세로 들어간다. 목록 쪽(제목·탭·칸·안내문)은 통째로 숨겨서 상세 화면과 안 겹치게 한다.
+## 배경과 뒤로가기 화살표는 그대로 남는다 — 화살표는 상세에서 "목록으로" 역할을 겸한다
+func _open_detail(key: String) -> void:
+	if Engine.is_editor_hint():
+		return
+	# 맵 탭은 아직 상세 화면을 안 만들었다 (캐릭터만 작업 중)
+	if _mode != "character":
+		return
+	var path: String = str(GameState.CHARACTERS.get(key, ""))
+	if path == "":
+		return
+	_set_list_visible(false)
+	if _detail.has_method("open"):
+		_detail.open(key, path)
+	else:
+		_detail.visible = true
 
 func _close_detail() -> void:
-	_detail.visible = false
+	if not Engine.is_editor_hint() and _detail.has_method("close"):
+		_detail.close()
+	else:
+		_detail.visible = false
+	_set_list_visible(true)
+
+## 목록 화면을 이루는 노드들을 한꺼번에 켜고 끈다
+func _set_list_visible(on: bool) -> void:
+	for node_name in ["TitlePanel", "Tabs", "Tiles", "HintLabel"]:
+		var node: Node = get_node_or_null(node_name)
+		if node is CanvasItem:
+			node.visible = on
 
 ## 고른 탭은 앞으로 나오고 강조색으로, 나머지는 제자리·평소 색으로 돌아간다.
 ## 메인 메뉴와 같은 방식이라 같은 속도로 움직인다
