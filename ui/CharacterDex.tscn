@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://brkkw7gf1nxtb" path="res://ui/CharacterDex.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://varwyq7fwy26" path="res://sprite/UI/메뉴사선_임시.png" id="2_slant"]
 [ext_resource type="Shader" uid="uid://dh555gjrhuuq2" path="res://ui/outline.gdshader" id="3_outline"]
-[ext_resource type="Texture2D" path="res://sprite/도감/캐릭터도감뒷배경.png" id="4_bg"]
+[ext_resource type="Texture2D" uid="uid://h8rcws1tktkj" path="res://sprite/도감/캐릭터도감뒷배경.png" id="4_bg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="5_blur"]
-[ext_resource type="Script" path="res://ui/CharacterDetail.gd" id="6_detail"]
+[ext_resource type="Script" uid="uid://q0bqrjipxb7n" path="res://ui/CharacterDetail.gd" id="6_detail"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("3_outline")
@@ -17,6 +17,28 @@ shader_parameter/line_alpha = 0.0
 shader = ExtResource("5_blur")
 shader_parameter/blur_amount = 0.0
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_title"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_notab"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_px31a"]
+shader = ExtResource("3_outline")
+shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_width = 2.0
+shader_parameter/line_alpha = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fy46b"]
+shader = ExtResource("3_outline")
+shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_width = 2.0
+shader_parameter/line_alpha = 0.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_slotline"]
+shader = ExtResource("3_outline")
+shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_width = 2.0
+shader_parameter/line_alpha = 0.0
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skillbox"]
 bg_color = Color(0.09, 0.07, 0.13, 0.88)
 border_width_left = 2
@@ -25,19 +47,6 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.62, 0.58, 0.72, 0.55)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_slotline"]
-shader = ExtResource("3_outline")
-shader_parameter/line_color = Color(1, 1, 1, 1)
-shader_parameter/line_width = 2.0
-shader_parameter/line_alpha = 0.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tabbar"]
-bg_color = Color(0.05, 0.04, 0.08, 0.78)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_demo"]
 bg_color = Color(0.04, 0.03, 0.06, 0.95)
 border_width_left = 2
@@ -45,22 +54,6 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.5, 0.47, 0.6, 0.5)
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_title"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_notab"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_muvbe"]
-shader = ExtResource("3_outline")
-shader_parameter/line_color = Color(1, 1, 1, 1)
-shader_parameter/line_width = 2.0
-shader_parameter/line_alpha = 1.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_px31a"]
-shader = ExtResource("3_outline")
-shader_parameter/line_color = Color(1, 1, 1, 1)
-shader_parameter/line_width = 2.0
-shader_parameter/line_alpha = 0.0
 
 [node name="CharacterDex" type="Control" unique_id=1294792326]
 layout_mode = 3
@@ -72,6 +65,16 @@ grow_vertical = 2
 script = ExtResource("1")
 slant_texture = ExtResource("2_slant")
 outline_material = SubResource("ShaderMaterial_outline")
+portrait_overrides = {
+"고양이 아주머니": Rect2(0.11445783, 0.019021738, 0.8795181, 0.7798913),
+"악플러": Rect2(0.13253012, 0.019021738, 0.8795181, 0.7798913),
+"일진": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
+"지하철 아저씨": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
+"촉법소년": Rect2(0.090361446, 0.019021738, 0.8795181, 0.7798913),
+"층간소음 청년": Rect2(0.12650603, 0.019021738, 0.8795181, 0.7798913),
+"헬스장 빌런": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913)
+}
+portrait_area = Rect2(0.09638554, 0.019021738, 0.8795181, 0.7798913)
 
 [node name="Background" type="ColorRect" parent="." unique_id=2145267995]
 layout_mode = 1
@@ -112,6 +115,7 @@ offset_left = 1.0
 offset_top = 1.0
 offset_right = 67.0
 offset_bottom = 67.0
+pivot_offset = Vector2(33, 33)
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
@@ -128,6 +132,7 @@ mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_title")
 
 [node name="TitleLabel" type="Label" parent="TitlePanel" unique_id=1282322334]
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 56
@@ -149,6 +154,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="CharacterTab" type="Button" parent="Tabs" unique_id=904372439]
+visible = false
 layout_mode = 0
 offset_left = 410.0
 offset_top = 132.0
@@ -160,8 +166,9 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_notab")
 flat = true
 
 [node name="Shape" type="TextureRect" parent="Tabs/CharacterTab" unique_id=1259189283]
+visible = false
 modulate = Color(0.72, 0.18, 0.28, 0.95)
-material = SubResource("ShaderMaterial_muvbe")
+material = SubResource("ShaderMaterial_px31a")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -177,6 +184,7 @@ texture = ExtResource("2_slant")
 expand_mode = 1
 
 [node name="Text" type="Label" parent="Tabs/CharacterTab" unique_id=1771404108]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -194,6 +202,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="MapTab" type="Button" parent="Tabs" unique_id=128251405]
+visible = false
 layout_mode = 0
 offset_left = 688.0
 offset_top = 132.0
@@ -205,8 +214,9 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_notab")
 flat = true
 
 [node name="Shape" type="TextureRect" parent="Tabs/MapTab" unique_id=775070728]
+visible = false
 modulate = Color(0.09, 0.07, 0.13, 0.82)
-material = SubResource("ShaderMaterial_px31a")
+material = SubResource("ShaderMaterial_fy46b")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -224,6 +234,7 @@ flip_h = true
 flip_v = true
 
 [node name="Text" type="Label" parent="Tabs/MapTab" unique_id=1697949411]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -242,10 +253,10 @@ vertical_alignment = 1
 
 [node name="Tiles" type="Control" parent="." unique_id=178602582]
 anchors_preset = 0
-offset_left = 175.0
-offset_top = 228.0
-offset_right = 1105.0
-offset_bottom = 632.0
+offset_left = 46.0
+offset_top = 236.0
+offset_right = 1234.0
+offset_bottom = 604.0
 mouse_filter = 2
 
 [node name="HintLabel" type="Label" parent="." unique_id=1367315040]
@@ -259,7 +270,6 @@ theme_override_font_sizes/font_size = 18
 text = "방향키로 옮기고 Enter로 자세히 보기 · ESC로 나가기"
 
 [node name="Detail" type="Control" parent="." unique_id=176290074]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -271,26 +281,26 @@ script = ExtResource("6_detail")
 slant_texture = ExtResource("2_slant")
 outline_material = SubResource("ShaderMaterial_slotline")
 
-[node name="NameLabel" type="Label" parent="Detail"]
+[node name="NameLabel" type="Label" parent="Detail" unique_id=1074634898]
 layout_mode = 0
-offset_left = 86.0
-offset_top = 18.0
-offset_right = 590.0
-offset_bottom = 94.0
+offset_left = 77.0
+offset_top = 4.0
+offset_right = 581.0
+offset_bottom = 80.0
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 52
 text = "촉법소년"
 vertical_alignment = 1
 
-[node name="SkillList" type="Control" parent="Detail"]
-layout_mode = 0
-offset_left = -46.0
-offset_top = 176.0
+[node name="SkillList" type="Control" parent="Detail" unique_id=490491231]
+anchors_preset = 0
+offset_left = -104.0
+offset_top = 225.0
 offset_right = 344.0
-offset_bottom = 500.0
+offset_bottom = 549.0
 mouse_filter = 2
 
-[node name="SkillBox" type="Panel" parent="Detail"]
+[node name="SkillBox" type="Panel" parent="Detail" unique_id=1306056102]
 layout_mode = 0
 offset_left = 366.0
 offset_top = 128.0
@@ -299,7 +309,7 @@ offset_bottom = 638.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_skillbox")
 
-[node name="SkillTitle" type="Label" parent="Detail/SkillBox"]
+[node name="SkillTitle" type="Label" parent="Detail/SkillBox" unique_id=1668886088]
 layout_mode = 0
 offset_left = 18.0
 offset_top = 12.0
@@ -310,7 +320,7 @@ theme_override_font_sizes/font_size = 24
 text = "스킬명"
 autowrap_mode = 2
 
-[node name="DemoFrame" type="Panel" parent="Detail/SkillBox"]
+[node name="DemoFrame" type="Panel" parent="Detail/SkillBox" unique_id=1812484162]
 layout_mode = 0
 offset_left = 18.0
 offset_top = 96.0
@@ -319,7 +329,7 @@ offset_bottom = 336.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_demo")
 
-[node name="DemoVideo" type="VideoStreamPlayer" parent="Detail/SkillBox/DemoFrame"]
+[node name="DemoVideo" type="VideoStreamPlayer" parent="Detail/SkillBox/DemoFrame" unique_id=721956783]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -330,7 +340,7 @@ grow_vertical = 2
 expand = true
 loop = true
 
-[node name="DemoImage" type="TextureRect" parent="Detail/SkillBox/DemoFrame"]
+[node name="DemoImage" type="TextureRect" parent="Detail/SkillBox/DemoFrame" unique_id=28455951]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -342,21 +352,20 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="DemoHint" type="Label" parent="Detail/SkillBox/DemoFrame"]
+[node name="DemoHint" type="Label" parent="Detail/SkillBox/DemoFrame" unique_id=146540123]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.5, 0.47, 0.6, 1)
 theme_override_font_sizes/font_size = 18
 text = "시연 영상 준비 중"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SkillDesc" type="Label" parent="Detail/SkillBox"]
+[node name="SkillDesc" type="Label" parent="Detail/SkillBox" unique_id=1741791308]
 layout_mode = 0
 offset_left = 18.0
 offset_top = 352.0
@@ -367,43 +376,98 @@ theme_override_font_sizes/font_size = 17
 text = "스킬 설명"
 autowrap_mode = 3
 
-[node name="Showcase" type="Control" parent="Detail"]
-layout_mode = 0
+[node name="Showcase" type="Control" parent="Detail" unique_id=1986341563]
+anchors_preset = 0
 offset_left = 748.0
 offset_top = 104.0
 offset_right = 1232.0
 offset_bottom = 614.0
 mouse_filter = 2
 
-[node name="TabBackdrop" type="Panel" parent="Detail"]
-layout_mode = 0
-offset_left = 806.0
-offset_top = 538.0
-offset_right = 1170.0
-offset_bottom = 596.0
+[node name="PortraitGuide" type="Control" parent="." unique_id=2084806484]
+anchors_preset = 0
+offset_left = 46.0
+offset_top = 236.0
+offset_right = 1234.0
+offset_bottom = 604.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_tabbar")
 
-[node name="ViewTabs" type="HBoxContainer" parent="Detail"]
+[node name="Hint" type="Label" parent="PortraitGuide" unique_id=1100919453]
 layout_mode = 0
-offset_left = 812.0
-offset_top = 542.0
-offset_right = 1164.0
-offset_bottom = 592.0
-theme_override_constants/separation = 12
+offset_top = -26.0
+offset_right = 760.0
+theme_override_colors/font_color = Color(0.4, 1, 0.55, 0.9)
+theme_override_font_sizes/font_size = 13
+text = "↓ 초록 네모를 끌면 그 캐릭터의 자리만 바뀝니다 (게임에선 안 보임)"
 
-[node name="Ingame" type="Button" parent="Detail/ViewTabs"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 18
-text = "인 게임 모습"
-flat = true
+[node name="촉법소년" type="ColorRect" parent="PortraitGuide" unique_id=1139534627]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 6.9999995
+offset_right = 161.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
 
-[node name="Illust" type="Button" parent="Detail/ViewTabs"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 18
-text = "일러스트"
-flat = true
+[node name="악플러" type="ColorRect" parent="PortraitGuide" unique_id=1008790950]
+layout_mode = 0
+offset_left = 168.0
+offset_top = 6.9999995
+offset_right = 314.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="주정뱅이" type="ColorRect" parent="PortraitGuide" unique_id=144583237]
+layout_mode = 0
+offset_left = 308.0
+offset_top = 6.9999995
+offset_right = 454.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="고양이 아주머니" type="ColorRect" parent="PortraitGuide" unique_id=263709689]
+layout_mode = 0
+offset_left = 457.0
+offset_top = 6.9999995
+offset_right = 603.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="지하철 아저씨" type="ColorRect" parent="PortraitGuide" unique_id=1896623575]
+layout_mode = 0
+offset_left = 604.0
+offset_top = 6.9999995
+offset_right = 750.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="층간소음 청년" type="ColorRect" parent="PortraitGuide" unique_id=1288250570]
+layout_mode = 0
+offset_left = 751.0
+offset_top = 6.9999995
+offset_right = 897.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="헬스장 빌런" type="ColorRect" parent="PortraitGuide" unique_id=415310028]
+layout_mode = 0
+offset_left = 896.0
+offset_top = 6.9999995
+offset_right = 1042.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="일진" type="ColorRect" parent="PortraitGuide" unique_id=1880679022]
+layout_mode = 0
+offset_left = 1042.0
+offset_top = 6.9999995
+offset_right = 1188.0
+offset_bottom = 294.0
+mouse_filter = 2
+color = Color(0.3, 1, 0.45, 0.16)

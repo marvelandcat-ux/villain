@@ -52,6 +52,20 @@ const SLOT_LABELS: Array[String] = ["기본 공격", "1번 스킬", "2번 스킬
 ## 큰 평행사변형 안에서 그림이 차지하는 자리 (칸 크기 대비 0~1 비율).
 ## 기본 COVER로 두면 세로로 긴 전신샷이 잘려 발이 날아간다 — 비율 유지 FIT으로 넣는다
 @export var showcase_frame: Rect2 = Rect2(0.08, 0.02, 0.84, 0.79)
+## 아래 탭 띠의 높이(px)
+@export var showcase_tab_height: float = 56.0
+## 평행사변형 아래 변에서 띠까지 띄우는 거리(px). **0이어야 띠의 아래 변이 평행사변형 아래 변과 겹친다**
+@export var showcase_tab_margin: float = 0.0
+## 띠를 평행사변형 좌우 변에서 안쪽으로 들이는 거리(px).
+## **0이어야 띠의 좌우 변이 평행사변형의 좌우 변 그 자체가 된다** — 값을 주면 변이 따로 놀아 두 줄로 보인다
+@export var showcase_tab_inset: float = 0.0
+## 두 칸을 나누는 지점 (0.5 = 반반)
+@export_range(0.1, 0.9, 0.01) var showcase_tab_split: float = 0.5
+@export var showcase_tab_font_size: int = 18
+## 탭·큰 평행사변형의 테두리 색과 두께 (흰 강조 테두리는 쓰지 않는다 —
+## 이 화면은 마우스로만 쓰는 곳이라, 고른 표시는 색으로만 해도 충분하다)
+@export var outline_color: Color = Color(0.62, 0.58, 0.72, 0.85)
+@export var outline_width: float = 2.0
 
 @onready var _name_label: Label = $NameLabel
 @onready var _slot_root: Control = $SkillList
@@ -61,7 +75,6 @@ const SLOT_LABELS: Array[String] = ["기본 공격", "1번 스킬", "2번 스킬
 @onready var _demo_video: VideoStreamPlayer = $SkillBox/DemoFrame/DemoVideo
 @onready var _demo_hint: Label = $SkillBox/DemoFrame/DemoHint
 @onready var _showcase_root: Control = $Showcase
-@onready var _view_tabs: Control = $ViewTabs
 
 ## 칸 버튼들 — 각각 Slide(움직이는 부분) > Shape(사선 그림) + Text(글자) 를 가진다.
 ## 메인 메뉴와 같은 구조라, 클릭 판정(Button)은 제자리에 있고 보이는 부분만 밀려 나온다
@@ -77,6 +90,8 @@ var _held_step: int = 0
 var _repeat_left: float = 0.0
 ## 오른쪽 그림의 두 장 — 인게임 모습 / 일러스트
 var _showcase_tile: FanTile = null
+## 아래 탭 두 칸 — {"ingame": FanTile, "illust": FanTile}
+var _view_tabs_tiles: Dictionary = {}
 var _ingame_texture: Texture2D = null
 var _illust_texture: Texture2D = null
 var _view: String = "ingame"
@@ -89,16 +104,7 @@ func _ready() -> void:
 		_showcase_root.resized.connect(_build_showcase)
 	_build_slots()
 	_build_showcase()
-	if Engine.is_editor_hint():
-		return
-	for button in _view_tabs.get_children():
-		if button is Button:
-			button.focus_mode = Control.FOCUS_NONE
-			button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-			# flat이면 스타일박스가 통째로 무시된다 — 고른 탭을 칠하려면 꺼야 한다
-			button.flat = false
-			if not button.pressed.is_connected(_on_view_tab_pressed):
-				button.pressed.connect(_on_view_tab_pressed.bind(button.name))
+
 
 ## 도감 목록에서 칸을 확정했을 때 호출된다. 캐릭터 씬을 열어 스킬 네 개를 읽어 온다
 func open(character_name: String, scene_path: String) -> void:
@@ -167,7 +173,8 @@ func _process(delta: float) -> void:
 		_update_key_repeat(delta)
 		return
 	var stamp: String = "%s|%s|%s|%s|%s" % [_slot_root.size, _showcase_root.size,
-		slot_gap, slot_slide, slot_font_size] + "|%s|%s" % [showcase_lean, showcase_frame]
+		slot_gap, slot_slide, slot_font_size] + "|%s|%s|%s|%s|%s" % [showcase_lean, showcase_frame,
+		showcase_tab_height, showcase_tab_split, outline_width]
 	if stamp == _editor_stamp:
 		return
 	_editor_stamp = stamp
@@ -362,10 +369,60 @@ func _build_showcase() -> void:
 	# 보여주기만 하는 칸이라 눌러도 아무 일 없다
 	tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tile.portrait_frame = showcase_frame
+	tile.plain_outline = true
+	tile.plain_outline_color = outline_color
+	tile.plain_outline_width = outline_width
 	_showcase_root.add_child(tile)
 	tile.focus_mode = Control.FOCUS_NONE
 	_showcase_tile = tile
+	_build_view_tabs(box)
 	_refresh_showcase()
+
+## 큰 평행사변형 **안쪽 아래**에 붙는 탭 두 칸.
+## 네모 버튼이 아니라, 평행사변형의 좌우 변을 그대로 따라가는 기울어진 띠를 둘로 나눈 모양이다 —
+## 그래서 나누는 선도 같은 각도로 기울어지고, 칸이 평행사변형에서 떠 보이지 않는다
+func _build_view_tabs(box: Vector2) -> void:
+	_view_tabs_tiles.clear()
+	var y2: float = box.y - showcase_tab_margin
+	var y1: float = y2 - showcase_tab_height
+	if y1 <= 0.0:
+		return
+	# 띠 네 모서리 — 위/아래 변에서 평행사변형의 좌우 변이 각각 어디를 지나는지 잰다
+	var top_l := Vector2(_showcase_left_x(y1, box) + showcase_tab_inset, y1)
+	var top_r := Vector2(_showcase_right_x(y1, box) - showcase_tab_inset, y1)
+	var bot_r := Vector2(_showcase_right_x(y2, box) - showcase_tab_inset, y2)
+	var bot_l := Vector2(_showcase_left_x(y2, box) + showcase_tab_inset, y2)
+	var mid_top: Vector2 = top_l.lerp(top_r, showcase_tab_split)
+	var mid_bot: Vector2 = bot_l.lerp(bot_r, showcase_tab_split)
+
+	var shapes := {
+		"ingame": [top_l, mid_top, mid_bot, bot_l],
+		"illust": [mid_top, top_r, bot_r, mid_bot],
+	}
+	var labels := {"ingame": "인 게임 모습", "illust": "일러스트"}
+	for key in shapes.keys():
+		var tab := FanTile.new()
+		# 칸 모양을 꼭짓점으로 직접 준다. 클릭 판정(_has_point)도 이 모양을 그대로 쓴다
+		tab.corners = PackedVector2Array(shapes[key])
+		tab.size = box
+		tab.display_text = labels[key]
+		tab.display_font_size = showcase_tab_font_size
+		tab.plain_outline = true
+		tab.plain_outline_color = outline_color
+		tab.plain_outline_width = outline_width
+		_showcase_root.add_child(tab)
+		tab.focus_mode = Control.FOCUS_NONE
+		tab.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		tab.pressed.connect(_on_view_tab_pressed.bind(key))
+		_view_tabs_tiles[key] = tab
+
+## 평행사변형의 왼쪽/오른쪽 변이 높이 y에서 지나는 x. 위가 오른쪽으로 밀린 모양이라
+## 아래로 갈수록 왼쪽 변은 0에, 오른쪽 변은 (폭 - 기울기)에 가까워진다
+func _showcase_left_x(y: float, box: Vector2) -> float:
+	return showcase_lean * (1.0 - y / maxf(box.y, 1.0))
+
+func _showcase_right_x(y: float, box: Vector2) -> float:
+	return box.x - showcase_lean * (y / maxf(box.y, 1.0))
 
 func _refresh_showcase() -> void:
 	if _showcase_tile == null:
@@ -376,25 +433,19 @@ func _refresh_showcase() -> void:
 	_showcase_tile.display_text = "" if texture != null else "그림 준비 중"
 	_showcase_tile.display_font_size = 20
 
-	for button in _view_tabs.get_children():
-		if not (button is Button):
+	for key in _view_tabs_tiles.keys():
+		var tab: FanTile = _view_tabs_tiles[key]
+		if not is_instance_valid(tab):
 			continue
-		var picked: bool = button.name == ("Illust" if _view == "illust" else "Ingame")
-		button.add_theme_color_override("font_color",
-			slot_text_color_focus if picked else slot_text_color)
-		# 고른 쪽만 강조색으로 칠해서, 지금 뭘 보고 있는지 색으로 바로 보이게 한다
-		var box := StyleBoxFlat.new()
-		box.bg_color = slot_color_focus if picked else Color(0, 0, 0, 0)
-		box.corner_radius_top_left = 5
-		box.corner_radius_top_right = 5
-		box.corner_radius_bottom_left = 5
-		box.corner_radius_bottom_right = 5
-		for state in ["normal", "hover", "pressed", "focus"]:
-			button.add_theme_stylebox_override(state, box)
-		button.modulate = Color(1, 1, 1)
+		var picked: bool = key == _view
+		# 고른 쪽만 강조색, 나머지는 평소 색 — 지금 뭘 보고 있는지 색으로 바로 보인다
+		tab.fill_color = slot_color_focus if picked else slot_color
+		# 그림이 탭 뒤로 비치지 않게 바탕을 깔아 준다
+		tab.backdrop_color = tab.fill_color
+		tab.move_to_front()
 
 func _on_view_tab_pressed(which: String) -> void:
-	_view = "illust" if which == "Illust" else "ingame"
+	_view = "illust" if which == "illust" else "ingame"
 	_refresh_showcase()
 
 # --------------------------------- 조작 ---------------------------------

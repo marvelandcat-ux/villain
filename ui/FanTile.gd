@@ -113,6 +113,22 @@ extends Button
 ## 이 칸이 어떤 캐릭터를 나타내는지(GameState.CHARACTERS의 키). 빈 문자열이면 "?" 랜덤 칸으로 취급한다.
 ## CharacterSelect.gd는 이 값을 보고 클릭 시그널을 연결한다 — 씬에 칸을 추가/복제해도 이 값만
 ## 맞는 캐릭터 이름으로 채워주면 자동으로 동작한다
+## 골라짐/커서 올림에 따라 붙는 **흰 강조 테두리를 아예 쓰지 않는다**.
+## 켜면 아래 plain_* 값으로 도형 윤곽만 일정하게 그린다
+@export var plain_outline: bool = false:
+	set(value):
+		plain_outline = value
+		queue_redraw()
+## plain_outline일 때 쓰는 테두리 색/두께
+@export var plain_outline_color: Color = Color(0.62, 0.58, 0.72, 0.85):
+	set(value):
+		plain_outline_color = value
+		queue_redraw()
+@export var plain_outline_width: float = 2.0:
+	set(value):
+		plain_outline_width = value
+		queue_redraw()
+
 @export var character_key: String = ""
 
 func _ready() -> void:
@@ -157,9 +173,12 @@ func _draw() -> void:
 	else:
 		draw_colored_polygon(pts, fill_color * (0.8 if button_pressed else 1.0))
 
-	var highlighted: bool = selected or has_focus() or is_hovered()
+	var highlighted: bool = not plain_outline and (selected or has_focus() or is_hovered())
 	var outline_color: Color = Color(1, 1, 1) if highlighted else Color(0.55, 0.55, 0.6)
 	var outline_width: float = 4.0 if highlighted else 1.5
+	if plain_outline:
+		outline_color = plain_outline_color
+		outline_width = plain_outline_width
 	var loop := pts.duplicate()
 	loop.append(pts[0])
 	draw_polyline(loop, outline_color, outline_width, true)

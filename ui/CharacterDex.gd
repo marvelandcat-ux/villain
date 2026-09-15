@@ -2,6 +2,10 @@
 class_name CharacterDex
 extends Control
 
+## 에디터에서도 실제 목록·그림을 보려고 스크립트를 직접 읽어 둔다.
+## 오토로드 **인스턴스**(GameState)는 에디터에 없지만, 스크립트 안의 const는 이렇게 꺼낼 수 있다
+const GAME_STATE := preload("res://GameState.gd")
+
 ## 도감 — **한 화면에서 캐릭터/맵을 넘겨 보고, 칸을 고르면 상세로 들어간다.**
 ##
 ## (2026-09-16 개편) 예전엔 위쪽 탭 버튼 + 격자 + 상세가 한 화면에 다 있는 프로토였다.
@@ -64,22 +68,31 @@ extends Control
 ## 기울기(px). 기울기만큼 겹쳐 놓아야 대각선 변이 맞물린다
 @export var tile_lean: float = 46.0
 ## 칸 사이 가로 간격(px). 0이면 대각선 변이 딱 맞물리고, 키우면 사이가 벌어진다
-@export var tile_gap: float = 18.0
+@export var tile_gap: float = 26.0
 ## 줄 사이 세로 간격
 @export var tile_row_gap: float = 34.0
 ## 아랫줄을 오른쪽으로 밀어내는 거리(px) — 러프처럼 계단식으로 어긋나게 둔다
 @export var tile_row_offset: float = 62.0
 ## 한 줄에 몇 칸까지 놓는지. 캐릭터는 8명이라 4칸씩 두 줄, 맵은 10개라 5칸씩 두 줄이면 딱 떨어진다
-@export var tiles_per_row: int = 4
+@export var tiles_per_row: int = 8
 @export var tiles_per_row_map: int = 5
 
 @export_group("칸 안")
 ## 칸 아래 **이름 띠**의 높이 (칸 높이 대비). 이름을 읽어야 하는 화면이라 띠를 깔고 그 위에 쓴다
+## 칸에 얼굴 초상화 대신 **전신샷**을 넣는다 (sprite/도감/전신/<캐릭터이름>.png).
+## 전신샷은 전원을 같은 배율·같은 발 위치로 렌더해 같은 크기로 잘라 둔 것이라,
+## 캐릭터별 보정 없이 그대로 넣어도 키 차이가 그대로 산다
+@export var use_fullbody: bool = true
+## **캐릭터별** 자리 보정 {캐릭터이름: Rect2}. 여기 값이 있으면 그 캐릭터만 이걸 쓰고,
+## 없으면 공통값(portrait_area)을 쓴다. 에디터에서 초록 네모를 끌면 자동으로 채워진다
+@export var portrait_overrides: Dictionary = {}
+@export_dir var fullbody_dir: String = "res://sprite/도감/전신"
+
 @export_range(0.0, 0.6, 0.01) var name_band_ratio: float = 0.2
 @export var name_band_color: Color = Color(0.09, 0.07, 0.13, 0.92)
 @export var name_font_size: int = 17
 ## 커서를 올린 칸이 커지는 배율 (1.06 = 6% 크게)
-@export var tile_hover_scale: float = 1.06
+@export var tile_hover_scale: float = 1.14
 ## 그 크기로 따라붙는 빠르기. 클수록 빠릿하다
 @export var tile_hover_speed: float = 14.0
 ## 뒤로가기(◀) 화살표에 커서를 올렸을 때 커지는 배율
@@ -103,6 +116,8 @@ var _mode: String = "character"
 var _tabs: Dictionary = {}          # {mode: Button}
 var _tab_rest_pos: Dictionary = {}  # {mode: 씬에 놓인 자리} — 튀어나온 거리를 되돌릴 기준
 var _tiles: Array[FanTile] = []
+## 전신샷 캐시 {캐릭터이름: Texture2D 또는 null}
+var _fullbody_cache: Dictionary = {}
 var _selected_key: String = ""
 ## 흰 커서가 지금 어디에 있는지 — "tabs"(캐릭터/맵 탭) 또는 "tiles"(칸).
 ## 도감에 들어오면 탭에서 시작한다. 아래 방향키로 칸으로 내려가고, 윗줄에서 위를 누르면 다시 탭으로
@@ -116,6 +131,8 @@ var _repeat_left: float = 0.0
 @onready var _tab_root: Control = $Tabs
 @onready var _tile_root: Control = $Tiles
 @onready var _detail: Control = $Detail
+## 에디터에서 캐릭터 자리를 눈으로 잡는 초록 네모. 게임에서는 숨긴다
+@onready var _guide: Control = $PortraitGuide
 @onready var _back_button: Button = $BackButton
 
 ## 에디터에서 값이 바뀌었는지 보는 도장 — 바뀐 프레임에만 다시 그린다
@@ -133,18 +150,34 @@ func _ready() -> void:
 		_back_button.pivot_offset = _back_button.size * 0.5
 		_back_button.mouse_entered.connect(_on_back_hover.bind(true))
 		_back_button.mouse_exited.connect(_on_back_hover.bind(false))
+	if _guide:
+		# 편집용이라 게임에서는 통째로 숨긴다
+		_guide.visible = Engine.is_editor_hint()
+	if not Engine.is_editor_hint():
+		# 상세 화면을 편집하려고 에디터에서 배경을 꺼 두는 일이 잦다.
+		# 그게 씬에 저장돼도 게임에서는 배경이 반드시 나오도록 여기서 되살린다
+		for background in ["Background", "BackgroundImage", "Scrim"]:
+			var node: Node = get_node_or_null(background)
+			if node is CanvasItem:
+				node.visible = true
 	_focus_area = "tabs"
 	_set_mode("character")
 
 ## 에디터에서 자리 값이 바뀌면 다시 그린다. 매 프레임 문자열 하나 비교라 부담이 없다
 func _refresh_editor() -> void:
 	# 탭은 씬 노드라 여기서 다시 만들 필요가 없다 — 칸 배치에 관계된 값만 본다
-	var stamp: String = "%s|%s|%s|%s|%s|%d|%s|%s|%s" % [_tile_root.size, tile_size, tile_lean,
-		tile_row_gap, tile_row_offset, _columns(), fit_tiles_to_box, _mode, tile_gap]
+	# 인스펙터에서 만지는 값은 **빠짐없이** 여기 들어가야 한다 —
+	# 빠진 값은 에디터에서 아무리 바꿔도 화면이 그대로라 "안 먹는다"고 보인다
+	var stamp: String = "%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [
+		_tile_root.size, tile_size, tile_lean, tile_row_gap, tile_row_offset,
+		_columns(), fit_tiles_to_box, _mode, tile_gap,
+		"|portrait|" + str(portrait_area) + str(portrait_overrides), name_band_ratio, name_band_color, name_font_size,
+		tile_color, use_fullbody, fullbody_dir]
 	if stamp == _editor_stamp:
 		return
 	_editor_stamp = stamp
 	_build_tiles()
+	_place_guides(_tile_shape_changed(stamp))
 	# 에디터에서는 **자리를 절대 건드리지 않는다** — 색만 입힌다.
 	# 예전엔 여기서 position까지 다시 잡는 바람에, 탭을 끌어다 옮겨도 다음 프레임에 원래 자리로
 	# 돌아가 버렸다(옮겨지지도 줄어들지도 않는 것처럼 보였다). 튀어나오기는 게임에서만 하면 된다
@@ -192,12 +225,8 @@ func _columns() -> int:
 ## 지금 탭에 맞는 목록 — 캐릭터는 대전 로스터, 맵은 선택 가능한 맵 전부
 func _entries() -> Array:
 	if Engine.is_editor_hint():
-		# 에디터에는 오토로드가 없다 — 자리만 보려는 것이라 개수만 맞춘 가짜 목록을 쓴다
-		var count: int = 8 if _mode == "character" else 10
-		var fake: Array = []
-		for i in range(count):
-			fake.append("칸 %d" % (i + 1))
-		return fake
+		# 에디터에서도 진짜 이름·그림이 보여야 칸 안 자리를 눈으로 잡을 수 있다
+		return GAME_STATE.CHARACTERS.keys() if _mode == "character" else GAME_STATE.MAPS.keys()
 	return GameState.CHARACTERS.keys() if _mode == "character" else GameState.MAPS.keys()
 
 ## 오른쪽 사선 칸들. 한 줄에 tiles_per_row개씩, 아랫줄은 오른쪽으로 밀어 계단식으로 놓는다.
@@ -231,9 +260,11 @@ func _build_tiles() -> void:
 		tile.position = Vector2(
 			pitch * float(column) + tile_row_offset * float(row),
 			(box.y + tile_row_gap) * float(row))
-		if _mode == "character" and not Engine.is_editor_hint() and GameState.has_portrait(key):
-			tile.portrait_texture = GameState.portrait_texture(key)
-			tile.portrait_frame = _portrait_frame_for(key)
+		var art: Texture2D = _tile_art(key)
+		if _mode == "character" and art != null:
+			tile.portrait_texture = art
+			# 전신샷은 이미 전원이 같은 틀로 잘려 있어서 캐릭터별 보정을 곱하면 오히려 어긋난다
+			tile.portrait_frame = _area_for(key) if _fullbody(key) != null else _portrait_frame_for(key)
 		else:
 			# 초상화가 없는 캐릭터·맵은 이름만 — 빈 칸으로 두면 뭔지 알 수 없다
 			tile.display_text = key
@@ -251,6 +282,83 @@ func _build_tiles() -> void:
 		_tiles.append(tile)
 	if not keys.is_empty():
 		_select(keys[0])
+
+## 칸의 **모양·개수**가 바뀌었는지. 자리 보정만 바뀐 경우는 아니라고 본다 —
+## 그때까지 네모를 다시 맞추면 끌고 있는 네모가 손에서 튕겨 나간다
+var _shape_stamp: String = ""
+func _tile_shape_changed(stamp: String) -> bool:
+	var shape: String = stamp.split("|portrait|")[0]
+	if shape == _shape_stamp:
+		return false
+	_shape_stamp = shape
+	return true
+
+## 이 캐릭터의 전신샷이 칸 안 어디에 놓일지 — 따로 잡아 둔 게 있으면 그것, 없으면 공통값
+func _area_for(key: String) -> Rect2:
+	return portrait_overrides.get(key, portrait_area)
+
+## 초록 네모들을 **각자 맡은 칸 위에** 놓는다. 칸은 코드가 만드는 노드라 에디터에서 집을 수
+## 없어서, 같은 자리에 겹쳐 놓은 이 네모를 대신 집는 방식이다.
+## 네모 이름 = 캐릭터 이름이라, 씬에서 이름만 맞춰 복제하면 새 캐릭터도 바로 잡을 수 있다
+func _place_guides(force: bool = false) -> void:
+	if _guide == null or not Engine.is_editor_hint() or _tiles.is_empty():
+		return
+	_guide.position = _tile_root.position
+	_guide.size = _tile_root.size
+	var keys: Array = _entries()
+	for i in range(mini(keys.size(), _tiles.size())):
+		var rect: Control = _guide.get_node_or_null(NodePath(str(keys[i])))
+		if rect == null:
+			continue
+		var tile: FanTile = _tiles[i]
+		# 평소엔 사용자가 끌어 둔 자리를 그대로 둔다. 칸 크기 자체가 바뀌었을 때만(force)
+		# 지금 비율대로 다시 맞춘다 — 안 그러면 칸만 커지고 네모는 그대로라 자리가 틀어진다
+		if force:
+			var area: Rect2 = _area_for(str(keys[i]))
+			rect.position = tile.position + area.position * tile.size
+			rect.size = area.size * tile.size
+
+## 네모를 읽어 캐릭터별 보정에 넣는다. 실제로 달라졌을 때만 넣는다 —
+## 매 프레임 넣으면 칸을 끝없이 다시 만들게 된다
+func _read_guides() -> void:
+	if _guide == null or not Engine.is_editor_hint() or _tiles.is_empty():
+		return
+	var keys: Array = _entries()
+	for i in range(mini(keys.size(), _tiles.size())):
+		var key: String = str(keys[i])
+		var rect: Control = _guide.get_node_or_null(NodePath(key))
+		if rect == null:
+			continue
+		var tile: FanTile = _tiles[i]
+		if tile.size.x <= 0.0 or tile.size.y <= 0.0:
+			continue
+		var local: Vector2 = rect.position - tile.position
+		var wanted := Rect2(local / tile.size, rect.size / tile.size)
+		var now: Rect2 = _area_for(key)
+		if wanted.position.distance_to(now.position) < 0.002 				and wanted.size.distance_to(now.size) < 0.002:
+			continue
+		portrait_overrides[key] = wanted
+
+## 칸에 넣을 그림 — 전신샷이 있으면 그것, 없으면 예전 얼굴 초상화
+func _tile_art(key: String) -> Texture2D:
+	var full: Texture2D = _fullbody(key)
+	if full != null:
+		return full
+	# 에디터에는 오토로드(GameState)가 없다 — 부르면 placeholder 오류가 난다
+	if Engine.is_editor_hint():
+		return null
+	return GameState.portrait_texture(key) if GameState.has_portrait(key) else null
+
+## 전신샷을 읽어 온다. 파일이 없는 캐릭터는 null — 그러면 예전 초상화로 넘어간다
+func _fullbody(key: String) -> Texture2D:
+	if not use_fullbody:
+		return null
+	if _fullbody_cache.has(key):
+		return _fullbody_cache[key]
+	var path: String = "%s/%s.png" % [fullbody_dir, key]
+	var texture: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	_fullbody_cache[key] = texture
+	return texture
 
 ## 이 캐릭터의 초상화를 칸 안 어디에 놓을지. `portrait_area`(칸 안에서 쓸 자리)에
 ## `PortraitFrames.tscn`에서 잡아 둔 캐릭터별 보정을 곱한다 — 안 잡아 둔 캐릭터는 그 자리를 그대로 쓴다
@@ -339,7 +447,10 @@ func _set_list_visible(on: bool) -> void:
 ## 메인 메뉴와 같은 방식이라 같은 속도로 움직인다
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
+		# 초록 네모를 먼저 읽어야, 끌어 놓은 자리가 같은 프레임에 칸에 반영된다
+		_read_guides()
 		_refresh_editor()
+		_place_guides()
 		return
 	_update_tile_hover(delta)
 	_update_key_repeat(delta)
