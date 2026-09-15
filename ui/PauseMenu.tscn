@@ -218,9 +218,9 @@ mouse_filter = 2
 
 [node name="CurrentBox" type="Panel" parent="StoryPanel" unique_id=367187569]
 layout_mode = 0
-offset_left = 770.0
+offset_left = 850.0
 offset_top = 42.0
-offset_right = 1310.0
+offset_right = 1390.0
 offset_bottom = 134.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_box")

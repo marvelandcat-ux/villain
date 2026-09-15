@@ -65,7 +65,6 @@ extends Control
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
-@onready var _dex_button: Button = $DexButton
 ## 화면 전체를 덮는 검은 판 — 켜질 때 이게 걷히면서 화면이 열린다
 @onready var _screen_fade: ColorRect = $Fade
 ## 배경 위 어두운 판 — 일러스트마다 진하기가 다를 수 있어서 매 프레임 맞춰준다
@@ -98,7 +97,6 @@ func _ready() -> void:
 		_place_illustration()
 	_collect_illustrations()
 	_build_menu()
-	_dex_button.pressed.connect(_on_dex_pressed)
 	_screen_fade.color.a = 1.0
 	_confirm.confirmed.connect(_on_confirmed)
 	_confirm.cancelled.connect(func(): _pending = Callable())
@@ -114,6 +112,7 @@ func _build_menu() -> void:
 		"StoryItem": _on_story_pressed,
 		"VersusItem": _on_versus_pressed,
 		"TrainingItem": _on_training_pressed,
+		"DexItem": _on_dex_pressed,
 		"HowToItem": _on_how_to_pressed,
 		"SettingsItem": _on_settings_pressed,
 	}

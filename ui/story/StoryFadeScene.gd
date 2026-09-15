@@ -16,9 +16,17 @@ extends Control
 ##  - `reveal`: 들어오는 전환이 끝난 뒤 **순서대로** 나타날 노드들(인물 -> 대화창). 아래에서 조금 올라오며 나타난다.
 ##    배경·인물·대화창이 한꺼번에 뜨는 것보다 이 순서가 비주얼 노벨에서 자연스럽다
 ## **ESC를 누르면 일시정지 화면(`ui/PauseMenu.tscn`)이 뜬다**(2026-09-15 사용자 요청 — 예전엔 바로 메인 메뉴로 나갔다).
+## 같은 이유로 **화면 왼쪽 위에 일시정지 버튼(`ui/PauseButton.tscn`)을 자동으로 붙인다** —
+## ESC만 있으면 처음 하는 사람은 멈출 방법을 모른다는 피드백이 있었다(2026-09-15).
+## 장면마다 놓을 필요 없이 여기서 한 번에 붙이므로, 새 스토리 장면을 만들어도 저절로 생긴다
 ## 메인 메뉴로 나가는 길은 그 화면의 "메인메뉴로" 항목에 있다.
 
 enum Transition { BLACK, CROSSFADE }
+
+## 왼쪽 위 일시정지 버튼 (모든 스토리 장면에 자동으로 붙는다)
+const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
+## 오른쪽 아래 "계속 누르세요" 화살표 (대화창이 입력을 기다리는 동안만 깜빡인다)
+const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 
 ## 검은 화면이 걷히는 시간(초) — 앞 장면이 크로스페이드로 넘겨주지 않았을 때
 @export var fade_in_time: float = 1.2
@@ -58,6 +66,11 @@ enum Transition { BLACK, CROSSFADE }
 @export var reveal_time: float = 0.3
 ## 나타날 때 아래에서 올라오는 거리(px)
 @export var reveal_rise: float = 18.0
+## 화면 왼쪽 위에 일시정지 버튼을 띄울지. 대사 없이 빠르게 지나가는 연출 장면에서 거슬리면 끄면 된다
+@export var show_pause_button: bool = true
+## 대화창이 입력을 기다릴 때 오른쪽 아래에 깜빡이는 화살표를 띄울지.
+## **`dialogue`를 지정한 장면에서만 뜬다** — 대사 없이 지나가는 연출 장면엔 나올 일이 없다
+@export var show_continue_indicator: bool = true
 ## (임시) 테스트용 — **S 키를 누르면 다음 장면으로 바로 건너뛴다.** 스토리를 다 만들면 이 기능을 지울 것
 @export var debug_skip_key: bool = true
 ## 에디터에선 보이게 두고(배치 조정용) **게임이 시작될 때 숨길** 노드들 — 대화창 명령(@show, @stamp)으로 나중에 나타난다.
@@ -83,6 +96,9 @@ var _reveal_pos: Array[Vector2] = []
 func _ready() -> void:
 	# Fade는 씬 파일에선 투명으로 둔다(에디터에서 장면이 보이게) — 실제 시작 알파는 아래에서 정한다
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if show_pause_button and ResourceLoader.exists(PAUSE_BUTTON_SCENE):
+		add_child(load(PAUSE_BUTTON_SCENE).instantiate())
+	_add_continue_indicator()
 	for path in hide_on_start:
 		var hidden_item: CanvasItem = get_node_or_null(path) as CanvasItem
 		if hidden_item == null:
@@ -216,3 +232,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		# 페이드·대사 타자도 그 자리에서 멈췄다가 "계속하기"에서 이어진다
 		get_viewport().set_input_as_handled()
 		add_child(load("res://ui/PauseMenu.tscn").instantiate())
+
+## 오른쪽 아래 "계속 누르세요" 화살표를 붙이고 대화창과 연결한다.
+##
+## **`Fade`보다 앞에 끼워 넣는다** — 그냥 add_child 하면 트리 맨 뒤라 검은 페이드 위에 그려져서,
+## 화면이 어두워지는 동안에도 화살표만 둥둥 떠 있다.
+##
+## 대화창(`dialogue`)이 없는 장면에는 안 붙인다 — 지켜볼 대상이 없어서 영원히 안 뜬다
+func _add_continue_indicator() -> void:
+	if not show_continue_indicator or not ResourceLoader.exists(CONTINUE_INDICATOR_SCENE):
+		return
+	var box: Node = get_node_or_null(dialogue)
+	if box == null or not box.has_method("is_waiting_input"):
+		return
+	var indicator: Node = load(CONTINUE_INDICATOR_SCENE).instantiate()
+	add_child(indicator)
+	move_child(indicator, _fade.get_index())
+	indicator.set_watch_target(box)

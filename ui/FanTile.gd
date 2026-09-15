@@ -45,6 +45,14 @@ extends Button
 		flip_h = value
 		queue_redraw()
 
+## **지금 고른 칸인지.** 켜면 커서가 없어도 흰 테두리로 강조된다.
+## 도감처럼 "목록에서 하나를 골라 둔 상태"가 계속 보여야 하는 화면에서 쓴다 —
+## hover/focus만으로는 마우스를 치우는 순간 뭘 골랐는지 알 수 없다(2026-09-16)
+@export var selected: bool = false:
+	set(value):
+		selected = value
+		queue_redraw()
+
 @export var fill_color: Color = Color(0.35, 0.35, 0.4):
 	set(value):
 		fill_color = value
@@ -52,6 +60,13 @@ extends Button
 
 ## 있으면 칸 안을 이 그림으로 채운다. 칸의 기울어진 변에 맞춰 그림을 늘리지 않고, 칸을 감싸는
 ## 평범한 사각형 기준으로 가운데를 크롭해 넣는다(그래서 비스듬한 모양이 그림 위의 "창문"처럼만 작동한다)
+## 초상화 **뒤에** 깔리는 바탕색. 초상화 PNG는 머리 주변이 투명해서, 이게 없으면 뒤가 뻥 뚫려 보인다.
+## 기본값은 투명이라 이 값을 안 주면 예전과 똑같이 그려진다(캐릭터 선택창은 안 건드려도 된다)
+@export var backdrop_color: Color = Color(0, 0, 0, 0):
+	set(value):
+		backdrop_color = value
+		queue_redraw()
+
 @export var portrait_texture: Texture2D = null:
 	set(value):
 		portrait_texture = value
@@ -71,14 +86,55 @@ extends Button
 	set(value):
 		name_text = value
 		queue_redraw()
+## 이름을 올릴 **아래쪽 띠**의 높이 (칸 높이 대비 비율). 0이면 띠 없이 글자만 얹는다.
+## 도감처럼 이름을 꼭 읽어야 하는 화면에서 쓴다 — 그림 위에 글자만 얹으면 배경에 묻힌다
+@export_range(0.0, 0.6, 0.01) var name_band_ratio: float = 0.0:
+	set(value):
+		name_band_ratio = value
+		queue_redraw()
+@export var name_band_color: Color = Color(0.09, 0.07, 0.13, 0.9):
+	set(value):
+		name_band_color = value
+		queue_redraw()
+@export var name_font_size: int = 12:
+	set(value):
+		name_font_size = value
+		queue_redraw()
+
+## 초상화를 칸 안 **어디에 얼마나 크게** 놓을지 (칸 크기 대비 0~1 비율).
+## 크기가 0이면 예전 방식대로 칸을 꽉 채우게 가운데를 잘라 쓴다(캐릭터 선택창이 그 방식이다).
+## 값을 주면 **그림 전체를 비율 유지한 채** 그 네모 안에 넣는다 — 캐릭터마다 원본 크기가 제각각이라
+## 그냥 채우면 얼굴 크기가 다 다르게 보여서, `PortraitFrames.tscn`에 잡아 둔 값을 여기로 넘겨 맞춘다
+@export var portrait_frame: Rect2 = Rect2():
+	set(value):
+		portrait_frame = value
+		queue_redraw()
 
 ## 이 칸이 어떤 캐릭터를 나타내는지(GameState.CHARACTERS의 키). 빈 문자열이면 "?" 랜덤 칸으로 취급한다.
 ## CharacterSelect.gd는 이 값을 보고 클릭 시그널을 연결한다 — 씬에 칸을 추가/복제해도 이 값만
 ## 맞는 캐릭터 이름으로 채워주면 자동으로 동작한다
+## 골라짐/커서 올림에 따라 붙는 **흰 강조 테두리를 아예 쓰지 않는다**.
+## 켜면 아래 plain_* 값으로 도형 윤곽만 일정하게 그린다
+@export var plain_outline: bool = false:
+	set(value):
+		plain_outline = value
+		queue_redraw()
+## plain_outline일 때 쓰는 테두리 색/두께
+@export var plain_outline_color: Color = Color(0.62, 0.58, 0.72, 0.85):
+	set(value):
+		plain_outline_color = value
+		queue_redraw()
+@export var plain_outline_width: float = 2.0:
+	set(value):
+		plain_outline_width = value
+		queue_redraw()
+
 @export var character_key: String = ""
 
 func _ready() -> void:
 	flat = true
+	# UV가 0~1을 벗어날 때 그림이 반복되지 않게 — 초상화를 칸 안 네모에 넣을 때 필요하다
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 	focus_mode = Control.FOCUS_ALL
 	# Button 기본 포커스 테두리는 칸 모양(폴리곤)이 아니라 사각형 bounding box를 따라 그려져서,
 	# 평행사변형 옆으로 흰 테두리가 튀어나와 보인다. 그 자리는 _draw()의 draw_polyline이 대신 맡으므로 꺼둔다
@@ -110,14 +166,19 @@ func _effective_corners() -> PackedVector2Array:
 
 func _draw() -> void:
 	var pts := _effective_corners()
+	if backdrop_color.a > 0.0:
+		draw_colored_polygon(pts, backdrop_color)
 	if portrait_texture:
 		draw_polygon(pts, [Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE], _portrait_uvs(pts), portrait_texture)
 	else:
 		draw_colored_polygon(pts, fill_color * (0.8 if button_pressed else 1.0))
 
-	var highlighted: bool = has_focus() or is_hovered()
+	var highlighted: bool = not plain_outline and (selected or has_focus() or is_hovered())
 	var outline_color: Color = Color(1, 1, 1) if highlighted else Color(0.55, 0.55, 0.6)
 	var outline_width: float = 4.0 if highlighted else 1.5
+	if plain_outline:
+		outline_color = plain_outline_color
+		outline_width = plain_outline_width
 	var loop := pts.duplicate()
 	loop.append(pts[0])
 	draw_polyline(loop, outline_color, outline_width, true)
@@ -129,13 +190,21 @@ func _draw() -> void:
 		draw_string_outline(font, pos, display_text, HORIZONTAL_ALIGNMENT_LEFT, -1, display_font_size, 4, Color(0, 0, 0))
 		draw_string(font, pos, display_text, HORIZONTAL_ALIGNMENT_LEFT, -1, display_font_size, Color(1, 1, 1))
 	if name_text != "":
+		var band_top: float = 1.0 - name_band_ratio
+		if name_band_ratio > 0.0:
+			# 칸 모양을 그대로 따라가는 띠 — 위 두 점을 아래쪽으로 내려서 사각형을 만든다
+			draw_colored_polygon(PackedVector2Array([
+				pts[0].lerp(pts[3], band_top), pts[1].lerp(pts[2], band_top), pts[2], pts[3],
+			]), name_band_color)
 		var bottom_center: Vector2 = (pts[2] + pts[3]) / 2.0
 		var top_center: Vector2 = (pts[0] + pts[1]) / 2.0
-		var name_pos: Vector2 = bottom_center.lerp(top_center, 0.18)
-		var nsize := font.get_string_size(name_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 12)
+		# 띠가 있으면 그 한가운데에, 없으면 예전처럼 아래쪽에 살짝 걸친다
+		var place: float = 1.0 - name_band_ratio * 0.5 if name_band_ratio > 0.0 else 0.82
+		var name_pos: Vector2 = top_center.lerp(bottom_center, place) + Vector2(0.0, name_font_size * 0.36)
+		var nsize := font.get_string_size(name_text, HORIZONTAL_ALIGNMENT_CENTER, -1, name_font_size)
 		var pos: Vector2 = name_pos - Vector2(nsize.x / 2.0, 0)
-		draw_string_outline(font, pos, name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 4, Color(0, 0, 0))
-		draw_string(font, pos, name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1))
+		draw_string_outline(font, pos, name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, name_font_size, 4, Color(0, 0, 0))
+		draw_string(font, pos, name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, name_font_size, Color(1, 1, 1))
 
 ## 칸 모양(사각형이든 corners로 준 비스듬한 모양이든) 안인지로 직접 클릭 판정한다.
 ## 기본 Button은 무조건 사각형(get_rect) 판정이라, corners로 비스듬하게 만든 칸은 이게 없으면
@@ -164,6 +233,20 @@ func _portrait_uvs(pts: PackedVector2Array) -> PackedVector2Array:
 		min_pos = min_pos.min(p)
 		max_pos = max_pos.max(p)
 	var box_size: Vector2 = (max_pos - min_pos).max(Vector2(1.0, 1.0))
+
+	if portrait_frame.size.x > 0.0 and portrait_frame.size.y > 0.0:
+		# **그림 전체를 비율 유지한 채** 칸 안의 네모(portrait_frame)에 넣는다.
+		# 네모 밖은 UV가 0~1을 벗어나는데, texture_repeat를 꺼 두면 가장자리 픽셀이 늘어난다 —
+		# 초상화는 가장자리가 투명이라 결과적으로 아무것도 안 그려진다
+		var slot_pos: Vector2 = min_pos + portrait_frame.position * box_size
+		var slot_size: Vector2 = portrait_frame.size * box_size
+		var fit: float = minf(slot_size.x / tex_size.x, slot_size.y / tex_size.y)
+		var drawn: Vector2 = tex_size * fit
+		var drawn_pos: Vector2 = slot_pos + (slot_size - drawn) * 0.5
+		var framed := PackedVector2Array()
+		for p in pts:
+			framed.append((p - drawn_pos) / drawn)
+		return framed
 
 	# 이 사각형 비율에 맞춰 텍스처 가운데를 잘라낸다(COVERED 방식 — 빈 배경이 안 비친다)
 	var box_aspect: float = box_size.x / box_size.y
