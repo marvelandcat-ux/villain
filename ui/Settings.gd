@@ -5,7 +5,7 @@ extends Control
 ## 살짝 비쳐 보인다. 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
 ## 그래픽·오디오는 GameState가 즉시 적용 + 저장하고, 조작키는 여기서 바로 재배정 가능(GameState.rebind_action)
 
-## 닫기 버튼을 누르거나 ESC를 눌러 팝업이 닫힐 때(슬라이드 연출이 끝난 뒤 나온다).
+## 닫기 버튼을 누르거나 ESC를 눌러 팝업이 닫힐 때(슬라이드 연출이 끝난 뒤 나온다) — 오버레이로 열렸을 때만 의미가 있다.
 ## 부르는 쪽(MainMenu)이 포커스를 되돌리고 가려뒀던 버튼을 다시 보여주는 데 쓴다
 signal closed
 
@@ -38,9 +38,6 @@ const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skil
 @onready var volume_value_label: Label = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeValueLabel
 @onready var p1_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P1Column
 @onready var p2_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P2Column
-
-## 닫혔을 때 (오버레이로 열렸을 때만 의미가 있다)
-signal closed
 
 ## **다른 화면 위에 얹어서 연 것인지.** 켜면 "뒤로"·ESC가 메인 메뉴로 가지 않고 자기만 닫는다.
 ## 일시정지 화면의 "설정"이 이 방식으로 연다 — 대전 중에 장면을 바꿀 수 없기 때문이다

@@ -274,10 +274,10 @@ func _set_toggle(toggle: Button, enabled: bool) -> void:
 	style.border_width_right = 2
 	style.border_width_bottom = 2
 	if enabled:
-		style.bg_color = Color(0.25, 0.62, 0.36, 0.55)
+		style.bg_color = Color(0.25, 0.62, 0.36, 0.45)
 		style.border_color = Color(0.55, 0.95, 0.65, 1)
 	else:
-		style.bg_color = Color(0.42, 0.22, 0.24, 0.55)
+		style.bg_color = Color(0.42, 0.22, 0.24, 0.45)
 		style.border_color = Color(0.75, 0.4, 0.42, 1)
 	toggle.add_theme_stylebox_override("normal", style)
 	toggle.add_theme_stylebox_override("hover", style)

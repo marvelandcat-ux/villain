@@ -10,7 +10,7 @@ shader = ExtResource("3_blur")
 shader_parameter/blur_amount = 6.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
-bg_color = Color(0.11, 0.09, 0.16, 0.12)
+bg_color = Color(0.11, 0.09, 0.16, 0.88)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -22,7 +22,7 @@ corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
-bg_color = Color(0.2, 0.17, 0.28, 0.14)
+bg_color = Color(0.2, 0.17, 0.28, 0.86)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -34,7 +34,7 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit"]
-bg_color = Color(0.13, 0.11, 0.19, 0.16)
+bg_color = Color(0.13, 0.11, 0.19, 0.84)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -48,7 +48,7 @@ content_margin_left = 4.0
 content_margin_right = 4.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit_focus"]
-bg_color = Color(0.13, 0.11, 0.19, 0.3)
+bg_color = Color(0.13, 0.11, 0.19, 0.7)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -62,7 +62,7 @@ content_margin_left = 4.0
 content_margin_right = 4.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset"]
-bg_color = Color(0.18, 0.15, 0.26, 0.14)
+bg_color = Color(0.18, 0.15, 0.26, 0.86)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -74,7 +74,7 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset_hover"]
-bg_color = Color(0.34, 0.31, 0.44, 0.45)
+bg_color = Color(0.34, 0.31, 0.44, 0.55)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -127,7 +127,7 @@ layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-color = Color(0.04, 0.03, 0.07, 0.15)
+color = Color(0.04, 0.03, 0.07, 0.85)
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 0
