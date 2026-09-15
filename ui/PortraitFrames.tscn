@@ -52,10 +52,10 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="촉법소년" unique_id=600064873]
 layout_mode = 0
-offset_left = -14.0
-offset_top = -2.0
-offset_right = 215.0
-offset_bottom = 180.0
+offset_left = -15.0
+offset_top = -8.0
+offset_right = 214.0
+offset_bottom = 174.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a1")
 expand_mode = 1
@@ -71,9 +71,9 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="악플러" unique_id=2017156307]
 layout_mode = 0
-offset_left = -51.0
-offset_top = -15.0
-offset_right = 247.0
+offset_left = -43.0
+offset_top = -12.0
+offset_right = 250.86111
 offset_bottom = 201.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a3")
@@ -90,9 +90,10 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="주정뱅이" unique_id=1815993527]
 layout_mode = 0
-offset_top = -11.0
-offset_right = 209.0
-offset_bottom = 198.0
+offset_left = 20.0
+offset_top = 13.0
+offset_right = 181.0
+offset_bottom = 178.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a2")
 expand_mode = 1
@@ -108,10 +109,9 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="고양이 아주머니" unique_id=1188157913]
 layout_mode = 0
-offset_left = -25.0
-offset_top = -8.0
-offset_right = 222.30159
-offset_bottom = 185.0
+offset_left = -17.0
+offset_right = 211.08125
+offset_bottom = 178.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a6")
 expand_mode = 1
@@ -127,8 +127,10 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="지하철 아저씨" unique_id=296479042]
 layout_mode = 0
-offset_right = 200.0
-offset_bottom = 180.0
+offset_left = 15.0
+offset_top = 13.0
+offset_right = 188.33334
+offset_bottom = 169.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a5")
 expand_mode = 1
@@ -144,9 +146,10 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="층간소음 청년" unique_id=1802025111]
 layout_mode = 0
-offset_top = 4.0
-offset_right = 200.0
-offset_bottom = 184.0
+offset_left = 12.0
+offset_top = 14.0
+offset_right = 185.33334
+offset_bottom = 170.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a4")
 expand_mode = 1
@@ -162,10 +165,10 @@ offset_bottom = 190.0
 
 [node name="Portrait" type="TextureRect" parent="일진" unique_id=1886382632]
 layout_mode = 0
-offset_left = 3.0
-offset_top = 9.0
-offset_right = 197.0
-offset_bottom = 177.0
+offset_left = 18.0
+offset_top = 19.0
+offset_right = 187.75
+offset_bottom = 166.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a7")
 expand_mode = 1

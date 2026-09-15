@@ -351,6 +351,14 @@ func has_portrait(character_name: String) -> bool:
 func portrait_texture(character_name: String) -> Texture2D:
 	return _portrait_texture.get(character_name, null)
 
+## PortraitFrames.tscn에서 잡아 둔 **얼굴 네모의 중심·크기 비율**(0~1). 도감 칸처럼 TextureRect가
+## 아니라 직접 그리는 곳에서 같은 프레이밍을 쓰려고 열어 둔다 — 안 잡아 둔 캐릭터는 한가운데·꽉 참
+func portrait_frame_center(character_name: String) -> Vector2:
+	return _portrait_rect_center.get(character_name, Vector2(0.5, 0.5))
+
+func portrait_frame_size(character_name: String) -> Vector2:
+	return _portrait_rect_size.get(character_name, Vector2.ONE)
+
 ## 초상화 TextureRect를 box_size 상자 안에서 캐릭터별로 프레이밍한다.
 ## image는 상자를 꽉 채우는 앵커(anchor_right=1, anchor_bottom=1)에 놓여 있다고 가정한다.
 ## 편집 씬(PortraitFrames.tscn)에서 얼굴 네모가 프레임 안에서 차지한 위치·크기 비율을
