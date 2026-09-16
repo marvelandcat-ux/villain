@@ -46,7 +46,7 @@ range = 40.0
 windup = 0.14
 cooldown = 0.3
 miss_cooldown = 1.0
-skill_name = "떼쓰기 3연타"
+skill_name = "사탕 맛 좀 봐라!"
 demo_video = ExtResource("19_vid_combo")
 description = "발길질 세 번을 이어서 넣는다. 맞아야 다음 타가 나가고, 한 번이라도 헛치면 처음부터 다시다. 3타를 다 맞추면 뜬 상대를 쫓아가 계속 굴릴 수 있다."
 
@@ -62,7 +62,7 @@ shape = SubResource("RectangleShape2D_hitbox")
 script = ExtResource("2")
 cooldown = 6.0
 icon = ExtResource("11")
-skill_name = "브레이크 없는 픽시"
+skill_name = "브레이크가 \"없는\" 자전거"
 demo_video = ExtResource("21_vid_dash")
 description = "자전거로 앞을 향해 냅다 돌진한다. 부딪힌 상대는 튕겨 나가지만, 벽까지 밀고 가면 브레이크가 없어서 본인이 처박힌다."
 
@@ -71,7 +71,7 @@ script = ExtResource("4")
 cooldown = 5.0
 projectile_scene = ExtResource("5")
 icon = ExtResource("12")
-skill_name = "비비탄 3연사"
+skill_name = "비비탄 총 난사"
 demo_video = ExtResource("20_vid_bb")
 description = "비비탄을 세 발 연달아 쏜다. 총알은 날아가면서 점점 빨라져서, 멀수록 피하기 어렵다. 거리를 벌리고 상대를 긁어내는 용도."
 

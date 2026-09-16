@@ -71,6 +71,9 @@ const SLOT_LABELS: Array[String] = ["기본 공격", "1번 스킬", "2번 스킬
 @onready var _slot_root: Control = $SkillList
 @onready var _skill_title: Label = $SkillBox/SkillTitle
 @onready var _skill_desc: Label = $SkillBox/SkillDesc
+@onready var _skill_stats: Label = $SkillBox/SkillStats
+@onready var _icon_slot: Panel = $SkillBox/IconSlot
+@onready var _skill_icon: TextureRect = $SkillBox/IconSlot/Icon
 @onready var _demo_image: TextureRect = $SkillBox/DemoFrame/DemoImage
 @onready var _demo_video: VideoStreamPlayer = $SkillBox/DemoFrame/DemoVideo
 @onready var _demo_hint: Label = $SkillBox/DemoFrame/DemoHint
@@ -150,7 +153,7 @@ func _read_character(scene_path: String) -> void:
 		var node: Node = fighter.get_node_or_null(SLOT_ORDER[i])
 		var entry: Dictionary = {
 			"name": SLOT_LABELS[i], "description": "", "cooldown": 0.0,
-			"video": null, "image": null,
+			"video": null, "image": null, "icon": null, "stats": "",
 		}
 		if node != null:
 			var given: String = str(node.get("skill_name"))
@@ -160,6 +163,8 @@ func _read_character(scene_path: String) -> void:
 			entry["cooldown"] = float(node.get("cooldown"))
 			entry["video"] = node.get("demo_video")
 			entry["image"] = node.get("demo_image")
+			entry["icon"] = node.get("icon")
+			entry["stats"] = _skill_stat_text(node)
 		_skills.append(entry)
 
 	fighter.free()
@@ -311,6 +316,8 @@ func _clear_skill() -> void:
 	_demo_video.visible = false
 	_demo_image.visible = false
 	_demo_hint.visible = false
+	_skill_stats.text = ""
+	_icon_slot.visible = false
 
 func _show_skill(index: int) -> void:
 	_slot_index = clampi(index, 0, SLOT_ORDER.size() - 1)
@@ -319,16 +326,73 @@ func _show_skill(index: int) -> void:
 		return
 	var entry: Dictionary = _skills[_slot_index]
 
-	var title: String = str(entry["name"])
-	var cooldown: float = float(entry["cooldown"])
-	# 기본 공격은 쿨타임이 사실상 없는 셈이라 굳이 안 적는다
-	if cooldown >= 1.0:
-		title += "   쿨타임 %.0f초" % cooldown
-	_skill_title.text = title
+	_skill_title.text = str(entry["name"])
+
+	# 로고가 있는 스킬만 오른쪽 위 칸을 켠다 (기본공격처럼 로고를 안 그린 건 빈 네모가 남지 않게 숨긴다)
+	var icon: Texture2D = entry["icon"]
+	_icon_slot.visible = icon != null
+	_skill_icon.texture = icon
+
+	var stats: String = str(entry["stats"])
+	_skill_stats.text = stats
+	_skill_stats.visible = stats != ""
 
 	var desc: String = str(entry["description"])
 	_skill_desc.text = desc if desc != "" else "설명 준비 중"
 	_play_demo(entry)
+
+## 스킬 노드에서 타수·쿨타임 같은 **숫자를 직접 읽어** 한 줄로 만든다.
+## **손으로 적어 두지 않는 게 핵심이다** — 밸런스를 고치면 도감이 곧바로 따라오고,
+## 설명 글과 숫자가 어긋나는 일이 없다.
+## 스킬마다 있는 프로퍼티가 다르므로 `get()`으로 물어보고 없으면(null) 그 줄은 건너뛴다
+func _skill_stat_text(node: Node) -> String:
+	var parts := PackedStringArray()
+
+	var cooldown: float = _stat_num(node, "cooldown")
+	if cooldown > 0.0:
+		parts.append("쿨타임 %s초" % _fmt(cooldown))
+	if bool(node.get("start_on_cooldown")):
+		parts.append("라운드 시작 직후엔 못 씀")
+
+	# 3타 콤보(ComboMeleeAttack)면 타수와 타별 피해를, 한 방짜리면 피해 하나만 적는다
+	var combo = node.get("combo_damage")
+	if combo is Array and not combo.is_empty():
+		var each := PackedStringArray()
+		for one in combo:
+			each.append(str(one))
+		parts.append("%d타 연속" % combo.size())
+		parts.append("타별 피해 %s" % " / ".join(each))
+		var miss: float = _stat_num(node, "miss_cooldown")
+		if miss > 0.0:
+			parts.append("헛치면 %s초 쉼" % _fmt(miss))
+	else:
+		var damage: float = _stat_num(node, "damage")
+		if damage > 0.0:
+			parts.append("피해 %d" % int(damage))
+
+	# 스킬 종류마다 있는 값들 — 있는 것만 붙는다
+	for pair in [["shot_count", "%d발 발사"], ["enemy_hit_damage", "부딪히면 피해 %d"],
+			["self_damage_on_wall", "벽에 박으면 내가 피해 %d"], ["heal_amount", "체력 %d 회복"],
+			["max_stacks", "최대 %d스택"]]:
+		var value: float = _stat_num(node, pair[0])
+		if value > 0.0:
+			parts.append(pair[1] % int(value))
+	for pair in [["dash_duration", "돌진 %s초"], ["invincible_duration", "무적 %s초"],
+			["duration", "지속 %s초"], ["debuff_duration", "디버프 %s초"]]:
+		var value: float = _stat_num(node, pair[0])
+		if value > 0.0:
+			parts.append(pair[1] % _fmt(value))
+
+	return " · ".join(parts)
+
+## 그 프로퍼티가 없으면 0을 돌려준다 — float(null)은 에러라 이렇게 한 번 걸러야 한다
+func _stat_num(node: Node, property: String) -> float:
+	var value = node.get(property)
+	return float(value) if value != null else 0.0
+
+## 3.0 -> "3" / 0.3 -> "0.3" — 정수면 소수점을 안 붙인다
+func _fmt(value: float) -> String:
+	return "%d" % int(value) if is_equal_approx(value, roundf(value)) else "%.1f" % value
 
 ## 영상이 있으면 영상, 없으면 정지 그림, 둘 다 없으면 안내 문구.
 ## 영상은 도감을 열어 둔 내내 반복 재생한다

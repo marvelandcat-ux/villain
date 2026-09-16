@@ -156,7 +156,9 @@ func _ready() -> void:
 	if not Engine.is_editor_hint():
 		# 상세 화면을 편집하려고 에디터에서 배경을 꺼 두는 일이 잦다.
 		# 그게 씬에 저장돼도 게임에서는 배경이 반드시 나오도록 여기서 되살린다
-		for background in ["Background", "BackgroundImage", "Scrim"]:
+		# "도감" 제목도 같은 이유로 여기 넣었다(2026-09-16) — 눈 아이콘으로 꺼 둔 채 저장돼서
+		# **에디터에서는 보이는데 실행하면 안 보이는** 일이 실제로 있었다
+		for background in ["Background", "BackgroundImage", "Scrim", "TitlePanel/TitleLabel"]:
 			var node: Node = get_node_or_null(background)
 			if node is CanvasItem:
 				node.visible = true
@@ -198,6 +200,14 @@ func _build_tabs() -> void:
 		if button == null:
 			push_warning("CharacterDex: 탭 노드를 못 찾았다 — %s" % pair[1])
 			continue
+		if not Engine.is_editor_hint():
+			# **에디터에서 눈 아이콘으로 꺼 둔 채 저장돼도 게임에서는 반드시 보이게 한다**(2026-09-16).
+			# 배경·제목과 같은 사고가 탭에서도 났다 — 탭이 통째로 안 떠서 캐릭터/맵 전환이 불가능했다.
+			# 도형·글자까지 따로 꺼져 있었으므로 자식도 같이 켠다
+			button.visible = true
+			for child in button.get_children():
+				if child is CanvasItem:
+					(child as CanvasItem).visible = true
 		button.focus_mode = Control.FOCUS_NONE   # 칸 쪽 방향키 이동을 뺏지 않게
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		var shape: TextureRect = button.get_node_or_null("Shape") as TextureRect
