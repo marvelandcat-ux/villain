@@ -42,13 +42,16 @@ range = 40.0
 windup = 0.14
 cooldown = 0.3
 miss_cooldown = 1.0
-combo_knockback = Array[Vector2]([Vector2(220, -90), Vector2(220, -90), Vector2(820, -300)])
-combo_pop = Array[float]([-1.0, -1.0, 380.0])
+combo_knockback = Array[Vector2]([Vector2(270, 0), Vector2(270, 0), Vector2(820, -300)])
+combo_lunge = Array[float]([0.0, 0.0, 0.0])
+pushback_base = 23.0
+pushback_per_damage = 5.0
+lunge_follows_pushback = true
+combo_pop = Array[float]([0.0, 0.0, 380.0])
 launch_stun = 0.85
 launch_spin_turns = 2.0
 launch_smoke = true
-dropkick_finisher = true
-finisher_windup = 0.18
+finisher_windup = 0.25
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
