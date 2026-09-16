@@ -135,6 +135,8 @@ var _lunge_speed: float = 0.0
 ## 파고들기 전체 시간 — 속도를 처음엔 빠르게, 끝으로 갈수록 줄이는 데 쓴다
 var _lunge_time: float = 0.0
 var _lunge_dir: float = 1.0
+## 파고드는 시간 중 발만 먼저 나가는 앞부분 비율 (0이면 처음부터 몸이 나간다)
+var _lunge_lead: float = 0.0
 ## 직전 앞 타에 상대가 밀린 거리(px) — lunge_follows_pushback이 다음 타 파고들기에 쓴다
 var _last_pushback: float = 0.0
 
@@ -397,9 +399,14 @@ func _fire(fighter: Fighter, step: int) -> void:
 	if not (dropkick_finisher and is_final):
 		var lunge: float
 		var follows: bool
+		var lunge_time: float = wind
+		var lead: float = 0.0
 		if d != null:
 			lunge = d.lunge_extra
 			follows = d.lunge_follows_pushback
+			if d.lunge_time > 0.0:
+				lunge_time = d.lunge_time
+			lead = d.lunge_foot_lead
 		else:
 			lunge = combo_lunge[step] if step < combo_lunge.size() else 0.0
 			follows = lunge_follows_pushback
@@ -407,7 +414,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		if follows and step > 0:
 			lunge += _last_pushback
 		if lunge > 0.0:
-			_start_lunge(fighter, lunge, wind)
+			_start_lunge(fighter, lunge, lunge_time, lead)
 	# 두 물리 프레임(약 0.034초)보다 짧으면 타이머 대신 프레임을 기다린다 — 아래 설명과 같은 이유
 	if wind > 0.04:
 		await get_tree().create_timer(wind).timeout
@@ -454,16 +461,22 @@ func _reset(cd: float) -> void:
 
 ## --- 파고들기 (combo_lunge) ---
 ## 예비동작 동안 distance만큼 앞으로 미끄러진다. 이동 권한을 잠깐 가져가므로 그동안 걷기·대시는 안 먹는다
-func _start_lunge(fighter: Fighter, distance: float, wind: float) -> void:
+func _start_lunge(fighter: Fighter, distance: float, duration: float, lead: float = 0.0) -> void:
 	# 다른 스킬(자전거 돌진 등)이 이동을 쥐고 있으면 끼어들지 않는다
 	if fighter.movement_override != null and fighter.movement_override != self:
 		return
-	var time: float = maxf(wind, LUNGE_MIN_TIME)
+	# 앞 타의 파고들기가 아직 덜 끝났으면(연타로 다음 타가 바로 이어진 경우) 남은 거리를 이번 걸음에 얹는다 —
+	# 안 얹으면 앞 걸음이 중간에 잘려 덜 나가고, 몸이 뚝 멈췄다 다시 출발한다
+	if _lunge_left > 0.0 and fighter.movement_override == self:
+		distance += _lunge_remaining_distance()
+		lead *= 0.5   # 이미 발이 나가 있는 중이라 "발만 먼저" 구간을 짧게 해서 덜 멈칫하게
+	var time: float = maxf(duration, LUNGE_MIN_TIME)
 	_lunge_left = time
 	_lunge_time = time
-	# 시작 속도를 평균의 두 배로 잡고 끝에서 0이 되게 줄이면 이동 거리가 정확히 distance가 된다(삼각형 넓이).
-	# 등속으로 밀면 스케이트 타듯 미끄러져 보여서, "훅 내딛고 멈추는" 발걸음처럼 보이게 한 것
-	_lunge_speed = 2.0 * distance / time
+	_lunge_lead = clampf(lead, 0.0, 0.6)
+	# (lead 0) 시작 속도를 평균의 두 배로 잡고 끝에서 0이 되게 줄이면 이동 거리가 정확히 distance가 된다(삼각형 넓이).
+	# (lead > 0) 평균 속도만 기억해 두고, 곡선 모양은 get_move_velocity_x가 매 프레임 계산한다
+	_lunge_speed = (2.0 * distance / time) if _lunge_lead <= 0.0 else (distance / time)
 	_lunge_dir = signf(fighter.facing)
 	if is_zero_approx(_lunge_dir):
 		_lunge_dir = 1.0
@@ -471,7 +484,15 @@ func _start_lunge(fighter: Fighter, distance: float, wind: float) -> void:
 	# 발이 앞으로 내딛는 모양도 같이 (리그에 기능이 없으면 그냥 미끄러지기만 한다)
 	var visual: Node = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_lunge_step"):
-		visual.play_lunge_step(time)
+		visual.play_lunge_step(time, _lunge_lead)
+
+## 지금 파고들기에서 아직 못 간 거리(px) — get_move_velocity_x의 곡선을 적분한 위치로 계산한다
+func _lunge_remaining_distance() -> float:
+	var remain: float = _lunge_left / maxf(_lunge_time, 0.001)
+	if _lunge_lead <= 0.0:
+		return _lunge_speed * _lunge_time * 0.5 * remain * remain
+	var s: float = clampf((1.0 - remain - _lunge_lead) / (1.0 - _lunge_lead), 0.0, 1.0)
+	return _lunge_speed * _lunge_time * (1.0 - s * s * (3.0 - 2.0 * s))
 
 func _end_lunge(fighter: Fighter) -> void:
 	_lunge_left = 0.0
@@ -504,7 +525,13 @@ func get_move_velocity_x() -> float:
 	if _dk_active and _dk_air:
 		return _dk_dir * dropkick_speed
 	if _lunge_left > 0.0:
-		return _lunge_dir * _lunge_speed * (_lunge_left / maxf(_lunge_time, 0.001))
+		var remain: float = _lunge_left / maxf(_lunge_time, 0.001)
+		if _lunge_lead <= 0.0:
+			return _lunge_dir * _lunge_speed * remain
+		# 발 먼저, 몸이 따라감: 앞쪽 lead 동안은 멈춰 있다가, 남은 구간을 smoothstep 곡선(천천히-빠르게-천천히)으로 간다.
+		# smoothstep의 기울기 6s(1-s)를 구간 길이로 나누면 전체 면적이 1이라 이동 거리가 distance로 맞는다
+		var s: float = clampf((1.0 - remain - _lunge_lead) / (1.0 - _lunge_lead), 0.0, 1.0)
+		return _lunge_dir * _lunge_speed * 6.0 * s * (1.0 - s) / (1.0 - _lunge_lead)
 	return 0.0
 
 ## move_and_slide 직후 매 프레임 호출된다 (movement_override로 등록돼 있는 동안만)

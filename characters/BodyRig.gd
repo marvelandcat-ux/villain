@@ -500,6 +500,8 @@ var _spin_now: bool = false
 ## 파고들며 내딛는 발동작의 남은 시간 / 전체 시간
 var _step_time: float = 0.0
 var _step_len: float = 0.0
+## 발 먼저 나가는 앞부분 비율 (0이면 옛 내딛기 모양)
+var _step_lead: float = 0.0
 ## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
 var _drink_time: float = 0.0
 ## 총 조준 동작에 남은 시간(초). 0보다 크면 총을 겨누는 중이다
@@ -961,14 +963,19 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	foot.position.y = _rest_positions[foot].y
 
 ## 콤보가 앞으로 파고드는 동안 발을 내딛는다 — duration은 파고드는 시간과 같게 준다
-func play_lunge_step(duration: float) -> void:
+## lead: 앞쪽 이 비율 동안은 발만 먼저 나가고 몸은 그 뒤에 따라온다(ComboMeleeAttack의 이동 곡선과 같은 값을 준다)
+func play_lunge_step(duration: float, lead: float = 0.0) -> void:
 	_step_len = maxf(duration, 0.01)
 	_step_time = _step_len
+	_step_lead = clampf(lead, 0.0, 0.6)
 
 ## 내딛기 자세 — 몸은 이미 앞으로 미끄러지고 있으니 발은 "먼저 나갔다가(앞발) 뒤에 남았다가 따라붙는(뒷발)" 모양만 잡는다.
 ## 앞발(오른발)은 앞쪽 70% 동안 들려서 앞으로 뻗었다 내려앉고, 뒷발(왼발)은 뒤에 끌리다가 뒤쪽 60% 동안 들려 따라온다
 func _pose_lunge_step() -> void:
 	var t: float = 1.0 - _step_time / _step_len
+	if _step_lead > 0.0:
+		_pose_lead_step(t)
+		return
 	var front: float = sin(PI * clampf(t / 0.7, 0.0, 1.0))
 	var back_lift: float = sin(PI * clampf((t - 0.4) / 0.6, 0.0, 1.0))
 	var back_drag: float = sin(PI * t)
@@ -978,6 +985,25 @@ func _pose_lunge_step() -> void:
 	if _foot_l:
 		_foot_l.position = _rest_positions[_foot_l] + Vector2(-lunge_step_foot * 0.8 * back_drag, -lunge_step_lift * 0.6 * back_lift)
 		_foot_l.rotation = deg_to_rad(12.0) * back_drag
+
+## 발 먼저, 몸이 따라감 — ① lead 동안 앞발이 들려 앞으로 뻗고(몸은 제자리) ② 몸이 미끄러져 오는 만큼
+## 앞발은 몸 아래로 되돌아온다(발이 땅에 붙어 있는 것처럼 보인다) ③ 뒷발은 제자리에 남아 뒤로 벌어졌다가 끝에 들려 따라붙는다
+func _pose_lead_step(t: float) -> void:
+	var reach_end: float = maxf(_step_lead, 0.15)
+	var reach: float = smoothstep(0.0, reach_end, t)
+	var s: float = clampf((t - _step_lead) / (1.0 - _step_lead), 0.0, 1.0)
+	var body: float = s * s * (3.0 - 2.0 * s)   # 몸이 간 비율 — 이동 곡선(smoothstep)의 위치와 같다
+	var front: float = reach * (1.0 - body)
+	var front_lift: float = sin(PI * clampf(t / reach_end, 0.0, 1.0))
+	var catch_up: float = smoothstep(0.75, 1.0, t)
+	var back: float = body * (1.0 - catch_up)
+	var back_lift: float = sin(PI * clampf((t - 0.75) / 0.25, 0.0, 1.0))
+	if _foot_r:
+		_foot_r.position = _rest_positions[_foot_r] + Vector2(lunge_step_foot * front, -lunge_step_lift * front_lift)
+		_foot_r.rotation = deg_to_rad(-18.0) * front
+	if _foot_l:
+		_foot_l.position = _rest_positions[_foot_l] + Vector2(-lunge_step_foot * 0.8 * back, -lunge_step_lift * 0.6 * back_lift)
+		_foot_l.rotation = deg_to_rad(12.0) * back
 
 ## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
 ## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다

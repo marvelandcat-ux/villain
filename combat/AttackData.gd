@@ -40,6 +40,12 @@ extends Resource
 @export var lunge_follows_pushback: bool = true
 ## 따라붙는 거리에 더할 px (직전 타가 없어도 이만큼은 나간다)
 @export var lunge_extra: float = 0.0
+## 따라붙는 데 걸리는 시간(초). 0이면 판정 시각까지(예전 방식 — 짧으면 순간이동처럼 보인다).
+## 판정보다 길게 주면 때린 뒤에도 조금 더 밀고 들어간다 (판정은 캐릭터를 따라가므로 헛치지 않는다)
+@export var lunge_time: float = 0.0
+## 앞쪽 이 비율(0~0.6) 동안은 **발만 먼저 내딛고 몸은 거의 안 움직인다** — 그 뒤 몸이 부드럽게 따라간다.
+## 0이면 예전처럼 처음에 확 나가고 끝에서 멈춘다
+@export_range(0.0, 0.6, 0.05) var lunge_foot_lead: float = 0.0
 
 @export_group("마무리 타 — 날리기")
 ## 넉백 (x는 바라보는 방향 기준 앞, y는 음수가 위). 앞 타에서는 타격 섬광 방향으로만 쓰인다
