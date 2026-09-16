@@ -153,9 +153,13 @@ func _set_thumb_buttons_disabled(disabled: bool) -> void:
 	for child in thumb_row.get_children():
 		child.disabled = disabled
 
+## "확정" 버튼을 눌렀을 때만(임시 선택 단계가 아니라) 그 칸에 파동 효과를 재생한다
 func _on_confirm_pressed() -> void:
 	if _pending_character == "":
 		return
+	var confirmed_tile: FanTile = _thumb_buttons.get(_pending_character)
+	if confirmed_tile:
+		SelectionRipple.spawn(confirmed_tile, confirmed_tile.ripple_corners())
 	var path: String = GameState.CHARACTERS[_pending_character]
 	if _picking_p1:
 		GameState.p1_character_path = path
@@ -167,6 +171,8 @@ func _on_confirm_pressed() -> void:
 		background.texture = load(P2_BACKGROUND)
 	else:
 		GameState.p2_character_path = path
+		# 파동이 다 보이도록 잠깐 기다렸다가 맵 선택 화면으로 넘어간다
+		await _wait(SelectionRipple.total_duration())
 		get_tree().change_scene_to_file("res://ui/MapSelect.tscn")
 
 ## 아직 확정 안 한 임시 선택 하나만 밝게, 나머지는 어둡게 해서 지금 뭘 고르는 중인지 눈으로 보이게 한다

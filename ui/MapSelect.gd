@@ -97,7 +97,12 @@ func _apply_tile_style(button: Button) -> void:
 ## SceneTransition(오토로드)이 씬 전환에 걸쳐 타일을 들고 있으므로, 덮은 채로 씬이 바뀌고
 ## 새 맵이 자리잡은 뒤에 타일이 걷히며 드러난다 — 이 화면(MapSelect)은 그동안 사라져도 상관없다
 func _on_map_picked(map_name: String) -> void:
+	var picked_button: Button = _map_buttons.get(map_name)
+	if picked_button:
+		SelectionRipple.spawn(picked_button)
 	_set_map_buttons_disabled(true)
+	# 파동이 다 퍼지는 모습을 보여준 뒤에 어두운 팝업으로 덮는다
+	await _wait(SelectionRipple.total_duration())
 	await _show_map_popup(map_name)
 	GameState.selected_map_path = GameState.MAPS[map_name]
 	SceneTransition.go_to_scene(GameState.selected_map_path)

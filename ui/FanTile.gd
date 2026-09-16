@@ -137,6 +137,10 @@ func _draw() -> void:
 		draw_string_outline(font, pos, name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 4, Color(0, 0, 0))
 		draw_string(font, pos, name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1))
 
+## 지금 칸 모양의 꼭짓점(사다리꼴/사각형) — 선택 파동 효과(SelectionRipple)가 이 모양을 따라 퍼지게 넘겨준다
+func ripple_corners() -> PackedVector2Array:
+	return _effective_corners()
+
 ## 칸 모양(사각형이든 corners로 준 비스듬한 모양이든) 안인지로 직접 클릭 판정한다.
 ## 기본 Button은 무조건 사각형(get_rect) 판정이라, corners로 비스듬하게 만든 칸은 이게 없으면
 ## 옆 칸과 겹쳐진 네모 판정 때문에 클릭이 엉뚱한 칸으로 간다
