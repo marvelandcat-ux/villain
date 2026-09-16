@@ -40,14 +40,25 @@ signal finished(a_won: bool)
 ## 사람이 안 누르면 AI가 1.2초쯤에 끝까지 밀어 이긴다
 @export var ai_press_interval_min: float = 0.16
 @export var ai_press_interval_max: float = 0.24
-## 연타할 키의 슬롯 이름. **부딪힌 스킬이 뭐든 항상 이 키를 연타한다**(2026-09-10 기획) —
-## 부딪힌 슬롯 키를 그대로 쓰면 스킬1로 부딪혔는지 궁극기로 부딪혔는지에 따라 눌러야 할 키가 매번 달라져서,
-## 갑자기 화면이 멈춘 0.2초 안에 "이번엔 무슨 키더라"를 판단해야 한다. 항상 같은 키로 통일한다.
-## 빈 문자열로 두면 예전처럼 부딪힌 슬롯의 키를 쓴다
-@export var mash_action_id: String = "basic_attack"
+## 연타할 키의 슬롯 이름. **빈 문자열이면 방금 부딪힌 스킬의 키를 그대로 연타한다**(2026-09-16 변경).
+## 예전(2026-09-10)엔 "무슨 키로 부딪혔는지 0.2초 안에 판단하기 어렵다"는 이유로 항상 basic_attack으로 고정했었다.
+## 바꾼 이유: 부딪힌 순간 **손가락이 이미 그 키 위에 올라가 있다** — 방금 누른 키를 계속 두드리는 게 가장 자연스럽다.
+## 게다가 이제 얼굴 아래에 눌러야 할 키(ClashKeyHint)가 크게 떠서 판단할 필요 자체가 없다.
+## 다시 고정 키로 되돌리려면 여기에 "basic_attack" 같은 슬롯 이름을 넣으면 된다
+@export var mash_action_id: String = ""
 
 ## 얼굴 그림의 높이 (띠 높이 대비 비율)
 @export var face_height_ratio: float = 0.92
+
+@export_group("누를 키 안내")
+## 얼굴 아래에 "지금 두드릴 키 + 연타!"를 띄운다. AI 쪽에는 안 띄운다
+@export var show_key_hint: bool = true
+## 키 안내를 띄울 때는 얼굴을 줄여서 띠 위쪽으로 올린다 — 띠 안에 얼굴·키·글자를 다 넣으려고
+@export var hint_face_height_ratio: float = 0.5
+## 띠 가운데 기준 얼굴 / 키캡의 세로 위치(px, 음수가 위). 띠를 따라 기울어진다
+@export var hint_face_offset: float = -52.0
+@export var hint_key_offset: float = 20.0
+@export_group("")
 ## 밀당 상황에 따라 얼굴이 꺾이는 최대 각도(도). 이기는 쪽은 앞으로, 밀리는 쪽은 뒤로
 @export var face_tilt_deg: float = 26.0
 ## 얼굴이 목표 각도를 따라가는 빠르기 (클수록 즉각적)
@@ -103,6 +114,8 @@ enum Phase { IDLE, SLAM, MASH, POUR, HOLD, FLY, ZOOM_OUT }
 @onready var _face_a: Sprite2D = $FaceA
 @onready var _face_b: Sprite2D = $FaceB
 @onready var _flash: ColorRect = $Flash
+@onready var _hint_a: ClashKeyHint = get_node_or_null("KeyHintA")
+@onready var _hint_b: ClashKeyHint = get_node_or_null("KeyHintB")
 
 var _phase: int = Phase.IDLE
 var _elapsed: float = 0.0
@@ -168,6 +181,8 @@ func start(fighter_a: Fighter, fighter_b: Fighter, slot_id: String) -> void:
 
 	_setup_face(_face_a, fighter_a)
 	_setup_face(_face_b, fighter_b)
+	_setup_hint(_hint_a, _action_a, _ai_a)
+	_setup_hint(_hint_b, _action_b, _ai_b)
 	# 서로 마주 보게 세운다 — 왼쪽(A)이 오른쪽을, 오른쪽(B)이 왼쪽을 본다
 	_face_b.scale.x *= -1.0
 	_face_a_base = _face_a.scale
@@ -199,9 +214,24 @@ func _setup_face(face: Sprite2D, fighter: Fighter) -> void:
 		return
 	var tex: Texture2D = load(path)
 	face.texture = tex
-	var target_h: float = _band.band_height() * face_height_ratio
+	var ratio: float = hint_face_height_ratio if show_key_hint else face_height_ratio
+	var target_h: float = _band.band_height() * ratio
 	var s: float = target_h / maxf(float(tex.get_height()), 1.0)
 	face.scale = Vector2(s, s)
+
+## 키 안내를 켠다. 사람이 조작하는 쪽에만 — AI는 누를 사람이 없다
+func _setup_hint(hint: ClashKeyHint, action: String, is_ai: bool) -> void:
+	if hint == null:
+		return
+	hint.visible = show_key_hint and not is_ai and action != ""
+	hint.modulate.a = 1.0
+	hint.set_action(action)
+
+## 띠를 따라 기울어진 세로 오프셋 — 얼굴·키캡이 띠와 같은 각도로 줄 선다
+func _along_band(offset_y: float) -> Vector2:
+	if not show_key_hint:
+		return Vector2.ZERO
+	return _band.band_transform().basis_xform(Vector2(0.0, offset_y))
 
 ## 두 캐릭터를 대치 자세로 세우거나(on) 푼다(off).
 ## **화면이 멈춰 있어도 자세가 움직여야 하므로 리그의 process_mode를 잠깐 ALWAYS로 올린다** —
@@ -331,12 +361,20 @@ func _update_faces(delta: float) -> void:
 	var push_a: float = clampf((_balance - 0.5) * 2.0, -1.0, 1.0)
 	_tilt_a = lerpf(_tilt_a, push_a, clampf(delta * face_follow_speed, 0.0, 1.0))
 	var tilt: float = deg_to_rad(face_tilt_deg) * _tilt_a
+	# 키 안내는 얼굴 바로 아래를 따라간다. 연타 구간이 끝나면(결착 연출부터) 흐려져 사라진다
+	var hint_alpha: float = 1.0 if (_phase == Phase.SLAM or _phase == Phase.MASH) else 0.0
+	for pair in [[_hint_a, true], [_hint_b, false]]:
+		var hint: ClashKeyHint = pair[0]
+		if hint and hint.visible:
+			hint.position = _band.face_anchor(pair[1]) + _along_band(hint_key_offset)
+			hint.rotation = _band.band_transform().get_rotation()
+			hint.modulate.a = move_toward(hint.modulate.a, hint_alpha, delta * 8.0)
 	if _face_a.visible:
-		_face_a.position = _band.face_anchor(true)
+		_face_a.position = _band.face_anchor(true) + _along_band(hint_face_offset)
 		# A는 오른쪽(상대)을 보고 있으므로 시계 방향(+)이 곧 "앞으로 꺾기"다
 		_face_a.rotation = tilt
 	if _face_b.visible:
-		_face_b.position = _band.face_anchor(false)
+		_face_b.position = _band.face_anchor(false) + _along_band(hint_face_offset)
 		# B는 좌우가 뒤집혀 있어(scale.x < 0) 같은 각도가 화면에서는 반대로 보인다.
 		# 그래서 같은 tilt를 넣어야 둘이 나란히 기우는 게 아니라 **서로 맞대고 밀치는** 그림이 된다
 		_face_b.rotation = tilt
@@ -390,6 +428,10 @@ func _push(is_a_side: bool) -> void:
 		_presses_b += 1
 	# 누를 때마다 화면이 툭 떨린다 — 둘이 같이 연타하면 계속 덜덜 흔들린다
 	_rumble = minf(_rumble + press_shake, rumble_max)
+	# 그 쪽 키캡이 꾹 눌린다 (AI 쪽은 안내 자체가 꺼져 있다)
+	var hint: ClashKeyHint = _hint_a if is_a_side else _hint_b
+	if hint:
+		hint.press()
 	# 누른 쪽 캐릭터가 주먹을 내지른다 — 연타 속도가 그대로 주먹질 속도가 된다
 	_punch_rig(_fighter_a if is_a_side else _fighter_b)
 	_balance = clampf(_balance + (push_per_press if is_a_side else -push_per_press), 0.0, 1.0)

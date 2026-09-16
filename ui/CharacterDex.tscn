@@ -263,6 +263,7 @@ theme_override_font_sizes/font_size = 18
 text = "방향키로 옮기고 Enter로 자세히 보기 · ESC로 나가기"
 
 [node name="Detail" type="Control" parent="." unique_id=176290074]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -313,7 +314,7 @@ theme_override_font_sizes/font_size = 24
 text = "스킬명"
 autowrap_mode = 2
 
-[node name="IconSlot" type="Panel" parent="Detail/SkillBox"]
+[node name="IconSlot" type="Panel" parent="Detail/SkillBox" unique_id=1255035290]
 layout_mode = 0
 offset_left = 252.0
 offset_top = 12.0
@@ -322,7 +323,7 @@ offset_bottom = 88.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_demo")
 
-[node name="Icon" type="TextureRect" parent="Detail/SkillBox/IconSlot"]
+[node name="Icon" type="TextureRect" parent="Detail/SkillBox/IconSlot" unique_id=483836663]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -382,7 +383,7 @@ text = "시연 영상 준비 중"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SkillStats" type="Label" parent="Detail/SkillBox"]
+[node name="SkillStats" type="Label" parent="Detail/SkillBox" unique_id=198196489]
 layout_mode = 0
 offset_left = 18.0
 offset_top = 344.0

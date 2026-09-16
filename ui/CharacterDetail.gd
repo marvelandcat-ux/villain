@@ -40,6 +40,12 @@ const SLOT_LABELS: Array[String] = ["기본 공격", "1번 스킬", "2번 스킬
 @export var slot_text_color_focus: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export var slot_font_size: int = 20
 @export var slot_outline_width: float = 2.0
+## 칸 왼쪽 끝이 화면 밖에 묻혀 있어서, 글자는 **화면에 보이기 시작하는 곳**부터 이만큼 안쪽에서 시작한다
+@export var slot_text_padding: float = 18.0
+## 키 글자(F/G/H/R) 뒤에 까는 뱃지 색과 크기
+@export var slot_badge_color: Color = Color(0.98, 0.8, 0.18, 1.0)
+@export var slot_badge_text_color: Color = Color(0.1, 0.07, 0.12, 1.0)
+@export var slot_badge_size: float = 34.0
 ## 방향키를 꾹 누르고 있을 때 **첫 반복까지 기다리는 시간**(초)
 @export var key_repeat_delay: float = 0.35
 ## 그 뒤 한 칸씩 넘어가는 간격(초)
@@ -178,7 +184,8 @@ func _process(delta: float) -> void:
 		_update_key_repeat(delta)
 		return
 	var stamp: String = "%s|%s|%s|%s|%s" % [_slot_root.size, _showcase_root.size,
-		slot_gap, slot_slide, slot_font_size] + "|%s|%s|%s|%s|%s" % [showcase_lean, showcase_frame,
+		slot_gap, slot_slide, slot_font_size] + "|%s|%s|%s|%s" % [slot_text_padding,
+		slot_badge_color, slot_badge_size, _slot_root.position] + "|%s|%s|%s|%s|%s" % [showcase_lean, showcase_frame,
 		showcase_tab_height, showcase_tab_split, outline_width]
 	if stamp == _editor_stamp:
 		return
@@ -239,14 +246,41 @@ func _build_slots() -> void:
 			shape.material = mat
 		slide.add_child(shape)
 
+		# SkillList를 화면 왼쪽 밖으로 빼 둔 만큼은 안 보인다 — 그 너머부터 글자를 시작해야
+		# 긴 스킬명이 가운데 정렬로 퍼지면서 키 글자가 화면 밖으로 잘리는 일이 없다
+		var visible_from: float = maxf(-_slot_root.position.x, 0.0) + slot_text_padding
+
+		var badge := Panel.new()
+		badge.name = "Badge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var badge_box := StyleBoxFlat.new()
+		badge_box.bg_color = slot_badge_color
+		badge_box.set_corner_radius_all(6)
+		badge.add_theme_stylebox_override("panel", badge_box)
+		badge.position = Vector2(visible_from, (height - slot_badge_size) * 0.5)
+		badge.size = Vector2(slot_badge_size, slot_badge_size)
+		slide.add_child(badge)
+
+		var key := Label.new()
+		key.name = "Key"
+		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		key.text = SLOT_KEYS[i]
+		key.add_theme_font_size_override("font_size", slot_font_size)
+		key.add_theme_color_override("font_color", slot_badge_text_color)
+		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		key.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		key.set_anchors_preset(Control.PRESET_FULL_RECT)
+		badge.add_child(key)
+
 		var text := Label.new()
 		text.name = "Text"
 		text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		text.add_theme_font_size_override("font_size", slot_font_size)
 		text.add_theme_color_override("font_color", slot_text_color)
-		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		text.set_anchors_preset(Control.PRESET_FULL_RECT)
+		text.position = Vector2(visible_from + slot_badge_size + 10.0, 0.0)
+		text.size = Vector2(maxf(width - text.position.x - 8.0, 40.0), height)
 		slide.add_child(text)
 
 		_slot_root.add_child(button)
@@ -271,7 +305,7 @@ func _refresh_slots() -> void:
 			label = str(_skills[i]["name"])
 		var text: Label = _slots[i].get_node_or_null("Slide/Text")
 		if text:
-			text.text = "%s  %s" % [SLOT_KEYS[i], label]
+			text.text = label
 
 ## 골라졌거나 커서가 올라간 칸만 앞으로 나오고 색이 진해진다 (메인 메뉴와 같은 연출).
 ## 튀어나온 정도를 그대로 흰 테두리 진하기로 쓴다 — 같이 나타났다 같이 사라진다
