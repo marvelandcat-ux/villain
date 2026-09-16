@@ -37,20 +37,6 @@ shader_parameter/line_color = Color(1, 1, 1, 1)
 shader_parameter/line_width = 2.0
 shader_parameter/line_alpha = 0.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dex"]
-bg_color = Color(0.09, 0.07, 0.13, 0.82)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dex_hover"]
-bg_color = Color(0.72, 0.18, 0.28, 0.95)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
 [node name="MainMenu" type="Control" unique_id=1303680159]
 layout_mode = 3
 anchors_preset = 15
@@ -254,7 +240,7 @@ theme_override_font_sizes/font_size = 30
 text = "훈련장"
 vertical_alignment = 1
 
-[node name="DexItem" type="Button" parent="Menu"]
+[node name="DexItem" type="Button" parent="Menu" unique_id=2051641406]
 layout_mode = 0
 offset_left = -80.0
 offset_top = 462.0
@@ -263,13 +249,13 @@ offset_bottom = 546.0
 theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
-[node name="Slide" type="Control" parent="Menu/DexItem"]
+[node name="Slide" type="Control" parent="Menu/DexItem" unique_id=589847195]
 anchors_preset = 0
 offset_right = 540.0
 offset_bottom = 84.0
 mouse_filter = 2
 
-[node name="Shape" type="TextureRect" parent="Menu/DexItem/Slide"]
+[node name="Shape" type="TextureRect" parent="Menu/DexItem/Slide" unique_id=1811621410]
 modulate = Color(0.09, 0.07, 0.13, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
@@ -278,7 +264,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 texture = ExtResource("8_slant")
 
-[node name="Text" type="Label" parent="Menu/DexItem/Slide"]
+[node name="Text" type="Label" parent="Menu/DexItem/Slide" unique_id=1402759415]
 layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
@@ -358,10 +344,10 @@ vertical_alignment = 1
 
 [node name="HintLabel" type="Label" parent="." unique_id=1813239225]
 layout_mode = 0
-anchor_top = 1.0
-anchor_bottom = 1.0
 anchor_left = 1.0
+anchor_top = 1.0
 anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = -524.0
 offset_top = -56.0
 offset_right = -24.0
@@ -376,11 +362,6 @@ horizontal_alignment = 2
 [node name="ConfirmPopup" parent="." unique_id=511114147 instance=ExtResource("4_confirm")]
 visible = false
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="Fade" type="ColorRect" parent="." unique_id=1040822673]
 visible = false
