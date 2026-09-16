@@ -193,7 +193,8 @@ func _try_pickup() -> void:
 	for area in get_overlapping_areas():
 		if not (area is Hurtbox):
 			continue
-		var fighter: Fighter = area.fighter
+		# Hurtbox 주인이 Fighter가 아닐 수 있다(일진 패거리) — as로 받으면 아니면 null이라 아래에서 걸러진다
+		var fighter := area.fighter as Fighter
 		if fighter == null or not is_instance_valid(fighter) or fighter.current_hp <= 0:
 			continue
 		# 방금 왕관을 떨어뜨리고 굳어 있는 쪽은 못 줍는다

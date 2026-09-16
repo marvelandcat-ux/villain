@@ -25,12 +25,17 @@ var last_hit_direction: float = 0.0
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 1150.0
-const DEFAULT_JUMP_VELOCITY: float = -430.0
-## 공중에서 한 번 더 뛰는 이단 점프의 세기. 지상 점프(-350, 71px)보다 세게 잡아서
-## 둘을 이어 뛰면 약 172px까지 올라간다 — 지하철 승강장의 의자 발판(바닥에서 145px)이
-## 지상 점프 한 번(71px)으로는 절대 안 닿고 이단 점프로만 닿게 하려고 정한 값.
-## 의자를 이 높이에 둔 이유는 의자에 올라선 캐릭터가 열차 지붕(y=195)보다 확실히 위에 있어야 하기 때문
-const DEFAULT_AIR_JUMP_VELOCITY: float = -510.0
+## **2026-09-15: -430 -> -215(반토막) -> -260 -> -190 -> -300 -> -350.** 전부 사용자 요청이다.
+## ⚠️ **높이는 속도의 제곱에 비례한다** — 속도를 반으로 줄이면 높이는 1/4이 된다.
+## 높이 = 속도² / (2 x 중력). 중력 1150 기준 지상 점프 높이:
+## -190은 17px / -215는 22px / -260은 32px / -300은 39px / -350은 53px / -430은 84px
+const DEFAULT_JUMP_VELOCITY: float = -350.0
+## 공중에서 한 번 더 뛰는 이단 점프의 세기.
+## **2026-09-15에 지상 점프력과 같은 값으로 맞췄다(사용자 지정 — 공중도 지상과 같은 값으로).**
+## 원래는 지상의 약 1.19배(-430 / -510)라 두 번째 점프가 더 높이 떴는데, 지금은 둘 다 같은 값이라
+## 두 번 다 같은 높이씩 뜬다. 옛 설계 메모: 의자 발판(바닥에서 145px)을 "지상 점프로는 절대 못 닿고
+## 이단 점프로만 닿는" 높이로 잡았던 기준이 이 배율이었다 — 지금 값으로는 그 사다리가 끊겨 있다
+const DEFAULT_AIR_JUMP_VELOCITY: float = -350.0
 
 ## --- 방향키 두 번 대시 (전 캐릭터 공용, 스킬이 아니라 기본 조작이다) ---
 ## 대시하는 동안의 수평 속도(px/초). 걷기(240~275)의 약 다섯 배.
@@ -57,6 +62,16 @@ const DEFAULT_BLOCKED_ATTACK_LOCK: float = 3.0
 ## 방어할 때 몸을 감싸는 원형 보호막
 const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
 
+## --- 착지 먼지 (전 캐릭터 공용) ---
+## 이 높이(px) 이상에서 떨어져 착지하면 발밑에 먼지가 퍼진다.
+## **높이로 적는 이유:** 점프력·중력을 바꿔도 "이만큼 떨어지면 난다"가 그대로 유지된다.
+## 기본값 100은 이단 점프 높이(-350 기준 106.6px)를 조금 밑돌게 잡은 값이라
+## **이단 점프에서 그냥 떨어지면 난다**(사용자 지정). 0으로 두면 안 난다
+const DEFAULT_LAND_DUST_HEIGHT: float = 100.0
+static var land_dust_height: float = DEFAULT_LAND_DUST_HEIGHT
+## 착지 먼지 이펙트 (그림 없이 _draw()로 그린다)
+const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
+
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
 const DROP_THROUGH_DURATION: float = 0.35
@@ -81,6 +96,8 @@ var current_hp: int = 0
 var facing: float = 1.0
 ## 지금 공중에서 몇 번 더 뛸 수 있는지. 바닥에 닿을 때마다 max_air_jumps로 다시 채워진다
 var _air_jumps_left: int = 0
+## 직전 프레임에 바닥에 있었는지 — "이번 프레임에 착지했다"를 잡는 데 쓴다
+var _was_on_floor: bool = true
 ## 대시가 남은 시간 / 대시 방향 / 다음 대시까지 남은 쿨타임 / 다음 잔상까지 남은 시간
 var _dash_time: float = 0.0
 var _dash_dir: float = 0.0
@@ -388,6 +405,29 @@ func _update_hp_face() -> void:
 	if visual and visual.has_method("update_hp_ratio"):
 		var max_hp: int = stats.max_hp if stats else 0
 		visual.update_hp_ratio(float(current_hp) / float(max_hp) if max_hp > 0 else 1.0)
+
+## 바닥에 닿은 순간 — 충분히 높은 데서 떨어졌으면 발밑에 먼지를 퍼뜨린다.
+## fall_speed는 **move_and_slide()가 0으로 지우기 전의** 낙하 속도(아래로 떨어지는 중이면 양수)
+func _on_landed(fall_speed: float) -> void:
+	if land_dust_height <= 0.0 or fall_speed <= 0.0:
+		return
+	# "이만큼 떨어지면 난다"를 속도로 환산한다 — v = sqrt(2 x 중력 x 높이)
+	var threshold: float = sqrt(2.0 * gravity * land_dust_height)
+	if fall_speed < threshold:
+		return
+	_spawn_land_dust(fall_speed / threshold)
+
+## 발밑에 먼지를 띄운다. power가 1이면 기준 높이에서 떨어진 것, 크면 더 세게 퍼진다.
+## **맵에 붙인다** — 캐릭터의 자식으로 달면 좌우 반전에 같이 뒤집히고 캐릭터가 사라질 때 잘린다
+func _spawn_land_dust(power: float) -> void:
+	var map: Node = get_parent()
+	if map == null:
+		return
+	var dust := LAND_DUST_SCRIPT.new()
+	map.add_child(dust)
+	# 캡슐 반지름 20 + 절반 30 = 발바닥이 원점에서 30px 아래
+	dust.global_position = global_position + Vector2(0.0, 30.0)
+	dust.setup(power)
 
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
@@ -892,10 +932,17 @@ func apply_physics(delta: float) -> void:
 	# 돌진 스킬 등이 이동을 가로챘으면 그쪽이 최종 결정권을 갖는다 (대시보다 뒤에 둔 이유)
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
+	# **move_and_slide()가 부딪히는 순간 velocity.y를 0으로 만들어버린다** — 착지 세기를 알려면
+	# 그 전에 낙하 속도를 따로 기억해둬야 한다(스프링 발판이 _prev_fall을 쓰는 것과 같은 이유)
+	var fall_speed: float = velocity.y
 	move_and_slide()
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)
 	if is_on_floor():
 		_air_jumps_left = max_air_jumps
+	# 공중에 있다가 이번 프레임에 바닥에 닿았으면 = 착지
+	if is_on_floor() and not _was_on_floor:
+		_on_landed(fall_speed)
+	_was_on_floor = is_on_floor()
 	if movement_override:
 		movement_override.after_physics(self, delta)
 	# 상대 캐릭터와 겹쳤으면 가로로 밀어내 통과하지 못하게 한다

@@ -91,6 +91,14 @@ func is_finished() -> bool:
 func is_typing() -> bool:
 	return _shown < _total
 
+## 지금 **플레이어가 눌러주기를 기다리는 중**인지 — 타자가 다 찍혔고 명령 연출도 끝난 상태.
+## 계속 표시(`ui/ContinueIndicator.gd`)가 이 값을 보고 깜빡인다.
+## `@waitkey`로 멈춰 있을 때도 포함한다 — 사건 파일처럼 **대화창이 닫힌 채 기다리는 구간**이 그것이다
+func is_waiting_input() -> bool:
+	if _waiting_key:
+		return true
+	return not is_finished() and _wait <= 0.0 and not is_typing()
+
 ## 스페이스바나 클릭 한 번 — 찍히는 중이면 이 대사를 다 보여주고, 다 나왔으면 다음 줄로
 func advance() -> void:
 	if is_finished():

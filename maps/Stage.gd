@@ -24,6 +24,14 @@ extends Node2D
 ## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
 @export var debug_story_skip_key: bool = true
 
+## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
+const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
+
+## 화면 왼쪽에 일시정지 버튼을 띄울지
+@export var pause_button: bool = true
+## 그 버튼이 화면 왼쪽 위에서 떨어지는 거리(px). 기본값은 P1 체력바 바로 아래
+@export var pause_button_margin: Vector2 = Vector2(20.0, 104.0)
+
 @export_group("처치 연출")
 ## 켜면 **패배한 캐릭터가 화면이 느려진 채 날아가는 연출**을 보여준 뒤에 결과창이 뜬다.
 ## 마지막으로 맞은 방향의 반대쪽(=넉백 방향)으로 빙글 돌며 날아간다
@@ -65,6 +73,7 @@ func _ready() -> void:
 	_round_time_left = GameState.time_limit_seconds
 	# 궁극기 컷인 연출 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
+	_add_pause_button()
 	# 같은 스킬 슬롯을 동시에 쓰면 연타 미니게임(클래시)을 벌이는 매니저 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(SkillClashManager.new())
 	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false, 1)
@@ -242,7 +251,27 @@ func _unhandled_input(event: InputEvent) -> void:
 				_debug_skip_story_battle()
 				return
 	if event.is_action_pressed("ui_cancel"):
-		add_child(load("res://ui/PauseMenu.tscn").instantiate())
+		open_pause_menu()
+
+## 화면 왼쪽에 일시정지 버튼을 붙인다 (스토리 장면과 같은 것).
+## ESC만 있으면 처음 하는 사람은 멈출 방법을 모른다는 피드백을 받아서 넣었다(2026-09-15).
+## **P1 체력바(CombatHUD의 P1Panel, 20~330 x 16~90) 바로 아래**에 놓아 HUD와 안 겹치게 한다
+func _add_pause_button() -> void:
+	if not pause_button or not ResourceLoader.exists(PAUSE_BUTTON_SCENE):
+		return
+	var button: Node = load(PAUSE_BUTTON_SCENE).instantiate()
+	button.margin = pause_button_margin
+	button.hide_story_list = true   # 싸우는 중엔 다른 에피소드 목록까지 볼 이유가 없다
+	button.hide_title = true        # "일시정지" 제목도 빼서 메뉴만 남긴다
+	add_child(button)
+
+## 일시정지 화면을 띄운다 (ESC와 왼쪽 버튼이 같이 쓴다).
+## **대전 중에는 오른쪽 에피소드 목록과 왼쪽 "일시정지" 제목을 감춘다** — "진행 중인 스토리"만 남는다
+func open_pause_menu() -> void:
+	var menu: Node = load("res://ui/PauseMenu.tscn").instantiate()
+	menu.show_story_list = false
+	menu.show_title = false
+	add_child(menu)
 
 ## 지금 `S`로 스토리 전투를 건너뛸 수 있는 상태인지. 스토리 모드가 아니거나 이어질 장면이 없으면 false —
 ## 그래야 일반 대전에서 `S`가 예전처럼 P1 방어 키로만 동작한다(`p1_down`이 S에 걸려 있다)

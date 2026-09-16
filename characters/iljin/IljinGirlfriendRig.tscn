@@ -4,9 +4,15 @@
 [ext_resource type="Texture2D" uid="uid://hvlanltsumld" path="res://sprite/일진/일진의 여자친구/일진 여자친구 머리.png" id="2_head"]
 [ext_resource type="Texture2D" uid="uid://c776qrsfrnbvl" path="res://sprite/일진/일진의 여자친구/일진 여자친구.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://iwaygd8w4jl1" path="res://sprite/일진/일진의 여자친구/일진 여자친구의 발.png" id="4_foot"]
+[ext_resource type="Texture2D" uid="uid://kalrb3t3jecf" path="res://sprite/일진/일진의 여자친구/아픈 일진의 여자친구.png" id="5_hurt"]
+[ext_resource type="Texture2D" uid="uid://bw2cercfuodmu" path="res://sprite/일진/일진의 여자친구/힘든 일진 여자친구.png" id="6_weary"]
 
 [node name="BodyRig" instance=ExtResource("1_rig")]
 idle_gestures = false
+attack_kick_hit = 0
+attack_duration = 0.5
+hurt_head_texture = ExtResource("5_hurt")
+weary_head_texture = ExtResource("6_weary")
 
 [node name="FootL" parent="." index="0"]
 texture = ExtResource("4_foot")

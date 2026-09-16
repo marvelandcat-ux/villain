@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Script" path="res://skills/DashSkill.gd" id="2"]
@@ -13,6 +13,10 @@
 [ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/잼민이G스킬.png" id="11"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/잼민이H스킬.png" id="12"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/버릇없는꼬마궁극기로고.png" id="13"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/떼쓰기3연타.ogv" id="19_vid_combo"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/비비탄3연사.ogv" id="20_vid_bb"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/브레이크없는픽시.ogv" id="21_vid_dash"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/엄마가부른다.ogv" id="22_vid_ult"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -49,6 +53,9 @@ launch_spin_turns = 2.0
 launch_smoke = true
 dropkick_finisher = true
 finisher_windup = 0.18
+skill_name = "사탕 맛 좀 봐라!"
+demo_video = ExtResource("19_vid_combo")
+description = "발길질 세 번을 이어서 넣는다. 맞아야 다음 타가 나가고, 한 번이라도 헛치면 처음부터 다시다. 3타를 다 맞추면 뜬 상대를 쫓아가 계속 굴릴 수 있다."
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
@@ -62,15 +69,24 @@ shape = SubResource("RectangleShape2D_hitbox")
 script = ExtResource("2")
 cooldown = 6.0
 icon = ExtResource("11")
+skill_name = "브레이크가 \"없는\" 자전거"
+demo_video = ExtResource("21_vid_dash")
+description = "자전거로 앞을 향해 냅다 돌진한다. 부딪힌 상대는 튕겨 나가지만, 벽까지 밀고 가면 브레이크가 없어서 본인이 처박힌다."
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("4")
 cooldown = 5.0
 projectile_scene = ExtResource("5")
 icon = ExtResource("12")
+skill_name = "비비탄 총 난사"
+demo_video = ExtResource("20_vid_bb")
+description = "비비탄을 세 발 연달아 쏜다. 총알은 날아가면서 점점 빨라져서, 멀수록 피하기 어렵다. 거리를 벌리고 상대를 긁어내는 용도."
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")
 cooldown = 50.0
 start_on_cooldown = true
 icon = ExtResource("13")
+skill_name = "엄마가 부른다"
+demo_video = ExtResource("22_vid_ult")
+description = "궁극기. 밥 먹으러 집에 다녀온다. 다녀오는 동안은 아무것도 맞지 않고, 돌아오면 체력을 회복한 상태다. 불리할 때 판을 통째로 리셋하는 카드."

@@ -65,7 +65,6 @@ extends Control
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
-@onready var _dex_button: Button = $DexButton
 ## 화면 전체를 덮는 검은 판 — 켜질 때 이게 걷히면서 화면이 열린다
 @onready var _screen_fade: ColorRect = $Fade
 ## 배경 위 어두운 판 — 일러스트마다 진하기가 다를 수 있어서 매 프레임 맞춰준다
@@ -103,7 +102,6 @@ func _ready() -> void:
 		_place_illustration()
 	_collect_illustrations()
 	_build_menu()
-	_dex_button.pressed.connect(_on_dex_pressed)
 	_screen_fade.color.a = 1.0
 	_confirm.confirmed.connect(_on_confirmed)
 	_confirm.cancelled.connect(func(): _pending = Callable())
@@ -119,6 +117,7 @@ func _build_menu() -> void:
 		"StoryItem": _on_story_pressed,
 		"VersusItem": _on_versus_pressed,
 		"TrainingItem": _on_training_pressed,
+		"DexItem": _on_dex_pressed,
 		"HowToItem": _on_how_to_pressed,
 		"SettingsItem": _on_settings_pressed,
 	}
@@ -391,12 +390,13 @@ func _on_settings_closed() -> void:
 ## 설정 팝업이 떠 있는 동안 사선 메뉴 항목·도감 버튼·제목/힌트 글자를 통째로 숨긴다 —
 ## Scrim이 클릭은 막아주지만 반투명이라 뒤에 그대로 비치므로, 눈으로도 안 보이게 감춘다
 func _set_menu_buttons_visible(is_visible: bool) -> void:
+	# **도감 버튼을 따로 안 챙긴다** — 2026-09-16 머지에서 도감이 루트의 `DexButton`에서
+	# 사선 메뉴 항목(`Menu/DexItem`)으로 옮겨져서, 여기서 `Menu`를 숨기면 같이 숨겨진다.
+	# (예전 `_dex_button` 변수는 그때 없어졌다 — 그대로 두면 선언 없는 이름이라 파싱 에러가 난다)
 	for node_name in ["Menu", "TitleLabel", "HintLabel"]:
 		var node: CanvasItem = get_node_or_null(node_name)
 		if node:
 			node.visible = is_visible
-	if _dex_button:
-		_dex_button.visible = is_visible
 
 ## 도감은 되돌릴 게 없어서(읽기 전용) 확인 창 없이 바로 들어간다
 func _on_dex_pressed() -> void:

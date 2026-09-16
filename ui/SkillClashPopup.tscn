@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://ui/SkillClashPopup.gd" id="1"]
 [ext_resource type="Script" path="res://ui/ClashBand.gd" id="2"]
+[ext_resource type="Script" path="res://ui/ClashKeyHint.gd" id="3"]
 
 [node name="SkillClashPopup" type="CanvasLayer"]
 layer = 11
@@ -17,6 +18,12 @@ script = ExtResource("2")
 [node name="FaceA" type="Sprite2D" parent="."]
 
 [node name="FaceB" type="Sprite2D" parent="."]
+
+[node name="KeyHintA" type="Node2D" parent="."]
+script = ExtResource("3")
+
+[node name="KeyHintB" type="Node2D" parent="."]
+script = ExtResource("3")
 
 [node name="Flash" type="ColorRect" parent="."]
 anchor_right = 1.0

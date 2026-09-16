@@ -1,11 +1,14 @@
 class_name Settings
 extends Control
 
-## 설정 화면 — 메인 메뉴 위에 팝업(카드)으로 덮어 씌워진다. 뒤의 메인 메뉴는 Scrim(반투명 검정)을 통해
-## 살짝 비쳐 보인다. 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
+## 설정 화면 — 부르는 화면 위에 팝업(카드)으로 덮어 씌워진다. 뒤 화면은 Scrim(반투명 검정)을 통해
+## 살짝 비쳐 보인다. **메인 메뉴와 일시정지 화면 둘 다 이 방식으로 연다** —
+## 장면을 아예 안 바꾸므로 대전 중에 열어도 하던 판이 날아가지 않는다
+## (2026-09-16 머지: 예전 `overlay_mode` 스위치는 없앴다. 이제 **언제나** 자기만 닫고 `closed`를 보낸다)
+## 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
 ## 그래픽·오디오는 GameState가 즉시 적용 + 저장하고, 조작키는 여기서 바로 재배정 가능(GameState.rebind_action)
 
-## 닫기 버튼을 누르거나 ESC를 눌러 팝업이 닫힐 때(슬라이드 연출이 끝난 뒤 나온다) — 오버레이로 열렸을 때만 의미가 있다.
+## 닫기 버튼을 누르거나 ESC를 눌러 팝업이 닫힐 때(슬라이드 연출이 끝난 뒤 나온다).
 ## 부르는 쪽(MainMenu)이 포커스를 되돌리고 가려뒀던 버튼을 다시 보여주는 데 쓴다
 signal closed
 
@@ -38,10 +41,6 @@ const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skil
 @onready var volume_value_label: Label = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeValueLabel
 @onready var p1_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P1Column
 @onready var p2_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P2Column
-
-## **다른 화면 위에 얹어서 연 것인지.** 켜면 "뒤로"·ESC가 메인 메뉴로 가지 않고 자기만 닫는다.
-## 일시정지 화면의 "설정"이 이 방식으로 연다 — 대전 중에 장면을 바꿀 수 없기 때문이다
-@export var overlay_mode: bool = false
 
 ## 지금 새 키 입력을 기다리고 있는 액션 이름. 빈 문자열이면 대기 중이 아님
 var _listening_action: String = ""
@@ -89,13 +88,8 @@ func _process(delta: float) -> void:
 	if _anim_time >= duration:
 		_anim_time = -1.0
 		if not _opening:
-			# 일시정지 화면 위에 얹혀 열린 경우엔 화면을 바꾸지 않고 자기만 닫는다 —
-			# 여기서 장면을 바꾸면 하던 대전이 통째로 날아간다
-			if overlay_mode:
-				closed.emit()
-				queue_free()
-			else:
-				get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+			closed.emit()
+			queue_free()
 
 ## 탭 버튼을 누르면 그 탭의 패널만 보이고 나머지는 숨긴다. 버튼 자체도 선택된 탭만 밝게 눌린 느낌으로 표시한다
 func _show_tab(tab_name: String) -> void:
@@ -182,8 +176,7 @@ func _on_reset_pressed() -> void:
 	for action in _key_buttons.keys():
 		_key_buttons[action].text = _key_display_text(action)
 
-## 닫는 연출(위로 슬라이드 아웃)을 시작한다 — 다 끝나면 _process가 overlay_mode를 보고
-## (오버레이면) closed를 보내고 스스로를 지우거나, (아니면) 메인 메뉴로 장면을 바꾼다.
+## 닫는 연출(위로 슬라이드 아웃)을 시작한다 — 다 끝나면 _process가 closed를 보내고 스스로를 지운다.
 ## 이미 닫는 중이면 두 번 눌러도 무시한다
 func _on_back_pressed() -> void:
 	if _anim_time >= 0.0 and not _opening:
@@ -192,9 +185,10 @@ func _on_back_pressed() -> void:
 	_anim_time = 0.0
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _listening_action == "" and event.is_action_pressed("ui_cancel"):
-		# **먹었다는 표시를 닫기 전에 해야 한다** — 일시정지 화면 위에 얹혀 있을 때 이걸 빼먹으면
-		# 뒤에 있는 PauseMenu도 같은 ESC를 받아서 설정과 일시정지가 한꺼번에 닫힌다.
-		# 그리고 _on_back_pressed()가 장면을 바꾼 뒤에는 get_viewport()가 null이라 순서를 뒤집으면 에러가 난다
+	if _listening_action != "":
+		return
+	if event.is_action_pressed("ui_cancel"):
+		# **먹었다는 표시를 닫기 전에 해야 한다** — 뒤쪽 메인 메뉴의 ESC(타이틀로 나가기)나
+		# 일시정지 화면의 ESC가 같은 입력을 받아 한꺼번에 닫히는 걸 막는다
 		get_viewport().set_input_as_handled()
 		_on_back_pressed()

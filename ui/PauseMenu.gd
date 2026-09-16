@@ -14,6 +14,10 @@ extends CanvasLayer
 ## - **목록은 보여주기만 한다** — 여기서 다른 에피소드를 고르면 하던 대전이 날아가기 때문이다.
 ##   골라서 넘어가게 하려면 각 칸을 Control 대신 Button으로 만들고 `GameState.start_story(id)`를 부르면 된다
 ## - **스토리 모드가 아니면 오른쪽 전체가 숨는다**(`GameState.game_mode`) — 일반 대전에선 왼쪽 메뉴만 나온다
+## - **대전 중에는 오른쪽 에피소드 목록과 왼쪽 "일시정지" 제목을 감춘다**
+##   (`show_story_list` / `show_title` = false, 2026-09-15 사용자 요청) — 싸우다 멈춘 사람에게
+##   다른 에피소드 목록까지 보여줄 이유가 없고, 제목도 화면을 좁게 만들어서 뺐다.
+##   띄우는 쪽(`maps/Stage.gd`, `ui/PauseButton.gd`)이 add_child 하기 전에 이 값들을 꺼 준다
 ##
 ## 게임을 멈추는 것(`get_tree().paused`)도 이 스크립트가 직접 하고, 그래서 이 노드는
 ## `process_mode = ALWAYS`로 둔다 — 멈춘 동안에도 입력을 받아야 닫을 수 있다(궁극기 컷인과 같은 방식).
@@ -22,6 +26,9 @@ extends CanvasLayer
 const SLANT_TEXTURE := preload("res://sprite/UI/메뉴사선_임시.png")
 const LOCK_ICON := preload("res://ui/LockIcon.gd")
 const SETTINGS_SCENE := "res://ui/Settings.tscn"
+
+## 왼쪽 큰 "일시정지" 제목을 보여줄지. **대전 중에는 꺼서 메뉴만 남긴다**
+@export var show_title: bool = true
 
 @export_group("사선 메뉴")
 ## 커서를 올리거나 포커스가 오면 앞(오른쪽)으로 나오는 거리(px)
@@ -39,6 +46,8 @@ const SETTINGS_SCENE := "res://ui/Settings.tscn"
 @export var menu_outline_width: float = 2.0
 
 @export_group("스토리 목록")
+## 오른쪽 에피소드 목록을 보여줄지. **대전 중에는 꺼서 "진행 중인 스토리"만 남긴다**
+@export var show_story_list: bool = true
 ## 칸 하나의 크기(px)와 칸 사이 간격(px)
 @export var story_row_size: Vector2 = Vector2(620.0, 68.0)
 @export var story_row_gap: float = 14.0
@@ -75,7 +84,7 @@ var _hovered: Button = null
 ## 마지막으로 쓴 입력이 마우스인지. 처음엔 키보드 쪽으로 둬서 열릴 때 첫 항목이 골라져 보이게 한다
 var _mouse_mode: bool = false
 ## 위에 얹혀 열려 있는 설정 화면 (없으면 null).
-## **Control이 아니라 Settings로 타입을 잡아야 한다** — Control에는 overlay_mode/closed가 없어서 파싱 에러가 난다
+## **Control이 아니라 Settings로 타입을 잡아야 한다** — Control에는 `closed` 시그널이 없어서 파싱 에러가 난다
 var _settings: Settings = null
 
 ## 등장 연출: 차례로 들어올 것들. {node, rest_x(제자리 x), order(몇 번째로 들어올지), from(어느 쪽에서)}
@@ -88,6 +97,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = true
 	_build_menu()
+	_title.visible = show_title
 	_build_story_panel()
 	_setup_intro()
 	if not _menu_items.is_empty():
@@ -130,7 +140,8 @@ func _apply_intro(t: float) -> void:
 		node.modulate.a = eased
 	# 제목과 진행 중 상자는 밀려오지 않고 그 자리에서 나타나기만 한다(글자가 옆으로 흐르면 읽기 어렵다)
 	var header: float = clampf(t / maxf(intro_header_time, 0.001), 0.0, 1.0)
-	_title.modulate.a = header
+	if show_title:
+		_title.modulate.a = header
 	_story_panel.modulate.a = header
 	if finished and header >= 1.0:
 		_intro_done = true
@@ -228,7 +239,9 @@ func _build_story_panel() -> void:
 		return
 	var current: String = GameState.current_story_name()
 	_current_name.text = current if current != "" else "진행 중인 스토리 없음"
-	_build_story_list()
+	_story_list.visible = show_story_list
+	if show_story_list:
+		_build_story_list()
 
 ## `GameState.STORY_EPISODES` 순서 그대로 칸을 만든다.
 ## **에피소드를 추가·삭제해도 여기는 안 고쳐도 된다** — 그 목록 한 줄만 고치면 칸이 따라 생긴다
@@ -293,7 +306,10 @@ func _on_retry_pressed() -> void:
 	get_tree().reload_current_scene()
 
 ## 설정은 **화면을 바꾸지 않고 이 위에 얹어서 연다** — 대전 중이라 장면을 바꾸면 하던 판이 날아간다.
-## Settings 쪽은 `overlay_mode`만 켜 주면 "뒤로"·ESC가 메인 메뉴로 가지 않고 자기만 닫는다
+## Settings는 **언제나** 자기만 닫고 `closed`를 보내므로 따로 켜 줄 스위치가 없다
+## (2026-09-16 머지 전에는 `overlay_mode = true`를 줬는데, 지금 Settings는 늘 팝업이라 그 스위치를 없앴다).
+## **Settings의 열기/닫기 연출은 `_process`로 도는데 여기는 `paused = true`다** —
+## 이 PauseMenu가 `PROCESS_MODE_ALWAYS`라 자식으로 붙는 Settings가 그걸 물려받아 정상 동작한다
 func _on_settings_pressed() -> void:
 	if _settings != null:
 		return
@@ -302,7 +318,6 @@ func _on_settings_pressed() -> void:
 		push_warning("PauseMenu: 설정 화면을 못 찾았다 — %s" % SETTINGS_SCENE)
 		return
 	_settings = scene.instantiate()
-	_settings.overlay_mode = true
 	_settings.closed.connect(_on_settings_closed)
 	add_child(_settings)   # 맨 마지막 자식 = 맨 위에 그려짐
 

@@ -91,7 +91,7 @@ const MAPS := {
 ## `scene`이 비어 있으면 아직 안 만든 자리(고를 수 없음)다. 새 이야기를 만들면 그 줄의 scene만 채우면 된다.
 ## **한 번도 클리어하지 않은 에피소드는 목록에서 이름 대신 자물쇠로 보인다**(사용자 지정, 2026-09-15)
 const STORY_EPISODES := [
-	{"id": "ep1", "name": "브레이크 없는 꼬마", "scene": "res://ui/story/StoryScene1.tscn"},
+	{"id": "ep1", "name": "EP.1-첫 임무", "scene": "res://ui/story/StoryScene1.tscn"},
 	{"id": "ep2", "name": "에피소드 2", "scene": ""},
 	{"id": "ep3", "name": "에피소드 3", "scene": ""},
 	{"id": "ep4", "name": "에피소드 4", "scene": ""},
@@ -161,6 +161,11 @@ const MUTE_IN_BUILD := true
 var is_fullscreen: bool = false
 var resolution_index: int = 0
 var master_volume: float = DEFAULT_MASTER_VOLUME
+## 대사를 넘기는 법("스페이스 또는 클릭")을 **한 번이라도 본 적 있는지**.
+## 처음 하는 사람에게만 알려주고 그 뒤로는 화면을 깨끗하게 두려는 것이다(2026-09-16 멘토 피드백).
+## 세션이 아니라 저장 파일(user://settings.cfg)에 남긴다 — 껐다 켤 때마다 다시 배우라고 할 이유가 없고,
+## 새 PC에서 처음 켠 심사위원은 반드시 보게 된다
+var dialogue_hint_seen: bool = false
 
 ## PortraitFrames.tscn에서 읽어둔 캐릭터별 초상화 텍스처와, 프레임 대비 얼굴 네모의
 ## 중심·크기 비율(둘 다 Vector2). _ready에서 채운다
@@ -245,6 +250,7 @@ func _load_settings() -> void:
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
+	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
 	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 
 ## user://settings.cfg의 한 항목을 갱신한다. 매번 새로 열고 닫아서 다른 항목을 덮어쓰지 않는다
@@ -324,6 +330,14 @@ func _apply_window_size() -> void:
 	window.size = target
 	window.position = usable.position + (usable.size - target) / 2
 
+## 대사 넘기는 법을 방금 처음 봤다고 기록한다 (ContinueIndicator가 첫 입력에서 부른다).
+## 이미 본 적 있으면 아무 일도 안 한다 — 누를 때마다 파일을 다시 쓸 이유가 없다
+func mark_dialogue_hint_seen() -> void:
+	if dialogue_hint_seen:
+		return
+	dialogue_hint_seen = true
+	_save_setting("progress", "dialogue_hint_seen", true)
+
 ## 지금 소리가 꺼져 있어야 하는 상태인지 (내보낸 빌드 + MUTE_IN_BUILD).
 ## `OS.has_feature("editor")`는 에디터에서 실행할 때만 true라 빌드와 구분된다
 func is_audio_muted() -> bool:
@@ -374,6 +388,14 @@ func has_portrait(character_name: String) -> bool:
 ## 이 캐릭터의 초상화 텍스처 (없으면 null)
 func portrait_texture(character_name: String) -> Texture2D:
 	return _portrait_texture.get(character_name, null)
+
+## PortraitFrames.tscn에서 잡아 둔 **얼굴 네모의 중심·크기 비율**(0~1). 도감 칸처럼 TextureRect가
+## 아니라 직접 그리는 곳에서 같은 프레이밍을 쓰려고 열어 둔다 — 안 잡아 둔 캐릭터는 한가운데·꽉 참
+func portrait_frame_center(character_name: String) -> Vector2:
+	return _portrait_rect_center.get(character_name, Vector2(0.5, 0.5))
+
+func portrait_frame_size(character_name: String) -> Vector2:
+	return _portrait_rect_size.get(character_name, Vector2.ONE)
 
 ## 이 캐릭터의 인게임 몸(BodyRig) 씬이 등록돼 있는지
 func has_character_rig(character_name: String) -> bool:

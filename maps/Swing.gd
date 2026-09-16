@@ -85,7 +85,8 @@ func _physics_process(delta: float) -> void:
 	for area in _seat.get_overlapping_areas():
 		if not (area is Hurtbox):
 			continue
-		var fighter: Fighter = area.fighter
+		# Hurtbox 주인이 Fighter가 아닐 수 있다(일진 패거리) — as로 받으면 아니면 null이라 아래에서 걸러진다
+		var fighter := area.fighter as Fighter
 		if fighter == null or not is_instance_valid(fighter) or fighter.current_hp <= 0 or fighter.is_grabbed:
 			continue
 		var id: int = fighter.get_instance_id()
