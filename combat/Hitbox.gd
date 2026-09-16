@@ -53,6 +53,10 @@ var _has_source: bool = false
 ## 이번 타에 debris_scene을 뿌릴지. 콤보 공격이 매 타 켜고 끈다 —
 ## 주정뱅이 술방울은 마무리 3타에만 튄다(`ComboMeleeAttack.debris_final_hit_only`)
 var debris_enabled: bool = true
+## 이번 판정의 히트스톱·화면 흔들림 배수 — 콤보가 타마다 넣어준다(AttackData.hitstop_scale / shake_scale).
+## 씬에 저장되지 않는 런타임 값이라 다른 판정에는 영향이 없다(기본 1)
+var hitstop_multiplier: float = 1.0
+var shake_multiplier: float = 1.0
 ## repeat_interval을 쓸 때, 겹쳐 있는 Hurtbox마다 다음 타격까지 남은 시간 {Hurtbox: float}
 var _repeat_cooldowns: Dictionary = {}
 
@@ -164,7 +168,7 @@ func _shake_camera() -> void:
 		return
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("add_trauma"):
-		cam.add_trauma(float(damage) * shake_per_damage)
+		cam.add_trauma(float(damage) * shake_per_damage * shake_multiplier)
 
 ## 맞는 순간 화면 전체를 아주 잠깐 멈춘다(히트스톱). 데미지가 클수록 길게 멈춘다.
 ##
@@ -180,7 +184,7 @@ func _apply_hitstop() -> void:
 	# 겹치면 나중 것이 먼저 풀리면서 KO 연출의 배속까지 1로 되돌려버린다
 	if Engine.time_scale < 0.5:
 		return
-	var hold: float = minf(hitstop_time + float(damage) * hitstop_per_damage, hitstop_max)
+	var hold: float = minf(hitstop_time + float(damage) * hitstop_per_damage, hitstop_max) * hitstop_multiplier
 	Engine.time_scale = HITSTOP_SCALE
 	# **ignore_time_scale = true가 핵심이다** — 배속을 0에 가깝게 낮춰놔서 보통 타이머는 영영 안 끝난다.
 	# process_always = true라 클래시·컷인처럼 트리가 멈춘 동안에도 제때 풀린다

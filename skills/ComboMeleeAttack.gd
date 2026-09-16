@@ -10,7 +10,14 @@ extends MeleeAttack
 ##
 ## 명중 여부는 Hitbox.connected 신호로 감지한다. 훈련장은 cooldown이 0으로 꺼져 있어 허공 연습은 쿨 없이 자유롭다.
 
-## 타별 데미지 (총 3타)
+## **새 방식(2026-09-17): 타마다 AttackData 파일 하나.** 여기에 순서대로 넣으면 그게 곧 콤보다 —
+## 목록 길이가 타 수이고 마지막 칸이 마무리 타다. 데미지·모션 길이·회전·푸시백·파고들기·넉백·구르기·히트스톱을
+## 전부 그 파일에서 읽고, **판정 시각은 몸(BodyRig.strike_time)에게 물어서** 모션과 자동으로 맞춘다.
+## **비어 있으면 아래 옛 배열(combo_damage 등)과 windup·finisher_windup·pushback_*·launch_*를 그대로 쓴다** —
+## 아직 옮기지 않은 캐릭터는 예전과 똑같이 동작한다
+@export var hits: Array[AttackData] = []
+
+## 타별 데미지 (총 3타) — hits가 비어 있을 때만 쓴다
 @export var combo_damage: Array[int] = [3, 4, 7]
 ## 타별 넉백 (x는 앞 방향 자동반전, y는 띄우기)
 ## **1·2타는 조금만 민다(2026-09-17 확정 콤보 정리).** 예전엔 세 타 다 (220, -90)이었는데,
@@ -134,6 +141,32 @@ var _last_pushback: float = 0.0
 ## 이만큼보다 짧은 시간에 파고들지는 않는다 — 예비동작이 0인 캐릭터가 한 프레임에 순간이동하지 않게
 const LUNGE_MIN_TIME := 0.08
 
+## --- 타별 값 읽기 (hits가 있으면 파일에서, 없으면 옛 배열에서) ---
+
+func _hit_count() -> int:
+	return hits.size() if not hits.is_empty() else combo_damage.size()
+
+func _is_final(step: int) -> bool:
+	return step >= _hit_count() - 1
+
+func _hit_data(step: int) -> AttackData:
+	if hits.is_empty() or step < 0 or step >= hits.size():
+		return null
+	return hits[step]
+
+## 이 타를 누른 뒤 몇 초 뒤에 판정을 켤지.
+## 새 방식은 몸에게 물어본다 — 모션 길이만 바꿔도 판정이 따라오게(예전엔 finisher_windup을 손으로 맞춰야 했다)
+func _windup_for(step: int, fighter: Fighter) -> float:
+	var d: AttackData = _hit_data(step)
+	if d != null:
+		var visual: Node = fighter.get_node_or_null("Visual") if is_instance_valid(fighter) else null
+		if visual and visual.has_method("strike_time"):
+			return visual.strike_time(d.anim_duration, d.spin)
+		return d.anim_duration * 0.4
+	if _is_final(step) and finisher_windup >= 0.0:
+		return finisher_windup
+	return windup
+
 func _ready() -> void:
 	super()   # start_on_cooldown 처리 (기본공격은 꺼져 있지만 규칙을 깨지 않는다)
 	# 명중하는 순간(스윙 진행 중이면) 곧바로 "맞음"으로 판정한다
@@ -151,7 +184,7 @@ func _on_hitbox_connected(victim: Node) -> void:
 ## 앞 타(1·2타)가 맞았을 때 — 다음 타가 들어갈 때까지 상대가 못 움직이게 경직을 보장한다.
 ## 넉백에서 나온 경직이 이미 더 길면 그대로 둔다(apply_hitstun이 큰 쪽을 남긴다)
 func _hold_for_next_hit(victim: Node) -> void:
-	if _swing_step >= combo_damage.size() - 1:
+	if _is_final(_swing_step):
 		return
 	if not (victim is Fighter) or not is_instance_valid(victim):
 		return
@@ -162,23 +195,25 @@ func _hold_for_next_hit(victim: Node) -> void:
 	# **앞 타에 밀리던 속도를 지우고 이번 넉백만 남긴다.** Fighter.take_damage는 넉백을 기존 속도에 더해서,
 	# 1타에 밀리는 중에 2타를 맞으면 두 넉백이 겹쳐 상대가 한참 더 미끄러졌다(촉법소년 실측: 3타 준비 동안 약 70px).
 	# 격투게임처럼 "한 대에 한 칸씩" 일정하게 밀리게 한다
-	if pushback_base > 0.0 or pushback_per_damage > 0.0:
-		_apply_pushback(target)
+	var d: AttackData = _hit_data(_swing_step)
+	var push_base: float = d.pushback_base if d != null else pushback_base
+	var push_per: float = d.pushback_per_damage if d != null else pushback_per_damage
+	if push_base > 0.0 or push_per > 0.0:
+		_apply_pushback(target, push_base, push_per)
 	elif hitbox.knockback.x != 0.0:
 		target.velocity.x = hitbox.knockback.x * Fighter.KNOCKBACK_MULTIPLIER
+	if d != null and d.hitstun > 0.0:
+		target.apply_hitstun(d.hitstun)
 	if link_stun_margin <= 0.0:
 		return
-	var next_is_final: bool = _swing_step + 1 == combo_damage.size() - 1
-	var next_wind: float = windup
-	if next_is_final and finisher_windup >= 0.0:
-		next_wind = finisher_windup
-	target.apply_hitstun(next_wind + link_stun_margin)
+	# 다음 타가 들어갈 때까지 붙잡아 둔다 — 다음 타의 판정 시각은 _windup_for가 안다(새 방식이면 몸에게 물어본다)
+	target.apply_hitstun(_windup_for(_swing_step + 1, _fighter) + link_stun_margin)
 
 ## 데미지에 비례한 거리만큼 상대를 밀어낸다.
 ## 경직 중 마찰(HITSTUN_FRICTION)로 멈추므로 "distance만큼 가서 멈추는 첫 속도"를 거꾸로 구한다: v = sqrt(2 x 마찰 x 거리).
 ## **다 미끄러질 때까지 경직을 보장한다** — 경직이 먼저 풀리면 그 순간 속도가 0이 돼서 덜 밀린다
-func _apply_pushback(target: Fighter) -> void:
-	var distance: float = maxf(pushback_base + float(hitbox.damage) * pushback_per_damage, 0.0)
+func _apply_pushback(target: Fighter, base: float, per_damage: float) -> void:
+	var distance: float = maxf(base + float(hitbox.damage) * per_damage, 0.0)
 	_last_pushback = distance
 	var dir: float = 1.0
 	if is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
@@ -190,9 +225,13 @@ func _apply_pushback(target: Fighter) -> void:
 ## 마무리 타에 맞은 상대를 멀리 날려보낸다. 데미지·넉백은 히트박스가 이미 줬고 여기서는
 ## **날아가는 동안의 경직·구르기·연기만** 얹는다. 가드로 막혔으면 아무것도 안 한다
 func _launch_finisher(victim: Node) -> void:
-	if _swing_step < combo_damage.size() - 1:
+	if not _is_final(_swing_step):
 		return
-	if launch_stun <= 0.0 and launch_spin_turns <= 0.0 and not launch_smoke:
+	var d: AttackData = _hit_data(_swing_step)
+	var stun: float = d.hitstun if d != null else launch_stun
+	var turns: float = d.tumble_turns if d != null else launch_spin_turns
+	var smoke: bool = d.launch_smoke if d != null else launch_smoke
+	if stun <= 0.0 and turns <= 0.0 and not smoke:
 		return
 	if not (victim is Fighter) or not is_instance_valid(victim):
 		return
@@ -203,23 +242,23 @@ func _launch_finisher(victim: Node) -> void:
 	var dir: float = 1.0
 	if is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
 		dir = signf(_fighter.facing)
-	if launch_stun > 0.0:
-		target.apply_hitstun(launch_stun)
-	if launch_spin_turns > 0.0 and target.has_method("play_launch_tumble"):
+	if stun > 0.0:
+		target.apply_hitstun(stun)
+	if turns > 0.0 and target.has_method("play_launch_tumble"):
 		# 도는 시간은 못 움직이는 시간과 맞춘다 — 경직이 없으면 짧게 한 번 굴리고 만다
-		target.play_launch_tumble(launch_spin_turns, launch_stun if launch_stun > 0.0 else 0.6, dir)
-	if launch_smoke:
-		_spawn_launch_smoke(target, dir)
+		target.play_launch_tumble(turns, stun if stun > 0.0 else 0.6, dir)
+	if smoke:
+		_spawn_launch_smoke(target, maxf(stun, 0.45))
 
 ## 날아가는 사람을 따라다니며 연기를 흘리는 노드를 **맵에** 붙인다 (맞은 사람의 자식으로 달면
 ## 그 사람이 좌우로 뒤집힐 때 연기까지 뒤집힌다)
-func _spawn_launch_smoke(target: Fighter, _dir: float) -> void:
+func _spawn_launch_smoke(target: Fighter, duration: float) -> void:
 	var parent: Node = target.get_parent()
 	if parent == null:
 		return
 	var smoke = LAUNCH_SMOKE.new()
 	parent.add_child(smoke)
-	smoke.setup(target, maxf(launch_stun, 0.45))
+	smoke.setup(target, duration)
 
 ## 맞힌 횟수를 세다가 break_after_hits에 닿으면 무기를 깨뜨린다 — 한 라운드에 한 번뿐이다.
 ## 방어에 막힌 한 방도 센다(병이 방패에 부딪힌 것도 부딪힌 것이다)
@@ -320,7 +359,7 @@ func _resolve(hit: bool) -> void:
 	hitbox.set_deferred("monitoring", false)
 	hitbox.set_deferred("monitorable", false)
 	if hit:
-		if _swing_step < combo_damage.size() - 1:
+		if not _is_final(_swing_step):
 			_step = _swing_step + 1
 			cooldown_left = 0.0
 			if _queued:
@@ -343,25 +382,34 @@ func _effective_miss_cooldown() -> float:
 
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:
+	var d: AttackData = _hit_data(step)
 	var visual := fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_attack_swing"):
-		visual.play_attack_swing(step)
-	var is_final: bool = step == combo_damage.size() - 1
+		if d != null:
+			visual.play_attack_swing(d.anim_variant if d.anim_variant >= 0 else step, d.anim_duration, d.spin)
+		else:
+			visual.play_attack_swing(step)
+	var is_final: bool = _is_final(step)
 	# 마무리 타가 드롭킥이면 판정보다 먼저 뛰어오른다 — 뛰는 동안 두 발이 뻗고 그 뒤에 판정이 켜진다
 	if dropkick_finisher and is_final:
 		_start_dropkick(fighter)
-	var wind: float = windup
-	# 마무리 타만 예비동작을 따로 둘 수 있다(드롭킥 · 뒤돌려차기처럼 준비가 긴 마무리)
-	if is_final and finisher_windup >= 0.0:
-		wind = finisher_windup
+	var wind: float = _windup_for(step, fighter)
 	if not (dropkick_finisher and is_final):
-		var lunge: float = combo_lunge[step] if step < combo_lunge.size() else 0.0
+		var lunge: float
+		var follows: bool
+		if d != null:
+			lunge = d.lunge_extra
+			follows = d.lunge_follows_pushback
+		else:
+			lunge = combo_lunge[step] if step < combo_lunge.size() else 0.0
+			follows = lunge_follows_pushback
 		# 직전 타에 밀린 만큼 따라붙는다 (1타는 직전 타가 없으니 칸 값만)
-		if lunge_follows_pushback and step > 0:
+		if follows and step > 0:
 			lunge += _last_pushback
 		if lunge > 0.0:
 			_start_lunge(fighter, lunge, wind)
-	if wind > 0.0:
+	# 두 물리 프레임(약 0.034초)보다 짧으면 타이머 대신 프레임을 기다린다 — 아래 설명과 같은 이유
+	if wind > 0.04:
 		await get_tree().create_timer(wind).timeout
 	else:
 		# **예비동작이 0이어도 물리 프레임 두 번은 미룬다(2026-09-17).** 판정이 꺼진 채로 물리 계산이 한 번은
@@ -374,10 +422,19 @@ func _fire(fighter: Fighter, step: int) -> void:
 	# (드롭킥은 여기서 접어도 착지·일어나기는 after_physics가 끝까지 마무리한다)
 	if not is_instance_valid(fighter) or not _swinging or _resolved:
 		return
-	hitbox.damage = fighter.compute_damage(combo_damage[step])
-	hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing, combo_knockback[step].y)
-	hitbox.pop_override = combo_pop[step]
-	hitbox.debris_enabled = (not debris_final_hit_only) or step == combo_damage.size() - 1
+	if d != null:
+		hitbox.damage = fighter.compute_damage(d.damage)
+		hitbox.knockback = Vector2(d.knockback.x * fighter.facing, d.knockback.y)
+		hitbox.pop_override = d.pop
+		hitbox.hitstop_multiplier = d.hitstop_scale
+		hitbox.shake_multiplier = d.shake_scale
+	else:
+		hitbox.damage = fighter.compute_damage(combo_damage[step])
+		hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing, combo_knockback[step].y)
+		hitbox.pop_override = combo_pop[step]
+		hitbox.hitstop_multiplier = 1.0
+		hitbox.shake_multiplier = 1.0
+	hitbox.debris_enabled = (not debris_final_hit_only) or is_final
 	hitbox.source_fighter = fighter
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
 	# 이미 겹쳐 있는 상대도 이번 타에 다시 맞도록 잠깐 껐다 켜서 area_entered가 새로 발생하게 한다
@@ -386,7 +443,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.clear_repeat_state()
 	hitbox.monitoring = true
 	hitbox.monitorable = true
-	_active_left = active_duration
+	_active_left = d.active_time if d != null else active_duration
 
 func _reset(cd: float) -> void:
 	_step = 0

@@ -31,7 +31,7 @@ const DEFAULT_GRAVITY: float = 1150.0
 ## -190은 17px / -215는 22px / -260은 32px / -300은 39px / -350은 53px / -430은 84px
 const DEFAULT_JUMP_VELOCITY: float = -478.0
 ## 공중에서 한 번 더 뛰는 이단 점프의 세기.
-## **2026-09-17에 원래 값 -510으로 되돌렸다**(사용자 요청 "점프력 높여줘"). 한동안 지상과 같은 값으로 맞춰 뒀었다.
+## **2026-09-17 기준 -519**(지상 -478의 약 1.09배 — 이단 점프가 직전 "한 번 점프" 높이만큼 더 뜬다).
 ## 이단 점프가 약 209px(계산값)이라 지하철 의자(145px)·놀이터 3단(최대 190px)·공사현장(170px) 발판에 다시 올라간다
 const DEFAULT_AIR_JUMP_VELOCITY: float = -519.0
 
@@ -159,6 +159,8 @@ var custom_data: Dictionary = {}
 var _busy_time: float = 0.0
 ## 피격 경직(히트스턴) 남은 시간(초). 0보다 크면 조작(이동·점프·스킬)을 막고 넉백 속도가 실려 미끄러진다
 var _hitstun_time: float = 0.0
+## 넉백을 받고 아직 착지하지 않았는지 — 이 동안엔 move()가 가로 속도를 덮어쓰지 않고 날아가던 힘을 유지한다
+var _launch_momentum: bool = false
 ## 지금까지 연속으로 맞은 콤보 수와, 콤보가 유지되는 남은 시간
 var _combo_count: int = 0
 var _combo_timer: float = 0.0
@@ -237,6 +239,10 @@ const HITSTUN_FRICTION := 900.0
 ## 최소 경직(체공) 시간 — 넉백이 작아도 이만큼은 떠 있는다
 const HITSTUN_MIN := 0.3
 const HITSTUN_MAX := 0.5
+## 맞고 날아가는 동안(착지 전) 방향키로 가로 속도를 바꿀 수 있는 가속도(px/s²). 작을수록 날아가는 힘을 못 거스른다
+const LAUNCH_AIR_CONTROL := 900.0
+## 맞고 날아가는 동안 방향키를 안 누르면 가로 속도가 줄어드는 정도(px/s²). 0이면 착지할 때까지 그대로 날아간다
+const LAUNCH_AIR_DRAG := 300.0
 ## 피격으로 떠 있는 동안(경직+공중) 적용할 중력 배수 — 1보다 작으면 평소보다 천천히 떨어져 잠깐 더 체공한다
 const HIT_LAUNCH_GRAVITY_SCALE := 0.6
 ## 이 시간(초) 안에 다시 맞으면 콤보가 이어진다. 넘으면 다음 타격은 콤보 1부터 새로 시작
@@ -287,6 +293,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		# 수평 넉백을 키워 콤보처럼 넉백 방향으로 멀리 날린다 (수직은 팝업이 담당)
 		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
 		velocity.x += kb_x
+		_launch_momentum = true
 		velocity.y += knockback.y
 		# 살짝 공중으로 떠오르게 (이미 그보다 크게 위로 뜨는 넉백은 그대로 둔다).
 		# pop_override가 0 이상이면 그 값을 쓴다 — 0이면 안 띄워서 지상에 붙잡아둔다
@@ -653,7 +660,18 @@ func move(direction: float) -> void:
 		return
 	if direction != 0.0:
 		facing = signf(direction)
-	velocity.x = direction * stats.move_speed * move_speed_multiplier
+	var target_x: float = direction * stats.move_speed * move_speed_multiplier
+	# **맞고 날아가는 중(착지 전)엔 날아가던 힘을 유지한다(2026-09-17, 브롤할라식).** 예전엔 경직이 공중에서 먼저 풀리면
+	# 이 줄이 가로 속도를 입력값(안 누르면 0)으로 덮어써서, 날아가다 허공에서 뚝 멈추고 수직으로 떨어졌다.
+	# 방향키는 LAUNCH_AIR_CONTROL만큼만 먹고, 안 누르면 LAUNCH_AIR_DRAG로 서서히 줄어든다. 평소 점프 조작감은 그대로다
+	if _launch_momentum and not is_on_floor():
+		var dt: float = get_physics_process_delta_time()
+		if direction != 0.0:
+			velocity.x = move_toward(velocity.x, target_x, LAUNCH_AIR_CONTROL * dt)
+		else:
+			velocity.x = move_toward(velocity.x, 0.0, LAUNCH_AIR_DRAG * dt)
+		return
+	velocity.x = target_x
 
 ## 바닥에서는 보통 점프, 공중에서는 남은 횟수만큼 이단 점프.
 ## 이단 점프는 지금까지의 낙하 속도를 무시하고 속도를 새로 덮어써서, 떨어지는 중에 눌러도 제대로 뜬다
@@ -931,6 +949,7 @@ func apply_physics(delta: float) -> void:
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)
 	if is_on_floor():
 		_air_jumps_left = max_air_jumps
+		_launch_momentum = false
 	# 공중에 있다가 이번 프레임에 바닥에 닿았으면 = 착지
 	if is_on_floor() and not _was_on_floor:
 		_on_landed(fall_speed)

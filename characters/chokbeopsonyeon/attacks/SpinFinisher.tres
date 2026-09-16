@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AttackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/AttackData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+damage = 7
+anim_duration = 0.5
+active_time = 0.12
+spin = true
+hitstop_scale = 1.6
+shake_scale = 1.6
+lunge_follows_pushback = true
+lunge_extra = 8.0
+knockback = Vector2(465, 0)
+pop = 220.0
+hitstun = 0.4
+tumble_turns = 1.0

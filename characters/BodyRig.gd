@@ -495,6 +495,8 @@ var _attack_len: float = 0.4
 ## 얇아진 크기를 원래 크기로 착각하지 않는다
 var _spin_base_x: float = 0.0
 var _spin_applied: bool = false
+## 지금 휘두르는 타가 한 바퀴 도는 타인지 (play_attack_swing이 정한다)
+var _spin_now: bool = false
 ## 파고들며 내딛는 발동작의 남은 시간 / 전체 시간
 var _step_time: float = 0.0
 var _step_len: float = 0.0
@@ -930,7 +932,7 @@ func _apply_pose(speed_ratio: float) -> void:
 ## 곱하기 전 값을 기억해 두고 다음 프레임 _apply_pose 첫머리에서 되돌린다 —
 ## 안 그러면 _face_moving_direction이 absf(scale.x)로 크기를 읽어 얇아진 몸을 원래 크기로 굳혀버린다
 func _apply_spin_turn() -> void:
-	if spin_hit_index < 0 or _attack_time <= 0.0 or _attack_variant != spin_hit_index:
+	if not _spin_now or _attack_time <= 0.0:
 		return
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var s_end: float = maxf(spin_end, 0.01)
@@ -979,14 +981,28 @@ func _pose_lunge_step() -> void:
 
 ## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
 ## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
-func play_attack_swing(variant: int = 0) -> void:
+## duration: 이 타의 모션 길이(초). 0 이하면 리그 설정값(attack_duration / kick_duration / spin_duration)을 쓴다.
+## spin: 켜면 이 타는 한 바퀴 돌면서 친다. 꺼져 있어도 spin_hit_index 번째 타면 돈다(옛 방식)
+func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = false) -> void:
 	_attack_len = attack_duration
 	if attack_kick_hit >= 0 and variant == attack_kick_hit and kick_duration > 0.0:
 		_attack_len = kick_duration
 	if spin_hit_index >= 0 and variant == spin_hit_index and spin_duration > 0.0:
 		_attack_len = spin_duration
+	if duration > 0.0:
+		_attack_len = duration
+	_spin_now = spin or (spin_hit_index >= 0 and variant == spin_hit_index)
 	_attack_time = _attack_len
 	_attack_variant = variant
+
+## 이 모션으로 휘두르면 **시작부터 몇 초 뒤에 맞는지** — 콤보가 판정을 켤 시각이다(AttackData는 이 값을 따른다).
+## 보통 타는 내리치기 시작 지점(40%), 회전 타는 회전 도중 후려치는 지점(spin_end x spin_strike).
+## 판정 시각을 따로 적어두지 않고 여기서 계산하므로, 모션 길이를 바꿔도 모션과 판정이 어긋나지 않는다
+func strike_time(duration: float, spin: bool = false) -> float:
+	var length: float = duration if duration > 0.0 else attack_duration
+	if spin:
+		return length * spin_end * spin_strike
+	return length * ATTACK_STRIKE_START
 
 ## 예비동작이 끝나고 실제로 내리치기 시작하는 시점 (전체 시간 대비 비율)
 const ATTACK_STRIKE_START: float = 0.4
@@ -1137,7 +1153,7 @@ func _kick_arm_params() -> Dictionary:
 func _pose_kick() -> void:
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var reach: float
-	if _attack_variant == spin_hit_index:
+	if _spin_now:
 		reach = _spin_kick_reach(progress)
 	elif progress < ATTACK_STRIKE_START:
 		# ① 무릎을 뒤로 접는다 (끝으로 갈수록 느려지게)

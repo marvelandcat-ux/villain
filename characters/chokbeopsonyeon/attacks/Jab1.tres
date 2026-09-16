@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AttackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/AttackData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+damage = 3
+anim_duration = 0.24
+active_time = 0.1
+pushback_base = 6.0
+pushback_per_damage = 2.0
+lunge_follows_pushback = true
+knockback = Vector2(60, 0)
+pop = 0.0

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Script" path="res://skills/DashSkill.gd" id="2"]
@@ -13,6 +13,10 @@
 [ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/잼민이G스킬.png" id="11"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/잼민이H스킬.png" id="12"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/스킬로고/버릇없는꼬마궁극기로고.png" id="13"]
+[ext_resource type="Script" path="res://combat/AttackData.gd" id="20"]
+[ext_resource type="Resource" path="res://characters/chokbeopsonyeon/attacks/Jab1.tres" id="21"]
+[ext_resource type="Resource" path="res://characters/chokbeopsonyeon/attacks/Jab2.tres" id="22"]
+[ext_resource type="Resource" path="res://characters/chokbeopsonyeon/attacks/SpinFinisher.tres" id="23"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -42,16 +46,7 @@ range = 40.0
 windup = 0.14
 cooldown = 0.3
 miss_cooldown = 1.0
-combo_knockback = Array[Vector2]([Vector2(270, 0), Vector2(270, 0), Vector2(820, -300)])
-combo_lunge = Array[float]([0.0, 0.0, 0.0])
-pushback_base = 23.0
-pushback_per_damage = 5.0
-lunge_follows_pushback = true
-combo_pop = Array[float]([0.0, 0.0, 380.0])
-launch_stun = 0.85
-launch_spin_turns = 2.0
-launch_smoke = true
-finisher_windup = 0.25
+hits = Array[ExtResource("20")]([ExtResource("21"), ExtResource("22"), ExtResource("23")])
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
