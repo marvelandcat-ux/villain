@@ -222,7 +222,7 @@ func _give_crown(fighter: Fighter) -> void:
 	_play_cutin(fighter)
 
 ## **넉백이 있는 피해(진짜 타격)에만 반응한다.**
-## `Fighter.apply_dot()`·`MouseGrab`·`HazardPlatform`은 넉백 없이 `take_damage()`를 부르는데,
+## `Fighter.apply_dot()`·`MouseGrab`은 넉백 없이 `take_damage()`를 부르는데,
 ## 그것까지 받아주면 독 틱 한 번에 왕관이 벗겨지고(때린 사람도 없는데) 튀는 방향도 엉뚱해진다 —
 ## 넉백이 0이라 바라보는 방향의 반대로 날아가 버린다
 func _on_holder_damaged(amount: int, knockback: Vector2) -> void:
