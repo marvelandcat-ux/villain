@@ -22,7 +22,12 @@
 
 [node name="IljinCutIn" type="Node2D" unique_id=245726806]
 script = ExtResource("1")
-cutin_duration = 3.9
+cutin_duration = 3.0
+arrive_at = 0.9
+talk_open_time = 0.11
+talk_close_time = 0.09
+spit_gather_time = 0.28
+spit_hold_time = 0.18
 spit_gather_pose = NodePath("Friend/SpitGatherPose")
 spit_face_pose = NodePath("Friend/SpitFacePose")
 spit_node = NodePath("Spit")
