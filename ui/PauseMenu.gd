@@ -84,7 +84,7 @@ var _hovered: Button = null
 ## 마지막으로 쓴 입력이 마우스인지. 처음엔 키보드 쪽으로 둬서 열릴 때 첫 항목이 골라져 보이게 한다
 var _mouse_mode: bool = false
 ## 위에 얹혀 열려 있는 설정 화면 (없으면 null).
-## **Control이 아니라 Settings로 타입을 잡아야 한다** — Control에는 overlay_mode/closed가 없어서 파싱 에러가 난다
+## **Control이 아니라 Settings로 타입을 잡아야 한다** — Control에는 `closed` 시그널이 없어서 파싱 에러가 난다
 var _settings: Settings = null
 
 ## 등장 연출: 차례로 들어올 것들. {node, rest_x(제자리 x), order(몇 번째로 들어올지), from(어느 쪽에서)}
@@ -306,7 +306,10 @@ func _on_retry_pressed() -> void:
 	get_tree().reload_current_scene()
 
 ## 설정은 **화면을 바꾸지 않고 이 위에 얹어서 연다** — 대전 중이라 장면을 바꾸면 하던 판이 날아간다.
-## Settings 쪽은 `overlay_mode`만 켜 주면 "뒤로"·ESC가 메인 메뉴로 가지 않고 자기만 닫는다
+## Settings는 **언제나** 자기만 닫고 `closed`를 보내므로 따로 켜 줄 스위치가 없다
+## (2026-09-16 머지 전에는 `overlay_mode = true`를 줬는데, 지금 Settings는 늘 팝업이라 그 스위치를 없앴다).
+## **Settings의 열기/닫기 연출은 `_process`로 도는데 여기는 `paused = true`다** —
+## 이 PauseMenu가 `PROCESS_MODE_ALWAYS`라 자식으로 붙는 Settings가 그걸 물려받아 정상 동작한다
 func _on_settings_pressed() -> void:
 	if _settings != null:
 		return
@@ -315,7 +318,6 @@ func _on_settings_pressed() -> void:
 		push_warning("PauseMenu: 설정 화면을 못 찾았다 — %s" % SETTINGS_SCENE)
 		return
 	_settings = scene.instantiate()
-	_settings.overlay_mode = true
 	_settings.closed.connect(_on_settings_closed)
 	add_child(_settings)   # 맨 마지막 자식 = 맨 위에 그려짐
 

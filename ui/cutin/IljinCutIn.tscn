@@ -9,8 +9,8 @@
 [ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="7"]
 [ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://ddwl7n442o0t" path="res://sprite/일진/일진의 여자친구/경멸하는여자일진.png" id="9"]
-[ext_resource type="Texture2D" uid="uid://yfmaeomankes" path="res://sprite/일진/일진의 여자친구/일진옷.png" id="10"]
-[ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="11"]
+[ext_resource type="Texture2D" uid="uid://iwaygd8w4jl1" path="res://sprite/일진/일진의 여자친구/일진 여자친구의 발.png" id="10_rky4g"]
+[ext_resource type="Texture2D" uid="uid://c776qrsfrnbvl" path="res://sprite/일진/일진의 여자친구/일진 여자친구.png" id="11_rky4g"]
 [ext_resource type="Texture2D" uid="uid://dj37iy7xqqxv7" path="res://sprite/일진/일진의 친구1/화난일진친구.png" id="12"]
 [ext_resource type="Texture2D" uid="uid://b5vuab6l5gnf6" path="res://sprite/일진/일진의 친구1/일친 친구 몸.png" id="13"]
 [ext_resource type="Texture2D" uid="uid://byjm1q2ckwcbh" path="res://sprite/일진/입벌린일진정면.png" id="14"]
@@ -36,19 +36,19 @@ texture = ExtResource("3")
 position = Vector2(170, 60)
 
 [node name="FootL" type="Sprite2D" parent="Iljin" unique_id=1292429978]
-position = Vector2(115.99999, 286)
-scale = Vector2(0.7066478, 0.77534693)
+position = Vector2(87.00001, 282)
+scale = Vector2(0.5097486, 0.5856931)
 texture = ExtResource("7")
 
 [node name="FootR" type="Sprite2D" parent="Iljin" unique_id=625215446]
-position = Vector2(-57.000004, 283.00003)
-scale = Vector2(0.66754204, 0.75554466)
+position = Vector2(-36, 289)
+scale = Vector2(0.5460615, 0.6153963)
 texture = ExtResource("7")
 flip_h = true
 
 [node name="Body" type="Sprite2D" parent="Iljin" unique_id=1976568892]
-position = Vector2(35.000004, 137)
-scale = Vector2(0.2122034, 0.20329587)
+position = Vector2(34, 135.00002)
+scale = Vector2(0.20141278, 0.1888672)
 texture = ExtResource("6")
 
 [node name="HandL" type="Sprite2D" parent="Iljin" unique_id=65942114]
@@ -80,20 +80,20 @@ script = ExtResource("2")
 position = Vector2(467, 100)
 
 [node name="FootL" type="Sprite2D" parent="Girl" unique_id=1732347539]
-position = Vector2(-47, 240.135)
-scale = Vector2(0.42458093, 0.5175249)
-texture = ExtResource("11")
+position = Vector2(-51.165005, 238.135)
+scale = Vector2(0.4711173, 0.55712897)
+texture = ExtResource("10_rky4g")
 
 [node name="FootR" type="Sprite2D" parent="Girl" unique_id=231773947]
-position = Vector2(26.000002, 240.99998)
-scale = Vector2(0.42364523, 0.49324253)
-texture = ExtResource("11")
+position = Vector2(34.000008, 236.99998)
+scale = Vector2(0.47857556, 0.5112377)
+texture = ExtResource("10_rky4g")
 flip_h = true
 
 [node name="Body" type="Sprite2D" parent="Girl" unique_id=1769270957]
-position = Vector2(-9.999989, 108)
-scale = Vector2(0.13533568, 0.19360936)
-texture = ExtResource("10")
+position = Vector2(-10.000002, 107)
+scale = Vector2(0.15681167, 0.18407194)
+texture = ExtResource("11_rky4g")
 
 [node name="HandL" type="Sprite2D" parent="Girl" unique_id=464883157]
 position = Vector2(-78, 152.00002)

@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://skills/Spit.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://ctcwbhbny5ljj" path="res://sprite/일진/일진의 친구1/물방울.png" id="2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_spit"]
+size = Vector2(26, 18)
+
+[node name="Spit" type="Area2D"]
+script = ExtResource("1")
+stretch_ref_speed = 900.0
+stretch_max = 1.6
+trail_interval = 0.012
+trail_alpha = 0.45
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_spit")
+
+[node name="Visual" type="Sprite2D" parent="."]
+scale = Vector2(0.045, 0.045)
+region_enabled = true
+region_rect = Rect2(256, 379, 842, 382)
+texture = ExtResource("2")

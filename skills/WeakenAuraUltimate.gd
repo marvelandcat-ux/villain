@@ -9,6 +9,6 @@ func _execute(fighter: Fighter) -> void:
 	var opponent := fighter.find_opponent()
 	if opponent == null:
 		return
-	opponent.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, duration)
+	opponent.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, duration, true)   # 궁극기는 방어를 뚫는다
 	# "나락 가는" 느낌으로 상대를 어둡게 물들인다
 	opponent.set_tint("weakened", Color(0.45, 0.4, 0.55), duration)

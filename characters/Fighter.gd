@@ -25,18 +25,27 @@ var last_hit_direction: float = 0.0
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 1150.0
-const DEFAULT_JUMP_VELOCITY: float = -430.0
-## 공중에서 한 번 더 뛰는 이단 점프의 세기. 지상 점프(-350, 71px)보다 세게 잡아서
-## 둘을 이어 뛰면 약 172px까지 올라간다 — 지하철 승강장의 의자 발판(바닥에서 145px)이
-## 지상 점프 한 번(71px)으로는 절대 안 닿고 이단 점프로만 닿게 하려고 정한 값.
-## 의자를 이 높이에 둔 이유는 의자에 올라선 캐릭터가 열차 지붕(y=195)보다 확실히 위에 있어야 하기 때문
-const DEFAULT_AIR_JUMP_VELOCITY: float = -510.0
+## **2026-09-15: -430 -> -215(반토막) -> -260 -> -190 -> -300 -> -350.** 전부 사용자 요청이다.
+## ⚠️ **높이는 속도의 제곱에 비례한다** — 속도를 반으로 줄이면 높이는 1/4이 된다.
+## 높이 = 속도² / (2 x 중력). 중력 1150 기준 지상 점프 높이:
+## -190은 17px / -215는 22px / -260은 32px / -300은 39px / -350은 53px / -430은 84px
+const DEFAULT_JUMP_VELOCITY: float = -350.0
+## 공중에서 한 번 더 뛰는 이단 점프의 세기.
+## **2026-09-15에 지상 점프력과 같은 값으로 맞췄다(사용자 지정 — 공중도 지상과 같은 값으로).**
+## 원래는 지상의 약 1.19배(-430 / -510)라 두 번째 점프가 더 높이 떴는데, 지금은 둘 다 같은 값이라
+## 두 번 다 같은 높이씩 뜬다. 옛 설계 메모: 의자 발판(바닥에서 145px)을 "지상 점프로는 절대 못 닿고
+## 이단 점프로만 닿는" 높이로 잡았던 기준이 이 배율이었다 — 지금 값으로는 그 사다리가 끊겨 있다
+const DEFAULT_AIR_JUMP_VELOCITY: float = -350.0
 
 ## --- 방향키 두 번 대시 (전 캐릭터 공용, 스킬이 아니라 기본 조작이다) ---
-## 대시하는 동안의 수평 속도(px/초). 걷기(240~270)의 두 배 반쯤
-const DEFAULT_DASH_SPEED: float = 700.0
-## 대시가 유지되는 시간(초). 속도 x 시간이 곧 이동 거리라 기본값은 126px = 몸통 폭의 약 4배
-const DEFAULT_DASH_DURATION: float = 0.18
+## 대시하는 동안의 수평 속도(px/초). 걷기(240~275)의 약 다섯 배.
+## **2026-09-14에 700 -> 1400으로 올렸다**(사용자 요청 "훨씬 빠르게") — 700은 걷기의 2.6배뿐이라
+## 순간이동하듯 "슉" 빠지는 맛이 없었다
+const DEFAULT_DASH_SPEED: float = 1400.0
+## 대시가 유지되는 시간(초). **속도 x 시간이 곧 이동 거리다** — 1400 x 0.16 = 224px(몸통 폭의 약 5.6배).
+## 속도를 올리면서 시간을 0.18에서 줄인 이유: 그대로 두면 252px까지 가서 화면의 5분의 1을 한 번에 건너뛰고,
+## 조작이 돌아오기까지도 그만큼 오래 걸린다
+const DEFAULT_DASH_DURATION: float = 0.16
 ## 다음 대시까지 기다리는 시간(초)
 const DEFAULT_DASH_COOLDOWN: float = 3.0
 ## 대시 중 잔상을 남기는 간격(초)
@@ -44,7 +53,7 @@ const DASH_TRAIL_INTERVAL: float = 0.04
 
 ## --- 아래 키 방어 (전 캐릭터 공용) ---
 ## 아래 키를 누른 순간 켜져서 이 시간(초) 동안 유지된다. 누르고 있는 게 아니라 한 번 눌러 발동하는 방식
-const DEFAULT_GUARD_DURATION: float = 1.2
+const DEFAULT_GUARD_DURATION: float = 1.0
 ## 방어가 끝나고 다음 방어까지 기다리는 시간(초)
 const DEFAULT_GUARD_COOLDOWN: float = 5.0
 ## 기본공격이 상대 방어에 막혔을 때 기본공격이 잠기는 시간(초).
@@ -52,6 +61,16 @@ const DEFAULT_GUARD_COOLDOWN: float = 5.0
 const DEFAULT_BLOCKED_ATTACK_LOCK: float = 3.0
 ## 방어할 때 몸을 감싸는 원형 보호막
 const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
+
+## --- 착지 먼지 (전 캐릭터 공용) ---
+## 이 높이(px) 이상에서 떨어져 착지하면 발밑에 먼지가 퍼진다.
+## **높이로 적는 이유:** 점프력·중력을 바꿔도 "이만큼 떨어지면 난다"가 그대로 유지된다.
+## 기본값 100은 이단 점프 높이(-350 기준 106.6px)를 조금 밑돌게 잡은 값이라
+## **이단 점프에서 그냥 떨어지면 난다**(사용자 지정). 0으로 두면 안 난다
+const DEFAULT_LAND_DUST_HEIGHT: float = 100.0
+static var land_dust_height: float = DEFAULT_LAND_DUST_HEIGHT
+## 착지 먼지 이펙트 (그림 없이 _draw()로 그린다)
+const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
@@ -77,6 +96,8 @@ var current_hp: int = 0
 var facing: float = 1.0
 ## 지금 공중에서 몇 번 더 뛸 수 있는지. 바닥에 닿을 때마다 max_air_jumps로 다시 채워진다
 var _air_jumps_left: int = 0
+## 직전 프레임에 바닥에 있었는지 — "이번 프레임에 착지했다"를 잡는 데 쓴다
+var _was_on_floor: bool = true
 ## 대시가 남은 시간 / 대시 방향 / 다음 대시까지 남은 쿨타임 / 다음 잔상까지 남은 시간
 var _dash_time: float = 0.0
 var _dash_dir: float = 0.0
@@ -308,13 +329,68 @@ func _play_hit_reaction(knockback: Vector2, amount: int) -> void:
 	var visual: Node2D = get_node_or_null("Visual")
 	if visual == null:
 		return
+	# 이미 굴러가는 중이면 기울기를 얹지 않는다 — 매 프레임 도는 각도와 트윈이 서로 각도를 뺏어
+	# 덜덜 떨린다. 구르기가 끝나면 일어서는 트윈이 알아서 각도를 정리한다
+	if _tumble_left > 0.0:
+		return
 	var dir: float = signf(knockback.x)
 	if dir == 0.0:
 		dir = -facing   # 수평 넉백이 없으면 뒤로(바라보는 반대쪽) 기운다
 	var lean_deg: float = clampf(HIT_LEAN_BASE_DEG + amount * HIT_LEAN_PER_DAMAGE, 0.0, HIT_LEAN_MAX_DEG)
-	var tween := create_tween()
-	tween.tween_property(visual, "rotation", deg_to_rad(dir * lean_deg), 0.05)
-	tween.tween_property(visual, "rotation", 0.0, 0.22)
+	# 이 트윈을 기억해둔다 — 뒤이어 크게 날아가는 타(발차기 마무리)가 들어오면 몸을 굴려야 하는데,
+	# 이 기울기 트윈이 살아 있으면 매 프레임 rotation을 도로 제자리로 끌어당겨 구르기가 안 보인다
+	if _lean_tween != null and _lean_tween.is_valid():
+		_lean_tween.kill()
+	_lean_tween = create_tween()
+	_lean_tween.tween_property(visual, "rotation", deg_to_rad(dir * lean_deg), 0.05)
+	_lean_tween.tween_property(visual, "rotation", 0.0, 0.22)
+
+## --- 크게 날아갈 때 구르기 (촉법소년 3타 발차기 등) ---
+## 구르기가 끝난 뒤 똑바로 서기까지 걸리는 시간(초)
+const TUMBLE_RECOVER := 0.16
+## 날아오른 직후 이만큼(초)은 바닥 판정을 보지 않는다 — 맞은 그 프레임엔 아직 발이 땅에 닿아 있어서,
+## 바로 검사하면 구르기가 시작하자마자 끝나버린다
+const TUMBLE_GROUND_GRACE := 0.14
+
+## 피격 기울기 트윈 (구르기가 시작되면 꺼야 한다)
+var _lean_tween: Tween = null
+## 남은 구르기 시간(초)과 도는 속도(라디안/초)
+var _tumble_left: float = 0.0
+var _tumble_speed: float = 0.0
+var _tumble_grace: float = 0.0
+
+## 몸이 빙글빙글 돌면서 날아간다. turns=도는 바퀴 수, duration=도는 시간(초),
+## spin_dir=도는 방향(+1이면 시계방향 = 오른쪽으로 날아갈 때). **바닥에 닿으면 그 자리에서 멈춘다**
+func play_launch_tumble(turns: float, duration: float, spin_dir: float) -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null or turns <= 0.0 or duration <= 0.0:
+		return
+	if _lean_tween != null and _lean_tween.is_valid():
+		_lean_tween.kill()
+	var dir: float = 1.0 if spin_dir >= 0.0 else -1.0
+	_tumble_left = duration
+	_tumble_grace = TUMBLE_GROUND_GRACE
+	_tumble_speed = dir * TAU * turns / duration
+
+## 매 물리 프레임 — 구르는 중이면 몸을 돌리고, 끝나거나 착지하면 똑바로 세운다
+func _update_tumble(delta: float) -> void:
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		_tumble_left = 0.0
+		return
+	_tumble_grace = maxf(_tumble_grace - delta, 0.0)
+	_tumble_left = maxf(_tumble_left - delta, 0.0)
+	var landed: bool = _tumble_grace <= 0.0 and is_on_floor()
+	if _tumble_left <= 0.0 or landed:
+		_tumble_left = 0.0
+		# 돌던 각도를 -180~180도로 접어두고 가까운 쪽으로 일어선다 (안 접으면 몇 바퀴를 되감는다)
+		visual.rotation = wrapf(visual.rotation, -PI, PI)
+		if _lean_tween != null and _lean_tween.is_valid():
+			_lean_tween.kill()
+		_lean_tween = create_tween()
+		_lean_tween.tween_property(visual, "rotation", 0.0, TUMBLE_RECOVER)
+		return
+	visual.rotation += _tumble_speed * delta
 
 ## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
 func _play_hurt_face() -> void:
@@ -329,6 +405,29 @@ func _update_hp_face() -> void:
 	if visual and visual.has_method("update_hp_ratio"):
 		var max_hp: int = stats.max_hp if stats else 0
 		visual.update_hp_ratio(float(current_hp) / float(max_hp) if max_hp > 0 else 1.0)
+
+## 바닥에 닿은 순간 — 충분히 높은 데서 떨어졌으면 발밑에 먼지를 퍼뜨린다.
+## fall_speed는 **move_and_slide()가 0으로 지우기 전의** 낙하 속도(아래로 떨어지는 중이면 양수)
+func _on_landed(fall_speed: float) -> void:
+	if land_dust_height <= 0.0 or fall_speed <= 0.0:
+		return
+	# "이만큼 떨어지면 난다"를 속도로 환산한다 — v = sqrt(2 x 중력 x 높이)
+	var threshold: float = sqrt(2.0 * gravity * land_dust_height)
+	if fall_speed < threshold:
+		return
+	_spawn_land_dust(fall_speed / threshold)
+
+## 발밑에 먼지를 띄운다. power가 1이면 기준 높이에서 떨어진 것, 크면 더 세게 퍼진다.
+## **맵에 붙인다** — 캐릭터의 자식으로 달면 좌우 반전에 같이 뒤집히고 캐릭터가 사라질 때 잘린다
+func _spawn_land_dust(power: float) -> void:
+	var map: Node = get_parent()
+	if map == null:
+		return
+	var dust := LAND_DUST_SCRIPT.new()
+	map.add_child(dust)
+	# 캡슐 반지름 20 + 절반 30 = 발바닥이 원점에서 30px 아래
+	dust.global_position = global_position + Vector2(0.0, 30.0)
+	dust.setup(power)
 
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
@@ -399,8 +498,24 @@ func grant_invincibility(duration: float) -> void:
 	is_invincible = true
 	_after(duration, func(): is_invincible = false)
 
-## duration초 동안 공포 상태로 만든다 (기본공격/스킬 사용 불가, 이동은 가능)
-func apply_fear(duration: float) -> void:
+## 지금 이 캐릭터에게 디버프(둔화·공포·그랩 등)를 걸 수 있는지. true면 튕겨낸다.
+##
+## **방어 중에는 어떤 디버프도 안 걸린다** — 데미지·넉백만 막고 둔화·공포·그랩이 그대로 들어가면
+## "1초 무적"이 무적이 아니게 된다(막았는데 유선 마우스에 끌려가는 식).
+## **단 궁극기는 예외다 — 피해는 막히지만 디버프는 뚫고 들어간다.** 궁을 쓰고도 아무 일이 없으면
+## 긴 쿨(20~50초)을 쓸 이유가 없어지므로, 궁에만 "막아도 한 대는 남는다"를 남겨둔 것이다.
+##
+## **맵 기믹(열차·모래사장·왕관)은 이 함수를 안 거친다** — 예전처럼 방어와 무관하게 걸린다
+func blocks_debuff(from_ultimate: bool = false) -> bool:
+	if is_invincible:
+		return true
+	return is_guarding and not from_ultimate
+
+## duration초 동안 공포 상태로 만든다 (기본공격/스킬 사용 불가, 이동은 가능).
+## 방어 중이면 안 걸린다 — 궁극기가 거는 공포만 뚫고 들어온다
+func apply_fear(duration: float, from_ultimate: bool = false) -> void:
+	if blocks_debuff(from_ultimate):
+		return
 	is_feared = true
 	set_tint("fear", Color(0.75, 0.75, 1.0), duration)
 	_after(duration, func(): is_feared = false)
@@ -425,7 +540,7 @@ func can_guard() -> bool:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
 
-## 아래 키를 **누른 순간** 호출한다 — guard_duration(1.2초) 동안 보호막이 켜지고
+## 아래 키를 **누른 순간** 호출한다 — guard_duration(1.0초) 동안 보호막이 켜지고
 ## 그 사이에 들어오는 공격은 전부 무효가 된다. 실제로 켜졌으면 true.
 ## 공중에서도 켜지고, 켜져 있는 동안엔 이동·점프·공격·스킬이 전부 막힌다(무적의 대가)
 func start_guard() -> bool:
@@ -730,15 +845,23 @@ func _recompute_modifier(property: String) -> void:
 		result *= value
 	set(property, result)
 
-## property에 duration초 동안만 유지되는 임시 배수 효과를 건다 (자동으로 id를 발급하고 만료 처리)
-func apply_temp_multiplier(property: String, value: float, duration: float) -> void:
+## property에 duration초 동안만 유지되는 임시 배수 효과를 건다 (자동으로 id를 발급하고 만료 처리).
+##
+## **스킬이 거는 디버프는 전부 이 함수를 지난다** — 방어 차단도 여기 한 곳에서만 한다.
+## `set_modifier`를 직접 부르는 쪽(맵 기믹·자기 자신 버프)은 이 검사를 안 거친다
+func apply_temp_multiplier(property: String, value: float, duration: float, from_ultimate: bool = false) -> void:
+	if blocks_debuff(from_ultimate):
+		return
 	var id := _next_modifier_id
 	_next_modifier_id += 1
 	set_modifier(property, id, value)
 	_after(duration, func(): clear_modifier(property, id))
 
-## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지)
-func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int) -> void:
+## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지).
+## 방어 중에 걸면 아예 안 붙는다 — 걸어두기만 하고 방어가 풀린 뒤 터지면 막은 의미가 없다
+func apply_dot(damage_per_tick: int, tick_interval: float, ticks: int, from_ultimate: bool = false) -> void:
+	if blocks_debuff(from_ultimate):
+		return
 	for i in range(ticks):
 		_after(tick_interval * (i + 1), func(): take_damage(damage_per_tick))
 
@@ -756,6 +879,9 @@ func apply_physics(delta: float) -> void:
 	if _hitstun_time > 0.0:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
 		velocity.x = move_toward(velocity.x, 0.0, HITSTUN_FRICTION * delta)
+	# 크게 날아가는 중이면 몸이 빙글빙글 돈다 (시간이 다 되거나 바닥에 닿으면 알아서 일어선다)
+	if _tumble_left > 0.0:
+		_update_tumble(delta)
 	if _combo_timer > 0.0:
 		_combo_timer = maxf(_combo_timer - delta, 0.0)
 	if not is_on_floor():
@@ -800,10 +926,17 @@ func apply_physics(delta: float) -> void:
 	# 돌진 스킬 등이 이동을 가로챘으면 그쪽이 최종 결정권을 갖는다 (대시보다 뒤에 둔 이유)
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
+	# **move_and_slide()가 부딪히는 순간 velocity.y를 0으로 만들어버린다** — 착지 세기를 알려면
+	# 그 전에 낙하 속도를 따로 기억해둬야 한다(스프링 발판이 _prev_fall을 쓰는 것과 같은 이유)
+	var fall_speed: float = velocity.y
 	move_and_slide()
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)
 	if is_on_floor():
 		_air_jumps_left = max_air_jumps
+	# 공중에 있다가 이번 프레임에 바닥에 닿았으면 = 착지
+	if is_on_floor() and not _was_on_floor:
+		_on_landed(fall_speed)
+	_was_on_floor = is_on_floor()
 	if movement_override:
 		movement_override.after_physics(self, delta)
 	# 상대 캐릭터와 겹쳤으면 가로로 밀어내 통과하지 못하게 한다

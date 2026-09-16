@@ -1,0 +1,33 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://characters/iljin/IljinCrewMember.gd" id="1"]
+[ext_resource type="PackedScene" path="res://characters/iljin/IljinFriendRig.tscn" id="2"]
+[ext_resource type="Script" path="res://combat/Hurtbox.gd" id="3"]
+[ext_resource type="PackedScene" path="res://skills/Spit.tscn" id="4_spit"]
+[ext_resource type="Script" path="res://skills/SpitWarning.gd" id="5_warn"]
+[ext_resource type="Texture2D" uid="uid://cl8h0cp33vlx7" path="res://sprite/일진/일진의 친구1/침을 모은 일진의 친구.png" id="6_gather"]
+[ext_resource type="Texture2D" uid="uid://dtm86dawkkm2g" path="res://sprite/일진/일진의 친구1/일진 친구의 침뱉는.png" id="7_spitface"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
+radius = 20.0
+height = 60.0
+
+[node name="IljinFriend" type="CharacterBody2D"]
+script = ExtResource("1")
+spit_scene = ExtResource("4_spit")
+warning_script = ExtResource("5_warn")
+gather_face = ExtResource("6_gather")
+spit_face = ExtResource("7_spitface")
+spit_face_scale = Vector2(0.0458, 0.0458)
+face_opponent = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Visual" parent="." instance=ExtResource("2")]
+
+[node name="Hurtbox" type="Area2D" parent="."]
+script = ExtResource("3")
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CapsuleShape2D_body")

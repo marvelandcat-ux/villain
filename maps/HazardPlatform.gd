@@ -10,7 +10,10 @@ var _cooldowns: Dictionary = {}
 func _process(delta: float) -> void:
 	for area in get_overlapping_areas():
 		if area is Hurtbox:
-			var f: Fighter = area.fighter
+			# Hurtbox 주인이 Fighter가 아닐 수 있다(일진 패거리) — as로 받아 아니면 건너뛴다
+			var f := area.fighter as Fighter
+			if f == null:
+				continue
 			var left: float = _cooldowns.get(f, 0.0) - delta
 			if left <= 0.0:
 				f.take_map_damage(damage)

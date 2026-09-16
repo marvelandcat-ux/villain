@@ -24,6 +24,7 @@ attack_raise_offset = Vector2(-8, 6)
 attack_slam_offset = Vector2(14, 2)
 attack_duration = 0.35
 attack_thrust = true
+attack_kick_hit = 2
 gun_hides_held_item = true
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]

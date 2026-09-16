@@ -92,6 +92,11 @@ var _enter_time: float = 0.0
 ## 확인 창에서 "확인"을 눌렀을 때 실행할 함수. 취소하면 버려진다
 var _pending: Callable = Callable()
 
+## 지금 떠 있는 설정 팝업 (없으면 null) — 메인 메뉴 위에 덮어 씌우는 방식이라 scene 전환을 안 한다
+var _settings_popup: Settings = null
+## 설정 팝업을 열기 전 포커스를 갖고 있던 컨트롤. 닫히면 여기로 되돌린다
+var _settings_return_focus: Control = null
+
 func _ready() -> void:
 	if auto_place_illustration:
 		_place_illustration()
@@ -363,8 +368,35 @@ func _on_training_pressed() -> void:
 func _on_how_to_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/HowToPlay.tscn")
 
+## 설정 화면은 씬 전환이 아니라 메인 메뉴 위에 팝업으로 덮어 씌운다 —
+## 뒤에 메인 메뉴가 그대로 살아있으므로 Settings.tscn의 반투명 Scrim을 통해 살짝 비쳐 보인다
 func _on_settings_pressed() -> void:
-	get_tree().change_scene_to_file("res://ui/Settings.tscn")
+	if _settings_popup != null:
+		return
+	_settings_return_focus = get_viewport().gui_get_focus_owner()
+	var settings_scene: PackedScene = load("res://ui/Settings.tscn")
+	_settings_popup = settings_scene.instantiate()
+	add_child(_settings_popup)
+	_settings_popup.closed.connect(_on_settings_closed)
+	_set_menu_buttons_visible(false)
+
+func _on_settings_closed() -> void:
+	_settings_popup = null
+	_set_menu_buttons_visible(true)
+	# 닫히면 원래 포커스를 갖고 있던 항목(보통 SettingsItem)으로 되돌려야 방향키 조작이 안 끊긴다
+	if is_instance_valid(_settings_return_focus):
+		_settings_return_focus.grab_focus()
+
+## 설정 팝업이 떠 있는 동안 사선 메뉴 항목·도감 버튼·제목/힌트 글자를 통째로 숨긴다 —
+## Scrim이 클릭은 막아주지만 반투명이라 뒤에 그대로 비치므로, 눈으로도 안 보이게 감춘다
+func _set_menu_buttons_visible(is_visible: bool) -> void:
+	# **도감 버튼을 따로 안 챙긴다** — 2026-09-16 머지에서 도감이 루트의 `DexButton`에서
+	# 사선 메뉴 항목(`Menu/DexItem`)으로 옮겨져서, 여기서 `Menu`를 숨기면 같이 숨겨진다.
+	# (예전 `_dex_button` 변수는 그때 없어졌다 — 그대로 두면 선언 없는 이름이라 파싱 에러가 난다)
+	for node_name in ["Menu", "TitleLabel", "HintLabel"]:
+		var node: CanvasItem = get_node_or_null(node_name)
+		if node:
+			node.visible = is_visible
 
 ## 도감은 되돌릴 게 없어서(읽기 전용) 확인 창 없이 바로 들어간다
 func _on_dex_pressed() -> void:
@@ -375,8 +407,9 @@ func _go_title() -> void:
 	get_tree().change_scene_to_file("res://ui/TitleScreen.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
-	# 확인 창이 떠 있으면 그쪽이 ESC를 먹는다 (ConfirmPopup이 set_input_as_handled까지 처리)
-	if _confirm.visible:
+	# 확인 창/설정 팝업이 떠 있으면 그쪽이 ESC를 먼저 먹는다(둘 다 set_input_as_handled까지 처리) —
+	# 여기 있는 검사는 혹시 놓쳤을 때를 대비한 이중 방어다
+	if _confirm.visible or _settings_popup != null:
 		return
 	# (임시) S를 누르면 다음 캐릭터 일러스트로 바로 넘어간다 — 새 일러스트를 확인하려고 10초씩
 	# 기다리지 않으려고 넣은 것이다. 정식 기능이 아니므로 나중에 지우거나 debug 플래그로 묶을 것

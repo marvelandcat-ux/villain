@@ -15,6 +15,11 @@ extends Skill
 @export var basic_attack_cooldown: float = 0.3
 ## 기본공격 쿨타임이 도는 속도 배수. 1.0이면 안 걸린다(지금은 위의 절대값 방식만 쓴다)
 @export var attack_speed_multiplier: float = 1.0
+## 발동하는 순간 머리를 부들부들 떠는 시간(초). 0이면 안 떤다.
+## **버프가 도는 내내 떨게 하려면 여기에 `duration`(6초)과 같은 값을 넣으면 된다** —
+## 지금은 "쓰는 순간 열받아서 부르르"만 보여주는 짧은 연출이다.
+## 떨리는 세기·빠르기는 리그 쪽(`BodyRig`의 `head_shake_*`)에서 조절한다
+@export var head_shake_time: float = 0.7
 
 ## 버프를 되돌릴 타이머 — 이 노드의 자식이라 캐릭터가 사라지면 같이 사라진다
 var _timer: Timer
@@ -32,6 +37,9 @@ func _execute(fighter: Fighter) -> void:
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("set_action_face"):
 		visual.set_action_face(true)
+	# 열받아서 머리가 부들부들 (그 기능이 없는 비주얼이면 그냥 넘어간다)
+	if visual and visual.has_method("play_head_shake"):
+		visual.play_head_shake(head_shake_time)
 	# **몸을 부풀렸다 줄이는 연출은 뺐다(2026-09-10).** BodyRig는 좌우 반전을 scale.x 부호로
 	# 하는데, 트윈이 scale을 양수 (1.12, 1.12)로 끌고 가면서 왼쪽을 보던 캐릭터가 0을 지나
 	# 오른쪽으로 뒤집혔다("열등감 쓰면 자꾸 오른쪽 돌아본다"). 리그가 매 프레임 부호를
