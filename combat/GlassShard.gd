@@ -72,15 +72,6 @@ func _fall(spawn_pos: Vector2, base_scale: float) -> void:
 	tween.tween_property(self, "modulate:a", 0.0, fade_time)
 	tween.tween_callback(queue_free)
 
-## 스폰 지점에서 아래로 레이캐스트해 바닥 윗면 y를 찾는다. 캐릭터는 뚫고 지나가야 하므로 전부 제외한다
+## 스폰 지점에서 아래로 레이캐스트해 바닥 윗면 y를 찾는다. 못 찾으면(공중 등) 그 자리에 둔다
 func _find_ground_y(from: Vector2) -> float:
-	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, ground_probe))
-	query.collide_with_areas = false
-	var excludes: Array[RID] = []
-	for f in get_tree().get_nodes_in_group("fighters"):
-		excludes.append(f.get_rid())
-	query.exclude = excludes
-	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return from.y   # 바닥을 못 찾으면(공중 등) 그 자리에 둔다
-	return hit.position.y
+	return PhysicsQuery.ground_y_below(self, from, ground_probe, from.y)

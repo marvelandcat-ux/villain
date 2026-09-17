@@ -236,13 +236,7 @@ func _stretch_cord(cord: Sprite2D, from: Vector2, to: Vector2, texture_length: f
 func _hit_ground(from: Vector2, to: Vector2) -> bool:
 	if not stop_on_ground or to.y <= from.y:
 		return false   # 내려가는 중일 때만 검사한다
-	var query := PhysicsRayQueryParameters2D.create(from, to)
-	query.collide_with_areas = false
-	var excludes: Array[RID] = []
-	for f in get_tree().get_nodes_in_group("fighters"):
-		excludes.append(f.get_rid())
-	query.exclude = excludes
-	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
+	var hit: Dictionary = PhysicsQuery.raycast_ignoring_fighters(self, from, to)
 	if hit.is_empty():
 		return false
 	return hit["normal"].y < -0.5

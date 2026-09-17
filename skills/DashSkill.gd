@@ -133,25 +133,13 @@ func _spawn_burst(fighter: Fighter, pos: Vector2) -> void:
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return
-	var burst := CrashBurst.new()
-	parent.add_child(burst)
-	burst.global_position = pos
+	CrashBurst.spawn(parent, pos)
 
 ## 돌진 중 몸 근처(enemy_hit_range 안)에 들어온 상대 Fighter를 찾는다.
 ## 캐릭터끼리는 몸 충돌(add_collision_exception_with)이 꺼져 있어 get_slide_collision으로는 안 잡히므로 거리로 판정한다.
 ## 돌진 방향 앞쪽(또는 거의 겹친) 상대만 대상으로 해서, 등지고 출발할 때 뒤에 있는 상대에 헛맞지 않게 한다
 func _get_enemy_in_range(fighter: Fighter) -> Fighter:
-	for other in fighter.get_tree().get_nodes_in_group("fighters"):
-		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
-			continue
-		var dx: float = other.global_position.x - fighter.global_position.x
-		var dy: float = other.global_position.y - fighter.global_position.y
-		if absf(dy) > enemy_hit_range_y or absf(dx) > enemy_hit_range_x:
-			continue
-		if dx * _direction < -20.0:   # 명백히 등 뒤에 있으면 제외 (거의 겹친 경우는 통과)
-			continue
-		return other
-	return null
+	return Fighter.find_fighter_in_box(fighter, enemy_hit_range_x, enemy_hit_range_y, _direction)
 
 ## 적을 들이받았을 때 — 적은 진행 방향으로, 촉법소년은 반대로 세게 튕겨나가고 둘 다 데미지를 입는다
 func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
@@ -193,13 +181,7 @@ func _end_dash(fighter: Fighter) -> void:
 ## 캐릭터는 제외하고, 못 찾으면(스프라이트 바닥 등) 기본 먼지색을 쓴다
 func _sample_ground_color(fighter: Fighter) -> Color:
 	var from: Vector2 = fighter.global_position
-	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, 200.0))
-	query.collide_with_areas = false
-	var excludes: Array[RID] = []
-	for f in fighter.get_tree().get_nodes_in_group("fighters"):
-		excludes.append(f.get_rid())
-	query.exclude = excludes
-	var hit: Dictionary = fighter.get_world_2d().direct_space_state.intersect_ray(query)
+	var hit: Dictionary = PhysicsQuery.raycast_ignoring_fighters(fighter, from, from + Vector2(0.0, 200.0))
 	if hit.is_empty():
 		return default_dust_color
 	for child in hit.collider.get_children():
