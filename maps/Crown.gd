@@ -124,10 +124,6 @@ func _ready() -> void:
 func is_available() -> bool:
 	return not is_instance_valid(_holder) and _lock_left <= 0.0
 
-## 지금 왕관을 쓰고 있는 쪽 (없으면 null)
-func get_holder() -> Fighter:
-	return _holder if is_instance_valid(_holder) else null
-
 ## 신호(area_entered) 대신 매 프레임 겹친 목록을 훑는다 — 라운드 리셋이나 순간이동으로
 ## 신호가 안 오는 경우가 있어서, 이 프로젝트의 다른 판정들(SandPit·SpringJumpPad)도 같은 방식이다
 func _physics_process(delta: float) -> void:
@@ -222,7 +218,7 @@ func _give_crown(fighter: Fighter) -> void:
 	_play_cutin(fighter)
 
 ## **넉백이 있는 피해(진짜 타격)에만 반응한다.**
-## `Fighter.apply_dot()`·`MouseGrab`·`HazardPlatform`은 넉백 없이 `take_damage()`를 부르는데,
+## `Fighter.apply_dot()`·`MouseGrab`은 넉백 없이 `take_damage()`를 부르는데,
 ## 그것까지 받아주면 독 틱 한 번에 왕관이 벗겨지고(때린 사람도 없는데) 튀는 방향도 엉뚱해진다 —
 ## 넉백이 0이라 바라보는 방향의 반대로 날아가 버린다
 func _on_holder_damaged(amount: int, knockback: Vector2) -> void:

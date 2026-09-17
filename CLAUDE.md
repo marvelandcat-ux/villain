@@ -19,6 +19,10 @@
 - **캐릭터끼리는 몸 충돌을 하지 않는다.** `Fighter._ignore_other_fighters()`가 `_ready()`에서 같은 씬의 다른 Fighter들과 양방향으로 `add_collision_exception_with`를 걸어둔다 — 안 걸면 캐릭터가 **상대 머리 위에 올라서서 발판처럼 밟고 다닐 수 있다**(실제로 나온 문제). 새로 스폰된 쪽이 자기 `_ready()`에서 기존 캐릭터들과 걸어두므로 라운드 리로드·훈련장 캐릭터 교체도 자동으로 처리된다
   - **충돌 레이어를 바꾸지 않은 이유:** 레이어를 건드리면 바닥·벽·발판까지 같이 영향을 받는다. 예외 처리로 빼는 건 몸(`CharacterBody2D`)끼리의 충돌뿐이고, 공격 판정(`Hitbox`/`Hurtbox`)은 Area2D라 그대로 서로를 감지한다 — 헤드리스로 기본공격 데미지·발판 착지가 그대로인 것까지 확인함
   - 대신 두 캐릭터가 같은 자리에 겹쳐 설 수 있게 됐다(스매시브라더스류와 같은 방식). 서로 밀어내는 처리가 필요하면 따로 넣어야 한다
+- **공용 정적 헬퍼 3종(2026-09-17 중복 제거 리팩토링)** — 여러 스킬·이펙트가 각자 복사해 쓰던 코드를 한 곳으로 모았다. 새 스킬을 만들 때 아래 패턴이 필요하면 직접 다시 짜지 말고 이걸 쓸 것:
+  - `combat/PhysicsQuery.gd`: `raycast_ignoring_fighters(ctx, from, to)` / `ground_y_below(ctx, from, probe, fallback_y)` — 캐릭터는 뚫고 지나가야 하는 레이캐스트(바닥 찾기, 벽까지 거리 재기)는 전부 이걸 쓴다. `GlassShard`/`LiquorSplash`/`DashSkill`/`MouseGrab`/`VomitBeam`이 씀
+  - `Timers.gd`(프로젝트 루트): `after(owner, delay, cb)` / `self_destruct(target, lifetime)` — `get_tree().create_timer()`가 아니라 owner의 자식 Timer로 예약해서 owner가 먼저 사라지면 콜백째 정리되게 하는 그 패턴(위 "Lambda capture" 항목 참고)을 한 곳에 모았다. `Fighter._after`/`CigaretteSmokeSkill._after`/`PassingTrain._wait`/`CatHut`/`FirePlate`/`Projectile`/`Turnstile`이 씀
+  - `Fighter.find_fighter_in_box(fighter, range_x, range_y, direction, back_tolerance := 20.0)`: 몸 충돌이 꺼져 있어 물리로 못 잡는 근접 상대를 거리로 찾는다(`DashSkill`/`ShoulderChargeSkill`). `CrashBurst.spawn(parent, pos)`: 기본 설정 그대로의 충돌 이펙트를 스폰한다(`DashSkill`/`ShoulderChargeSkill`) — **`BreakablePlatform`처럼 색·조각 수를 다르게 주려면 이 헬퍼 대신 `CrashBurst.new()`로 직접 만들어 add_child 전에 값을 채울 것**(안 그러면 `_ready()`가 기본값으로 이미 그려버린 뒤다)
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - **궁극기는 라운드 시작 시 쿨타임을 물고 시작한다(`Skill.start_on_cooldown`, 2026-09-10).** 전 캐릭터 `SkillUltimate`에 켜져 있어서 **라운드 초반에는 궁을 못 쓴다.** `_ready()`에서 `cooldown_left = effective_cooldown()`을 넣는 게 전부다
   - **"게임 시작"과 "라운드 시작"을 따로 처리할 필요가 없다** — 라운드가 바뀔 때 `Stage`가 `reload_current_scene()`으로 씬을 통째로 다시 만들기 때문에 `_ready()`가 매 라운드 다시 돈다. 라운드 승수만 `GameState`(오토로드)에 남는다
@@ -35,7 +39,7 @@
   - **떨림은 머리 자세를 덮어쓰지 않고 더하기만 한다** — 걷다가 써도, 다른 동작 중에 써도 그 위에 얹힌다. 시작·끝은 `sin` 봉우리 하나로 감싸서 켜지고 꺼질 때 머리가 툭 튀지 않고, 가로·세로를 서로 어긋난 주기로 흔들어 한 방향 까딱거림이 아니라 "부들부들"로 보이게 했다
   - **⚠️ 스킬에서 `Visual.scale`을 직접 트윈하지 말 것 — 대신 `BodyRig.play_squash(배율)`을 쓸 것(2026-09-10).** 이 리그는 왼쪽을 볼 때 `scale.x`를 음수로 두는데, 트윈이 양수 목표값(예: `(1.12, 1.12)`)으로 끌고 가면 **0을 지나면서 오른쪽으로 뒤집힌다.** 게다가 `_face_moving_direction()`이 매 프레임 부호를 되돌리려 해서 둘이 싸우기까지 한다. 열등감·촉법소년 궁·주정뱅이 궁에서 전부 "쓰면 자꾸 오른쪽 돌아본다"로 나타났다
     - `play_squash()`는 점프/착지 스쿼시가 쓰던 `_squash` 장치를 그대로 쓴다 — 리그가 매 프레임 **방향 부호를 곱해서** 적용하므로 보는 방향이 안 바뀌고, `squash_recover_speed`(2.5/초)로 저절로 원래 크기로 돌아온다
-    - 지금 이 방식을 쓰는 곳: `HealSkill.heal_pop`(1.25배 부풀기), `ScreamConeUltimate.shout_squash`(1.15 x 0.9 눌림), `JumpDebuffUltimate`(고아 파일이지만 되살릴 때를 위해 같이 고쳐뒀다). 열등감은 크기 연출 자체를 뺐다
+    - 지금 이 방식을 쓰는 곳: `HealSkill.heal_pop`(1.25배 부풀기), `ScreamConeUltimate.shout_squash`(1.15 x 0.9 눌림). 열등감은 크기 연출 자체를 뺐다(`JumpDebuffUltimate`는 2026-09-17 죽은 코드 정리에서 삭제됨 — 필요하면 git 히스토리에서 복구)
     - 실측(왼쪽을 본 채 발동): `scale.x`가 40프레임 내내 음수를 유지하고, 연출은 촉법소년 -1.22/1.22, 주정뱅이 -1.12/0.92까지 정상적으로 들어간다
     - **`FirePlate`처럼 자기 자식 스프라이트를 트윈하는 건 상관없다** — 문제가 되는 건 캐릭터의 `Visual`(BodyRig)뿐이다
   - 발동할 때 **이미 돌고 있던 쿨도 `minf`로 0.3초까지 깎아준다** — 안 그러면 버튼을 누르고도 남은 1초를 그대로 기다려야 해서 빨라진 게 늦게 느껴진다
@@ -289,7 +293,7 @@
     - **맞으면 대시가 그 자리에서 끊긴다**(`_hitstun_time > 0`). 넉백이 대시를 이겨야 콤보가 성립한다
     - **두 번째 탭이 인정되면 기록을 지운다** — 안 지우면 세 번째·네 번째 탭마다 계속 대시가 나가서, 방향키를 연타하면 쿨타임이 도는 족족 대시가 나간다
     - 잔상은 `Fighter._spawn_dash_afterimage()`가 `Visual`을 복제해 남긴다(`DashSkill`과 같은 방식). **복제본의 스크립트를 떼는 게 핵심** — 안 떼면 `BodyRig`의 매 프레임 자세 계산이 잔상에서도 돌아 같이 움직인다
-    - **쿨타임을 보여주는 HUD는 아직 없다.** `Fighter.dash_cooldown_ratio()`(0~1)가 있으니 스킬 쿨타임 슬롯과 같은 방식으로 붙이면 된다
+    - **쿨타임을 보여주는 HUD는 아직 없다.** 필요하면 `_dash_cooldown_left`/`dash_cooldown`을 스킬 쿨타임 슬롯과 같은 방식으로 붙이면 된다(예전에 있던 `Fighter.dash_cooldown_ratio()`는 아무도 안 부르는 죽은 함수라 2026-09-17 정리에서 삭제됨)
   - **아래 키 방어(구현 완료, 2026-09-10):** 아래 키를 **누르는 순간** 몸을 감싸는 원형 보호막(`combat/GuardShield.gd`)이 켜지고, `Fighter.guard_duration`(**1초**, 2026-09-14에 1.2에서 내림) 동안 **들어오는 공격의 데미지·넉백이 전부 0**이 된다. 끝나면 `guard_cooldown`(**5초**) 쿨타임
     - **누르고 있는 게 아니라 한 번 눌러 발동하는 방식이다.** 처음엔 "누르고 있는 동안 피해 절반"인 자세로 만들었다가 기획 의도(완전 무적 + 쿨타임)와 달라서 갈아엎었다. 키를 떼도 그 시간은 그대로 유지된다
     - **`take_damage`에서 `is_invincible`과 같은 자리에 early return** 한다 — 데미지뿐 아니라 넉백·경직도 안 들어간다. 막은 양은 `custom_data["guard_absorbed"]`에 누적된다
@@ -313,7 +317,7 @@
       - **`guard_hand_deg`는 음수(-45)라야 한다.** 손에 든 물건이 이 각도를 그대로 따라가는데, 음수면 몸 쪽으로 눕고 양수면 머리 위로 치솟는다. -45에서 **악플러는 키보드가 얼굴 앞에 가로로 서서 그대로 방패가 되고**, 촉법소년은 막대사탕이 모자 옆에 붙는다
     - 보호막은 그림 없이 `_draw()`로 그린다 — 반투명 원 + **남은 시간만큼 12시부터 시계로 줄어드는 밝은 테두리**(언제 풀리는지 눈으로 보인다). 켜질 때 25% 부풀었다 제자리로 돌아온다. 반지름 47 / 중심 `(0,-14)`는 캐릭터 전체(머리 위 -60 ~ 발 +32)를 덮는 값이고, 6명이 같은 규격이라 한 값으로 다 맞는다
     - **`Fighter._shield`에는 타입을 안 붙였다.** `GuardShield`는 `preload`로 가져오는 새 `class_name`이라, 타입을 붙이면 전역 클래스 캐시가 갱신되기 전에 `set_active()`를 못 찾는다고 파싱 에러가 난다(`movement_override`를 무타입으로 둔 것과 같은 이유)
-    - 쿨타임 표시 HUD는 아직 없다 — `Fighter.guard_cooldown_ratio()`(0~1)를 쓰면 된다
+    - 쿨타임 표시 HUD는 아직 없다 — 필요하면 `_guard_cooldown_left`/`guard_cooldown`을 쓰면 된다(예전에 있던 `Fighter.guard_cooldown_ratio()`는 아무도 안 부르는 죽은 함수라 2026-09-17 정리에서 삭제됨)
   - **플랫폼 아래로 내려가기(구현 완료, 2026-09-03):** 아래키를 누른 채 점프하면 `PlayerController._drop_through_platform()` → `Fighter.drop_through_platform()`이 발밑 발판을 통과해 아래층으로 내려간다. 통과 가능한 발판 위가 아니면(진짜 지면이거나 공중) 그냥 평범한 점프가 나간다 — 입력이 씹힌 것처럼 느껴지지 않게
     - **충돌 레이어를 통째로 끄지 않고 `add_collision_exception_with(발판)`으로 그 발판 하나만 예외 처리한다.** 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 통과해서 맵 밖으로 떨어진다. 예외는 `Fighter.DROP_THROUGH_DURATION`(0.35초) 뒤 자식 Timer(`_after`)로 되돌린다
     - 발밑 발판은 직전 `move_and_slide()`가 남긴 충돌 목록(`get_slide_collision`)에서 **법선이 위를 향하는 면**만 골라, 그 도형에 `is_shape_owner_one_way_collision_enabled()`가 켜져 있는지로 판별한다(`Fighter.get_one_way_floor()` — 원래 `_get_one_way_floor`였는데, 아파트 맵의 `GroundPoundSkill`처럼 "지금 밟은 발판이 뭔지" 알아야 하는 외부 스킬이 생겨서 공개 메서드로 바꿨다)
@@ -344,7 +348,7 @@
   - **`HandR`·`HandRHold` 두 노드에 각각 `modulate`** — 부모-자식이 아니라 형제(트랜스폼만 복사)라 한쪽만 걸면 나머지가 안 물들고, 양쪽에 걸어도 두 번 곱해지지 않음. 손은 전원 보유 → 무기 없는 캐릭터도 보임
   - 막힘 판정은 `Hitbox._is_blocked_by_guard()`(`take_damage()`는 방어 중 맨 앞에서 return, `Hurtbox.take_hit()`은 막혀도 true — `source_fighter`를 아는 Hitbox가 맞은 쪽 `is_guarding`을 직접 봄). 기본공격만 잠김(히트박스 부모가 공격자의 `basic_attack` 노드인지로 판별 → 씬 수정 불필요)
 - **맵 피해는 `Fighter.take_map_damage()` 한 곳으로(2026-09-10).** 열차·화분·층간소음 충격파 등 주인 없는 피해 전부. **맵 피해 전용 처리는 전부 여기 넣을 것**(지금은 "방어로 안 막힘" 하나)
-  - 분기는 `Hurtbox.take_hit()` — `source_fighter` 있으면 `take_damage()`(막힘), null이면 `take_map_damage()`(관통). 기준이 "주인 유무"라 씬 수정 불필요(해제된 주인은 `Hitbox._try_hit()`이 먼저 걸러냄). 히트박스 없이 때리는 기믹(`StompZone`·`HazardPlatform`)은 직접 호출
+  - 분기는 `Hurtbox.take_hit()` — `source_fighter` 있으면 `take_damage()`(막힘), null이면 `take_map_damage()`(관통). 기준이 "주인 유무"라 씬 수정 불필요(해제된 주인은 `Hitbox._try_hit()`이 먼저 걸러냄). 히트박스 없이 때리는 기믹(`StompZone`)은 직접 호출
   - **맵 피해는 방어를 깬다(`cancel_guard()`)** — 데미지만 통과시키면 넉백이 지워짐(방어 중 `apply_physics()`가 매 프레임 `velocity.x = 0` → 열차에 맞아도 제자리 붙박이). 쿨은 정상 소모(방어로 열차를 막으면 기믹이 죽어서 뚫리게 한 것)
   - **`take_damage()`의 `ignore_guard`를 바깥에서 직접 true로 주지 말 것**(`take_map_damage()` 전용 — 직접 쓰면 맵 피해 경로가 둘로 갈라짐)
 - 막으면 데미지 숫자 대신 "BLOCK"(2026-09-10): `DamagePopup.setup_block()`(`block_font_size`/`block_color`). `Hitbox._try_hit()`이 막힘을 한 번만 판정해 팝업·무기 깜빡임에 공용(두 군데서 판정하면 "BLOCK인데 HP가 깎임"). 맵 기믹은 관통이라 데미지 숫자(같은 `_has_source` 기준)
@@ -434,7 +438,7 @@
       옆에서 걸어오면 **x=-38**(= `BODY_PUSH_WIDTH`)에서 정확히 막힌다
   - **둘은 `IljinCrewMember`(CharacterBody2D + Hurtbox + Visual) 다** — `characters/iljin/IljinFriend.tscn` / `IljinGirlfriend.tscn`. **몸으로 길을 막아 일진도 상대도 통과 못 하고**,
     - **몸이 캐릭터와 똑같이 논다(2026-09-15 사용자 요청).** 중력(`Fighter.gravity` — 훈련장에서 바꾸면 같이 따라간다)을 받아 떨어지고, 맞으면 넉백에 밀리고, 바닥·벽·발판에 막힌다. 넉백 계산은 `Fighter.take_damage`를 그대로 옮겼다(수평 x `KNOCKBACK_MULTIPLIER` + 데미지 비례 팝업), 조작 입력이 없으니 `knockback_friction`(900 = `Fighter.HITSTUN_FRICTION`)으로만 잦아든다. **처음엔 StaticBody2D라 중력도 넉백도 없는 붙박이 벽이었다**
-    - **⚠️ 이때 맵 기믹 5개가 터졌다.** `Crown`·`SandPit`·`SpringJumpPad`·`Swing`·`HazardPlatform`이 `var fighter: Fighter = area.fighter`로 **Hurtbox 주인을 Fighter라고 단정**하고 있어서, 패거리가 판정에 닿는 순간 `Trying to assign value of type 'IljinCrewMember.gd' to a variable of type 'Fighter.gd'`가 매 프레임 쏟아졌다. 전부 `area.fighter as Fighter`(아니면 null)로 고쳤다 — **`Hurtbox.fighter`를 `Node`로 푼 이상, 그 값을 받는 쪽은 전부 Fighter인지 확인해야 한다**
+    - **⚠️ 이때 맵 기믹 여러 개가 터졌다.** `Crown`·`SandPit`·`SpringJumpPad`·`Swing`이 `var fighter: Fighter = area.fighter`로 **Hurtbox 주인을 Fighter라고 단정**하고 있어서, 패거리가 판정에 닿는 순간 `Trying to assign value of type 'IljinCrewMember.gd' to a variable of type 'Fighter.gd'`가 매 프레임 쏟아졌다. 전부 `area.fighter as Fighter`(아니면 null)로 고쳤다 — **`Hurtbox.fighter`를 `Node`로 푼 이상, 그 값을 받는 쪽은 전부 Fighter인지 확인해야 한다**
     - 실측(헤드리스): 공중에서 소환하면 96~150px 떨어져 발판·바닥에 착지, 열차 규격 피해(12 / 넉백 420,-260)에 HP 30 -> 18 + 가로 125~135px 밀림 맞으면 HP(`max_hp` 30)가 깎여 0이 되면 스르륵 사라진다(`fade_out` 0.35초). **부른 일진이 쓰러져도 같이 사라진다**(`Fighter.died` 시그널 연결, 2026-09-14 — 일진이 KO된 자리에 패거리만 남으면 누가 이겼는지 헷갈린다). 주인이 시그널도 없이 사라지는 경우(훈련장 캐릭터 교체)는 `_had_owner` 불리언으로 잡는다 — **해제된 객체는 `== null`이 true**라 그게 없으면 "원래 주인이 없었다"와 구분이 안 된다. **부른 사람의 공격은 안 맞는다**(바로 옆이라 상대를 때리려다 자기 편을 죽인다 — `Hurtbox.immune_source`)
     - **Fighter로 만들면 안 된다.** `Fighter._ready()`가 "fighters" 그룹에 넣어 카메라가 따라가고 AI가 상대로 착각하며, 그 위에 `_ignore_other_fighters()`가 **캐릭터끼리 몸 충돌을 꺼버려 오히려 통과해 버린다**. 필요한 건 "HP 있는 벽"이라 별개 노드가 짧고 안전하다
     - **둘은 idle 모션(머리 긁기·뒤돌아보기)을 끈다**(2026-09-14 사용자 요청) — `BodyRig.idle_gestures = false`. 배경 인물이 혼자 머리를 긁고 뒤를 돌아보면 시선을 뺏는다. **기본값은 켜짐이라 다른 캐릭터는 영향 없다**
@@ -647,6 +651,24 @@
 - `ui/breath.gdshader`: 한 장짜리 그림의 특정 타원만 부풀리는 셰이더. 지금 메뉴는 안 쓰지만 **파츠 분리가 안 된 일러스트에 쓸 수 있다**
 - **주의: 화면을 덮는 배경이 마우스 클릭을 삼킨다.** `Control`의 `mouse_filter` 기본값이 `STOP`이라 전체 화면 `ColorRect`/`TextureRect`가 클릭을 먹고 `_unhandled_input`까지 안 온다(타이틀에서 키보드만 먹던 원인). `mouse_filter = 2`(IGNORE)로 통과 — **단, 버튼 자신에게 주면 클릭을 못 받으니 배경 레이어에만**
 
+### 방 설정
+
+- **`ui/RoomSettings.tscn`(방 설정)은 대난투 규칙 설정 화면을 참고해 다시 만들었다(2026-09-09, 2026-09-15에 리스트 카드로, 같은 날 다시 2열 6항목으로 재개편).** 예전에는 검은 배경에 SpinBox/OptionButton을 세로로 늘어놓기만 해서 화면이 휑했다. 지금 구성은 위에 빠른 프리셋 버튼 2개(`PresetA` "표준" = 2선승·2분 / `PresetB` "장기전" = 3선승·무제한) + 메뉴 버튼(`PresetMore` "프리셋" — 프리셋 저장/불러오기 전용, 아래 참고), 아래에 카드(`Card`) 하나 안에 왼쪽 열(`RoundRow`/`TimeRow`/`CooldownRow` — 라벨 + `[◀ 값 ▶]` 스테퍼)·오른쪽 열(`ClashRow`/`GuardRow`/`DashRow` — 라벨 + ON/OFF 토글 버튼)로 여섯 항목을 3행씩 나열, 그 아래에 현재 설정 요약 한 줄.
+  - **내장 "추가 프리셋" 목록(1판1선 무제한 등)은 뺐다(2026-09-15) — `MORE_PRESETS` 상수와 그 메뉴 항목들을 지웠다.** "프리셋" 버튼은 이제 저장/불러오기 전용이라, 빠른 시작은 위 버튼 2개 + 저장해둔 내 프리셋만 쓴다
+  - **`RoundRow`의 라운드 수는 1에서 더 줄이면 40으로, 40에서 더 늘리면 1로 되돌아간다(2026-09-15, `clampi` → `wrapi(값, 1, MAX_ROUNDS+1)`로 교체).** `TimeRow`의 시간 선택지와 같은 방식이다 — 키보드로 직접 입력한 값(아래 LineEdit 항목 참고)은 그대로 클램프만 한다(그쪽까지 순환시키면 "51을 입력했는데 11이 됐다"처럼 직관과 어긋난다)
+  - **쿨타임(`CooldownRow`, 10~200%·10% 단위)·연타 미니게임(`ClashRow`)·가드(`GuardRow`)·대시(`DashRow`) on/off가 2026-09-15에 새로 추가됐다** — 이제 방 설정이 라운드 수·시간제한뿐 아니라 전투 자체의 속도감과 방어/기동 수단 사용 여부까지 정한다. `_on_next_pressed()`가 `GameState.cooldown_multiplier`(1.0 = 원래 쿨타임)·`GameState.clash_minigame_enabled`·`GameState.guard_enabled`·`GameState.dash_enabled`에 담아 넘긴다
+    - **쿨타임 배율은 `Skill.effective_cooldown()`(마지막에 `GameState.cooldown_multiplier`를 곱함) 한 곳에서 적용된다.** `Skill.use()`/`cancel_use()`, `ComboMeleeAttack._resolve()`의 콤보 마무리, HUD의 물높이(`SkillCooldownIcon`)가 전부 이 함수를 거치므로 자동으로 같이 느려지거나 빨라진다. **딱 두 곳만 별도로 챙겨야 했다** — `ComboMeleeAttack._effective_miss_cooldown()`(헛발 쿨, 자체적으로 배율을 곱하도록 고침)과 `RageBuffSkill._execute()`의 즉시 클램프(`basic_attack_cooldown` 대신 `fighter.basic_attack.effective_cooldown()`을 쓰도록 고침) — 안 그러면 이 두 경로만 배율이 안 먹는다(위 "쿨을 새로 채우는 자리는 전부 effective_cooldown()을 거친다" 항목과 같은 함정). `LivingShadowSkill.use()`도 `cooldown_left = cooldown`으로 직접 읽던 걸 `effective_cooldown()`으로 고쳤다
+    - **연타 미니게임 off는 `SkillClashManager.request()` 맨 앞에서 막는다** — `GameState.clash_minigame_enabled`가 false면 "동시 사용" 판정 자체를 안 하고 `on_win.call()`로 바로 발동시킨다. 화면 정지·연타 팝업이 아예 안 뜬다
+    - **가드/대시 off는 각각 `Fighter.can_guard()`/`Fighter.can_dash()` 맨 앞에서 막는다.** `PlayerController`(아래 키 단독 = 방어, 방향키 두 번 = 대시)와 `AIController` 둘 다 이 함수를 거쳐서만 방어·대시를 시도하므로, 플래그 하나로 사람·AI 양쪽에 동시에 적용된다 — 컨트롤러 쪽은 손댈 게 없었다
+  - **라운드·쿨타임 값 칸(`RoundRow`/`CooldownRow`의 `Value`)은 Label이 아니라 `LineEdit`라 클릭해서 숫자를 직접 타이핑할 수 있다(2026-09-15).** Enter나 포커스 아웃(`text_submitted`/`focus_exited`)에서 커밋하고, 숫자가 아니면(`String.is_valid_int()`) 그냥 이전 값으로 되돌린다 — 실시간 입력 필터링은 안 넣었다(SpinBox를 쓰면 공짜로 되지만 지금 있는 커스텀 ◀▶ 버튼·보라색 테마를 다시 입혀야 해서, 기존 스테퍼는 그대로 두고 LineEdit만 얹는 쪽을 택했다). 쿨타임 칸은 편집 중에도 항상 "숫자%" 형태로 보여주고 커밋할 때 `trim_suffix("%")`로 뒤의 %를 떼고 파싱한다
+  - **"프리셋" 버튼(`PresetMore`)은 프리셋 저장/불러오기 메뉴다(2026-09-15).** 눌렀을 때 뜨는 `PopupMenu` 맨 위에 "현재 설정 저장..." 항목(id 0)이 있고, 고르면 `_show_save_preset_dialog()`가 이름 입력창(MapSelect의 팝업처럼 코드로 직접 만든 오버레이+`PanelContainer`)을 띄운다. 저장하면 여섯 값(`rounds`/`time_index`/`cooldown_percent`/`clash_enabled`/`guard_enabled`/`dash_enabled`)이 `GameState.save_room_preset(이름, data)` → `user://settings.cfg`의 `room_presets` section에 이름을 key로 저장돼 **게임을 껐다 켜도 남는다.** 다음에 "프리셋"을 열면 "내 프리셋" 구분선과 함께 저장해둔 이름들이 `SAVED_PRESET_ID_BASE`(1)부터 순서대로 id가 붙어 나열되고, 고르면 `_apply_saved_preset()`이 여섯 값을 그대로 되돌린다. 같은 이름으로 다시 저장하면 덮어써진다(삭제 UI는 아직 없음)
+  - 배경은 메인 메뉴와 **같은 그림에 같은 흐림 셰이더**(`blur_amount` 6)를 걸고 스크림을 덮어서 메뉴에서 넘어올 때 화면이 이어져 보이게 했다
+  - 버튼 연결은 `.tscn`의 `[connection]`이 아니라 `_ready()`에서 코드로 한다(노드가 많아 연결 블록이 길어지고, 순서 규칙 때문에 파일 끝에 몰아 써야 해서)
+  - **뒤로가기 버튼은 화면 왼쪽 아래 구석에 박스 없이 글자만 뜬다(`flat = true`, 2026-09-15)** — 캐릭터 선택·맵 선택 화면과 이름("뒤로가기 (ESC)")·위치·스타일을 통일했다
+- **주의: 주아체(Jua)에는 한글·기본 ASCII만 있고 기호 글리프가 거의 없다.** 확인한 것만 해도 `◀ ▶ ● ○ · × ↑ ↓`가 전부 **없어서** 폰트를 지정하면 네모(두부)로 나온다. `~ / ( ) - | , .`는 있다. 그래서 방 설정의 화살표 버튼들만 **폰트 지정 없이 기본 폰트**로 두었다(기본 폰트는 시스템 폰트 대체가 걸려 기호가 나온다). 주아체를 쓰는 라벨에 기호를 넣을 땐 먼저 글리프가 있는지 확인할 것
+
+**로컬 대전(PvP) 흐름:** `ui/TitleScreen.tscn`(아무 키) → `ui/MainMenu.tscn`("대전 모드" 선택) → `ui/RoomSettings.tscn`(선취 라운드 수 1~40 / 시간제한 무제한·1~5분 / 쿨타임 배율 10~200% / 연타 미니게임·가드·대시 on·off → `GameState.rounds_to_win`/`time_limit_seconds`/`cooldown_multiplier`/`clash_minigame_enabled`/`guard_enabled`/`dash_enabled`) → `ui/CharacterSelect.tscn`(P1→P2 순서로 캐릭터 선택, `GameState.p1_character_path`/`p2_character_path`에 저장) → `ui/MapSelect.tscn`(맵 선택 시 바로 그 맵 씬으로 전환) → 선택한 맵(`Stage.gd` 상속).
+
 **스토리 모드 흐름(2026-09-12 전면 개편 중):** 옛 스토리(에피소드 선택 -> 캐릭터 선택 -> 정해진 상대와 대전 -> 개과천선 대사 -> 클리어)는 **통째로 걷어냈다** — `EpisodeSelect`/`ReformCutscene`/`StoryClear`/`StoryIntro` 화면, `GameState.STORY_OPPONENTS`/`STORY_MAPS`/`story_index`/`story_cleared`와 진행도 함수, `CharacterSelect`·`Stage`의 스토리 분기를 전부 지웠다. 되살릴 일이 있으면 2026-09-12 이전 커밋에 있다.
 지금은 `ui/MainMenu.tscn`("스토리 모드" -> 확인) -> `ui/story/StoryScene1.tscn` ~ `StoryScene11.tscn`까지 **11장면**이 이어진다(2026-09-14 기준. 경찰서 앞 -> 간판 -> 대화 -> 장소 카드 -> 놀이터 대화·대전 -> 제압 후 공원 -> 돌 던지기 -> 돌 맞고 넘어짐 -> 붙잡은 뒤 대화 -> 장소 카드 -> 경찰서 훈방). **장면 전부가 `ui/story/StoryFadeScene.gd` 하나로 돈다**: **검은 화면에서 페이드인(`fade_in_time` 1.2초) -> 머묾(`hold_time` 1.5초) -> 페이드아웃(`fade_out_time` 1.2초) -> `next_scene`**. `next_scene`이 비어 있으면 페이드인한 채로 멈춘다(지금은 11번 장면이 그렇다). 페이드아웃이 완전히 검은 채로 끝나고 다음 장면도 검게 시작해서 이음매가 안 보인다. **ESC는 어느 장면에서든 일시정지 화면(`ui/PauseMenu.tscn`)을 띄운다**(2026-09-15 사용자 요청 — 예전엔 바로 메인 메뉴로 나갔다. 실수로 눌러서 보던 이야기가 통째로 날아가지 않게 한 단계를 뒀다). 멈추는 동안 페이드·대사 타자도 같이 멈췄다가 "계속하기"에서 이어지고, "다시하기"는 그 장면을 처음부터 다시 튼다. 메인 메뉴로 나가는 길은 그 화면의 "메인메뉴로" 항목에 있다.
   - 장면 내용은 씬에 자유롭게 올리되 **`Fade`(검은 ColorRect)는 항상 트리 맨 아래(맨 마지막 자식)에 둘 것** — 그래야 다른 걸 다 덮는다
@@ -858,8 +880,6 @@
   - `GameState.game_mode = "story"`는 그대로 쓴다 — `Stage`가 P2를 AI로 붙이고 `FighterPanel`이 P2 조작키를 숨기는 모드 구분 장치라, 새 스토리에 대전을 붙일 때 다시 쓸 수 있다
 
 - `ui/HowToPlay.tscn`은 키를 고정 문자열이 아니라 **`InputMap`에서 읽어온다**(재배정하면 표시도 바뀐다). 읽기 전용, 바꾸는 건 설정 > 조작 탭
-- **`ui/RoomSettings.tscn`(2026-09-09 개편)**: 프리셋 3개(빠른 대전 1선승·1분 / 표준 2선승·무제한 / 장기전 3선승·3분) + 큰 카드 2장(`RoundsCard`/`TimeCard` — `[◀ 큰 값 ▶]` 스테퍼 + 한 줄 설명) + 아래 요약 한 줄. 배경은 메인 메뉴와 **같은 그림·같은 흐림**(`blur_amount` 6) + 스크림. 버튼 연결은 `[connection]`이 아니라 `_ready()`에서 코드로
-- **주의: 주아체(Jua)에는 기호 글리프가 거의 없다.** `◀ ▶ ● ○ · × ↑ ↓`가 전부 없어 두부로 나온다(`~ / ( ) - | , .`는 있음). 그래서 방 설정 화살표 버튼 두 개만 **폰트 지정 없이 기본 폰트**로 뒀다. 주아체 라벨에 기호를 넣을 땐 글리프 유무를 먼저 확인할 것
 
 - 캐릭터·맵 후보 목록은 `GameState.CHARACTERS`/`GameState.MAPS` 딕셔너리 하나로 관리 — 캐릭터나 맵을 추가하면 이 딕셔너리에 한 줄만 추가하면 선택 화면에 자동으로 나타남
 - 모든 화면에 ESC(`ui_cancel`)로 한 단계 뒤로 나가는 탈출구가 있음: 모드 선택→메인 메뉴, 방 설정→모드 선택, 캐릭터 선택→방 설정, 맵 선택→캐릭터 선택. **스토리 장면·대전 중에는 ESC가 일시정지 화면을 띄우고**(2026-09-15), 거기서 "메인메뉴로"를 고르면 나간다. 버튼으로도 동일하게 나갈 수 있음
@@ -881,7 +901,8 @@
   - **`repeat_interval`이 켜진 판정은 건너뛴다**(열차·담배 연기) — 겹쳐 있는 동안 계속 때리는 판정이 매번 멈추면 화면이 끊긴 것처럼 보인다
   - **이미 `Engine.time_scale`이 0.5 밑이면 안 건다** — KO 슬로모션(`Stage.knockout_time_scale` 0.35) 중에 걸리면 나중 것이 먼저 풀리면서 KO 연출의 배속까지 1로 되돌려버린다
   - 되돌리는 타이머는 **`ignore_time_scale = true`** 라야 한다(배속을 0에 가깝게 낮춰놔서 보통 타이머는 영영 안 끝난다). 콜백이 노드를 하나도 붙잡지 않아 "Lambda capture was freed" 함정에도 안 걸린다
-- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도(도발+열등감 오라 등) 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 스킬 9종 전부 이 방식으로 캐릭터별 이펙트가 붙어있음: 촉법소년 돌진 잔상(`DashSkill`)·비비탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 도발 대상 노란빛(`TauntSkill`)·열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 빨간 부채꼴+보라 디버프(`ScreamConeUltimate`)
+- 상태별 색조는 `Fighter.set_tint(id, color, duration)`/`clear_tint(id)`로 건다. 여러 개가 동시에 걸려도 서로 안 지우고 스택처럼 쌓였다가, 하나가 풀리면 그 밑에 깔려있던 색으로 돌아간다(전부 없으면 원래 색) — `set_modifier`/`clear_modifier`와 같은 발상. 이 방식으로 캐릭터별 이펙트가 붙어있음: 촉법소년 돌진 잔상(`DashSkill`)·비비탄 총구 섬광(`BBGunSkill`)·궁극기 초록 반짝임(`HealSkill`), 악플러 열등감 붉은 오라(`RageBuffSkill`)·궁극기 어두운 디버프(`WeakenAuraUltimate`), 주정뱅이 스택 비례 빨개짐(`DrinkSkill`)·초록 토사물(`VomitSkill`)·궁극기 빨간 부채꼴+보라 디버프(`ScreamConeUltimate`)
+  - (예전엔 악플러 스킬 목록에 도발 대상을 노란빛으로 물들이는 `TauntSkill`도 있었는데, 실제로는 어느 씬에도 안 붙어 있던 죽은 코드였다 — 2026-09-17 정리에서 삭제)
 - 넉백: `MeleeAttack`/`Projectile`이 각자 `Hitbox.knockback`을 설정해서 맞은 캐릭터의 `velocity`에 즉시 더한다(`Fighter.take_damage`). 바운스어택류 콤보의 기반 — 아직 스킬 하나하나에 맞는 세밀한 값 조정은 안 되어 있음(전부 임시값)
 - 대전 시작 시 `ui/RoundStart.tscn`이 "3, 2, 1, FIGHT!" 카운트다운을 보여주는 동안 양쪽 컨트롤러가 멈춘다(`PlayerController`/`AIController`의 `is_active`). **주의:** 그냥 멈추기만 하면(`set_physics_process(false)`) 멈추기 직전 프레임의 관성(velocity.x)이 남아서 계속 미끄러지는 버그가 났었음 — `is_active=false`일 때도 물리 처리(`apply_physics`)는 계속하되 `fighter.move(0.0)`으로 수평 속도를 매 프레임 0으로 고정해야 함
 
@@ -971,7 +992,7 @@
     - `beam_length_variance`(0.35)로 창문마다 높이가 다르고 **출발할 때마다(`_begin_run`) 기존 `polygon`만 재계산**한다(`_beams`가 창문·방향을 들고 있다). 나머지: `window_glow`(1.0)/`window_flicker`(0.09)/`window_flicker_speed`(16)/`beam_up_length`(230)/`beam_alpha`(0.68)/`beam_color`
   - 운전실이 **왼쪽**이라 `_apply_direction()`이 `body.scale.x = -_direction`으로 **부호를 뒤집는다**(판정은 대칭이라 무관)
   - **AI가 이 기믹을 피한다:** `is_dangerous()`가 WARNING/RUNNING이면 true + `_ready()`에서 `add_to_group("ai_danger_zone")` → `AIController._try_dodge_hazard()`가 `"ai_safe_spot"` 그룹(`maps/AISafeSpot.gd`, 빈 Marker2D에 붙이기만) 중 가까운 곳으로 가 이단 점프로 올라타 버틴다(`AISafeSpotLeft`/`Right`, y=155). **캐릭터·맵 이름 분기 없이 두 그룹만으로 판단하는 범용 시스템** — 새 기믹은 `is_dangerous()`만 만들어 등록하면 되고, 피할 곳이 없으면 `ai_safe_spot`을 안 놓으면 그만
-- **`Hitbox.repeat_interval`(기본 0):** 0보다 크면 겹친 동안 그 간격마다 재타격(`_process`가 `get_overlapping_areas()`를 훑으며 대상별 쿨타임 관리 — `HazardPlatform.gd`와 같은 방식). **스킬 히트박스는 전부 0.** 판정을 껐다 켤 때 `clear_repeat_state()`
+- **`Hitbox.repeat_interval`(기본 0):** 0보다 크면 겹친 동안 그 간격마다 재타격(`_process`가 `get_overlapping_areas()`를 훑으며 대상별 쿨타임 관리 — `SpringJumpPad.gd`/`SandPit.gd`와 같은 방식). **스킬 히트박스는 전부 0.** 판정을 껐다 켤 때 `clear_repeat_state()`
 
 ### `maps/Playground.tscn` (놀이터) — **왕관 훔쳐서 달아나기** / 스프링 시소 / 그네 / 모래사장
 
@@ -1123,8 +1144,7 @@
   - **원경 흐리기는 `modulate`로 못 한다** — 곱셈이라 그림을 하늘색 쪽으로 **밝게** 만들 수가 없다.
     대신 동마다 **하늘과 똑같은 색** 판(`Haze*`)을 그 동 위에만 덮는다. 하늘 위에서는 같은 색이라
     안 보이고 건물 위에서만 색이 옅어져서, 바깥쪽 동일수록 뒤로 물러난다(haze 0.10~0.30)
-  - **`maps/apartment.gdshader`는 이제 고아 파일이다.** 그림이 오기 전에 창문 격자를 절차적으로 그리던
-    임시 배경용이었다. 되돌릴 여지가 있어 지우지 않고 남겨뒀다
+  - `maps/apartment.gdshader`는 그림이 오기 전에 창문 격자를 절차적으로 그리던 임시 배경용이었다. 아무 데도 안 쓰여서 2026-09-17 죽은 코드 정리에서 삭제됨(필요하면 git 히스토리에서 복구)
 
 - **울타리 그림 `덜촘촘한울타리.png`(초록 철망 펜스)를 가로로 이어붙여 깐다**(2026-09-10). 예전 흰색 도형 울타리를 대체했다
   - **이음매가 맞는 구간만 잘라 써야 한다.** 그림 안에 기둥이 5개 있고 중심이 40 / 554 / 1085 / 1615 / 2136인데,
@@ -1275,10 +1295,9 @@
 
 - **놀이터 스프라이트 배치**(전부 배경 제거 후 `region_rect`로 여백을 잘라 씀):
   `기린시소.png`는 왼쪽(x=-680), `파란시소.png`는 오른쪽(x=680), `진짜왕관.png`는 `Crown/CrownVisual`.
-  (`화분.png`는 `FallingPot.tscn`에 붙어 있지만 그 씬 자체가 지금은 고아다)
+  (`화분.png`는 예전 낙하 화분 기믹용이었지만 그 스크립트·씬이 삭제돼 이제 안 쓰인다 — 아래 항목 참고)
   시소는 **안장 윗면이 좌석 충돌(y=226)에, 받침 바닥이 지면(y=280)에** 오도록 배율을 잡았다
-  (기린 0.09 / 파란 0.078261 — 각 그림의 "안장→받침" 픽셀 거리가 54px이 되는 값).
-  화분은 테라코타 몸통 폭이 충돌 상자(36px)와 맞도록 0.055385
+  (기린 0.09 / 파란 0.078261 — 각 그림의 "안장→받침" 픽셀 거리가 54px이 되는 값)
   - **주의: 시소 원본 두 장은 투명 배경이 아니라 체크무늬가 그려져 있었다**(모서리 알파 1.0).
     "밝고 무채색"(min>0.82, 최대-최소<0.06)인 픽셀만 바깥에서 flood fill로 지웠다 —
     캐릭터의 크림색 얼굴은 채도가 있어서 안 지워진다. 원본은 스크래치패드에 백업해둠
@@ -1290,15 +1309,15 @@
   - 착지 순간에는 `velocity.y`가 이미 0이라 낙하 속도를 알 수 없다. 그래서 캐릭터별로 **직전 프레임의
     낙하 속도(`_prev_fall`)를 기억해뒀다가** "세게 떨어질수록 높이 튕김"을 계산한다
   - 판정을 좌석 바로 위(y 176~216)에만 두어서, 좌석 밑(지면 y 220~280)으로 지나가는 캐릭터는 반응하지 않는다
-  - `area_entered/exited` 신호 대신 매 프레임 `get_overlapping_areas()`를 훑는다(`HazardPlatform`과 같은 방식) —
+  - `area_entered/exited` 신호 대신 매 프레임 `get_overlapping_areas()`를 훑는다(`SandPit.gd`와 같은 방식) —
     라운드 리셋·순간이동으로 신호가 안 오는 경우가 있기 때문
   - **예전에는 `set_modifier("jump_multiplier", ...)`로 점프력을 2배 만드는 방식이었다.** 트램폴린으로 바뀌면서
     폐기 — 닿으면 바로 튕기므로 좌석 위에 가만히 서 있을 수가 없어 배수를 걸어둘 이유가 없어졌다
 - **낙하 화분은 2026-09-10에 놀이터에서 통째로 제거됐다(기획 변경).** 핵심 기믹이 "화분 피하기"에서
   "왕관 훔쳐서 달아나기"로 바뀌면서 `PotSpawner` 노드와 화분 막이용 `PavilionShelter`(`pot_shelter` 그룹) Area2D를 씬에서 뺐다.
-  **`maps/FallingPot.gd` / `FallingPot.tscn` / `PotSpawner.gd`는 이제 아무 씬도 안 쓰는 고아 파일이다**
-  (`maps/HazardPlatform.gd`도 원래 고아). 되돌릴 여지가 있어 파일은 지우지 않고 남겨뒀다 —
-  다시 쓰려면 씬에 `PotSpawner` 노드만 도로 놓으면 된다. `FallingPot.gd`가 부르는 `Crown.is_king()`은 지금도 있으므로 그대로 컴파일된다
+  `maps/FallingPot.gd`/`FallingPot.tscn`/`PotSpawner.gd`, 그리고 원래부터 고아였던 `maps/HazardPlatform.gd`는
+  한동안 안 쓰는 채로 남아 있다가 **2026-09-17 죽은 코드 정리에서 전부 삭제됐다**(다시 쓰려면 git 히스토리에서 복구).
+  `Crown.is_king()`은 지금도 있으므로 되살릴 때 그대로 컴파일된다
 - **`maps/Crown.gd` — 놀이터의 핵심 기믹 "왕관 훔쳐서 달아나기"(2026-09-10 기획 변경).**
   꼭대기 발판에 놓인 왕관을 **몸으로 닿으면** 줍고 "놀이터의 왕"이 된다.
   왕이 **한 대라도 맞으면 왕관이 머리에서 튕겨 나가 바닥에 떨어지고**, `pickup_delay`(0.6초) 뒤부터 아무나 다시 주울 수 있다.
@@ -1325,7 +1344,7 @@
     비비탄/토하기가 데미지 6·넉백 200인데 근접 기본공격이 6·220이라 사실상 구분이 안 되고,
     문턱을 8로 올리면 기본공격(4~8)까지 같이 막혀 핵심 루프가 죽는다(백수플렉스 슬램은 넉백이 70이라 넉백 문턱도 못 쓴다).
     그래서 판별 대신 **뺏기는 빈도에 상한**을 두는 방식으로 풀었다. `drop_min_damage`는 남겨뒀지만 기본 0(꺼짐)
-  - **넉백 없는 피해로는 안 벗겨진다.** `Fighter.apply_dot()`/`MouseGrab`/`HazardPlatform`은 넉백 없이
+  - **넉백 없는 피해로는 안 벗겨진다.** `Fighter.apply_dot()`/`MouseGrab`은 넉백 없이
     `take_damage()`를 부르는데, 그것까지 받으면 독 틱 한 번에 왕관이 벗겨지고 튀는 방향도 엉뚱해진다
   - **겹친 사람 중 왕관에 가장 가까운 쪽이 줍는다.** 목록 첫 번째를 집으면 둘이 동시에 달려들 때
     늘 같은 플레이어가 이겨서 쟁탈전이 자리 싸움이 아니라 고정된 결과가 된다
@@ -1406,7 +1425,7 @@
   - 크게 뜨는 건 열차당 한 번(`_gusted`), 이후엔 톡톡 튀며(`hop_*`) 끌려간다. 벽(±540)에 튕겨 안 사라지고 **다음 열차가 도로 날린다**
   - 열차는 `"subway_train"` 그룹으로 찾고 **읽기 전용** `is_running()`/`get_direction()`/`get_body_x()`/`get_half_width()`로 묻는다. **트리 순서가 `DecoSubwayTrain` 다음이라 열차 앞에 그려진다**(뒤면 차체에 가린다)
   - **노드 `scale`을 안 쓰고 배율(`_look`)을 좌표에 직접 곱한다**(@tool이라 에디터 scale이 씬에 저장되고, scale로 누르면 외곽선까지 얇아진다). 놓인 자리 바로 밑을 누운 면으로 치므로(`_rest_y`) 노드 위치는 종이 **가운데**다 — 바닥(299)에 두려면 y = 299 - 세로 x 0.4 / 2 (신문 295.4 / 전단지 295.8 / 의자 위 151.4)
-- **생동감 + 화면 진동**(2026-09-12). **지금 씬에 살아 있는 건 화면 진동과 전광판 둘뿐** — 사람 실루엣(`maps/PlatformCrowd.gd`, `count` 6명·발선 y=218·키 52px·`DecoBackground` z_index -10)과 비둘기(`maps/Pigeon.gd`, `DecoPigeons` 아래 2마리·y=299·`return_delay` 1.6초)는 2026-09-13에 사용자 요청으로 씬에서 뺐다(**고아 파일**, 노드만 도로 놓으면 살아난다). 전부 **그림 없이 코드로 그린 장식**이고 충돌·판정 없음
+- **생동감 + 화면 진동**(2026-09-12). **지금 씬에 살아 있는 건 화면 진동과 전광판 둘뿐** — 사람 실루엣(`count` 6명·발선 y=218·키 52px·`DecoBackground` z_index -10)과 비둘기(`DecoPigeons` 아래 2마리·y=299·`return_delay` 1.6초)는 2026-09-13에 사용자 요청으로 씬에서 뺐고, 그 스크립트(`maps/PlatformCrowd.gd`/`maps/Pigeon.gd`)도 2026-09-17 죽은 코드 정리에서 삭제됐다(되살리려면 git 히스토리에서 복구 후 노드를 다시 놓을 것). 전부 **그림 없이 코드로 그린 장식**이었고 충돌·판정 없음
   - **열차가 지나갈 때 화면이 흔들린다** — 경고 구간 낮게(`warning_shake` 0.12 ≈ 1.1px), 통과 중 크게(`pass_shake` 0.5, 가운데에 가까울수록 세게 — `pass_shake_focus` 0.6). 실측 최대 12px
   - **⚠️ `CameraRig.add_trauma()`로는 지속 진동을 못 만든다** — 순간 충격이고 감쇠가 **초당 3(절대값 차감)** 이라 매 프레임 조금씩 부으면 **하나도 안 쌓인다**(실측 0px). 그래서 `CameraRig.set_rumble(세기)`를 만들었다(이번 프레임에 유지할 **바닥값**). 열차에 맞으면 `Hitbox` 타격 진동이 위에 더 얹힌다
   - **전광판 `maps/SubwaySignBoard.gd`** — 평소 안내 문구가 흐르고 경고 중엔 빨간 "열차가 들어오고 있습니다"가 가운데서 깜빡인다(흘리면 못 읽는다). 판·테두리는 `_draw()`, **글자는 자식 `Clip/Text`(Label)** — `Clip`의 `clip_contents`가 삐져나온 글자를 잘라준다(`_draw()`만으로는 못 자른다). 폰트는 주아체
@@ -1509,16 +1528,28 @@
 
 ### 폴더 구조 (제안)
 
+**2026-09-17 확인: 실제 폴더 구조가 이미 이 제안과 거의 그대로 일치한다** — 캐릭터·스킬·전투·조작·스탯·맵·UI 전부
+아래 폴더에 정확히 나뉘어 있고, 폴더를 헤매게 하는 임시/백업/중복 파일도 없었다(전체 스캔 결과, 손댈 게 없음).
+아래 목록은 인원수·씬 개수만 현재 상태로 맞춘 것이다:
+
 ```
 res://
   GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
-  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/, gymbro/ — 로컬 대전 로스터 7종) + police/(스토리 모드 주인공, 로스터엔 안 나옴)
+  Timers.gd       # 공용 정적 헬퍼(after/self_destruct) — 오토로드 아님, 그냥 아무 도메인에도 안 속한 유틸
+  characters/     # Fighter.gd(공용 베이스) + BodyRig.gd(공용 몸) + 캐릭터별 씬
+                  #   대전 로스터 8종: chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/,
+                  #   subwayvillain/, floornoise/, gymbro/, iljin/(패거리 IljinCrewMember 포함)
+                  #   로스터 밖: police/(스토리 모드 주인공, 훈련장 전용) — dummy/(훈련장 고정 샌드백)는
+                  #   선택 캐릭터가 아니라 TrainingGround.gd가 직접 불러 쓴다
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
-  combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
-  controllers/    # PlayerController / AIController
+  combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트) + PhysicsQuery.gd(공용 레이캐스트 헬퍼)
+  controllers/    # PlayerController / AIController / ClaudeAIController / DummyController
   stats/          # CharacterStats 리소스(.tres)
-  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
-  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/MatchResult, story/(새 스토리 장면), HP바·쿨타임 HUD
+  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 선택 가능한 스테이지 씬 10종(GameState.MAPS) +
+                  #   맵이 공유하는 컴포넌트 씬(SubwayTrain/Swing/BreakablePlatform/FluorescentLight/SpringRide 등)
+  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/MatchResult, story/(스토리 장면),
+                  #   cutin/(궁극기·컷인 연출), HP바·쿨타임 HUD
+  tools/          # 개발용 전용 — BalanceTest/RigPreview(수동 확인용 씬), build_playground.py 등
 ```
 
 ## 참고

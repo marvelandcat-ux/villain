@@ -10,8 +10,8 @@ const PREVIEW_RIG_SCALE := 2.8
 const PREVIEW_RIG_ORIGIN := Vector2(150, 210)
 
 ## P1/P2 차례에 따라 바뀌는 배경 그림
-const P1_BACKGROUND := "res://sprite/캐릭터선택/P1배경.png"
-const P2_BACKGROUND := "res://sprite/캐릭터선택/P2배경.png"
+const P1_BACKGROUND := "res://sprite/대전모드/배경.png"
+const P2_BACKGROUND := "res://sprite/대전모드/배경2.png"
 
 ## 대전 모드(pvp) 전용 화면이다. P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
 ## (예전엔 옛 스토리 모드도 이 화면을 같이 썼는데, 2026-09-12 스토리 모드를 새로 짜면서 그 분기를 걷어냈다)
@@ -24,14 +24,14 @@ const P2_BACKGROUND := "res://sprite/캐릭터선택/P2배경.png"
 ## 어떤 GameState.CHARACTERS 캐릭터인지 연결만 한다 — character_key가 빈 칸은 "?" 랜덤 칸으로 취급
 
 @onready var background: Sprite2D = $Background
-@onready var status_label: Label = $Center/VBox/StatusLabel
-@onready var thumb_row: Control = $Center/VBox/ThumbRow
-@onready var confirm_button: Button = $Center/VBox/ConfirmButton
-@onready var back_button: Button = $Center/VBox/BackButton
-@onready var p1_preview_box: Control = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
-@onready var p1_preview_label: Label = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewLabel
-@onready var p2_preview_box: Control = $Center/VBox/PreviewRow/P2Side/P2PreviewBox
-@onready var p2_preview_label: Label = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewLabel
+@onready var _status_label: Label = $Center/VBox/StatusLabel
+@onready var _thumb_row: Control = $Center/VBox/ThumbRow
+@onready var _confirm_button: Button = $Center/VBox/ConfirmButton
+@onready var _back_button: Button = $BackButton
+@onready var _p1_preview_box: Control = $Center/VBox/PreviewRow/P1Side/P1PreviewBox
+@onready var _p1_preview_label: Label = $Center/VBox/PreviewRow/P1Side/P1PreviewBox/P1PreviewLabel
+@onready var _p2_preview_box: Control = $Center/VBox/PreviewRow/P2Side/P2PreviewBox
+@onready var _p2_preview_label: Label = $Center/VBox/PreviewRow/P2Side/P2PreviewBox/P2PreviewLabel
 
 var _picking_p1: bool = true
 ## 아직 "확정" 버튼을 안 누른, 미리보기 칸에만 반영된 임시 선택. 빈 문자열이면 아무것도 안 고른 상태
@@ -45,7 +45,7 @@ var _p2_rig: Node2D = null
 ## 씬에 미리 놓아둔 FanTile들을 훑어서 character_key로 어떤 캐릭터인지 확인하고 클릭 시그널을 연결한다.
 ## 칸의 모양·위치는 전부 씬(.tscn)에 이미 정해져 있으므로 여기서는 안 건드린다
 func _ready() -> void:
-	for child in thumb_row.get_children():
+	for child in _thumb_row.get_children():
 		if not (child is FanTile):
 			continue
 		var tile: FanTile = child
@@ -56,7 +56,7 @@ func _ready() -> void:
 			tile.gui_input.connect(_on_tile_gui_input.bind(tile.character_key))
 			_thumb_buttons[tile.character_key] = tile
 
-	status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
+	_status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
 	background.texture = load(P1_BACKGROUND)
 
 ## 목록에서 캐릭터를 눌러도 바로 확정되지 않고, 미리보기 칸에만 반영된다.
@@ -64,7 +64,7 @@ func _ready() -> void:
 func _on_character_picked(character_name: String) -> void:
 	_pending_character = character_name
 	_show_preview(character_name)
-	confirm_button.disabled = false
+	_confirm_button.disabled = false
 	_update_highlight()
 	_focus_thumb(character_name)
 
@@ -87,11 +87,11 @@ func _on_tile_gui_input(event: InputEvent, character_name: String) -> void:
 ## P1은 기본 방향(오른쪽), P2는 좌우로 뒤집어서 — 화면 가운데(VS)를 마주 보게 한다
 func _show_preview(character_name: String) -> void:
 	if _picking_p1:
-		p1_preview_label.text = character_name
-		_p1_rig = _apply_rig_preview(p1_preview_box, _p1_rig, character_name, 1.0)
+		_p1_preview_label.text = character_name
+		_p1_rig = _apply_rig_preview(_p1_preview_box, _p1_rig, character_name, 1.0)
 	else:
-		p2_preview_label.text = character_name
-		_p2_rig = _apply_rig_preview(p2_preview_box, _p2_rig, character_name, -1.0)
+		_p2_preview_label.text = character_name
+		_p2_rig = _apply_rig_preview(_p2_preview_box, _p2_rig, character_name, -1.0)
 
 ## 캐릭터의 인게임 몸(BodyRig)을 미리보기 상자에 띄운다 — 상자는 더 이상 색칠된 네모가 아니라 빈 Control이고,
 ## 그 위에 실제 대전에서 쓰는 리그를 얹어 "인게임에서 보이는 그대로"의 전신을 보여준다.
@@ -120,7 +120,7 @@ func _on_random_pressed() -> void:
 	if _is_spinning:
 		return
 	_is_spinning = true
-	confirm_button.disabled = true
+	_confirm_button.disabled = true
 	_set_thumb_buttons_disabled(true)
 
 	# GameState.CHARACTERS 전체가 아니라 실제로 이 화면에 칸이 있는 캐릭터만 후보로 삼는다 —
@@ -150,23 +150,29 @@ func _wait(duration: float) -> void:
 	timer.queue_free()
 
 func _set_thumb_buttons_disabled(disabled: bool) -> void:
-	for child in thumb_row.get_children():
+	for child in _thumb_row.get_children():
 		child.disabled = disabled
 
+## "확정" 버튼을 눌렀을 때만(임시 선택 단계가 아니라) 그 칸에 파동 효과를 재생한다
 func _on_confirm_pressed() -> void:
 	if _pending_character == "":
 		return
+	var confirmed_tile: FanTile = _thumb_buttons.get(_pending_character)
+	if confirmed_tile:
+		SelectionRipple.spawn(confirmed_tile, confirmed_tile.ripple_corners())
 	var path: String = GameState.CHARACTERS[_pending_character]
 	if _picking_p1:
 		GameState.p1_character_path = path
 		_picking_p1 = false
-		status_label.text = "P1: %s 확정! P2(AI) 캐릭터를 선택하세요" % _pending_character
+		_status_label.text = "P1: %s 확정! P2(AI) 캐릭터를 선택하세요" % _pending_character
 		_pending_character = ""
-		confirm_button.disabled = true
+		_confirm_button.disabled = true
 		_update_highlight()
 		background.texture = load(P2_BACKGROUND)
 	else:
 		GameState.p2_character_path = path
+		# 파동이 다 보이도록 잠깐 기다렸다가 맵 선택 화면으로 넘어간다
+		await _wait(SelectionRipple.total_duration())
 		get_tree().change_scene_to_file("res://ui/MapSelect.tscn")
 
 ## 아직 확정 안 한 임시 선택 하나만 밝게, 나머지는 어둡게 해서 지금 뭘 고르는 중인지 눈으로 보이게 한다

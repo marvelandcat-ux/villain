@@ -376,11 +376,11 @@ func _resolve(hit: bool) -> void:
 
 ## 헛발질했을 때 실제로 돌 쿨타임.
 ## **쿨타임 덮어쓰기(악플러 열등감)가 걸려 있으면 헛쳐도 그 값으로 묶인다** — 안 그러면
-## "쿨 0.3초 고정" 버프를 켜고도 한 번 헛치는 순간 1초를 쉬게 돼서 버프가 체감되지 않는다
+## "쿨 0.3초 고정" 버프를 켜고도 한 번 헛치는 순간 1초를 쉬게 돼서 버프가 체감되지 않는다.
+## 방 설정의 전역 쿨타임 배율도 effective_cooldown()과 똑같이 마지막에 곱한다
 func _effective_miss_cooldown() -> float:
-	if cooldown_override > 0.0:
-		return cooldown_override
-	return miss_cooldown if miss_cooldown >= 0.0 else cooldown
+	var base: float = cooldown_override if cooldown_override > 0.0 else (miss_cooldown if miss_cooldown >= 0.0 else cooldown)
+	return base * GameState.cooldown_multiplier
 
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:

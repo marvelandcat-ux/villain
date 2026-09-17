@@ -28,6 +28,10 @@ func _ready() -> void:
 ## 그때까지 상대가 안 오면 on_win이 실행되어 평소처럼 스킬이 나간다.
 ## on_win: 실제로 스킬을 발동시키는 Callable(인자 없음). on_lose: 클래시에서 졌을 때 실행할 Callable
 func request(fighter: Fighter, slot_id: String, on_win: Callable, on_lose: Callable) -> void:
+	# 방 설정에서 껐으면 "동시 사용" 판정 자체를 안 한다 — 양쪽 다 그냥 바로 발동
+	if not GameState.clash_minigame_enabled:
+		on_win.call()
+		return
 	var existing: PendingRequest = _pending.get(slot_id)
 	if existing and is_instance_valid(existing.fighter):
 		if existing.fighter == fighter:

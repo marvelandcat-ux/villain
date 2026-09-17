@@ -36,9 +36,11 @@ var cooldown_left: float = 0.0
 ## 배수(attack_speed_multiplier)와 달리 원래 값이 얼마든 결과가 같은 절대값이다
 var cooldown_override: float = 0.0
 
-## 지금 실제로 쓸 쿨타임 — 덮어쓰기가 걸려 있으면 그 값, 아니면 원래 cooldown
+## 지금 실제로 쓸 쿨타임 — 덮어쓰기가 걸려 있으면 그 값, 아니면 원래 cooldown.
+## 방 설정에서 정한 전역 쿨타임 배율(GameState.cooldown_multiplier)을 마지막에 곱한다
 func effective_cooldown() -> float:
-	return cooldown_override if cooldown_override > 0.0 else cooldown
+	var base: float = cooldown_override if cooldown_override > 0.0 else cooldown
+	return base * GameState.cooldown_multiplier
 
 func _ready() -> void:
 	if start_on_cooldown:

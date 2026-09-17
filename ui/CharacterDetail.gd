@@ -1,4 +1,5 @@
 @tool
+class_name CharacterDetail
 extends Control
 
 ## 도감 2단계 — 캐릭터 상세 설명 창.
@@ -104,6 +105,8 @@ var _view_tabs_tiles: Dictionary = {}
 var _ingame_texture: Texture2D = null
 var _illust_texture: Texture2D = null
 var _view: String = "ingame"
+## 에디터에서 값이 바뀌었는지 보는 도장 — 바뀐 프레임에만 다시 그린다
+var _editor_stamp: String = ""
 
 func _ready() -> void:
 	# 상자 크기가 바뀌면(창 크기 변경 등) 칸을 다시 깐다
@@ -174,9 +177,6 @@ func _read_character(scene_path: String) -> void:
 		_skills.append(entry)
 
 	fighter.free()
-
-## 에디터에서 값이 바뀌었는지 보는 도장 — 바뀐 프레임에만 다시 그린다
-var _editor_stamp: String = ""
 
 func _process(delta: float) -> void:
 	if not Engine.is_editor_hint():

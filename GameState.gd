@@ -121,6 +121,15 @@ var time_limit_seconds: int = 0
 var p1_round_wins: int = 0
 var p2_round_wins: int = 0
 
+## 모든 스킬 쿨타임에 곱하는 전역 배율(RoomSettings에서 설정). 1.0 = 원래 쿨타임, 0.5 = 절반, 2.0 = 두 배
+var cooldown_multiplier: float = 1.0
+## 꺼두면 스킬 클래시(연타 미니게임)를 벌이지 않고 양쪽 다 그대로 발동한다(RoomSettings에서 설정)
+var clash_minigame_enabled: bool = true
+## 꺼두면 아래 키를 눌러도 방어(Fighter.can_guard())가 아예 안 켜진다(RoomSettings에서 설정)
+var guard_enabled: bool = true
+## 꺼두면 방향키 두 번을 눌러도 대시(Fighter.can_dash())가 아예 안 나간다(RoomSettings에서 설정)
+var dash_enabled: bool = true
+
 ## .env 파일에서 불러온 Claude API 키. ClaudeAIController가 P2 AI 판단에 사용한다.
 ## .env는 git에 커밋하지 않는 로컬 파일이라(.env.example 참고) 파일이 없으면 빈 문자열로 남는다
 var anthropic_api_key: String = ""
@@ -134,6 +143,8 @@ const DEFAULT_KEYBINDS := {
 	"p2_basic_attack": KEY_L, "p2_skill_1": KEY_K, "p2_skill_2": KEY_J, "p2_ultimate": KEY_P,
 }
 const SETTINGS_PATH := "user://settings.cfg"
+## RoomSettings의 "현재 설정 저장"이 방 설정 프리셋을 저장할 때 쓰는 section 이름(SETTINGS_PATH 안)
+const ROOM_PRESET_SECTION := "room_presets"
 
 ## 창 모드에서 고를 수 있는 해상도 (전부 16:9라 검은 여백 없이 꽉 채워짐)
 const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]
@@ -248,6 +259,21 @@ func _save_setting(section: String, key: String, value) -> void:
 	config.load(SETTINGS_PATH)  # 파일이 없어도(첫 저장) 그냥 빈 ConfigFile로 계속 진행
 	config.set_value(section, key, value)
 	config.save(SETTINGS_PATH)
+
+## RoomSettings에서 "현재 설정 저장"으로 만든 방 설정 프리셋 하나를 이름으로 저장한다(같은 이름이면 덮어쓴다).
+## 다른 설정들과 같은 user://settings.cfg에 같이 저장되므로 게임을 다시 켜도 남아있는다
+func save_room_preset(preset_name: String, data: Dictionary) -> void:
+	_save_setting(ROOM_PRESET_SECTION, preset_name, data)
+
+## 저장된 방 설정 프리셋을 전부 읽어온다 -> {이름: 저장된 값 Dictionary}. 하나도 없으면 빈 Dictionary
+func load_room_presets() -> Dictionary:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) != OK:
+		return {}
+	var result: Dictionary = {}
+	for preset_name in config.get_section_keys(ROOM_PRESET_SECTION):
+		result[preset_name] = config.get_value(ROOM_PRESET_SECTION, preset_name, {})
+	return result
 
 ## action에 걸려있던 키 입력을 전부 지우고 물리 키코드 하나로 새로 등록한다
 func _apply_keybind(action: String, physical_keycode: int) -> void:
@@ -380,6 +406,14 @@ func character_rig_scene(character_name: String) -> PackedScene:
 	if not CHARACTER_RIGS.has(character_name):
 		return null
 	return load(CHARACTER_RIGS[character_name])
+
+## p1_character_path/p2_character_path처럼 저장된 씬 경로로 CHARACTERS에서 표시 이름을 역으로 찾는다.
+## 못 찾으면 빈 문자열
+func character_name_for_path(scene_path: String) -> String:
+	for character_name in CHARACTERS:
+		if CHARACTERS[character_name] == scene_path:
+			return character_name
+	return ""
 
 ## 초상화 TextureRect를 box_size 상자 안에서 캐릭터별로 프레이밍한다.
 ## image는 상자를 꽉 채우는 앵커(anchor_right=1, anchor_bottom=1)에 놓여 있다고 가정한다.

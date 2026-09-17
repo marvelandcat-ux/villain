@@ -17,9 +17,6 @@ const SCENE_PATH := "res://combat/StunStars.tscn"
 ## 합집합으로 똑같이 잘라야 타원 고리가 제자리에 머물고 **별만** 반대편으로 넘어간다
 const REGION := Rect2(234, 58, 1457, 580)
 
-## 따라다닐 대상. `spawn()`이 채워준다
-var target: Fighter
-
 ## 캐릭터 원점(발밑)에서 별 고리까지의 거리. 왕관이 -70이라 그보다 조금 더 위에 둔다
 @export var head_offset: Vector2 = Vector2(0.0, -76.0)
 ## 두 프레임을 바꾸는 간격(초). 짧을수록 빨리 도는 것처럼 보인다
@@ -30,6 +27,9 @@ var target: Fighter
 @export var bob_speed: float = 3.0
 ## 사라지기 직전 이만큼(초) 동안 서서히 투명해진다
 @export var fade_out_time: float = 0.15
+
+## 따라다닐 대상. `spawn()`이 채워준다
+var target: Fighter
 
 ## 남은 표시 시간. 0 이하가 되면 스스로 사라진다
 var _life: float = 0.0

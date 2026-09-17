@@ -74,14 +74,8 @@ func setup(direction: float, length: float, height: float, beam_damage: int, spi
 func _clip_to_wall(length: float) -> float:
 	if not stop_at_wall or Engine.is_editor_hint():
 		return length
-	var query := PhysicsRayQueryParameters2D.create(
-		global_position, global_position + Vector2(_facing * length, 0.0))
-	query.collide_with_areas = false
-	var excludes: Array[RID] = []
-	for f in get_tree().get_nodes_in_group("fighters"):
-		excludes.append(f.get_rid())
-	query.exclude = excludes
-	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
+	var hit: Dictionary = PhysicsQuery.raycast_ignoring_fighters(
+		self, global_position, global_position + Vector2(_facing * length, 0.0))
 	if hit.is_empty():
 		return length
 	return maxf(absf(hit.position.x - global_position.x), 1.0)

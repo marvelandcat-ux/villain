@@ -16,12 +16,12 @@ signal basic_attack_used
 ## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
 signal damaged(amount: int, knockback: Vector2)
 
+## 캐릭터 고정 수치
+@export var stats: CharacterStats
+
 ## 마지막으로 맞았을 때 밀려난 가로 방향(+1 오른쪽, 0이면 아직 안 맞음).
 ## 처치 연출(Stage)이 이 방향으로 날려보낸다 — "맞은 방향의 반대쪽"이 곧 넉백 방향이다
 var last_hit_direction: float = 0.0
-
-## 캐릭터 고정 수치
-@export var stats: CharacterStats
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 1150.0
@@ -487,19 +487,9 @@ func _apply_top_tint() -> void:
 		return
 	visual.modulate = _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
 
-## duration초 후 callback을 실행한다. get_tree().create_timer()와 달리 이 Fighter의 자식 Timer로 만들어서,
-## Fighter가 그 전에 사라지면(대전 도중 나가기, 다시하기 등으로 씬이 정리되는 경우) 콜백이 아예 실행되지 않고
-## 같이 정리된다 — 그렇지 않으면 이미 사라진 Fighter를 건드리려다 에러가 난다
+## duration초 후 callback을 실행한다 (Timers.after 참고 — Fighter가 그 전에 사라지면 콜백째 정리된다)
 func _after(duration: float, callback: Callable) -> void:
-	var timer := Timer.new()
-	timer.wait_time = duration
-	timer.one_shot = true
-	add_child(timer)
-	timer.timeout.connect(func():
-		callback.call()
-		timer.queue_free()
-	)
-	timer.start()
+	Timers.after(self, duration, callback)
 
 ## 밖에서 경직을 걸어준다 (놀이터에서 왕관을 떨어뜨렸을 때 등).
 ## 이미 걸린 경직보다 짧으면 무시한다 — 짧은 값으로 덮어써서 경직이 오히려 일찍 풀리는 걸 막는다
@@ -571,8 +561,11 @@ func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
 ## 지금 방어를 켤 수 있는지. 쿨타임이 남았거나 이미 방어 중이거나,
-## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다
+## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다.
+## 방 설정에서 껐으면(GameState.guard_enabled) 아예 못 켠다
 func can_guard() -> bool:
+	if not GameState.guard_enabled:
+		return false
 	if _guard_cooldown_left > 0.0 or _guard_time > 0.0:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
@@ -626,15 +619,12 @@ func _set_visual_guard(on: bool) -> void:
 	if visual and visual.has_method("set_guarding"):
 		visual.set_guarding(on)
 
-## 방어 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
-func guard_cooldown_ratio() -> float:
-	if guard_cooldown <= 0.0:
-		return 0.0
-	return clampf(_guard_cooldown_left / guard_cooldown, 0.0, 1.0)
-
 ## 지금 대시를 쓸 수 있는지. 쿨타임이 남았거나, 경직·붙잡힘 상태거나,
-## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다
+## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다.
+## 방 설정에서 껐으면(GameState.dash_enabled) 아예 못 쓴다
 func can_dash() -> bool:
+	if not GameState.dash_enabled:
+		return false
 	if _dash_cooldown_left > 0.0 or _dash_time > 0.0:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null
@@ -651,12 +641,6 @@ func dash(direction: float) -> bool:
 	_dash_trail_timer = 0.0
 	_spawn_dash_afterimage()
 	return true
-
-## 대시 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
-func dash_cooldown_ratio() -> float:
-	if dash_cooldown <= 0.0:
-		return 0.0
-	return clampf(_dash_cooldown_left / dash_cooldown, 0.0, 1.0)
 
 ## 대시 잔상 — Visual을 그 순간 모습 그대로 복제해 뒤에 남기고 서서히 지운다.
 ## DashSkill._spawn_afterimage()와 같은 방식이라 임시 사각형이든 스프라이트 몸이든 그대로 동작한다.
@@ -870,6 +854,23 @@ func find_opponent() -> Fighter:
 	for f in get_tree().get_nodes_in_group("fighters"):
 		if f != self:
 			return f
+	return null
+
+## fighter를 기준으로 가로 range_x/세로 range_y 상자 안에 있는 다른 Fighter를 찾는다.
+## 캐릭터끼리는 몸 충돌이 꺼져 있어(_ignore_other_fighters) 물리로는 못 잡으므로,
+## 근접 판정(자전거 돌진·어깨 들이박기 등)이 몸 사이 거리로 직접 확인할 때 쓴다.
+## dx * direction이 -back_tolerance보다 작으면(명백히 등 뒤) 제외하고, 거의 겹친 경우는 통과시킨다
+static func find_fighter_in_box(fighter: Fighter, range_x: float, range_y: float, direction: float, back_tolerance: float = 20.0) -> Fighter:
+	for other in fighter.get_tree().get_nodes_in_group("fighters"):
+		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
+			continue
+		var dx: float = other.global_position.x - fighter.global_position.x
+		var dy: float = other.global_position.y - fighter.global_position.y
+		if absf(dx) > range_x or absf(dy) > range_y:
+			continue
+		if dx * direction < -back_tolerance:
+			continue
+		return other
 	return null
 
 ## property(예: "move_speed_multiplier")에 id로 구분되는 배수 효과를 하나 건다.

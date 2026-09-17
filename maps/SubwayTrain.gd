@@ -79,12 +79,12 @@ enum State { WAITING, WARNING, RUNNING }
 
 @onready var body: Node2D = $Body
 @onready var hitbox: Hitbox = $Body/Hitbox
-@onready var warning_light: Node2D = $WarningLight
-@onready var music: AudioStreamPlayer = $Music
+@onready var _warning_light: Node2D = $WarningLight
+@onready var _music: AudioStreamPlayer = $Music
 ## 창문만 밝게 구워둔 그림을 가산 블렌드로 열차 위에 얹은 스프라이트 (Body의 자식이라 열차와 같이 움직이고 같이 숨는다)
-@onready var window_light: Sprite2D = $Body/WindowGlow
+@onready var _window_light: Sprite2D = $Body/WindowGlow
 ## 창문에서 뻗어나가는 빛기둥들을 담는 노드. _ready에서 WINDOW_RECTS를 보고 코드로 만들어 넣는다
-var window_beams: Node2D
+var _window_beams: Node2D
 ## 만들어둔 빛기둥들 — 길이를 다시 뽑을 때 각자 어느 창문/어느 방향이었는지 알아야 해서 같이 들고 있는다
 var _beams: Array[Dictionary] = []
 
@@ -126,13 +126,13 @@ func _ready() -> void:
 	_timer = first_delay
 	hitbox.damage = damage
 	hitbox.repeat_interval = hit_interval
-	music.stream = arrival_music
+	_music.stream = arrival_music
 	_set_hitbox_active(false)
 	_build_window_beams()
 	_park_body()
-	warning_light.visible = false
-	if window_light:
-		window_light.modulate.a = window_glow
+	_warning_light.visible = false
+	if _window_light:
+		_window_light.modulate.a = window_glow
 
 ## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
 func is_dangerous() -> bool:
@@ -163,7 +163,7 @@ func _process(delta: float) -> void:
 				_begin_warning()
 		State.WARNING:
 			# sin 값의 부호로 켜짐/꺼짐을 만든다 (별도 타이머 없이 깜빡이게)
-			warning_light.visible = sin(_timer * TAU * warning_blink_speed) > 0.0
+			_warning_light.visible = sin(_timer * TAU * warning_blink_speed) > 0.0
 			if _timer <= 0.0:
 				_begin_run()
 		State.RUNNING:
@@ -175,12 +175,12 @@ func _process(delta: float) -> void:
 ## 도착 warning_duration초 전 — 음악과 경고등이 시작된다
 func _begin_warning() -> void:
 	_state = State.WARNING
-	warning_light.visible = true
-	if music.stream != null:
-		music.play()
+	_warning_light.visible = true
+	if _music.stream != null:
+		_music.play()
 
 func _begin_run() -> void:
-	warning_light.visible = false
+	_warning_light.visible = false
 	_state = State.RUNNING
 	_timer = interval
 	body.position.x = -travel_x * _direction
@@ -193,7 +193,7 @@ func _begin_run() -> void:
 
 func _finish_run() -> void:
 	_set_hitbox_active(false)
-	music.stop()
+	_music.stop()
 	_park_body()
 	if alternate_direction:
 		_direction = -_direction
@@ -205,18 +205,18 @@ func _finish_run() -> void:
 func _build_window_beams() -> void:
 	if beam_alpha <= 0.0:
 		return
-	window_beams = Node2D.new()
-	window_beams.name = "WindowBeams"
+	_window_beams = Node2D.new()
+	_window_beams.name = "WindowBeams"
 	# 더하기 블렌드는 컨테이너에 걸고, 자식 폴리곤은 use_parent_material로 물려받는다
 	var mat := CanvasItemMaterial.new()
 	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	window_beams.material = mat
+	_window_beams.material = mat
 	for rect in WINDOW_RECTS:
 		_add_beam(rect, true)
 		if beam_down_length > 0.0:
 			_add_beam(rect, false)
-	body.add_child(window_beams)
-	body.move_child(window_beams, 0)
+	body.add_child(_window_beams)
+	body.move_child(_window_beams, 0)
 	_randomize_beam_heights()
 
 ## 창문 하나에 빛기둥을 하나 만들어 붙인다. 실제 모양은 _shape_beam이 잡는다.
@@ -228,7 +228,7 @@ func _add_beam(rect: Rect2, up: bool) -> void:
 	var near_color := Color(beam_color.r, beam_color.g, beam_color.b, beam_alpha)
 	var far_color := Color(beam_color.r, beam_color.g, beam_color.b, 0.0)
 	beam.vertex_colors = PackedColorArray([near_color, near_color, far_color, far_color])
-	window_beams.add_child(beam)
+	_window_beams.add_child(beam)
 	_beams.append({"node": beam, "rect": rect, "up": up})
 
 ## 빛기둥 길이를 창문마다 새로 뽑는다 — 높이가 들쭉날쭉해서 훨씬 자연스럽다.
@@ -257,15 +257,15 @@ func _shape_beam(beam: Polygon2D, rect: Rect2, up: bool, length: float) -> void:
 ## 어디가 창문인지는 그림(열차창문빛.png)에 이미 구워져 있고 가산 블렌드로 얹히므로, 여기서는 세기만 조절한다.
 ## 주기가 다른 두 sin을 곱해서 규칙적인 깜빡임으로 안 보이게 한다
 func _update_window_light(delta: float) -> void:
-	if window_light == null:
+	if _window_light == null:
 		return
 	_glow_phase += delta * window_flicker_speed
 	var wobble: float = sin(_glow_phase) * sin(_glow_phase * 0.37 + 1.3)
 	var level: float = maxf(1.0 - window_flicker * (0.5 + 0.5 * wobble), 0.0)
-	window_light.modulate.a = window_glow * level
+	_window_light.modulate.a = window_glow * level
 	# 창문에서 쏟아지는 빛도 같은 박자로 떨려야 같은 조명으로 보인다
-	if window_beams:
-		window_beams.modulate.a = level
+	if _window_beams:
+		_window_beams.modulate.a = level
 
 ## 대기 중에는 열차를 화면 밖에 세워둔다
 func _park_body() -> void:

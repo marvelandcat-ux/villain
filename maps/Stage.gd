@@ -326,12 +326,3 @@ func _set_controllers_active(active: bool) -> void:
 		for child in f.get_children():
 			if child is PlayerController or child is AIController:
 				child.is_active = active
-
-## 씬에 배치된 PlayerSpawn 마커들을 이름 순으로 반환한다
-func get_player_spawn_points() -> Array[Marker2D]:
-	var spawns: Array[Marker2D] = []
-	for child in get_children():
-		if child is Marker2D and child.name.begins_with("PlayerSpawn"):
-			spawns.append(child)
-	spawns.sort_custom(func(a, b): return a.name < b.name)
-	return spawns
