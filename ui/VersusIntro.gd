@@ -6,12 +6,18 @@ extends CanvasLayer
 ## 나머지(스폰 → 3,2,1,FIGHT 카운트다운)를 진행한다. 아직 Fighter가 없는 시점이라
 ## GameState.p1_character_path/p2_character_path 값만으로 이름·색·초상화를 채운다
 
+## 연출이 다 끝나 화면이 사라졌을 때 — Stage.gd가 이걸 기다린 뒤 캐릭터를 스폰한다
 signal finished
 
+## 좌우 캐릭터 박스 크기 — 초상화를 이 크기에 맞춰 넣는다
 const BOX_SIZE := Vector2(320, 240)
+## 박스가 화면 밖에서 미끄러져 들어오는 거리(px)
 const SLIDE_DISTANCE := 420.0
+## 미끄러져 들어오는 데 걸리는 시간(초)
 const SLIDE_TIME := 0.35
+## VS가 다 튀어나온 뒤 그대로 멈춰 보여주는 시간(초)
 const HOLD_TIME := 1.1
+## 화면 전체가 사라지는 페이드아웃 시간(초)
 const FADE_TIME := 0.3
 
 @onready var _root: Control = $Root
