@@ -1463,16 +1463,27 @@
 
 ### 폴더 구조 (제안)
 
+**2026-09-17 확인: 실제 폴더 구조가 이미 이 제안과 거의 그대로 일치한다** — 캐릭터·스킬·전투·조작·스탯·맵·UI 전부
+아래 폴더에 정확히 나뉘어 있고, 폴더를 헤매게 하는 임시/백업/중복 파일도 없었다(전체 스캔 결과, 손댈 게 없음).
+아래 목록은 인원수·씬 개수만 현재 상태로 맞춘 것이다:
+
 ```
 res://
   GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
-  characters/     # Fighter.gd(공용 베이스) + 캐릭터별 씬 (chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/, subwayvillain/, floornoise/, gymbro/ — 로컬 대전 로스터 7종) + police/(스토리 모드 주인공, 로스터엔 안 나옴)
+  characters/     # Fighter.gd(공용 베이스) + BodyRig.gd(공용 몸) + 캐릭터별 씬
+                  #   대전 로스터 8종: chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/,
+                  #   subwayvillain/, floornoise/, gymbro/, iljin/(패거리 IljinCrewMember 포함)
+                  #   로스터 밖: police/(스토리 모드 주인공, 훈련장 전용) — dummy/(훈련장 고정 샌드백)는
+                  #   선택 캐릭터가 아니라 TrainingGround.gd가 직접 불러 쓴다
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
   combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
-  controllers/    # PlayerController / AIController
+  controllers/    # PlayerController / AIController / ClaudeAIController / DummyController
   stats/          # CharacterStats 리소스(.tres)
-  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 스테이지 씬 9종
-  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/MatchResult, story/(새 스토리 장면), HP바·쿨타임 HUD
+  maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 선택 가능한 스테이지 씬 10종(GameState.MAPS) +
+                  #   맵이 공유하는 컴포넌트 씬(SubwayTrain/Swing/BreakablePlatform/FluorescentLight/SpringRide 등)
+  ui/             # MainMenu/RoomSettings/CharacterSelect/MapSelect/MatchResult, story/(스토리 장면),
+                  #   cutin/(궁극기·컷인 연출), HP바·쿨타임 HUD
+  tools/          # 개발용 전용 — BalanceTest/RigPreview(수동 확인용 씬), build_playground.py 등
 ```
 
 ## 참고
