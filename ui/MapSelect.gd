@@ -9,9 +9,9 @@ extends Control
 ## 서 있는 캐릭터 배율 — 1.0이면 실제 대전 화면에서 보이는 것과 똑같은 크기(인게임 크기)로 서 있다
 const STANDEE_SCALE := 1.0
 
-@onready var map_grid: GridContainer = $Center/VBox/MapGrid
-@onready var p1_standee: Node2D = $P1Standee
-@onready var p2_standee: Node2D = $P2Standee
+@onready var _map_grid: GridContainer = $Center/VBox/MapGrid
+@onready var _p1_standee: Node2D = $P1Standee
+@onready var _p2_standee: Node2D = $P2Standee
 
 var _map_buttons: Dictionary = {}  # {map_name: Button} — 룰렛 연출에서 흰 테두리를 옮길 때 씀
 var _is_spinning: bool = false
@@ -19,13 +19,13 @@ var _is_spinning: bool = false
 func _ready() -> void:
 	for map_name in GameState.MAPS.keys():
 		var button := _make_tile(map_name, GameState.MAPS[map_name], _on_map_picked.bind(map_name))
-		map_grid.add_child(button)
+		_map_grid.add_child(button)
 		_map_buttons[map_name] = button
-	map_grid.add_child(_make_tile("?", "", _on_random_pressed))
+	_map_grid.add_child(_make_tile("?", "", _on_random_pressed))
 
 	# P1(왼쪽)은 오른쪽(가운데)을, P2(오른쪽)은 왼쪽(가운데)을 보게 마주 세운다
-	_spawn_standee(p1_standee, GameState.p1_character_path, 1.0)
-	_spawn_standee(p2_standee, GameState.p2_character_path, -1.0)
+	_spawn_standee(_p1_standee, GameState.p1_character_path, 1.0)
+	_spawn_standee(_p2_standee, GameState.p2_character_path, -1.0)
 
 ## container 자리에 그 캐릭터의 인게임 몸(BodyRig)을 세운다. Fighter가 없으니 걷지 않고
 ## 가만히 서서 숨쉬는 동작만 돈다 — CharacterSelect의 미리보기 상자와 같은 원리
@@ -190,7 +190,7 @@ func _focus_tile(map_name: String) -> void:
 		button.grab_focus()
 
 func _set_map_buttons_disabled(disabled: bool) -> void:
-	for child in map_grid.get_children():
+	for child in _map_grid.get_children():
 		child.disabled = disabled
 
 func _wait(duration: float) -> void:
