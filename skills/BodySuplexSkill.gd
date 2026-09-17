@@ -24,7 +24,7 @@ extends BackSuplexSkill
 @export_range(0.0, 1.0, 0.05) var impact_trauma: float = 0.55
 
 func _suplex(fighter: Fighter, opponent: Fighter) -> void:
-	fighter.movement_override = self
+	_begin(fighter)
 
 	# 몸 뒤로 젖히기는 리그의 잡기 모션을 그대로 쓴다: 손 뻗기(grab) → 바로 젖히며 던지기(버티기 없음)
 	var fighter_visual: Node2D = fighter.get_node_or_null("Visual")

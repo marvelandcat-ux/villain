@@ -148,6 +148,11 @@ var is_feared: bool = false
 ## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
 ## 잡은 스킬(파일드라이버 등)이 apply_physics를 건너뛰게 해서 위치를 직접 조작할 수 있게 한다
 var is_grabbed: bool = false
+## 슈퍼아머를 걸어둔 스킬 수. 0보다 크면 **맞아도 기술이 안 끊긴다** — HP는 깎이고 피격 반짝임·표정도 나오지만
+## 넉백·띄우기·경직·피격 기울기·구르기는 무시하고, 잡기 기술에도 안 잡힌다(`can_be_grabbed()`).
+## bool이 아니라 개수인 이유: 아머를 거는 기술이 겹쳤다 먼저 끝난 쪽이 풀어버리면 남은 쪽 아머까지 사라진다.
+## 거는 쪽은 반드시 add/remove를 짝으로 부를 것(바디 수플렉스 `BackSuplexSkill.super_armor`)
+var _super_armor: int = 0
 ## 이번 프레임에 조작으로 들어온 좌우 입력(-1/0/1). 그네처럼 "누르고 있는 방향"이 필요한 기믹이 읽는다
 var move_input: float = 0.0
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철 아저씨 전용, 캐릭터 씬에서 켬)
@@ -285,7 +290,14 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	_flash_hit()
 	_play_hurt_face()
 	# 실제 타격(넉백이 있는 피해)에만 히트 리액션 — 공포·틱 데미지 같은 넉백 없는 피해엔 적용 안 한다
-	if knockback != Vector2.ZERO:
+	# 슈퍼아머 중엔 HP만 깎이고 몸은 안 밀린다 — 넉백·띄우기·경직·기울기가 들어가면 잡고 있던 기술이 망가진다
+	# (공중으로 붕 뜬 채 상대를 꽂거나, 경직으로 굳어 몸이 휙 돌아가는 식). 콤보 수는 그대로 센다
+	if knockback != Vector2.ZERO and has_super_armor():
+		if _combo_timer <= 0.0:
+			_combo_count = 0
+		_combo_count += 1
+		_combo_timer = COMBO_WINDOW
+	elif knockback != Vector2.ZERO:
 		# 수평 넉백을 키워 콤보처럼 넉백 방향으로 멀리 날린다 (수직은 팝업이 담당)
 		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
 		velocity.x += kb_x
@@ -363,7 +375,7 @@ var _tumble_grace: float = 0.0
 ## spin_dir=도는 방향(+1이면 시계방향 = 오른쪽으로 날아갈 때). **바닥에 닿으면 그 자리에서 멈춘다**
 func play_launch_tumble(turns: float, duration: float, spin_dir: float) -> void:
 	var visual: Node2D = get_node_or_null("Visual")
-	if visual == null or turns <= 0.0 or duration <= 0.0:
+	if visual == null or turns <= 0.0 or duration <= 0.0 or has_super_armor():
 		return
 	if _lean_tween != null and _lean_tween.is_valid():
 		_lean_tween.kill()
@@ -487,11 +499,31 @@ func _after(duration: float, callback: Callable) -> void:
 ## 밖에서 경직을 걸어준다 (놀이터에서 왕관을 떨어뜨렸을 때 등).
 ## 이미 걸린 경직보다 짧으면 무시한다 — 짧은 값으로 덮어써서 경직이 오히려 일찍 풀리는 걸 막는다
 func apply_hitstun(duration: float) -> void:
+	# 슈퍼아머 중엔 안 굳는다 — 어깨치기·발차기 마무리·왕관 떨어뜨리기가 따로 거는 경직도 여기서 막힌다
+	if has_super_armor():
+		return
 	_hitstun_time = maxf(_hitstun_time, duration)
 
 ## 지금 경직 중인가 (이동·점프·스킬이 막혀 있는 상태)
 func is_in_hitstun() -> bool:
 	return _hitstun_time > 0.0
+
+## 슈퍼아머를 건다/푼다. **반드시 짝으로 부를 것** — 개수로 세기 때문에 한쪽만 부르면 아머가 안 풀린다
+func add_super_armor() -> void:
+	_super_armor += 1
+
+func remove_super_armor() -> void:
+	_super_armor = maxi(_super_armor - 1, 0)
+
+## 지금 슈퍼아머 중인가 (맞아도 밀리거나 굳지 않고 기술이 계속된다)
+func has_super_armor() -> bool:
+	return _super_armor > 0
+
+## 잡기 기술(백 서플렉스·유선 마우스 등)이 이 캐릭터를 붙잡을 수 있는지.
+## 방어 중(디버프 면역)이거나 슈퍼아머 중이면 못 잡는다 — 수플렉스하던 중에 다른 잡기에 끌려가면 기술이 끊긴다.
+## `blocks_debuff()`에 아머를 섞지 않은 이유: 그러면 공포·도트까지 같이 막혀버리는데, 그 둘은 쓰던 기술을 끊지 않는다
+func can_be_grabbed() -> bool:
+	return not blocks_debuff() and not has_super_armor()
 
 ## duration초 동안 무적 상태로 만든다
 func grant_invincibility(duration: float) -> void:
@@ -928,6 +960,11 @@ func apply_physics(delta: float) -> void:
 		velocity.x = movement_override.get_move_velocity_x()
 	# **move_and_slide()가 부딪히는 순간 velocity.y를 0으로 만들어버린다** — 착지 세기를 알려면
 	# 그 전에 낙하 속도를 따로 기억해둬야 한다(스프링 발판이 _prev_fall을 쓰는 것과 같은 이유)
+	# 슈퍼아머 중엔 위로 튕겨 오르지 않는다. take_damage 쪽 넉백은 이미 막았지만,
+	# 어깨치기처럼 **velocity를 직접 덮어써서** 띄우는 기술은 거길 안 거쳐서 여기서 한 번 더 막는다
+	# (수평은 아머를 거는 기술이 movement_override로 이미 잡고 있다)
+	if has_super_armor() and velocity.y < 0.0:
+		velocity.y = 0.0
 	var fall_speed: float = velocity.y
 	move_and_slide()
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)

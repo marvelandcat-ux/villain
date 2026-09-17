@@ -29,9 +29,23 @@ extends Skill
 @export var behind_distance: float = 55.0
 ## 내리꽂을 때 넉백 크기 — x는 본체 반대쪽(등 뒤 방향)으로 더 밀려나는 정도, y는 살짝 튕겨오르는 정도
 @export var slam_knockback: Vector2 = Vector2(70, -60)
+## 켜면 기술을 쓰는 동안(잡기~꽂기~풀기, 헛잡기 포함) **맞아도 안 끊긴다** — HP는 깎이지만 밀리거나 굳거나
+## 다른 잡기에 끌려가지 않는다(`Fighter.add_super_armor`). 경찰 바디 수플렉스에서 켠다.
+## 기본값이 꺼져 있는 이유: 짐승남 백 서플렉스도 이 스크립트를 쓰는데, 그쪽까지 바뀌면 안 되기 때문이다
+@export var super_armor: bool = false
+
+## 지금 아머를 걸어둔 본체. `_release`가 두 번 불려도 한 번만 풀도록 기억해둔다
+var _armored_fighter: Fighter = null
 
 func _execute(fighter: Fighter) -> void:
 	_suplex(fighter, _find_target(fighter))
+
+## 기술 시작 — 이동을 가로채고, 켜져 있으면 슈퍼아머를 건다. `_suplex`를 오버라이드하는 쪽도 맨 처음에 이걸 부를 것
+func _begin(fighter: Fighter) -> void:
+	fighter.movement_override = self
+	if super_armor and _armored_fighter == null:
+		fighter.add_super_armor()
+		_armored_fighter = fighter
 
 ## 사거리 안에서 마주 보고 있는 상대를 찾는다. 없으면 null — _suplex가 그래도 동작은 재생한다
 func _find_target(fighter: Fighter) -> Fighter:
@@ -40,7 +54,7 @@ func _find_target(fighter: Fighter) -> Fighter:
 		return null
 	# **방어 중인 상대는 못 잡는다** — 잡히면 데미지가 0이어도 붙들려 있는 동안 무방비가 된다.
 	# null을 돌려주면 _suplex가 "허공 잡기" 쪽으로 흘러가 동작만 재생하고 끝난다
-	if opponent.blocks_debuff():
+	if not opponent.can_be_grabbed():
 		return null
 	var dx: float = opponent.global_position.x - fighter.global_position.x
 	if absf(dx) > _grab_reach(fighter) or signf(dx) != fighter.facing:
@@ -58,7 +72,7 @@ func _grab_reach(fighter: Fighter) -> float:
 	return fallback_grab_range
 
 func _suplex(fighter: Fighter, opponent: Fighter) -> void:
-	fighter.movement_override = self
+	_begin(fighter)
 
 	# 본체 모션 재생 (그 메서드가 있는 비주얼만). 상대가 있으면 손을 뻗어 잡고(grab) → 뒤로 젖히며
 	# 들어올려 버티고(lift+hold) → 등 뒤로 넘기는(slam) 전체 동작을, 없으면(허공 잡기) 손을 뻗기만
@@ -125,6 +139,16 @@ func _release(fighter: Fighter, opponent: Fighter) -> void:
 		opponent.is_grabbed = false
 	if is_instance_valid(fighter) and fighter.movement_override == self:
 		fighter.movement_override = null
+	if _armored_fighter != null:
+		if is_instance_valid(_armored_fighter):
+			_armored_fighter.remove_super_armor()
+		_armored_fighter = null
+
+## 기술 도중에 스킬 노드가 사라지면(라운드 리로드·캐릭터 교체) `_release`가 안 불릴 수 있다 — 아머가 남지 않게 여기서도 푼다
+func _exit_tree() -> void:
+	if _armored_fighter != null and is_instance_valid(_armored_fighter):
+		_armored_fighter.remove_super_armor()
+	_armored_fighter = null
 
 ## 잡는 동안 본체는 제자리에 고정 — movement_override 인터페이스만 채워주는 빈 구현
 func get_move_velocity_x() -> float:

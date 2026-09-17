@@ -52,6 +52,9 @@ func _ready() -> void:
 static func spawn(fighter: Fighter, duration: float) -> StunStars:
 	if fighter == null or not is_instance_valid(fighter) or duration <= 0.0:
 		return null
+	# 슈퍼아머 중이면 경직이 안 걸리므로 별도 띄우지 않는다 — 멀쩡히 움직이는데 머리 위에 별이 돌면 헷갈린다
+	if fighter.has_super_armor():
+		return null
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return null

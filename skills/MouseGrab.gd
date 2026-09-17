@@ -254,7 +254,8 @@ func _touches_opponent() -> bool:
 		return false
 	# **방어 중인 상대는 아예 안 잡힌다.** 잡아놓고 데미지만 0으로 막으면 끌려오는 건 그대로라
 	# "1초 무적"이 무적이 아니게 된다. 안 잡히면 마우스는 그냥 지나쳐 날아가다 손으로 되감긴다
-	if _opponent.blocks_debuff():
+	# 슈퍼아머 중(경찰 바디 수플렉스 등)에도 안 잡힌다 — 끌려가면 쓰던 기술이 끊긴다
+	if not _opponent.can_be_grabbed():
 		return false
 	return _mouse_pos.distance_to(_opponent.global_position) < catch_radius
 
