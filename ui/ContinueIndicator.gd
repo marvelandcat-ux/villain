@@ -120,9 +120,6 @@ func set_watch_target(node: Node) -> void:
 func arm() -> void:
 	_armed = true
 
-func disarm() -> void:
-	_armed = false
-
 func _process(delta: float) -> void:
 	_time += delta
 	if _target and is_instance_valid(_target) and _target.has_method("is_waiting_input"):

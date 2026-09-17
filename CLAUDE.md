@@ -262,7 +262,7 @@
     - **맞으면 대시가 그 자리에서 끊긴다**(`_hitstun_time > 0`). 넉백이 대시를 이겨야 콤보가 성립한다
     - **두 번째 탭이 인정되면 기록을 지운다** — 안 지우면 세 번째·네 번째 탭마다 계속 대시가 나가서, 방향키를 연타하면 쿨타임이 도는 족족 대시가 나간다
     - 잔상은 `Fighter._spawn_dash_afterimage()`가 `Visual`을 복제해 남긴다(`DashSkill`과 같은 방식). **복제본의 스크립트를 떼는 게 핵심** — 안 떼면 `BodyRig`의 매 프레임 자세 계산이 잔상에서도 돌아 같이 움직인다
-    - **쿨타임을 보여주는 HUD는 아직 없다.** `Fighter.dash_cooldown_ratio()`(0~1)가 있으니 스킬 쿨타임 슬롯과 같은 방식으로 붙이면 된다
+    - **쿨타임을 보여주는 HUD는 아직 없다.** 필요하면 `_dash_cooldown_left`/`dash_cooldown`을 스킬 쿨타임 슬롯과 같은 방식으로 붙이면 된다(예전에 있던 `Fighter.dash_cooldown_ratio()`는 아무도 안 부르는 죽은 함수라 2026-09-17 정리에서 삭제됨)
   - **아래 키 방어(구현 완료, 2026-09-10):** 아래 키를 **누르는 순간** 몸을 감싸는 원형 보호막(`combat/GuardShield.gd`)이 켜지고, `Fighter.guard_duration`(**1초**, 2026-09-14에 1.2에서 내림) 동안 **들어오는 공격의 데미지·넉백이 전부 0**이 된다. 끝나면 `guard_cooldown`(**5초**) 쿨타임
     - **누르고 있는 게 아니라 한 번 눌러 발동하는 방식이다.** 처음엔 "누르고 있는 동안 피해 절반"인 자세로 만들었다가 기획 의도(완전 무적 + 쿨타임)와 달라서 갈아엎었다. 키를 떼도 그 시간은 그대로 유지된다
     - **`take_damage`에서 `is_invincible`과 같은 자리에 early return** 한다 — 데미지뿐 아니라 넉백·경직도 안 들어간다. 막은 양은 `custom_data["guard_absorbed"]`에 누적된다
@@ -278,7 +278,7 @@
       - **`guard_hand_deg`는 음수(-45)라야 한다.** 손에 든 물건이 이 각도를 그대로 따라가는데, 음수면 몸 쪽으로 눕고 양수면 머리 위로 치솟는다. -45에서 **악플러는 키보드가 얼굴 앞에 가로로 서서 그대로 방패가 되고**, 촉법소년은 막대사탕이 모자 옆에 붙는다
     - 보호막은 그림 없이 `_draw()`로 그린다 — 반투명 원 + **남은 시간만큼 12시부터 시계로 줄어드는 밝은 테두리**(언제 풀리는지 눈으로 보인다). 켜질 때 25% 부풀었다 제자리로 돌아온다. 반지름 47 / 중심 `(0,-14)`는 캐릭터 전체(머리 위 -60 ~ 발 +32)를 덮는 값이고, 6명이 같은 규격이라 한 값으로 다 맞는다
     - **`Fighter._shield`에는 타입을 안 붙였다.** `GuardShield`는 `preload`로 가져오는 새 `class_name`이라, 타입을 붙이면 전역 클래스 캐시가 갱신되기 전에 `set_active()`를 못 찾는다고 파싱 에러가 난다(`movement_override`를 무타입으로 둔 것과 같은 이유)
-    - 쿨타임 표시 HUD는 아직 없다 — `Fighter.guard_cooldown_ratio()`(0~1)를 쓰면 된다
+    - 쿨타임 표시 HUD는 아직 없다 — 필요하면 `_guard_cooldown_left`/`guard_cooldown`을 쓰면 된다(예전에 있던 `Fighter.guard_cooldown_ratio()`는 아무도 안 부르는 죽은 함수라 2026-09-17 정리에서 삭제됨)
   - **플랫폼 아래로 내려가기(구현 완료, 2026-09-03):** 아래키를 누른 채 점프하면 `PlayerController._drop_through_platform()` → `Fighter.drop_through_platform()`이 발밑 발판을 통과해 아래층으로 내려간다. 통과 가능한 발판 위가 아니면(진짜 지면이거나 공중) 그냥 평범한 점프가 나간다 — 입력이 씹힌 것처럼 느껴지지 않게
     - **충돌 레이어를 통째로 끄지 않고 `add_collision_exception_with(발판)`으로 그 발판 하나만 예외 처리한다.** 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 통과해서 맵 밖으로 떨어진다. 예외는 `Fighter.DROP_THROUGH_DURATION`(0.35초) 뒤 자식 Timer(`_after`)로 되돌린다
     - 발밑 발판은 직전 `move_and_slide()`가 남긴 충돌 목록(`get_slide_collision`)에서 **법선이 위를 향하는 면**만 골라, 그 도형에 `is_shape_owner_one_way_collision_enabled()`가 켜져 있는지로 판별한다(`Fighter.get_one_way_floor()` — 원래 `_get_one_way_floor`였는데, 아파트 맵의 `GroundPoundSkill`처럼 "지금 밟은 발판이 뭔지" 알아야 하는 외부 스킬이 생겨서 공개 메서드로 바꿨다)

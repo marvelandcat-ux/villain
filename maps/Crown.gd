@@ -124,10 +124,6 @@ func _ready() -> void:
 func is_available() -> bool:
 	return not is_instance_valid(_holder) and _lock_left <= 0.0
 
-## 지금 왕관을 쓰고 있는 쪽 (없으면 null)
-func get_holder() -> Fighter:
-	return _holder if is_instance_valid(_holder) else null
-
 ## 신호(area_entered) 대신 매 프레임 겹친 목록을 훑는다 — 라운드 리셋이나 순간이동으로
 ## 신호가 안 오는 경우가 있어서, 이 프로젝트의 다른 판정들(SandPit·SpringJumpPad)도 같은 방식이다
 func _physics_process(delta: float) -> void:
