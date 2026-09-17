@@ -13,6 +13,17 @@ extends Node2D
 ## 폭발 색 (기본은 충격 느낌의 밝은 주황빛)
 @export var color: Color = Color(1.0, 0.8, 0.3, 1.0)
 
+## parent의 자식으로 기본 설정 그대로의 이펙트를 만들어 pos에 놓는다
+## (DashSkill/ShoulderChargeSkill이 충돌 지점에서 각자 들고 있던 코드를 공용화).
+## 색·조각 수 등을 다르게 주고 싶으면(BreakablePlatform처럼) 이 헬퍼 대신
+## CrashBurst.new()로 직접 만들어 export 값을 먼저 채운 뒤 add_child할 것 —
+## _ready()가 add_child되는 순간 그 값으로 바로 이펙트를 그리기 때문에 나중에 바꾸면 늦는다
+static func spawn(parent: Node, pos: Vector2) -> CrashBurst:
+	var burst := CrashBurst.new()
+	parent.add_child(burst)
+	burst.global_position = pos
+	return burst
+
 func _ready() -> void:
 	z_index = 50   # 캐릭터·이펙트 위에 그린다
 	_build_flash()

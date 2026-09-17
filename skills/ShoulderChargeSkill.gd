@@ -99,17 +99,7 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 
 ## 돌진 방향 앞쪽(또는 거의 겹친) 상대를 찾는다 — 등 뒤에 있는 상대에는 안 맞는다
 func _enemy_in_range(fighter: Fighter) -> Fighter:
-	for other in fighter.get_tree().get_nodes_in_group("fighters"):
-		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
-			continue
-		var dx: float = other.global_position.x - fighter.global_position.x
-		var dy: float = other.global_position.y - fighter.global_position.y
-		if absf(dx) > hit_range_x or absf(dy) > hit_range_y:
-			continue
-		if dx * _direction < -20.0:
-			continue
-		return other
-	return null
+	return Fighter.find_fighter_in_box(fighter, hit_range_x, hit_range_y, _direction)
 
 ## 어깨가 닿은 순간 — 상대는 크게 뜨고 굳고, 자신도 같이 솟구친다
 func _slam(fighter: Fighter, enemy: Fighter) -> void:
@@ -141,9 +131,7 @@ func _burst(fighter: Fighter) -> void:
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return
-	var burst := CrashBurst.new()
-	parent.add_child(burst)
-	burst.global_position = fighter.global_position + Vector2(_direction * 22.0, -6.0)
+	CrashBurst.spawn(parent, fighter.global_position + Vector2(_direction * 22.0, -6.0))
 
 ## 돌진을 끝내고 이동 권한·자세·얼굴을 되돌린다
 func _end(fighter: Fighter) -> void:

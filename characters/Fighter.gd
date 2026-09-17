@@ -470,19 +470,9 @@ func _apply_top_tint() -> void:
 		return
 	visual.modulate = _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
 
-## duration초 후 callback을 실행한다. get_tree().create_timer()와 달리 이 Fighter의 자식 Timer로 만들어서,
-## Fighter가 그 전에 사라지면(대전 도중 나가기, 다시하기 등으로 씬이 정리되는 경우) 콜백이 아예 실행되지 않고
-## 같이 정리된다 — 그렇지 않으면 이미 사라진 Fighter를 건드리려다 에러가 난다
+## duration초 후 callback을 실행한다 (Timers.after 참고 — Fighter가 그 전에 사라지면 콜백째 정리된다)
 func _after(duration: float, callback: Callable) -> void:
-	var timer := Timer.new()
-	timer.wait_time = duration
-	timer.one_shot = true
-	add_child(timer)
-	timer.timeout.connect(func():
-		callback.call()
-		timer.queue_free()
-	)
-	timer.start()
+	Timers.after(self, duration, callback)
 
 ## 밖에서 경직을 걸어준다 (놀이터에서 왕관을 떨어뜨렸을 때 등).
 ## 이미 걸린 경직보다 짧으면 무시한다 — 짧은 값으로 덮어써서 경직이 오히려 일찍 풀리는 걸 막는다
@@ -816,6 +806,23 @@ func find_opponent() -> Fighter:
 	for f in get_tree().get_nodes_in_group("fighters"):
 		if f != self:
 			return f
+	return null
+
+## fighter를 기준으로 가로 range_x/세로 range_y 상자 안에 있는 다른 Fighter를 찾는다.
+## 캐릭터끼리는 몸 충돌이 꺼져 있어(_ignore_other_fighters) 물리로는 못 잡으므로,
+## 근접 판정(자전거 돌진·어깨 들이박기 등)이 몸 사이 거리로 직접 확인할 때 쓴다.
+## dx * direction이 -back_tolerance보다 작으면(명백히 등 뒤) 제외하고, 거의 겹친 경우는 통과시킨다
+static func find_fighter_in_box(fighter: Fighter, range_x: float, range_y: float, direction: float, back_tolerance: float = 20.0) -> Fighter:
+	for other in fighter.get_tree().get_nodes_in_group("fighters"):
+		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
+			continue
+		var dx: float = other.global_position.x - fighter.global_position.x
+		var dy: float = other.global_position.y - fighter.global_position.y
+		if absf(dx) > range_x or absf(dy) > range_y:
+			continue
+		if dx * direction < -back_tolerance:
+			continue
+		return other
 	return null
 
 ## property(예: "move_speed_multiplier")에 id로 구분되는 배수 효과를 하나 건다.
