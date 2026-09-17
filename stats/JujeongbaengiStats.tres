@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1")
 character_name = "주정뱅이"
-move_speed = 270.0
+move_speed = 465.0
 ultimate_cutin_scene = ExtResource("2")
 attack_rating = 4
 hp_rating = 2

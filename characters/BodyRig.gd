@@ -190,6 +190,31 @@ extends Node2D
 @export var kick_lean_deg: float = -15.0
 ## 균형 잡느라 오른손이 뒤로 빠지는 양
 @export var kick_hand_offset: Vector2 = Vector2(-16.0, -8.0)
+## 발로 차는 타만 쓰는 전체 시간(초). 0 이하면 attack_duration을 그대로 쓴다.
+## 뒤돌려차기처럼 몸이 도는 발차기는 준비 동작이 길어야 도는 게 눈에 보인다 — 차는 순간은 이 값의 40%(ATTACK_STRIKE_START)라
+## **ComboMeleeAttack.finisher_windup을 이 값 x 0.4로 맞춰야** 발이 다 뻗은 순간에 판정이 나간다
+@export var kick_duration: float = 0.0
+
+## --- 한 바퀴 돌면서 치기 (어느 타든) ---
+## 이 번째 타(0=1타)는 **몸 전체가 좌우로 한 번 뒤집혔다 돌아오는 동안** 친다 — 옆에서 보면 등을 한 번 보였다 앞으로 돌아오는 회전 공격.
+## **-1이면 안 돈다**(기본값 — 다른 캐릭터 영향 없음). 발차기 타면 발이, 아니면 손(무기)이 회전 도중에 들어간다.
+## 처음엔 발차기 전용(kick_spin_turn)이었는데 촉법소년 3타를 막대사탕으로 바꾸면서(2026-09-17) 어느 타에나 붙게 떼어냈다
+@export var spin_hit_index: int = -1
+## 도는 타의 전체 시간(초). 0 이하면 attack_duration. 짧으면 도는 게 안 보인다
+@export var spin_duration: float = 0.0
+## **한 바퀴를 다 도는 시점**(그 타 전체 시간 대비 비율). 이 뒤로는 제자리로 돌아온다
+@export_range(0.2, 1.0, 0.01) var spin_end: float = 0.62
+## 한 바퀴 중 **몇 % 돌았을 때 때리는지**. 1보다 작아야 "돌고 나서"가 아니라 "돌면서" 때린다.
+## **판정 시각 = spin_duration x spin_end x 이 값** 이라 ComboMeleeAttack.finisher_windup을 여기에 맞출 것(0.55 x 0.62 x 0.72 = 0.25).
+## 판정이 잡히는 데 1~2프레임 걸려서 0.85처럼 크게 주면 몸이 거의 다 돌아온 뒤에 맞아 "돌고 나서"로 보인다
+@export_range(0.5, 1.0, 0.01) var spin_strike: float = 0.72
+
+## --- 파고들 때 내딛기 ---
+## 콤보가 앞으로 파고드는 동안(ComboMeleeAttack.combo_lunge) 앞발이 먼저 나가고 뒷발이 따라붙는다.
+## 발 모양만 바꾸는 연출이라 이동 거리와는 상관없다
+@export var lunge_step_foot: float = 12.0
+## 내딛는 발이 들리는 높이(px)
+@export var lunge_step_lift: float = 5.0
 
 ## --- 드롭킥 (촉법소년 3타) ---
 ## 뛰어올라 몸을 눕히고 두 발을 모아 차는 자세. 스킬(`ComboMeleeAttack`)이 `play_dropkick()`으로 켜고,
@@ -464,6 +489,19 @@ var _lookback_time: float = 0.0
 var _attack_time: float = 0.0
 ## 지금 재생 중인 스윙 종류 (콤보 평타의 타 번호). 0=기본 내려찍기, 1=앞으로 후려치기, 2=크게 올려치기
 var _attack_variant: int = 0
+## 지금 스윙의 전체 길이(초) — 발차기 타는 kick_duration, 나머지는 attack_duration
+var _attack_len: float = 0.4
+## 뒤돌기 전에 루트 scale.x가 얼마였는지 — 다음 프레임 시작에 되돌려야 _face_moving_direction이
+## 얇아진 크기를 원래 크기로 착각하지 않는다
+var _spin_base_x: float = 0.0
+var _spin_applied: bool = false
+## 지금 휘두르는 타가 한 바퀴 도는 타인지 (play_attack_swing이 정한다)
+var _spin_now: bool = false
+## 파고들며 내딛는 발동작의 남은 시간 / 전체 시간
+var _step_time: float = 0.0
+var _step_len: float = 0.0
+## 발 먼저 나가는 앞부분 비율 (0이면 옛 내딛기 모양)
+var _step_lead: float = 0.0
 ## 술 마시기 동작에 남은 시간(초). 0보다 크면 마시는 중이다
 var _drink_time: float = 0.0
 ## 총 조준 동작에 남은 시간(초). 0보다 크면 총을 겨누는 중이다
@@ -591,6 +629,8 @@ func _process(delta: float) -> void:
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
+	if _step_time > 0.0:
+		_step_time = maxf(_step_time - delta, 0.0)
 	if _drink_time > 0.0:
 		_drink_time = maxf(_drink_time - delta, 0.0)
 	if _vomit_time > 0.0:
@@ -697,6 +737,10 @@ func _process(delta: float) -> void:
 	_apply_pose(speed_ratio)
 
 func _apply_pose(speed_ratio: float) -> void:
+	# 지난 프레임에 뒤돌기로 얇게 눌러둔 가로 크기를 먼저 되돌린다
+	if _spin_applied:
+		scale.x = _spin_base_x
+		_spin_applied = false
 	_face_moving_direction()
 
 	var amount: float = _blend * maxf(speed_ratio, 0.4)
@@ -761,6 +805,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 예전에는 이 블록이 맨 아래라 당기는 자세가 모든 동작을 덮어써서, 되감는 동안 아무 모션도 안 나왔다
 	if _reel_blend > 0.001:
 		_pose_reel()
+
+	# 파고드는 중이면 앞발이 먼저 나가고 뒷발이 따라붙는다 (걷기 발 자세 위에 덮어쓴다)
+	if _step_time > 0.0:
+		_pose_lunge_step()
 
 	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
 	if _attack_time > 0.0:
@@ -879,6 +927,29 @@ func _apply_pose(speed_ratio: float) -> void:
 		else:
 			scale = Vector2(_squash.x * sgn, _squash.y)
 
+	_apply_spin_turn()
+
+## 한 바퀴 돌면서 치기 — 그 타 시작부터 spin_end까지 가로 크기를 cos 한 바퀴로 곱한다.
+## 1 -> 0(옆모습) -> -1(등) -> 0 -> 1(다시 앞). **손/발은 앞으로 돌아오는 도중(spin_strike) 들어가고 회전은 그대로 이어진다** — "돌고 나서"가 아니라 "돌면서" 때린다.
+## 곱하기 전 값을 기억해 두고 다음 프레임 _apply_pose 첫머리에서 되돌린다 —
+## 안 그러면 _face_moving_direction이 absf(scale.x)로 크기를 읽어 얇아진 몸을 원래 크기로 굳혀버린다
+func _apply_spin_turn() -> void:
+	if not _spin_now or _attack_time <= 0.0:
+		return
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var s_end: float = maxf(spin_end, 0.01)
+	if progress >= s_end:
+		return
+	# **일정한 속도로 돈다** — 중간에 느려지면 "돌고 멈췄다가 때린다"로 보인다. 손/발은 이 회전 도중(spin_strike)에 들어간다
+	var p: float = progress / s_end
+	var turn: float = cos(p * TAU)
+	# 정확히 0이면 몸 크기가 0이 돼 자식 변환이 깨진다 — 아주 얇게만 남긴다
+	if absf(turn) < 0.04:
+		turn = 0.04 if turn >= 0.0 else -0.04
+	_spin_base_x = scale.x
+	scale.x = _spin_base_x * turn
+	_spin_applied = true
+
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
 func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
@@ -891,11 +962,73 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	# 세로 위치는 항상 제자리로 되돌린다 — 페달 동작(자전거)이 바꿔놓은 발 Y가 돌진 후에 남지 않게
 	foot.position.y = _rest_positions[foot].y
 
+## 콤보가 앞으로 파고드는 동안 발을 내딛는다 — duration은 파고드는 시간과 같게 준다
+## lead: 앞쪽 이 비율 동안은 발만 먼저 나가고 몸은 그 뒤에 따라온다(ComboMeleeAttack의 이동 곡선과 같은 값을 준다)
+func play_lunge_step(duration: float, lead: float = 0.0) -> void:
+	_step_len = maxf(duration, 0.01)
+	_step_time = _step_len
+	_step_lead = clampf(lead, 0.0, 0.6)
+
+## 내딛기 자세 — 몸은 이미 앞으로 미끄러지고 있으니 발은 "먼저 나갔다가(앞발) 뒤에 남았다가 따라붙는(뒷발)" 모양만 잡는다.
+## 앞발(오른발)은 앞쪽 70% 동안 들려서 앞으로 뻗었다 내려앉고, 뒷발(왼발)은 뒤에 끌리다가 뒤쪽 60% 동안 들려 따라온다
+func _pose_lunge_step() -> void:
+	var t: float = 1.0 - _step_time / _step_len
+	if _step_lead > 0.0:
+		_pose_lead_step(t)
+		return
+	var front: float = sin(PI * clampf(t / 0.7, 0.0, 1.0))
+	var back_lift: float = sin(PI * clampf((t - 0.4) / 0.6, 0.0, 1.0))
+	var back_drag: float = sin(PI * t)
+	if _foot_r:
+		_foot_r.position = _rest_positions[_foot_r] + Vector2(lunge_step_foot * front, -lunge_step_lift * front)
+		_foot_r.rotation = deg_to_rad(-18.0) * front
+	if _foot_l:
+		_foot_l.position = _rest_positions[_foot_l] + Vector2(-lunge_step_foot * 0.8 * back_drag, -lunge_step_lift * 0.6 * back_lift)
+		_foot_l.rotation = deg_to_rad(12.0) * back_drag
+
+## 발 먼저, 몸이 따라감 — ① lead 동안 앞발이 들려 앞으로 뻗고(몸은 제자리) ② 몸이 미끄러져 오는 만큼
+## 앞발은 몸 아래로 되돌아온다(발이 땅에 붙어 있는 것처럼 보인다) ③ 뒷발은 제자리에 남아 뒤로 벌어졌다가 끝에 들려 따라붙는다
+func _pose_lead_step(t: float) -> void:
+	var reach_end: float = maxf(_step_lead, 0.15)
+	var reach: float = smoothstep(0.0, reach_end, t)
+	var s: float = clampf((t - _step_lead) / (1.0 - _step_lead), 0.0, 1.0)
+	var body: float = s * s * (3.0 - 2.0 * s)   # 몸이 간 비율 — 이동 곡선(smoothstep)의 위치와 같다
+	var front: float = reach * (1.0 - body)
+	var front_lift: float = sin(PI * clampf(t / reach_end, 0.0, 1.0))
+	var catch_up: float = smoothstep(0.75, 1.0, t)
+	var back: float = body * (1.0 - catch_up)
+	var back_lift: float = sin(PI * clampf((t - 0.75) / 0.25, 0.0, 1.0))
+	if _foot_r:
+		_foot_r.position = _rest_positions[_foot_r] + Vector2(lunge_step_foot * front, -lunge_step_lift * front_lift)
+		_foot_r.rotation = deg_to_rad(-18.0) * front
+	if _foot_l:
+		_foot_l.position = _rest_positions[_foot_l] + Vector2(-lunge_step_foot * 0.8 * back, -lunge_step_lift * 0.6 * back_lift)
+		_foot_l.rotation = deg_to_rad(12.0) * back
+
 ## 기본공격 스윙 — 오른손(과 손에 든 물건)을 뒤로 살짝 젖혔다가 앞으로 획 휘두르고 돌아온다.
 ## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
-func play_attack_swing(variant: int = 0) -> void:
-	_attack_time = attack_duration
+## duration: 이 타의 모션 길이(초). 0 이하면 리그 설정값(attack_duration / kick_duration / spin_duration)을 쓴다.
+## spin: 켜면 이 타는 한 바퀴 돌면서 친다. 꺼져 있어도 spin_hit_index 번째 타면 돈다(옛 방식)
+func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = false) -> void:
+	_attack_len = attack_duration
+	if attack_kick_hit >= 0 and variant == attack_kick_hit and kick_duration > 0.0:
+		_attack_len = kick_duration
+	if spin_hit_index >= 0 and variant == spin_hit_index and spin_duration > 0.0:
+		_attack_len = spin_duration
+	if duration > 0.0:
+		_attack_len = duration
+	_spin_now = spin or (spin_hit_index >= 0 and variant == spin_hit_index)
+	_attack_time = _attack_len
 	_attack_variant = variant
+
+## 이 모션으로 휘두르면 **시작부터 몇 초 뒤에 맞는지** — 콤보가 판정을 켤 시각이다(AttackData는 이 값을 따른다).
+## 보통 타는 내리치기 시작 지점(40%), 회전 타는 회전 도중 후려치는 지점(spin_end x spin_strike).
+## 판정 시각을 따로 적어두지 않고 여기서 계산하므로, 모션 길이를 바꿔도 모션과 판정이 어긋나지 않는다
+func strike_time(duration: float, spin: bool = false) -> float:
+	var length: float = duration if duration > 0.0 else attack_duration
+	if spin:
+		return length * spin_end * spin_strike
+	return length * ATTACK_STRIKE_START
 
 ## 예비동작이 끝나고 실제로 내리치기 시작하는 시점 (전체 시간 대비 비율)
 const ATTACK_STRIKE_START: float = 0.4
@@ -905,7 +1038,7 @@ const ATTACK_STRIKE_END: float = 0.62
 ## 스윙 진행도에 따라 오른손의 각도와 위치를 잡는다 (걷기 동작보다 우선한다).
 ## 각도는 음수가 반시계 방향(무기가 위로 올라감), 양수가 시계 방향(아래로 내리침)이다
 func _pose_attack_hand() -> void:
-	var progress: float = 1.0 - _attack_time / attack_duration
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	# 타별로 감는 각도·내려치는 각도·손 이동 경로가 달라진다 (콤보 1·2·3타 스윙 변주)
 	var v: Dictionary = _attack_variant_params()
 	var raise_deg: float = v["raise_deg"]
@@ -1044,9 +1177,11 @@ func _kick_arm_params() -> Dictionary:
 ## 손 스윙과 **같은 구간 비율**(ATTACK_STRIKE_START/END)을 쓰므로, 히트박스가 켜지는 순간에
 ## 발이 가장 멀리 뻗어 있다. 뻗는 정도(reach)는 예비동작에서 음수(뒤로 접음)가 된다
 func _pose_kick() -> void:
-	var progress: float = 1.0 - _attack_time / attack_duration
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var reach: float
-	if progress < ATTACK_STRIKE_START:
+	if _spin_now:
+		reach = _spin_kick_reach(progress)
+	elif progress < ATTACK_STRIKE_START:
 		# ① 무릎을 뒤로 접는다 (끝으로 갈수록 느려지게)
 		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
 		reach = lerpf(0.0, -kick_windup_ratio, p)
@@ -1075,6 +1210,22 @@ func _pose_kick() -> void:
 		_body.rotation = lean
 	if _head:
 		_head.rotation += lean * 0.5
+
+## 뒤돌려차기의 발 뻗기 — **도는 흐름 안에서** 발이 나간다.
+## 등을 보이기 전까지는 발을 붙이고 있다가, 반대편으로 넘어가는 동안 뻗기 시작해 후려치는 순간(spin_strike) 다 뻗고,
+## 한 바퀴를 마저 도는 동안 뻗은 채 휘두르다가 다 돈 뒤에 내린다. 무릎을 뒤로 접는 준비 동작은 없다(회전이 곧 준비 동작)
+func _spin_kick_reach(progress: float) -> float:
+	var s_end: float = maxf(spin_end, 0.01)
+	var hit_at: float = s_end * spin_strike
+	var start_at: float = spin_end * 0.45
+	if progress < start_at:
+		return 0.0
+	if progress < hit_at:
+		var p: float = (progress - start_at) / maxf(hit_at - start_at, 0.001)
+		return p * p
+	if progress < spin_end:
+		return 1.0
+	return lerpf(1.0, 0.0, (progress - spin_end) / maxf(1.0 - spin_end, 0.001))
 
 ## 머리를 조준 각도만큼 더 기울인다(라디안). 0이면 원래대로.
 ##

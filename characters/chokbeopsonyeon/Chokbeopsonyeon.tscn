@@ -17,6 +17,10 @@
 [ext_resource type="VideoStream" path="res://sprite/도감/영상/비비탄3연사.ogv" id="20_vid_bb"]
 [ext_resource type="VideoStream" path="res://sprite/도감/영상/브레이크없는픽시.ogv" id="21_vid_dash"]
 [ext_resource type="VideoStream" path="res://sprite/도감/영상/엄마가부른다.ogv" id="22_vid_ult"]
+[ext_resource type="Script" path="res://combat/AttackData.gd" id="20"]
+[ext_resource type="Resource" path="res://characters/chokbeopsonyeon/attacks/Jab1.tres" id="21"]
+[ext_resource type="Resource" path="res://characters/chokbeopsonyeon/attacks/Jab2.tres" id="22"]
+[ext_resource type="Resource" path="res://characters/chokbeopsonyeon/attacks/SpinFinisher.tres" id="23"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -46,13 +50,7 @@ range = 40.0
 windup = 0.14
 cooldown = 0.3
 miss_cooldown = 1.0
-combo_knockback = Array[Vector2]([Vector2(220, -90), Vector2(220, -90), Vector2(820, -300)])
-combo_pop = Array[float]([-1.0, -1.0, 380.0])
-launch_stun = 0.85
-launch_spin_turns = 2.0
-launch_smoke = true
-dropkick_finisher = true
-finisher_windup = 0.18
+hits = Array[ExtResource("20")]([ExtResource("21"), ExtResource("22"), ExtResource("23")])
 skill_name = "사탕 맛 좀 봐라!"
 demo_video = ExtResource("19_vid_combo")
 description = "발길질 세 번을 이어서 넣는다. 맞아야 다음 타가 나가고, 한 번이라도 헛치면 처음부터 다시다. 3타를 다 맞추면 뜬 상대를 쫓아가 계속 굴릴 수 있다."

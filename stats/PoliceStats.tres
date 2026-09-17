@@ -5,4 +5,4 @@
 [resource]
 script = ExtResource("1")
 character_name = "주인공"
-move_speed = 240.0
+move_speed = 420.0
