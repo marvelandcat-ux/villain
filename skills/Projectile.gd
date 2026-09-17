@@ -54,12 +54,7 @@ func setup(direction: float, speed: float, projectile_damage: int, shooter: Figh
 ## 이것 때문에 토하기의 스택별 사거리(lifetime_per_stack)가 한동안 전혀 안 먹고 있었음.
 ## 투사체 자신의 자식 Timer라서 투사체가 먼저 사라지면 타이머도 같이 정리된다
 func _start_lifetime_timer() -> void:
-	var timer := Timer.new()
-	timer.wait_time = lifetime
-	timer.one_shot = true
-	timer.timeout.connect(queue_free)
-	add_child(timer)
-	timer.start()
+	Timers.self_destruct(self, lifetime)
 
 func _physics_process(delta: float) -> void:
 	# 시간이 지날수록 진행 방향으로 빨라진다 (max_speed가 있으면 거기서 멈춘다)

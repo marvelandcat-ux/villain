@@ -5,9 +5,4 @@ extends StaticBody2D
 @export var lifetime: float = 5.0
 
 func _ready() -> void:
-	var timer := Timer.new()
-	timer.wait_time = lifetime
-	timer.one_shot = true
-	timer.timeout.connect(queue_free)
-	add_child(timer)
-	timer.start()
+	Timers.self_destruct(self, lifetime)

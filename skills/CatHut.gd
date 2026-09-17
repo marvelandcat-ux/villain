@@ -25,12 +25,7 @@ func _ready() -> void:
 	current_hp = max_hp
 	area_entered.connect(_on_area_entered)
 
-	var lifetime_timer := Timer.new()
-	lifetime_timer.wait_time = lifetime
-	lifetime_timer.one_shot = true
-	lifetime_timer.timeout.connect(queue_free)
-	add_child(lifetime_timer)
-	lifetime_timer.start()
+	Timers.self_destruct(self, lifetime)
 
 	var spawn_timer := Timer.new()
 	spawn_timer.wait_time = spawn_interval

@@ -103,17 +103,9 @@ func _start_repeat_motion(fighter: Fighter) -> void:
 		puff.stop()
 		puff.queue_free())
 
-## 이 스킬 노드의 자식 Timer로 예약한다 — 캐릭터가 사라지면 타이머도 같이 사라져서
-## 없어진 노드를 건드리려다 나는 "Lambda capture ... was freed" 에러가 원천적으로 안 난다
+## 이 스킬 노드의 자식 Timer로 예약한다 (Timers.after 참고). delay가 0 이하면 그 자리에서 바로 부른다
 func _after(delay: float, what: Callable) -> void:
 	if delay <= 0.0:
 		what.call()
 		return
-	var t := Timer.new()
-	t.one_shot = true
-	t.wait_time = delay
-	add_child(t)
-	t.timeout.connect(func() -> void:
-		what.call()
-		t.queue_free())
-	t.start()
+	Timers.after(self, delay, what)
