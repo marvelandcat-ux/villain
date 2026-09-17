@@ -27,7 +27,7 @@ size = Vector2(219.25, 15)
 size = Vector2(17, 297)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bx8n8"]
-size = Vector2(250.48979, 22.149841)
+size = Vector2(264.16287, 22.149841)
 
 [sub_resource type="RectangleShape2D" id="Shape_PavilionRightRoof"]
 size = Vector2(315, 20)
@@ -415,15 +415,12 @@ position = Vector2(-782.25, -75)
 position = Vector2(-119.75, 205)
 shape = SubResource("RectangleShape2D_5h11f")
 
-[node name="PostRight" type="CollisionShape2D" parent="PavilionLeftPosts" unique_id=166550671]
-position = Vector2(113.25, 201)
-shape = SubResource("RectangleShape2D_5h11f")
-
 [node name="PavilionLeftSlide" type="StaticBody2D" parent="." unique_id=782958340]
 position = Vector2(-559, 202)
 
 [node name="Collision" type="CollisionShape2D" parent="PavilionLeftSlide" unique_id=782958341]
-rotation = 0.715585
+position = Vector2(0.64764404, -3.1474304)
+rotation = 0.598648
 shape = SubResource("RectangleShape2D_bx8n8")
 
 [node name="PavilionRightRoof" type="StaticBody2D" parent="." unique_id=187124670]
