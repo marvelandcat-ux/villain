@@ -19,6 +19,10 @@
 - **캐릭터끼리는 몸 충돌을 하지 않는다.** `Fighter._ignore_other_fighters()`가 `_ready()`에서 같은 씬의 다른 Fighter들과 양방향으로 `add_collision_exception_with`를 걸어둔다 — 안 걸면 캐릭터가 **상대 머리 위에 올라서서 발판처럼 밟고 다닐 수 있다**(실제로 나온 문제). 새로 스폰된 쪽이 자기 `_ready()`에서 기존 캐릭터들과 걸어두므로 라운드 리로드·훈련장 캐릭터 교체도 자동으로 처리된다
   - **충돌 레이어를 바꾸지 않은 이유:** 레이어를 건드리면 바닥·벽·발판까지 같이 영향을 받는다. 예외 처리로 빼는 건 몸(`CharacterBody2D`)끼리의 충돌뿐이고, 공격 판정(`Hitbox`/`Hurtbox`)은 Area2D라 그대로 서로를 감지한다 — 헤드리스로 기본공격 데미지·발판 착지가 그대로인 것까지 확인함
   - 대신 두 캐릭터가 같은 자리에 겹쳐 설 수 있게 됐다(스매시브라더스류와 같은 방식). 서로 밀어내는 처리가 필요하면 따로 넣어야 한다
+- **공용 정적 헬퍼 3종(2026-09-17 중복 제거 리팩토링)** — 여러 스킬·이펙트가 각자 복사해 쓰던 코드를 한 곳으로 모았다. 새 스킬을 만들 때 아래 패턴이 필요하면 직접 다시 짜지 말고 이걸 쓸 것:
+  - `combat/PhysicsQuery.gd`: `raycast_ignoring_fighters(ctx, from, to)` / `ground_y_below(ctx, from, probe, fallback_y)` — 캐릭터는 뚫고 지나가야 하는 레이캐스트(바닥 찾기, 벽까지 거리 재기)는 전부 이걸 쓴다. `GlassShard`/`LiquorSplash`/`DashSkill`/`MouseGrab`/`VomitBeam`이 씀
+  - `Timers.gd`(프로젝트 루트): `after(owner, delay, cb)` / `self_destruct(target, lifetime)` — `get_tree().create_timer()`가 아니라 owner의 자식 Timer로 예약해서 owner가 먼저 사라지면 콜백째 정리되게 하는 그 패턴(위 "Lambda capture" 항목 참고)을 한 곳에 모았다. `Fighter._after`/`CigaretteSmokeSkill._after`/`PassingTrain._wait`/`CatHut`/`FirePlate`/`Projectile`/`Turnstile`이 씀
+  - `Fighter.find_fighter_in_box(fighter, range_x, range_y, direction, back_tolerance := 20.0)`: 몸 충돌이 꺼져 있어 물리로 못 잡는 근접 상대를 거리로 찾는다(`DashSkill`/`ShoulderChargeSkill`). `CrashBurst.spawn(parent, pos)`: 기본 설정 그대로의 충돌 이펙트를 스폰한다(`DashSkill`/`ShoulderChargeSkill`) — **`BreakablePlatform`처럼 색·조각 수를 다르게 주려면 이 헬퍼 대신 `CrashBurst.new()`로 직접 만들어 add_child 전에 값을 채울 것**(안 그러면 `_ready()`가 기본값으로 이미 그려버린 뒤다)
 - `skills/Skill.gd`: 모든 스킬의 공용 베이스(`Node`). 쿨타임 카운트다운과 `can_use()`/`use(fighter)`를 여기서 한 번만 구현. 새 스킬은 이 클래스를 상속해서 `_execute(fighter)`만 오버라이드
 - **궁극기는 라운드 시작 시 쿨타임을 물고 시작한다(`Skill.start_on_cooldown`, 2026-09-10).** 전 캐릭터 `SkillUltimate`에 켜져 있어서 **라운드 초반에는 궁을 못 쓴다.** `_ready()`에서 `cooldown_left = effective_cooldown()`을 넣는 게 전부다
   - **"게임 시작"과 "라운드 시작"을 따로 처리할 필요가 없다** — 라운드가 바뀔 때 `Stage`가 `reload_current_scene()`으로 씬을 통째로 다시 만들기 때문에 `_ready()`가 매 라운드 다시 돈다. 라운드 승수만 `GameState`(오토로드)에 남는다
@@ -1470,13 +1474,14 @@
 ```
 res://
   GameState.gd    # 오토로드 싱글턴 — 캐릭터/맵/모드/라운드 선택값 전달
+  Timers.gd       # 공용 정적 헬퍼(after/self_destruct) — 오토로드 아님, 그냥 아무 도메인에도 안 속한 유틸
   characters/     # Fighter.gd(공용 베이스) + BodyRig.gd(공용 몸) + 캐릭터별 씬
                   #   대전 로스터 8종: chokbeopsonyeon/, akpeulleo/, jujeongbaengi/, catmom/,
                   #   subwayvillain/, floornoise/, gymbro/, iljin/(패거리 IljinCrewMember 포함)
                   #   로스터 밖: police/(스토리 모드 주인공, 훈련장 전용) — dummy/(훈련장 고정 샌드백)는
                   #   선택 캐릭터가 아니라 TrainingGround.gd가 직접 불러 쓴다
   skills/         # Skill.gd(공용 베이스) + 실제 스킬 컴포넌트, 투사체
-  combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트)
+  combat/         # Hitbox/Hurtbox/HitSpark (전투 판정 + 히트 이펙트) + PhysicsQuery.gd(공용 레이캐스트 헬퍼)
   controllers/    # PlayerController / AIController / ClaudeAIController / DummyController
   stats/          # CharacterStats 리소스(.tres)
   maps/           # Stage.gd(공용 베이스) + CameraRig.gd + 선택 가능한 스테이지 씬 10종(GameState.MAPS) +
