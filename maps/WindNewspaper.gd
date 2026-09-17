@@ -12,15 +12,6 @@ extends Node2D
 ## 벽에 부딪히면 튕겨 나오므로 맵 밖으로 사라지지 않고, 다음 열차는 반대 방향이라 도로 날려 보낸다.
 ## @tool이라 에디터에서도 보여서 위치를 눈으로 잡을 수 있다 — 움직임은 게임에서만 돈다
 
-## --- 모양 ---
-## 그림을 따로 안 지정했을 때 쓰는 기본 신문 두 장 (종이마다 하나를 무작위로 고른다)
-const DEFAULT_PAPER_TEXTURES: Array[Texture2D] = [
-	preload("res://sprite/맵/지하철역/신문.png"),
-	preload("res://sprite/맵/지하철역/신문2.png"),
-]
-## 그림에서 투명 여백을 뺀 영역 — 텍스처마다 한 번만 재서 모든 종이가 나눠 쓴다
-static var _used_rects: Dictionary = {}
-
 ## 펼쳤을 때 종이 크기(px)
 @export var paper_size: Vector2 = Vector2(24.0, 31.0)
 ## 종이 색 — 맵의 CanvasModulate(0.55, 0.58, 0.7)가 곱해져 푸르스름하게 어두워지므로 조금 밝게 잡았다.
@@ -94,6 +85,15 @@ static var _used_rects: Dictionary = {}
 ## 경고등이 켜진 동안 바닥의 종이가 들썩이는 각도(rad)와 빠르기 — 바람이 열차보다 먼저 온다
 @export var tremble: float = 0.06
 @export var tremble_speed: float = 34.0
+
+## --- 모양 ---
+## 그림을 따로 안 지정했을 때 쓰는 기본 신문 두 장 (종이마다 하나를 무작위로 고른다)
+const DEFAULT_PAPER_TEXTURES: Array[Texture2D] = [
+	preload("res://sprite/맵/지하철역/신문.png"),
+	preload("res://sprite/맵/지하철역/신문2.png"),
+]
+## 그림에서 투명 여백을 뺀 영역 — 텍스처마다 한 번만 재서 모든 종이가 나눠 쓴다
+static var _used_rects: Dictionary = {}
 
 ## 그릴 때 쓰는 가로·세로 배율 — x는 앞뒤로 뒤집히는 정도(음수면 뒷면), y는 누운 정도.
 ## 노드의 scale을 안 쓰는 이유: @tool이라 에디터에서 scale을 건드리면 씬 파일에 저장돼 버린다

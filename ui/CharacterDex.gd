@@ -137,6 +137,9 @@ var _repeat_left: float = 0.0
 
 ## 에디터에서 값이 바뀌었는지 보는 도장 — 바뀐 프레임에만 다시 그린다
 var _editor_stamp: String = ""
+## 칸의 **모양·개수**가 바뀌었는지. 자리 보정만 바뀐 경우는 아니라고 본다 —
+## 그때까지 네모를 다시 맞추면 끌고 있는 네모가 손에서 튕겨 나간다
+var _shape_stamp: String = ""
 
 func _ready() -> void:
 	_build_tabs()
@@ -293,9 +296,6 @@ func _build_tiles() -> void:
 	if not keys.is_empty():
 		_select(keys[0])
 
-## 칸의 **모양·개수**가 바뀌었는지. 자리 보정만 바뀐 경우는 아니라고 본다 —
-## 그때까지 네모를 다시 맞추면 끌고 있는 네모가 손에서 튕겨 나간다
-var _shape_stamp: String = ""
 func _tile_shape_changed(stamp: String) -> bool:
 	var shape: String = stamp.split("|portrait|")[0]
 	if shape == _shape_stamp:

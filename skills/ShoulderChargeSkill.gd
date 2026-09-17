@@ -23,8 +23,6 @@ extends Skill
 @export var hit_range_y: float = 46.0
 ## 부딪히는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작)
 @export var impact_squash: Vector2 = Vector2(1.2, 0.86)
-
-var _time_left: float = 0.0
 ## 돌진하는 동안 바꿔 낄 얼굴 (일진은 신남일진). 비어 있으면 얼굴을 안 바꾼다
 @export var charge_face: Texture2D
 ## 그 얼굴의 배율 — 기본 머리와 그림 크기가 다르면 잡아준다((0,0)이면 기본 배율)
@@ -32,11 +30,13 @@ var _time_left: float = 0.0
 ## 잔상을 몇 초마다 남길지 (0이면 안 남긴다)
 @export var trail_interval: float = 0.045
 
-var _trail_timer: float = 0.0
 ## 타입을 안 붙인다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔 못 찾아서
 ## 파싱 에러가 난다(Fighter._shield를 무타입으로 둔 것과 같은 이유). preload로 직접 가져온다
 const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
 var _wind = null
+
+var _time_left: float = 0.0
+var _trail_timer: float = 0.0
 var _direction: float = 1.0
 var _hit: bool = false
 

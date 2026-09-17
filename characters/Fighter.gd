@@ -16,12 +16,12 @@ signal basic_attack_used
 ## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
 signal damaged(amount: int, knockback: Vector2)
 
+## 캐릭터 고정 수치
+@export var stats: CharacterStats
+
 ## 마지막으로 맞았을 때 밀려난 가로 방향(+1 오른쪽, 0이면 아직 안 맞음).
 ## 처치 연출(Stage)이 이 방향으로 날려보낸다 — "맞은 방향의 반대쪽"이 곧 넉백 방향이다
 var last_hit_direction: float = 0.0
-
-## 캐릭터 고정 수치
-@export var stats: CharacterStats
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 1150.0
@@ -592,12 +592,6 @@ func _set_visual_guard(on: bool) -> void:
 	if visual and visual.has_method("set_guarding"):
 		visual.set_guarding(on)
 
-## 방어 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
-func guard_cooldown_ratio() -> float:
-	if guard_cooldown <= 0.0:
-		return 0.0
-	return clampf(_guard_cooldown_left / guard_cooldown, 0.0, 1.0)
-
 ## 지금 대시를 쓸 수 있는지. 쿨타임이 남았거나, 경직·붙잡힘 상태거나,
 ## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다.
 ## 방 설정에서 껐으면(GameState.dash_enabled) 아예 못 쓴다
@@ -620,12 +614,6 @@ func dash(direction: float) -> bool:
 	_dash_trail_timer = 0.0
 	_spawn_dash_afterimage()
 	return true
-
-## 대시 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
-func dash_cooldown_ratio() -> float:
-	if dash_cooldown <= 0.0:
-		return 0.0
-	return clampf(_dash_cooldown_left / dash_cooldown, 0.0, 1.0)
 
 ## 대시 잔상 — Visual을 그 순간 모습 그대로 복제해 뒤에 남기고 서서히 지운다.
 ## DashSkill._spawn_afterimage()와 같은 방식이라 임시 사각형이든 스프라이트 몸이든 그대로 동작한다.

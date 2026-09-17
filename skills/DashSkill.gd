@@ -18,10 +18,6 @@ extends Skill
 @export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
 ## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출). 끄면 예전처럼 잔상·먼지만
 @export var wind_lines: bool = true
-## 타입을 안 붙이고 preload로 가져온다 — 새 class_name은 전역 클래스 캐시가 갱신되기 전엔
-## 못 찾아서 파싱 에러가 난다(ShoulderChargeSkill이 ChargeWind를 가져오는 것과 같은 이유)
-const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
-var _wind = null
 
 ## 적을 들이받으면 적이 입는 데미지
 @export var enemy_hit_damage: int = 10
@@ -47,6 +43,11 @@ var _wind = null
 ## 물리 충돌 대신 이 거리로 판정한다. 서로 밀어내는 최소 간격(BODY_PUSH_WIDTH=38)보다 살짝 크게 잡아 접촉 순간 잡는다
 @export var enemy_hit_range_x: float = 42.0
 @export var enemy_hit_range_y: float = 46.0
+
+## 타입을 안 붙이고 preload로 가져온다 — 새 class_name은 전역 클래스 캐시가 갱신되기 전엔
+## 못 찾아서 파싱 에러가 난다(ShoulderChargeSkill이 ChargeWind를 가져오는 것과 같은 이유)
+const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
+var _wind = null
 
 var _time_left: float = 0.0
 var _direction: float = 1.0
