@@ -3,11 +3,11 @@
 [ext_resource type="Script" path="res://stats/CharacterStats.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/cutin/ChokbeopsonyeonCutIn.tscn" id="2"]
 [ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/잼민이/말썽꾸러기미남.png" id="3_illust"]
-[ext_resource type="Texture2D" path="res://sprite/도감/촉법소년_인게임.png" id="4_ingame"]
+[ext_resource type="Texture2D" path="res://sprite/도감/버릇없는 아이_인게임.png" id="4_ingame"]
 
 [resource]
 script = ExtResource("1")
-character_name = "촉법소년"
+character_name = "버릇없는 아이"
 max_hp = 100
 move_speed = 420.0
 attack_multiplier = 1.0

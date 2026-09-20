@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dabrnaqnf06us"
-path="res://.godot/imported/촉법소년_인게임.png-8ac57df69bc81770b60c260e27153b75.ctex"
+uid="uid://cl4fbnqk2ko4l"
+path="res://.godot/imported/버릇없는 아이.png-1efa51af509f467927a11860bac6799c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/도감/촉법소년_인게임.png"
-dest_files=["res://.godot/imported/촉법소년_인게임.png-8ac57df69bc81770b60c260e27153b75.ctex"]
+source_file="res://sprite/도감/전신/버릇없는 아이.png"
+dest_files=["res://.godot/imported/버릇없는 아이.png-1efa51af509f467927a11860bac6799c.ctex"]
 
 [params]
 
