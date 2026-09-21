@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cpgh7vviu5b4a"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://bmqkcwteuwg03" path="res://sprite/일진/일진머리.png" id="2_head"]
@@ -6,19 +6,17 @@
 [ext_resource type="Texture2D" uid="uid://oabuoswrp2df" path="res://sprite/일진/일진 무기.png" id="4_bag"]
 [ext_resource type="Texture2D" uid="uid://cf1t6tg65jq0h" path="res://sprite/일진/일진 아픈.png" id="5_hurt"]
 [ext_resource type="Texture2D" uid="uid://ulvntt11xpba" path="res://sprite/일진/힘든일진.png" id="6_weary"]
-[ext_resource type="Texture2D" uid="uid://cl80226s80f5m" path="res://sprite/일진/신남일진.png" id="7_action"]
 [ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="8_foot"]
 [ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="9_cig"]
 [ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smokeface"]
 
-[node name="BodyRig" instance=ExtResource("1_rig")]
-attack_thrust = true
+[node name="BodyRig" unique_id=650163351 instance=ExtResource("1_rig")]
 attack_two_handed = true
+attack_thrust = true
 weapon_on_final_hit = true
+idle_weapon = NodePath("HandL/BagIdle")
 weapon_node = NodePath("HandRHold/Bag")
 drink_head_tilt_deg = 0.0
-idle_weapon = NodePath("HandL/BagIdle")
-final_hit_index = 2
 hurt_head_texture = ExtResource("5_hurt")
 hurt_head_scale = Vector2(0.0434, 0.0434)
 action_head_texture = ExtResource("10_smokeface")
@@ -26,38 +24,38 @@ action_head_scale = Vector2(0.0448, 0.0448)
 weary_head_texture = ExtResource("6_weary")
 weary_head_scale = Vector2(0.0439, 0.0439)
 
-[node name="FootL" parent="." index="0"]
+[node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("8_foot")
 
-[node name="FootR" parent="." index="1"]
+[node name="FootR" parent="." index="1" unique_id=1509249644]
 texture = ExtResource("8_foot")
 
-[node name="Body" parent="." index="2"]
+[node name="Body" parent="." index="2" unique_id=1277525598]
 position = Vector2(-0.17, 0.1)
 scale = Vector2(0.035, 0.03968)
 texture = ExtResource("3_body")
 
-[node name="Head" parent="." index="6"]
-position = Vector2(-1.88, -34.05)
-scale = Vector2(0.0481, 0.0481)
-texture = ExtResource("2_head")
-
-[node name="Bag" type="Sprite2D" parent="HandRHold" index="0"]
-position = Vector2(12, 0)
-scale = Vector2(0.01975, 0.01975)
-texture = ExtResource("4_bag")
-
-[node name="HandL" parent="." index="3"]
+[node name="HandL" parent="." index="3" unique_id=927525538]
 z_index = 1
 
-[node name="BagIdle" type="Sprite2D" parent="HandL" index="0"]
+[node name="BagIdle" type="Sprite2D" parent="HandL" index="0" unique_id=1290374902]
 show_behind_parent = true
 position = Vector2(20, 45)
 scale = Vector2(0.1795, 0.1795)
 texture = ExtResource("4_bag")
 
-[node name="Cigarette" type="Sprite2D" parent="HandRHold" index="1"]
+[node name="Bag" type="Sprite2D" parent="HandRHold" index="0" unique_id=339962856]
+position = Vector2(9, 5)
+scale = Vector2(0.01975, 0.01975)
+texture = ExtResource("4_bag")
+
+[node name="Cigarette" type="Sprite2D" parent="HandRHold" index="1" unique_id=656761099]
 visible = false
 position = Vector2(7, -1)
 scale = Vector2(0.0142, 0.0142)
 texture = ExtResource("9_cig")
+
+[node name="Head" parent="." index="6" unique_id=1394957076]
+position = Vector2(-1.88, -34.05)
+scale = Vector2(0.0481, 0.0481)
+texture = ExtResource("2_head")

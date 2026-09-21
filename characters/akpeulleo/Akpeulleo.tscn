@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/AkpeulleoStats.tres" id="2"]
@@ -9,6 +9,9 @@
 [ext_resource type="Script" path="res://skills/RageBuffSkill.gd" id="7"]
 [ext_resource type="Script" path="res://skills/WeakenAuraUltimate.gd" id="8"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/AkpeulleoRig.tscn" id="9"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/스킬로고/악플러1번스킬.png" id="10"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/스킬로고/악플러2번스킬.png" id="11"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/스킬로고/악플러궁극기.png" id="12"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -50,12 +53,15 @@ shape = SubResource("RectangleShape2D_hitbox")
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("6")
 cooldown = 8.0
+icon = ExtResource("10")
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("7")
 cooldown = 10.0
+icon = ExtResource("11")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("8")
 cooldown = 25.0
 start_on_cooldown = true
+icon = ExtResource("12")

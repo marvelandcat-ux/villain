@@ -30,6 +30,18 @@ size = Vector2(133, 16)
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow"]
 blend_mode = 1
 
+[sub_resource type="Gradient" id="Gradient_monitorlight"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.45, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_monitorlight"]
+gradient = SubResource("Gradient_monitorlight")
+width = 512
+height = 512
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
 [node name="TrashRoom" type="Node2D" unique_id=963860913]
 script = ExtResource("1")
 
@@ -37,6 +49,7 @@ script = ExtResource("1")
 color = Color(1, 1, 1, 1)
 script = ExtResource("11")
 glow_target_path = NodePath("../MonitorGlow")
+light_target_path = NodePath("../MonitorLight")
 
 [node name="Background" type="Sprite2D" parent="." unique_id=1544957977]
 position = Vector2(-56, 115)
@@ -158,7 +171,14 @@ region_rect = Rect2(97, 53, 1113, 1159)
 material = SubResource("CanvasItemMaterial_glow")
 position = Vector2(-331.53, -73.71)
 color = Color(0.35, 0.85, 1, 1)
-polygon = PackedVector2Array(-37, -21, 37, -21, 37, 21, -37, 21)
+polygon = PackedVector2Array(-37, -21, 37, -21, 37, 3, 16, 3, 7, 19, 7, 21, -37, 21)
+
+[node name="MonitorLight" type="PointLight2D" parent="."]
+position = Vector2(-331.53, -73.71)
+color = Color(0.6, 0.85, 1, 1)
+energy = 0.0
+texture = SubResource("GradientTexture2D_monitorlight")
+texture_scale = 1.6
 
 [node name="Bed" type="Sprite2D" parent="." unique_id=492846095]
 position = Vector2(221.0, -172.26)

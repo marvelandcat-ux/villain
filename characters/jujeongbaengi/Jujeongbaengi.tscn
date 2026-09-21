@@ -69,6 +69,7 @@ icon = ExtResource("13")
 
 [node name="Skill2" type="Node" parent="." unique_id=556174220]
 script = ExtResource("7")
+stack_scales = Array[Vector2]([Vector2(1, 1), Vector2(1, 1), Vector2(0.6, 1), Vector2(0.6, 1)])
 beam_scene = ExtResource("8")
 mouth_offset = Vector2(18, -15)
 cooldown = 4.0

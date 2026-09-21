@@ -30,6 +30,6 @@ position = Vector2(25.34999, 2.6591797)
 texture = ExtResource("5_hand")
 
 [node name="Head" parent="." index="6" unique_id=1394957076]
-position = Vector2(-3.14, -32.0)
+position = Vector2(-3.14, -32)
 scale = Vector2(0.044, 0.044)
 texture = ExtResource("2_head")

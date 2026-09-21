@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bhwnugf54awi2"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://g2b2q88ckkhw" path="res://sprite/캣/캣맘머리.png" id="2_head"]
@@ -15,8 +15,6 @@ texture = ExtResource("4_foot")
 texture = ExtResource("4_foot")
 
 [node name="Body" parent="." index="2" unique_id=1277525598]
-position = Vector2(0.9600017, 1.4500003)
-scale = Vector2(0.10488372, 0.114444435)
 texture = ExtResource("3_body")
 
 [node name="HandL" parent="." index="3" unique_id=927525538]

@@ -24,17 +24,27 @@ extends CanvasModulate
 ## glow_target이 암전 중 도달하는 최대 알파 — CanvasModulate가 곱해져도 알아볼 수 있을 만큼 밝게 잡는다
 @export var glow_alpha: float = 0.85
 
+## 암전 중 주변을 비출 조명(모니터 앞 PointLight2D). 방이 어두워지는 박자에 맞춰 켜지고, 불이 돌아오면 꺼진다.
+## CanvasModulate가 방 전체를 어둡게 깔아도 Light2D는 그 위에 빛을 더하므로 이 조명 근처만 밝게 보인다 —
+## 근처에 선 캐릭터도 같이 밝아져서, 암전 중엔 모니터 앞에 있으면 위치가 드러난다. 비워두면 아무 일도 안 한다
+@export var light_target_path: NodePath
+## light_target이 암전 중 도달하는 밝기(energy). 평소엔 0이라 불이 켜져 있을 땐 아무 영향이 없다
+@export var light_energy: float = 1.2
+
 ## 씬에 저장된 평소 조명 색 — 이 밝기를 기준으로 어둡게/밝게 만든다
 var _normal_color: Color = Color.WHITE
 var _timer: float = 0.0
 
 @onready var _glow: CanvasItem = get_node_or_null(glow_target_path) as CanvasItem
+@onready var _light: Light2D = get_node_or_null(light_target_path) as Light2D
 
 func _ready() -> void:
 	_normal_color = color
 	_timer = interval
 	if _glow:
 		_glow.modulate.a = 0.0
+	if _light:
+		_light.energy = 0.0
 
 func _process(delta: float) -> void:
 	_timer -= delta
@@ -45,9 +55,9 @@ func _process(delta: float) -> void:
 ## 경고(깜빡임) -> 암전(+모니터 빛) -> 유지 -> 복귀 순서로 진행한다
 func _run_sequence() -> void:
 	await _flicker()
-	await _fade_to(blackout_brightness, glow_alpha)
+	await _fade_to(blackout_brightness, glow_alpha, light_energy)
 	await _wait(blackout_duration)
-	await _fade_to(1.0, 0.0)
+	await _fade_to(1.0, 0.0, 0.0)
 
 ## 꺼지기 전 형광등처럼 flicker_count번만 깜빡이고 바로 암전으로 들어간다
 func _flicker() -> void:
@@ -58,13 +68,16 @@ func _flicker() -> void:
 	await tween.finished
 
 ## brightness배로 어둡게(또는 밝게, 1.0이면 원래대로) 만들면서, 동시에 glow_target의 밝기를
-## target_glow_alpha로 맞춘다 — 방이 어두워지는 것과 모니터가 밝아지는 게 같은 박자로 겹친다
-func _fade_to(brightness: float, target_glow_alpha: float) -> void:
+## target_glow_alpha로, light_target의 밝기를 target_light_energy로 맞춘다 —
+## 방이 어두워지는 것과 모니터 화면·모니터 불빛이 밝아지는 게 같은 박자로 겹친다
+func _fade_to(brightness: float, target_glow_alpha: float, target_light_energy: float) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(self, "color", _dim(brightness), fade_time)
 	if _glow:
 		tween.tween_property(_glow, "modulate:a", target_glow_alpha, fade_time)
+	if _light:
+		tween.tween_property(_light, "energy", target_light_energy, fade_time)
 	await tween.finished
 
 ## 평소 조명색의 RGB만 brightness배로 줄인다 — 알파는 그대로 둔다

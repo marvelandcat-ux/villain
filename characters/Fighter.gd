@@ -48,6 +48,11 @@ const DEFAULT_DASH_DURATION: float = 0.16
 const DEFAULT_DASH_COOLDOWN: float = 3.0
 ## 대시 중 잔상을 남기는 간격(초)
 const DASH_TRAIL_INTERVAL: float = 0.04
+## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
+## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
+const AIR_TRAIL_INTERVAL: float = 0.04
+const AIR_TRAIL_ALPHA: float = 0.45
+const AIR_TRAIL_FADE: float = 0.25
 
 ## --- 아래 키 방어 (전 캐릭터 공용) ---
 ## 아래 키를 누른 순간 켜져서 이 시간(초) 동안 유지된다. 누르고 있는 게 아니라 한 번 눌러 발동하는 방식
@@ -101,6 +106,9 @@ var _dash_time: float = 0.0
 var _dash_dir: float = 0.0
 var _dash_cooldown_left: float = 0.0
 var _dash_trail_timer: float = 0.0
+## 날아갈 때 잔상이 남은 시간 / 다음 잔상까지 남은 시간 (start_air_trail이 켠다)
+var _air_trail_left: float = 0.0
+var _air_trail_timer: float = 0.0
 ## 방어(보호막)가 켜져 있는지. 이 동안은 어떤 공격도 데미지·넉백이 전부 0이다
 var is_guarding: bool = false
 ## 방어가 유지되는 남은 시간 / 다음 방어까지 남은 쿨타임
@@ -642,10 +650,38 @@ func dash(direction: float) -> bool:
 	_spawn_dash_afterimage()
 	return true
 
-## 대시 잔상 — Visual을 그 순간 모습 그대로 복제해 뒤에 남기고 서서히 지운다.
+## 대시 잔상 — 푸른빛을 입혀서 남긴다
+func _spawn_dash_afterimage() -> void:
+	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
+
+## duration초 동안 날아가는 몸 뒤로 잔상을 남긴다 — 그네에 튕길 때(Swing)·스프링 시소로 높이 튈 때(SpringJumpPad) 맵이 부른다.
+## 이미 남기는 중이면 남은 시간과 비교해 더 긴 쪽을 쓴다
+func start_air_trail(duration: float) -> void:
+	if _air_trail_left <= 0.0:
+		_air_trail_timer = 0.0   # 새로 시작하면 이번 프레임에 바로 한 장 남긴다
+	_air_trail_left = maxf(_air_trail_left, duration)
+
+## 날아갈 때 잔상을 한 물리 프레임 진행한다 (apply_physics가 부른다).
+## 촉법소년 자전거 잔상처럼 몸의 지금 색(피격·약화 색조 포함)은 그대로 두고 투명도만 낮춘다
+func _update_air_trail(delta: float) -> void:
+	if _air_trail_left <= 0.0:
+		return
+	_air_trail_left -= delta
+	_air_trail_timer -= delta
+	if _air_trail_timer > 0.0:
+		return
+	_air_trail_timer = AIR_TRAIL_INTERVAL
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		return
+	var tint: Color = visual.modulate
+	tint.a = AIR_TRAIL_ALPHA
+	_spawn_afterimage(tint, AIR_TRAIL_FADE)
+
+## 잔상 하나 — Visual을 그 순간 모습 그대로 복제해 본체 뒤에 두고, tint 색으로 시작해 fade초에 걸쳐 투명하게 지운다.
 ## DashSkill._spawn_afterimage()와 같은 방식이라 임시 사각형이든 스프라이트 몸이든 그대로 동작한다.
 ## 복제본의 스크립트를 떼는 게 핵심 — 안 떼면 BodyRig의 매 프레임 자세 계산이 잔상에서도 돌아 같이 움직인다
-func _spawn_dash_afterimage() -> void:
+func _spawn_afterimage(tint: Color, fade: float) -> void:
 	var visual: Node2D = get_node_or_null("Visual")
 	var parent: Node = get_parent()
 	if visual == null or parent == null:
@@ -658,9 +694,9 @@ func _spawn_dash_afterimage() -> void:
 	ghost.z_index = -2   # 본체(0)와 그 손(1)보다 확실히 뒤로
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
-	ghost.modulate = Color(0.7, 0.82, 1.0, 0.42)
+	ghost.modulate = tint
 	var tween := ghost.create_tween()
-	tween.tween_property(ghost, "modulate:a", 0.0, 0.22)
+	tween.tween_property(ghost, "modulate:a", 0.0, fade)
 	tween.tween_callback(ghost.queue_free)
 
 func move(direction: float) -> void:
@@ -972,6 +1008,8 @@ func apply_physics(delta: float) -> void:
 			if _dash_trail_timer <= 0.0:
 				_dash_trail_timer = DASH_TRAIL_INTERVAL
 				_spawn_dash_afterimage()
+	# 그네·스프링 시소로 날아가는 중이면 잔상을 남긴다
+	_update_air_trail(delta)
 	# 돌진 스킬 등이 이동을 가로챘으면 그쪽이 최종 결정권을 갖는다 (대시보다 뒤에 둔 이유)
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
