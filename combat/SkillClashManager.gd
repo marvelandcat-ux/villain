@@ -70,6 +70,10 @@ func _start_clash(slot_id: String, fighter_a: Fighter, on_win_a: Callable, on_lo
 	popup.start(fighter_a, fighter_b, slot_id)
 	var a_won: bool = await popup.finished
 	get_tree().paused = false
+	# 진 쪽 체력은 **화면이 다시 움직인 뒤에** 깎는다 — 멈춘 채로 깎으면 죽는 처리(라운드 종료)가
+	# 멈춘 화면 위에서 돌아 꼬인다. 날아가는 연출은 팝업이 이미 보여줬다
+	if popup.has_method("apply_clash_damage"):
+		popup.apply_clash_damage()
 	popup.queue_free()
 	if is_instance_valid(fighter_a):
 		(on_win_a if a_won else on_lose_a).call()

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://73vina3kwjws"
-path="res://.godot/imported/대화창경찰서배경.png-a43c7a1a5211d559f49f4e8706cfa5df.ctex"
+uid="uid://2jj1i0d4xypr"
+path="res://.godot/imported/단소.png-284593eaad0d1c6276d83857a95deb4a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/storymode/경찰서/대화창경찰서배경.png"
-dest_files=["res://.godot/imported/대화창경찰서배경.png-a43c7a1a5211d559f49f4e8706cfa5df.ctex"]
+source_file="res://sprite/지하철빌/단소.png"
+dest_files=["res://.godot/imported/단소.png-284593eaad0d1c6276d83857a95deb4a.ctex"]
 
 [params]
 

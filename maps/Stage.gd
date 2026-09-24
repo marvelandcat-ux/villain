@@ -207,6 +207,10 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 			GameState.p1_round_wins += 1
 		else:
 			GameState.p2_round_wins += 1
+	# 방금 딴 점수를 HUD에도 바로 반영한다 — _process가 라운드 종료로 멈춰서
+	# 그냥 두면 결과창이 떠 있는 내내 **이기기 직전 점수**가 남아 있는다
+	if _combat_hud:
+		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win or GameState.p2_round_wins >= GameState.rounds_to_win
 	var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
 	add_child(result_screen)

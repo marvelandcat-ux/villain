@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/대화창경찰서배경.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/로고바꾼경찰서.png" id="2"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/잼민이사건파일_끝장판.png" id="5"]
