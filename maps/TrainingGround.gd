@@ -41,10 +41,18 @@ var _gravity_slider: HSlider
 var _jump_slider: HSlider
 var _speed_slider: HSlider
 var _dummy_hp_label: Label
+var _collision_legend: RichTextLabel
+
+## 충돌 영역(히트박스·허트박스·몸·발판) 보기 — 패널 체크박스로 켜고 끈다
+## (타입을 안 붙인 이유: Node2D로 두면 스크립트에만 있는 `enabled`를 못 찾아 파싱 에러가 난다)
+var _collision_view
 
 func _ready() -> void:
 	# 훈련장에서도 궁극기 컷인을 확인할 수 있게 같이 심는다
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
+	_collision_view = preload("res://maps/CollisionDebugView.gd").new()
+	_collision_view.name = "CollisionDebugView"
+	add_child(_collision_view)
 	_build_ui()
 	_spawn_character(GameState.p1_character_path)
 	_spawn_dummy()
@@ -212,6 +220,22 @@ func _build_ui() -> void:
 
 	box.add_child(HSeparator.new())
 
+	var collision_toggle := CheckBox.new()
+	collision_toggle.text = "충돌 영역 보기"
+	collision_toggle.toggled.connect(_on_collision_toggled)
+	box.add_child(collision_toggle)
+
+	_collision_legend = RichTextLabel.new()
+	_collision_legend.bbcode_enabled = true
+	_collision_legend.fit_content = true
+	_collision_legend.scroll_active = false
+	_collision_legend.text = (
+		"[color=#ff3333]히트박스(때리는 곳)[/color]   [color=#33ff59]허트박스(맞는 곳)[/color]\n"
+		+ "[color=#4d99ff]몸 충돌[/color]   [color=#d9d9d9]벽·바닥[/color]   "
+		+ "[color=#ffcc33]발판(아래서 통과)[/color]   [color=#cc66ff]기타 영역[/color]")
+	_collision_legend.visible = false
+	box.add_child(_collision_legend)
+
 	var respawn_button := Button.new()
 	respawn_button.text = "제자리로 되돌리기"
 	respawn_button.pressed.connect(_respawn)
@@ -245,6 +269,12 @@ func _add_slider(parent: VBoxContainer, min_value: float, max_value: float, step
 	slider.value_changed.connect(on_changed)
 	parent.add_child(slider)
 	return slider
+
+func _on_collision_toggled(pressed: bool) -> void:
+	_collision_view.enabled = pressed
+	_collision_legend.visible = pressed
+	# 체크박스가 포커스를 쥐고 있으면 스페이스·엔터가 체크를 다시 뒤집는다
+	get_viewport().gui_release_focus()
 
 func _on_character_selected(index: int) -> void:
 	GameState.p1_character_path = GameState.training_characters().values()[index]

@@ -459,6 +459,7 @@
 - 조절 패널은 개발 도구라 `.tscn`이 아니라 `TrainingGround.gd`에서 코드로 생성
 - **중요:** 이 화면을 위해 `Fighter.GRAVITY`/`JUMP_VELOCITY` 상수를 `static var Fighter.gravity`/`Fighter.jump_velocity`로 바꿨다. 전 Fighter 공유, 바꾼 값은 게임 종료까지 유지돼 로컬 대전에서 그대로 시험됨. **영구 반영하려면 `Fighter.gd`의 `DEFAULT_GRAVITY`/`DEFAULT_JUMP_VELOCITY`에 옮겨 적을 것**
 - 이동속도는 캐릭터별 스탯(`stats/*.tres`의 `move_speed`)이라 훈련장에선 배수(`move_speed_multiplier`)로만 조절 — 확정되면 각 `.tres`를 고칠 것
+- **충돌 영역 보기(2026-09-25):** 패널의 "충돌 영역 보기" 체크박스 -> `maps/CollisionDebugView.gd`가 훈련장 아래 모든 `CollisionShape2D`/`CollisionPolygon2D`를 매 프레임 훑어 색별로 그린다(히트박스 빨강 / 허트박스 초록 / 몸 파랑 / 벽·바닥 회색 / 원웨이 발판 노랑 / 기타 Area2D 보라). 히트박스는 `monitoring`이 켜진 동안만 판정이라 그때만 그리고, 꺼진 뒤 `hitbox_linger`(0.5초) 동안 잔상으로 남긴다. CanvasLayer 밑(HUD·컷인)은 건너뛴다
 
 ## 궁극기 컷인 연출
 
