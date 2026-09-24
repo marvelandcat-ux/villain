@@ -1,4 +1,5 @@
 @tool
+class_name SkillRangePreview
 extends Node2D
 
 ## 에디터에서만 동작하는 미리보기 — 토하기 기둥과 괴성 부채꼴이 몸의 어디에서 어떤 크기로 나가는지

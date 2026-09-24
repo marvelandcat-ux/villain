@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="villain"
-run/main_scene="res://ui/TitleScreen.tscn"
+run/main_scene="res://ui/Disclaimer.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://icon.ico"
 
 [autoload]
 
 GameState="*res://GameState.gd"
+SceneTransition="*res://ui/SceneTransition.gd"
 
 [display]
 

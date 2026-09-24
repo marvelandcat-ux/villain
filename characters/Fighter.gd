@@ -16,12 +16,12 @@ signal basic_attack_used
 ## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
 signal damaged(amount: int, knockback: Vector2)
 
+## 캐릭터 고정 수치
+@export var stats: CharacterStats
+
 ## 마지막으로 맞았을 때 밀려난 가로 방향(+1 오른쪽, 0이면 아직 안 맞음).
 ## 처치 연출(Stage)이 이 방향으로 날려보낸다 — "맞은 방향의 반대쪽"이 곧 넉백 방향이다
 var last_hit_direction: float = 0.0
-
-## 캐릭터 고정 수치
-@export var stats: CharacterStats
 
 ## 중력/점프력의 기본값 — 훈련장에서 이것저것 바꿔본 뒤 원래대로 되돌릴 때 쓴다
 const DEFAULT_GRAVITY: float = 1150.0
@@ -48,6 +48,11 @@ const DEFAULT_DASH_DURATION: float = 0.16
 const DEFAULT_DASH_COOLDOWN: float = 3.0
 ## 대시 중 잔상을 남기는 간격(초)
 const DASH_TRAIL_INTERVAL: float = 0.04
+## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
+## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
+const AIR_TRAIL_INTERVAL: float = 0.04
+const AIR_TRAIL_ALPHA: float = 0.45
+const AIR_TRAIL_FADE: float = 0.25
 
 ## --- 아래 키 방어 (전 캐릭터 공용) ---
 ## 아래 키를 누른 순간 켜져서 이 시간(초) 동안 유지된다. 누르고 있는 게 아니라 한 번 눌러 발동하는 방식
@@ -101,6 +106,9 @@ var _dash_time: float = 0.0
 var _dash_dir: float = 0.0
 var _dash_cooldown_left: float = 0.0
 var _dash_trail_timer: float = 0.0
+## 날아갈 때 잔상이 남은 시간 / 다음 잔상까지 남은 시간 (start_air_trail이 켠다)
+var _air_trail_left: float = 0.0
+var _air_trail_timer: float = 0.0
 ## 방어(보호막)가 켜져 있는지. 이 동안은 어떤 공격도 데미지·넉백이 전부 0이다
 var is_guarding: bool = false
 ## 방어가 유지되는 남은 시간 / 다음 방어까지 남은 쿨타임
@@ -146,6 +154,11 @@ var is_feared: bool = false
 ## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
 ## 잡은 스킬(파일드라이버 등)이 apply_physics를 건너뛰게 해서 위치를 직접 조작할 수 있게 한다
 var is_grabbed: bool = false
+## 슈퍼아머를 걸어둔 스킬 수. 0보다 크면 **맞아도 기술이 안 끊긴다** — HP는 깎이고 피격 반짝임·표정도 나오지만
+## 넉백·띄우기·경직·피격 기울기·구르기는 무시하고, 잡기 기술에도 안 잡힌다(`can_be_grabbed()`).
+## bool이 아니라 개수인 이유: 아머를 거는 기술이 겹쳤다 먼저 끝난 쪽이 풀어버리면 남은 쪽 아머까지 사라진다.
+## 거는 쪽은 반드시 add/remove를 짝으로 부를 것(바디 수플렉스 `BackSuplexSkill.super_armor`)
+var _super_armor: int = 0
 ## 이번 프레임에 조작으로 들어온 좌우 입력(-1/0/1). 그네처럼 "누르고 있는 방향"이 필요한 기믹이 읽는다
 var move_input: float = 0.0
 ## true면 점프할 때 개찰구를 뛰어넘는 듯한 연출이 추가된다 (지하철 아저씨 전용, 캐릭터 씬에서 켬)
@@ -289,7 +302,14 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	_flash_hit()
 	_play_hurt_face()
 	# 실제 타격(넉백이 있는 피해)에만 히트 리액션 — 공포·틱 데미지 같은 넉백 없는 피해엔 적용 안 한다
-	if knockback != Vector2.ZERO:
+	# 슈퍼아머 중엔 HP만 깎이고 몸은 안 밀린다 — 넉백·띄우기·경직·기울기가 들어가면 잡고 있던 기술이 망가진다
+	# (공중으로 붕 뜬 채 상대를 꽂거나, 경직으로 굳어 몸이 휙 돌아가는 식). 콤보 수는 그대로 센다
+	if knockback != Vector2.ZERO and has_super_armor():
+		if _combo_timer <= 0.0:
+			_combo_count = 0
+		_combo_count += 1
+		_combo_timer = COMBO_WINDOW
+	elif knockback != Vector2.ZERO:
 		# 수평 넉백을 키워 콤보처럼 넉백 방향으로 멀리 날린다 (수직은 팝업이 담당)
 		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
 		velocity.x += kb_x
@@ -368,7 +388,7 @@ var _tumble_grace: float = 0.0
 ## spin_dir=도는 방향(+1이면 시계방향 = 오른쪽으로 날아갈 때). **바닥에 닿으면 그 자리에서 멈춘다**
 func play_launch_tumble(turns: float, duration: float, spin_dir: float) -> void:
 	var visual: Node2D = get_node_or_null("Visual")
-	if visual == null or turns <= 0.0 or duration <= 0.0:
+	if visual == null or turns <= 0.0 or duration <= 0.0 or has_super_armor():
 		return
 	if _lean_tween != null and _lean_tween.is_valid():
 		_lean_tween.kill()
@@ -475,28 +495,38 @@ func _apply_top_tint() -> void:
 		return
 	visual.modulate = _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
 
-## duration초 후 callback을 실행한다. get_tree().create_timer()와 달리 이 Fighter의 자식 Timer로 만들어서,
-## Fighter가 그 전에 사라지면(대전 도중 나가기, 다시하기 등으로 씬이 정리되는 경우) 콜백이 아예 실행되지 않고
-## 같이 정리된다 — 그렇지 않으면 이미 사라진 Fighter를 건드리려다 에러가 난다
+## duration초 후 callback을 실행한다 (Timers.after 참고 — Fighter가 그 전에 사라지면 콜백째 정리된다)
 func _after(duration: float, callback: Callable) -> void:
-	var timer := Timer.new()
-	timer.wait_time = duration
-	timer.one_shot = true
-	add_child(timer)
-	timer.timeout.connect(func():
-		callback.call()
-		timer.queue_free()
-	)
-	timer.start()
+	Timers.after(self, duration, callback)
 
 ## 밖에서 경직을 걸어준다 (놀이터에서 왕관을 떨어뜨렸을 때 등).
 ## 이미 걸린 경직보다 짧으면 무시한다 — 짧은 값으로 덮어써서 경직이 오히려 일찍 풀리는 걸 막는다
 func apply_hitstun(duration: float) -> void:
+	# 슈퍼아머 중엔 안 굳는다 — 어깨치기·발차기 마무리·왕관 떨어뜨리기가 따로 거는 경직도 여기서 막힌다
+	if has_super_armor():
+		return
 	_hitstun_time = maxf(_hitstun_time, duration)
 
 ## 지금 경직 중인가 (이동·점프·스킬이 막혀 있는 상태)
 func is_in_hitstun() -> bool:
 	return _hitstun_time > 0.0
+
+## 슈퍼아머를 건다/푼다. **반드시 짝으로 부를 것** — 개수로 세기 때문에 한쪽만 부르면 아머가 안 풀린다
+func add_super_armor() -> void:
+	_super_armor += 1
+
+func remove_super_armor() -> void:
+	_super_armor = maxi(_super_armor - 1, 0)
+
+## 지금 슈퍼아머 중인가 (맞아도 밀리거나 굳지 않고 기술이 계속된다)
+func has_super_armor() -> bool:
+	return _super_armor > 0
+
+## 잡기 기술(백 서플렉스·유선 마우스 등)이 이 캐릭터를 붙잡을 수 있는지.
+## 방어 중(디버프 면역)이거나 슈퍼아머 중이면 못 잡는다 — 수플렉스하던 중에 다른 잡기에 끌려가면 기술이 끊긴다.
+## `blocks_debuff()`에 아머를 섞지 않은 이유: 그러면 공포·도트까지 같이 막혀버리는데, 그 둘은 쓰던 기술을 끊지 않는다
+func can_be_grabbed() -> bool:
+	return not blocks_debuff() and not has_super_armor()
 
 ## duration초 동안 무적 상태로 만든다
 func grant_invincibility(duration: float) -> void:
@@ -539,8 +569,11 @@ func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
 
 ## 지금 방어를 켤 수 있는지. 쿨타임이 남았거나 이미 방어 중이거나,
-## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다
+## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다.
+## 방 설정에서 껐으면(GameState.guard_enabled) 아예 못 켠다
 func can_guard() -> bool:
+	if not GameState.guard_enabled:
+		return false
 	if _guard_cooldown_left > 0.0 or _guard_time > 0.0:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
@@ -594,15 +627,12 @@ func _set_visual_guard(on: bool) -> void:
 	if visual and visual.has_method("set_guarding"):
 		visual.set_guarding(on)
 
-## 방어 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
-func guard_cooldown_ratio() -> float:
-	if guard_cooldown <= 0.0:
-		return 0.0
-	return clampf(_guard_cooldown_left / guard_cooldown, 0.0, 1.0)
-
 ## 지금 대시를 쓸 수 있는지. 쿨타임이 남았거나, 경직·붙잡힘 상태거나,
-## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다
+## 다른 스킬이 이동을 가로채고 있으면(movement_override) 안 된다.
+## 방 설정에서 껐으면(GameState.dash_enabled) 아예 못 쓴다
 func can_dash() -> bool:
+	if not GameState.dash_enabled:
+		return false
 	if _dash_cooldown_left > 0.0 or _dash_time > 0.0:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null
@@ -620,16 +650,38 @@ func dash(direction: float) -> bool:
 	_spawn_dash_afterimage()
 	return true
 
-## 대시 쿨타임이 얼마나 남았는지 (0=바로 쓸 수 있음, 1=방금 썼음). HUD에 표시하려면 이 값을 쓰면 된다
-func dash_cooldown_ratio() -> float:
-	if dash_cooldown <= 0.0:
-		return 0.0
-	return clampf(_dash_cooldown_left / dash_cooldown, 0.0, 1.0)
+## 대시 잔상 — 푸른빛을 입혀서 남긴다
+func _spawn_dash_afterimage() -> void:
+	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
 
-## 대시 잔상 — Visual을 그 순간 모습 그대로 복제해 뒤에 남기고 서서히 지운다.
+## duration초 동안 날아가는 몸 뒤로 잔상을 남긴다 — 그네에 튕길 때(Swing)·스프링 시소로 높이 튈 때(SpringJumpPad) 맵이 부른다.
+## 이미 남기는 중이면 남은 시간과 비교해 더 긴 쪽을 쓴다
+func start_air_trail(duration: float) -> void:
+	if _air_trail_left <= 0.0:
+		_air_trail_timer = 0.0   # 새로 시작하면 이번 프레임에 바로 한 장 남긴다
+	_air_trail_left = maxf(_air_trail_left, duration)
+
+## 날아갈 때 잔상을 한 물리 프레임 진행한다 (apply_physics가 부른다).
+## 촉법소년 자전거 잔상처럼 몸의 지금 색(피격·약화 색조 포함)은 그대로 두고 투명도만 낮춘다
+func _update_air_trail(delta: float) -> void:
+	if _air_trail_left <= 0.0:
+		return
+	_air_trail_left -= delta
+	_air_trail_timer -= delta
+	if _air_trail_timer > 0.0:
+		return
+	_air_trail_timer = AIR_TRAIL_INTERVAL
+	var visual: Node2D = get_node_or_null("Visual")
+	if visual == null:
+		return
+	var tint: Color = visual.modulate
+	tint.a = AIR_TRAIL_ALPHA
+	_spawn_afterimage(tint, AIR_TRAIL_FADE)
+
+## 잔상 하나 — Visual을 그 순간 모습 그대로 복제해 본체 뒤에 두고, tint 색으로 시작해 fade초에 걸쳐 투명하게 지운다.
 ## DashSkill._spawn_afterimage()와 같은 방식이라 임시 사각형이든 스프라이트 몸이든 그대로 동작한다.
 ## 복제본의 스크립트를 떼는 게 핵심 — 안 떼면 BodyRig의 매 프레임 자세 계산이 잔상에서도 돌아 같이 움직인다
-func _spawn_dash_afterimage() -> void:
+func _spawn_afterimage(tint: Color, fade: float) -> void:
 	var visual: Node2D = get_node_or_null("Visual")
 	var parent: Node = get_parent()
 	if visual == null or parent == null:
@@ -642,9 +694,9 @@ func _spawn_dash_afterimage() -> void:
 	ghost.z_index = -2   # 본체(0)와 그 손(1)보다 확실히 뒤로
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
-	ghost.modulate = Color(0.7, 0.82, 1.0, 0.42)
+	ghost.modulate = tint
 	var tween := ghost.create_tween()
-	tween.tween_property(ghost, "modulate:a", 0.0, 0.22)
+	tween.tween_property(ghost, "modulate:a", 0.0, fade)
 	tween.tween_callback(ghost.queue_free)
 
 func move(direction: float) -> void:
@@ -840,6 +892,23 @@ func find_opponent() -> Fighter:
 			return f
 	return null
 
+## fighter를 기준으로 가로 range_x/세로 range_y 상자 안에 있는 다른 Fighter를 찾는다.
+## 캐릭터끼리는 몸 충돌이 꺼져 있어(_ignore_other_fighters) 물리로는 못 잡으므로,
+## 근접 판정(자전거 돌진·어깨 들이박기 등)이 몸 사이 거리로 직접 확인할 때 쓴다.
+## dx * direction이 -back_tolerance보다 작으면(명백히 등 뒤) 제외하고, 거의 겹친 경우는 통과시킨다
+static func find_fighter_in_box(fighter: Fighter, range_x: float, range_y: float, direction: float, back_tolerance: float = 20.0) -> Fighter:
+	for other in fighter.get_tree().get_nodes_in_group("fighters"):
+		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
+			continue
+		var dx: float = other.global_position.x - fighter.global_position.x
+		var dy: float = other.global_position.y - fighter.global_position.y
+		if absf(dx) > range_x or absf(dy) > range_y:
+			continue
+		if dx * direction < -back_tolerance:
+			continue
+		return other
+	return null
+
 ## property(예: "move_speed_multiplier")에 id로 구분되는 배수 효과를 하나 건다.
 ## 같은 property에 걸린 다른 id의 효과와는 서로 지우지 않고 곱해져서 함께 적용된다.
 ## id는 임시 버프면 자동 발급된 정수, 스택형(주정뱅이 술 등)처럼 켰다 껐다 하는 효과면 "drink_stacks" 같은 고정 문자열을 쓴다
@@ -939,11 +1008,18 @@ func apply_physics(delta: float) -> void:
 			if _dash_trail_timer <= 0.0:
 				_dash_trail_timer = DASH_TRAIL_INTERVAL
 				_spawn_dash_afterimage()
+	# 그네·스프링 시소로 날아가는 중이면 잔상을 남긴다
+	_update_air_trail(delta)
 	# 돌진 스킬 등이 이동을 가로챘으면 그쪽이 최종 결정권을 갖는다 (대시보다 뒤에 둔 이유)
 	if movement_override:
 		velocity.x = movement_override.get_move_velocity_x()
 	# **move_and_slide()가 부딪히는 순간 velocity.y를 0으로 만들어버린다** — 착지 세기를 알려면
 	# 그 전에 낙하 속도를 따로 기억해둬야 한다(스프링 발판이 _prev_fall을 쓰는 것과 같은 이유)
+	# 슈퍼아머 중엔 위로 튕겨 오르지 않는다. take_damage 쪽 넉백은 이미 막았지만,
+	# 어깨치기처럼 **velocity를 직접 덮어써서** 띄우는 기술은 거길 안 거쳐서 여기서 한 번 더 막는다
+	# (수평은 아머를 거는 기술이 movement_override로 이미 잡고 있다)
+	if has_super_armor() and velocity.y < 0.0:
+		velocity.y = 0.0
 	var fall_speed: float = velocity.y
 	move_and_slide()
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)

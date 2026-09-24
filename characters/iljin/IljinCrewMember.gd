@@ -43,8 +43,14 @@ extends CharacterBody2D
 @export var spit_speed: float = 3600.0
 @export var spit_range: float = 420.0
 ## 침이 나가는 자리 (몸 원점 기준, x는 바라보는 쪽으로 자동 반전).
-## **x는 몸 반지름(20) + 침 반지름(9)보다 커야 한다** — 안쪽에서 나가면 자기 몸에 닿아 바로 사라진다
-@export var mouth_offset: Vector2 = Vector2(34.0, -26.0)
+## **머리 그림에서 실제로 입술이 있는 자리다**(2026-09-16 사용자 요청 "침 뱉는 게 입에서 나왔으면").
+## 얼굴 그림 세 장(기본·모으는·뱉는)의 입술 끝을 다 재보니 전부 로컬 (20~21, -21)로 일치해서 그 값을 썼다 —
+## 얼굴이 바뀌어도 입 자리는 안 움직인다는 뜻이라 얼굴별로 따로 둘 필요가 없다.
+##
+## **예전 값 (34, -26)은 입이 아니라 얼굴 바깥 허공이었다.** "몸 반지름(20) + 침 반지름(9)보다 커야
+## 자기 몸에 안 닿는다"는 이유로 잡아 둔 값이었는데, 지금은 `Spit`이 "iljin_crew" 그룹 몸을 통과하고
+## (`Spit._on_body_entered`) 피격 판정에 닿아도 안 사라지므로(관통) **그 제약이 이제 없다**
+@export var mouth_offset: Vector2 = Vector2(21.0, -21.0)
 ## 침을 모으는 동안 / 뱉는 순간의 얼굴. 배율이 (0,0)이면 기본 머리 배율을 그대로 쓴다
 @export var gather_face: Texture2D
 @export var gather_face_scale: Vector2 = Vector2.ZERO
@@ -94,6 +100,8 @@ var is_guarding: bool = false
 
 ## 이미 쓰러지는 중인지 (사라지는 동안 또 맞아도 두 번 처리되지 않게)
 var _dying: bool = false
+## 몸 충돌을 이미 꺼 둔 캐릭터들 {instance_id: true} — 같은 상대에게 두 번 걸지 않으려고 적어 둔다
+var _ignored: Dictionary = {}
 
 @onready var _visual: Node2D = get_node_or_null("Visual")
 @onready var _body_shape: CollisionShape2D = get_node_or_null("CollisionShape2D")
@@ -125,6 +133,29 @@ func _ready() -> void:
 	# 자기가 뱉은 침이 앞에 선 동료 몸에 막히지 않게 — `Spit`이 이 그룹을 보고 통과시킨다
 	add_to_group("iljin_crew")
 	_spit_left = spit_first_delay
+	_ignore_fighter_bodies()
+
+## **캐릭터와의 몸 충돌을 끈다**(2026-09-16 사용자 요청 "머리 위로 올라가는 거 막아줘").
+## 물리 충돌을 켜 두면 캐릭터가 패거리 **머리 위에 올라서서 발판처럼 밟고 다닌다.**
+## 지붕처럼 뾰족한 도형으로 바꿔도 못 막았다 — 꼭짓점에 정확히 떨어지면 법선이 위를 향해
+## 바닥으로 판정돼 그대로 올라선다(실측: 캡슐 꼭대기 높이에 그대로 안착).
+## 그래서 **캐릭터끼리 이미 쓰고 있는 방식**을 그대로 가져왔다(`Fighter._ignore_other_fighters`
+## + `_separate_from_others`): 세로 충돌은 아예 끄고 **가로로만 코드로 밀어낸다**(`_block_fighters`).
+## 양쪽에 다 걸어야 한다 — 한쪽만 걸면 상대 쪽 `move_and_slide`가 여전히 막힌다.
+##
+## **`_ready()`에서 한 번만 걸면 안 된다.** 그때 아직 없던 캐릭터는 그냥 빠져서 그 캐릭터만
+## 머리 위에 올라설 수 있다(실측으로 겪음). 그래서 매 물리 프레임에 다시 훑되,
+## 이미 건 상대는 `_ignored`에 적어 두고 건너뛴다 — 보통 캐릭터가 둘뿐이라 비용이 없다시피 하다
+func _ignore_fighter_bodies() -> void:
+	for f in get_tree().get_nodes_in_group("fighters"):
+		if not (f is PhysicsBody2D) or not is_instance_valid(f):
+			continue
+		var id: int = f.get_instance_id()
+		if _ignored.has(id):
+			continue
+		_ignored[id] = true
+		add_collision_exception_with(f)
+		f.add_collision_exception_with(self)
 
 ## 부른 사람을 알려준다 — **그 사람의 공격은 안 맞는다.** 패거리가 일진 바로 옆에 서 있어서
 ## 상대를 때리려다 자기 편을 때려 죽이는 일이 생긴다
@@ -323,9 +354,26 @@ func _facing() -> float:
 		return -1.0
 	return 1.0
 
-## 바라보는 쪽으로 뒤집은 입 위치 (몸 원점 기준)
+## 바라보는 쪽으로 뒤집은 입 위치 (몸 원점 기준).
+##
+## **머리가 위아래로 겨누면(`set_head_aim`) 입도 같이 돈다** — 머리 회전축(리그의 `Head` 노드 자리)을
+## 중심으로 같은 각도만큼 돌린다. 이게 없으면 최대 각도(35도)로 겨눌 때 그려진 입과 침이 나가는 자리가
+## 15px쯤 어긋나서, 위를 쏠 때 턱 밑에서 침이 나오는 것처럼 보인다.
+## **회전축은 리그에서 그때그때 읽는다** — 에디터에서 머리 위치를 옮겨도 저절로 따라온다.
+## 좌우 반전(`_facing()`)은 **다 돌린 뒤 맨 마지막에** 곱한다 — 리그도 `scale.x` 부호로 뒤집으므로
+## 계산은 전부 "오른쪽을 본 상태"에서 하고 마지막에 한 번만 뒤집어야 맞는다
 func _mouth_offset() -> Vector2:
-	return Vector2(mouth_offset.x * _facing(), mouth_offset.y)
+	var m: Vector2 = mouth_offset
+	var head: Node2D = _head_node()
+	if head != null and not is_zero_approx(head.rotation):
+		m = head.position + (m - head.position).rotated(head.rotation)
+	return Vector2(m.x * _facing(), m.y)
+
+## 리그의 머리 스프라이트 (없으면 null)
+func _head_node() -> Node2D:
+	if _visual == null:
+		return null
+	return _visual.get_node_or_null("Head") as Node2D
 
 ## 리그의 액션 표정 슬롯을 그때그때 갈아끼운다 (일진의 담배·돌진 스킬과 같은 방식)
 func _set_face(tex: Texture2D, tex_scale: Vector2) -> void:
@@ -355,7 +403,34 @@ func _physics_process(delta: float) -> void:
 		# 조작 입력이 없으니 넉백은 마찰로만 잦아든다
 		velocity.x = move_toward(velocity.x, 0.0, knockback_friction * delta)
 	move_and_slide()
+	_ignore_fighter_bodies()
+	_block_fighters()
 	_update_walk_pose()
+
+## 몸이 가로로 겹친 캐릭터를 옆으로 밀어낸다 — **이게 "몸으로 길을 막는다"의 실체다**
+## (세로 충돌은 `_ignore_fighter_bodies`에서 꺼 놨으므로 머리 위에는 못 선다).
+## 간격·높이 기준은 캐릭터끼리 쓰는 값(`Fighter.BODY_PUSH_*`)을 그대로 빌려 쓴다 —
+## 한쪽만 다른 값을 쓰면 "캐릭터는 못 지나가는데 패거리는 지나가진다" 같은 어긋남이 생긴다.
+##
+## **패거리는 안 밀린다** — 그 자리에 버티고 선 벽이라 같이 밀리면 막는 의미가 없다.
+## 그래서 캐릭터끼리처럼 절반씩 나누지 않고 **상대를 겹친 만큼 통째로** 밀어낸다.
+## **부른 사람(일진)은 안 민다** — 내 편이 앞을 막으면 조작이 답답해진다
+func _block_fighters() -> void:
+	for f in get_tree().get_nodes_in_group("fighters"):
+		if not (f is Fighter) or not is_instance_valid(f) or f == _owner_fighter:
+			continue
+		if absf(global_position.y - f.global_position.y) > Fighter.BODY_PUSH_HEIGHT:
+			continue
+		var dx: float = f.global_position.x - global_position.x
+		var dist: float = absf(dx)
+		if dist >= Fighter.BODY_PUSH_WIDTH:
+			continue
+		var dir: float = signf(dx)
+		if dir == 0.0:
+			# 완전히 겹쳤으면 한쪽으로 갈라 내보낸다(그 자리에 갇히지 않게)
+			dir = 1.0 if f.get_instance_id() > get_instance_id() else -1.0
+		# move_and_collide라 벽은 안 뚫는다 — 벽과 패거리 사이에 몰리면 거기서 멈춘다
+		f.move_and_collide(Vector2(dir * (Fighter.BODY_PUSH_WIDTH - dist), 0.0))
 
 ## 상대 쪽으로 걸어간다. 붙었으면 멈춘다(계속 밀면 상대를 밀고 다니는 꼴이 된다)
 func _walk_toward_opponent(delta: float) -> void:

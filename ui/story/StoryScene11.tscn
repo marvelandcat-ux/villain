@@ -1,11 +1,11 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/대화창경찰서배경.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/로고바꾼경찰서.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://bwqvcp7axe2hn" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/잼민이 제압 씬/흐느끼는잼민이.png" id="5"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/사건파일양식.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/잼민이사건파일_끝장판.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://bw4c7yj8nbgdq" path="res://sprite/storymode/경찰서/사건해결도장.png" id="7"]
 
 [node name="StoryScene11" type="Control"]
@@ -18,6 +18,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.55
+clears_story = true
 dialogue = NodePath("DialogueBox")
 reveal = Array[NodePath]([NodePath("DialogueBox")])
 hide_on_start = Array[NodePath]([NodePath("Room/Hero"), NodePath("Room/Kid"), NodePath("CaseFile"), NodePath("CaseFile/Paper/Stamp")])

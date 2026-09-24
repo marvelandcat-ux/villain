@@ -14,6 +14,8 @@ extends Skill
 @export var jump_multiplier: float = 0.6
 ## 점프력 디버프가 유지되는 시간(초)
 @export var debuff_duration: float = 8.0
+## 지르는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작해진다). (1,1)이면 연출 없음
+@export var shout_squash: Vector2 = Vector2(1.15, 0.9)
 
 func _execute(fighter: Fighter) -> void:
 	_play_shout_motion(fighter)
@@ -27,9 +29,6 @@ func _execute(fighter: Fighter) -> void:
 	cone.global_position = fighter.global_position + Vector2(mouth_offset.x * fighter.facing, mouth_offset.y)
 	cone.area_entered.connect(_on_cone_hit.bind(fighter))
 	cone.setup(fighter.facing, fighter.compute_damage(damage), fighter)
-
-## 지르는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작해진다). (1,1)이면 연출 없음
-@export var shout_squash: Vector2 = Vector2(1.15, 0.9)
 
 ## 지르는 순간 스스로 부르르 떤다
 func _play_shout_motion(fighter: Fighter) -> void:

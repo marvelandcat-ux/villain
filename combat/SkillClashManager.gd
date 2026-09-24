@@ -28,6 +28,10 @@ func _ready() -> void:
 ## 그때까지 상대가 안 오면 on_win이 실행되어 평소처럼 스킬이 나간다.
 ## on_win: 실제로 스킬을 발동시키는 Callable(인자 없음). on_lose: 클래시에서 졌을 때 실행할 Callable
 func request(fighter: Fighter, slot_id: String, on_win: Callable, on_lose: Callable) -> void:
+	# 방 설정에서 껐으면 "동시 사용" 판정 자체를 안 한다 — 양쪽 다 그냥 바로 발동
+	if not GameState.clash_minigame_enabled:
+		on_win.call()
+		return
 	var existing: PendingRequest = _pending.get(slot_id)
 	if existing and is_instance_valid(existing.fighter):
 		if existing.fighter == fighter:
@@ -66,6 +70,10 @@ func _start_clash(slot_id: String, fighter_a: Fighter, on_win_a: Callable, on_lo
 	popup.start(fighter_a, fighter_b, slot_id)
 	var a_won: bool = await popup.finished
 	get_tree().paused = false
+	# 진 쪽 체력은 **화면이 다시 움직인 뒤에** 깎는다 — 멈춘 채로 깎으면 죽는 처리(라운드 종료)가
+	# 멈춘 화면 위에서 돌아 꼬인다. 날아가는 연출은 팝업이 이미 보여줬다
+	if popup.has_method("apply_clash_damage"):
+		popup.apply_clash_damage()
 	popup.queue_free()
 	if is_instance_valid(fighter_a):
 		(on_win_a if a_won else on_lose_a).call()

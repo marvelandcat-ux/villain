@@ -4,7 +4,7 @@ extends Node
 
 ## 선택 가능한 캐릭터 (표시 이름 -> 씬 경로)
 const CHARACTERS := {
-	"촉법소년": "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
+	"버릇없는 아이": "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
 	"악플러": "res://characters/akpeulleo/Akpeulleo.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
@@ -31,7 +31,7 @@ func training_characters() -> Dictionary:
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
 ## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
 const CHARACTER_COLORS := {
-	"촉법소년": Color(0.95, 0.85, 0.2),
+	"버릇없는 아이": Color(0.95, 0.85, 0.2),
 	"악플러": Color(0.85, 0.25, 0.25),
 	"주정뱅이": Color(0.8, 0.5, 0.2),
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
@@ -46,7 +46,7 @@ const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 ## 정면 초상화 그림이 있는 캐릭터만 등록 — CharacterSelect가 이 목록에 있으면 이미지로,
 ## 없으면(아직 그림이 없는 캐릭터) 위 CHARACTER_COLORS 색상 타일로 대신 보여준다
 const PORTRAITS := {
-	"촉법소년": "res://sprite/축법소년/축법소년 정면.png",
+	"버릇없는 아이": "res://sprite/축법소년/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
 	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
@@ -59,7 +59,7 @@ const PORTRAITS := {
 ## Fighter 없이 이 씬만 인스턴스하면 BodyRig.gd가 부모를 Fighter로 못 찾아 조용히 idle(숨쉬기)만 돈다 —
 ## 그 자체가 딱 미리보기로 쓰기 좋은 정지 동작이라 별도 처리가 필요 없다. 6명 전원 등록되어 있다
 const CHARACTER_RIGS := {
-	"촉법소년": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
+	"버릇없는 아이": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
 	"악플러": "res://characters/akpeulleo/AkpeulleoRig.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
@@ -87,6 +87,18 @@ const MAPS := {
 	"공사현장 (내리찍기)": "res://maps/CollapsingApartment.tscn",
 }
 
+## 스토리 에피소드 목록 — **일시정지 화면의 스토리 목록이 이 순서 그대로 쓴다.**
+## `scene`이 비어 있으면 아직 안 만든 자리(고를 수 없음)다. 새 이야기를 만들면 그 줄의 scene만 채우면 된다.
+## **한 번도 클리어하지 않은 에피소드는 목록에서 이름 대신 자물쇠로 보인다**(사용자 지정, 2026-09-15)
+const STORY_EPISODES := [
+	{"id": "ep1", "name": "EP.1-첫 임무", "scene": "res://ui/story/StoryScene1.tscn"},
+	{"id": "ep2", "name": "에피소드 2", "scene": ""},
+	{"id": "ep3", "name": "에피소드 3", "scene": ""},
+	{"id": "ep4", "name": "에피소드 4", "scene": ""},
+	{"id": "ep5", "name": "에피소드 5", "scene": ""},
+	{"id": "ep6", "name": "에피소드 6", "scene": ""},
+]
+
 var p1_character_path: String = CHARACTERS.values()[0]
 var p2_character_path: String = CHARACTERS.values()[1]
 var selected_map_path: String = MAPS.values()[0]
@@ -97,12 +109,26 @@ var game_mode: String = "pvp"
 ## 자기 `battle_win_scene`을 여기에 담아 두고, `Stage`가 최종 승리 판정에서 이 경로로 넘어간다.
 ## 비어 있으면 예전처럼 결과창(재시도/메뉴)에서 멈춘다 — 일반 대전은 이 값이 늘 비어 있다
 var story_next_scene: String = ""
+## **지금 진행 중인 스토리 에피소드 id.** 일시정지 화면 오른쪽 위에 이 에피소드 이름이 뜨고,
+## 마지막 장면에 닿으면 이 id가 클리어로 기록된다. 대전 모드면 빈 문자열
+var current_story_id: String = ""
+## 한 번이라도 끝까지 본 에피소드 id들 (user://settings.cfg의 [story] cleared에 저장)
+var story_cleared: PackedStringArray = PackedStringArray()
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
 ## 0이면 시간 제한 없음
 var time_limit_seconds: int = 0
 var p1_round_wins: int = 0
 var p2_round_wins: int = 0
+
+## 모든 스킬 쿨타임에 곱하는 전역 배율(RoomSettings에서 설정). 1.0 = 원래 쿨타임, 0.5 = 절반, 2.0 = 두 배
+var cooldown_multiplier: float = 1.0
+## 꺼두면 스킬 클래시(연타 미니게임)를 벌이지 않고 양쪽 다 그대로 발동한다(RoomSettings에서 설정)
+var clash_minigame_enabled: bool = true
+## 꺼두면 아래 키를 눌러도 방어(Fighter.can_guard())가 아예 안 켜진다(RoomSettings에서 설정)
+var guard_enabled: bool = true
+## 꺼두면 방향키 두 번을 눌러도 대시(Fighter.can_dash())가 아예 안 나간다(RoomSettings에서 설정)
+var dash_enabled: bool = true
 
 ## .env 파일에서 불러온 Claude API 키. ClaudeAIController가 P2 AI 판단에 사용한다.
 ## .env는 git에 커밋하지 않는 로컬 파일이라(.env.example 참고) 파일이 없으면 빈 문자열로 남는다
@@ -117,14 +143,29 @@ const DEFAULT_KEYBINDS := {
 	"p2_basic_attack": KEY_L, "p2_skill_1": KEY_K, "p2_skill_2": KEY_J, "p2_ultimate": KEY_P,
 }
 const SETTINGS_PATH := "user://settings.cfg"
+## RoomSettings의 "현재 설정 저장"이 방 설정 프리셋을 저장할 때 쓰는 section 이름(SETTINGS_PATH 안)
+const ROOM_PRESET_SECTION := "room_presets"
 
 ## 창 모드에서 고를 수 있는 해상도 (전부 16:9라 검은 여백 없이 꽉 채워짐)
 const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 const DEFAULT_MASTER_VOLUME := 1.0
 
+## (임시) **내보낸 빌드에서는 소리를 전부 끈다.** 아직 효과음·배경음악이 정리 전이라
+## 발표·제출용 빌드에서 아무 소리도 안 나게 하려는 것이다. **에디터에서는 그대로 들린다** —
+## 작업하면서는 소리를 확인할 수 있어야 하니까. 소리를 다 넣고 나면 이 값을 false로 바꾸면 된다.
+##
+## 볼륨 값(master_volume)은 그대로 두고 **Master 버스만 음소거**한다 — 나중에 켰을 때
+## 사용자가 맞춰 둔 볼륨이 그대로 살아 있다
+const MUTE_IN_BUILD := true
+
 var is_fullscreen: bool = false
 var resolution_index: int = 0
 var master_volume: float = DEFAULT_MASTER_VOLUME
+## 대사를 넘기는 법("스페이스 또는 클릭")을 **한 번이라도 본 적 있는지**.
+## 처음 하는 사람에게만 알려주고 그 뒤로는 화면을 깨끗하게 두려는 것이다(2026-09-16 멘토 피드백).
+## 세션이 아니라 저장 파일(user://settings.cfg)에 남긴다 — 껐다 켤 때마다 다시 배우라고 할 이유가 없고,
+## 새 PC에서 처음 켠 심사위원은 반드시 보게 된다
+var dialogue_hint_seen: bool = false
 
 ## PortraitFrames.tscn에서 읽어둔 캐릭터별 초상화 텍스처와, 프레임 대비 얼굴 네모의
 ## 중심·크기 비율(둘 다 Vector2). _ready에서 채운다
@@ -135,12 +176,49 @@ var _portrait_rect_size: Dictionary = {}
 func _ready() -> void:
 	_load_env()
 	_load_settings()
+	_apply_build_mute()
 	_load_portrait_frames()
 
 ## 새 대전을 시작하기 전에 라운드 스코어를 초기화한다
 func reset_round_wins() -> void:
 	p1_round_wins = 0
 	p2_round_wins = 0
+
+## 스토리 에피소드 하나를 시작한다 — 모드·진행도를 맞추고 그 에피소드의 첫 장면으로 넘어간다.
+## scene이 비어 있는(아직 안 만든) 에피소드면 아무 일도 안 하고 false를 돌려준다
+func start_story(episode_id: String) -> bool:
+	var episode: Dictionary = story_episode(episode_id)
+	var scene: String = episode.get("scene", "")
+	if scene == "" or not ResourceLoader.exists(scene):
+		return false
+	game_mode = "story"
+	current_story_id = episode_id
+	story_next_scene = ""   # 지난 판에서 남은 값이 있으면 지운다 (장면이 다시 채워준다)
+	reset_round_wins()
+	get_tree().change_scene_to_file(scene)
+	return true
+
+## id로 에피소드 한 줄을 찾는다. 없으면 빈 Dictionary
+func story_episode(episode_id: String) -> Dictionary:
+	for episode in STORY_EPISODES:
+		if episode["id"] == episode_id:
+			return episode
+	return {}
+
+## 지금 진행 중인 에피소드 이름 (대전 모드거나 못 찾으면 빈 문자열)
+func current_story_name() -> String:
+	return story_episode(current_story_id).get("name", "")
+
+## 한 번이라도 끝까지 봤는지 — 일시정지 화면 목록이 자물쇠를 걸지 말지 결정하는 기준
+func is_story_cleared(episode_id: String) -> bool:
+	return episode_id in story_cleared
+
+## 에피소드를 클리어로 기록하고 바로 저장한다. 이미 기록돼 있으면 아무 일도 안 한다
+func mark_story_cleared(episode_id: String) -> void:
+	if episode_id == "" or is_story_cleared(episode_id):
+		return
+	story_cleared.append(episode_id)
+	_save_setting("story", "cleared", story_cleared)
 
 ## res://.env 파일을 한 줄씩 읽어서 KEY=VALUE 형식을 파싱한다 (# 시작 줄은 주석으로 무시)
 func _load_env() -> void:
@@ -172,6 +250,8 @@ func _load_settings() -> void:
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
+	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
+	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 
 ## user://settings.cfg의 한 항목을 갱신한다. 매번 새로 열고 닫아서 다른 항목을 덮어쓰지 않는다
 func _save_setting(section: String, key: String, value) -> void:
@@ -179,6 +259,21 @@ func _save_setting(section: String, key: String, value) -> void:
 	config.load(SETTINGS_PATH)  # 파일이 없어도(첫 저장) 그냥 빈 ConfigFile로 계속 진행
 	config.set_value(section, key, value)
 	config.save(SETTINGS_PATH)
+
+## RoomSettings에서 "현재 설정 저장"으로 만든 방 설정 프리셋 하나를 이름으로 저장한다(같은 이름이면 덮어쓴다).
+## 다른 설정들과 같은 user://settings.cfg에 같이 저장되므로 게임을 다시 켜도 남아있는다
+func save_room_preset(preset_name: String, data: Dictionary) -> void:
+	_save_setting(ROOM_PRESET_SECTION, preset_name, data)
+
+## 저장된 방 설정 프리셋을 전부 읽어온다 -> {이름: 저장된 값 Dictionary}. 하나도 없으면 빈 Dictionary
+func load_room_presets() -> Dictionary:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) != OK:
+		return {}
+	var result: Dictionary = {}
+	for preset_name in config.get_section_keys(ROOM_PRESET_SECTION):
+		result[preset_name] = config.get_value(ROOM_PRESET_SECTION, preset_name, {})
+	return result
 
 ## action에 걸려있던 키 입력을 전부 지우고 물리 키코드 하나로 새로 등록한다
 func _apply_keybind(action: String, physical_keycode: int) -> void:
@@ -199,18 +294,58 @@ func reset_keybindings() -> void:
 		_apply_keybind(action, keycode)
 		_save_setting("keybinds", action, keycode)
 
-## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다
+## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다.
+## **창 모드로 돌아올 때는 저장해 둔 해상도를 다시 적용한다** — 안 그러면 전체화면 크기 그대로 남는다
 func set_fullscreen(enabled: bool) -> void:
 	is_fullscreen = enabled
 	get_window().mode = Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED
+	if not enabled:
+		_apply_window_size()
 	_save_setting("graphics", "fullscreen", enabled)
 
 ## ui/Settings.gd의 해상도 드롭다운이 호출한다. 전체화면 중에는 창 크기를 바꿔도 의미가 없어서 창모드일 때만 실제로 적용한다
 func set_resolution(index: int) -> void:
 	resolution_index = clampi(index, 0, RESOLUTIONS.size() - 1)
 	if not is_fullscreen:
-		get_window().size = RESOLUTIONS[resolution_index]
+		_apply_window_size()
 	_save_setting("graphics", "resolution_index", resolution_index)
+
+## 지금 고른 해상도를 창에 실제로 적용하고 화면 가운데로 옮긴다.
+##
+## **모니터보다 큰 해상도는 고르지 못하게 한 칸씩 내려간다** — 1920x1080 모니터에서 2560x1440을 고르면
+## 창의 절반이 화면 밖으로 나가 제목표시줄까지 안 보이게 된다.
+##
+## **에디터에서 실행하면 크기가 안 바뀔 수 있다.** Godot 4.4부터 게임 창을 에디터 안에 끼워서(Embed)
+## 띄우는 게 기본이라, 그 창은 에디터가 크기를 쥐고 있어서 코드로 바꿔도 안 먹는다.
+## 에디터 Game 탭의 "Embed Game on Play"를 끄거나, **내보낸 빌드에서 확인하면 정상 동작한다**
+func _apply_window_size() -> void:
+	var window := get_window()
+	var usable: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	var target: Vector2i = RESOLUTIONS[resolution_index]
+	# 화면에 안 들어가면 들어가는 것 중 가장 큰 걸로 내려간다
+	for i in range(resolution_index, -1, -1):
+		if RESOLUTIONS[i].x <= usable.size.x and RESOLUTIONS[i].y <= usable.size.y:
+			target = RESOLUTIONS[i]
+			break
+	window.size = target
+	window.position = usable.position + (usable.size - target) / 2
+
+## 대사 넘기는 법을 방금 처음 봤다고 기록한다 (ContinueIndicator가 첫 입력에서 부른다).
+## 이미 본 적 있으면 아무 일도 안 한다 — 누를 때마다 파일을 다시 쓸 이유가 없다
+func mark_dialogue_hint_seen() -> void:
+	if dialogue_hint_seen:
+		return
+	dialogue_hint_seen = true
+	_save_setting("progress", "dialogue_hint_seen", true)
+
+## 지금 소리가 꺼져 있어야 하는 상태인지 (내보낸 빌드 + MUTE_IN_BUILD).
+## `OS.has_feature("editor")`는 에디터에서 실행할 때만 true라 빌드와 구분된다
+func is_audio_muted() -> bool:
+	return MUTE_IN_BUILD and not OS.has_feature("editor")
+
+## Master 버스 음소거를 지금 상태에 맞춘다
+func _apply_build_mute() -> void:
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), is_audio_muted())
 
 ## ui/Settings.gd의 마스터 볼륨 슬라이더가 호출한다(0.0~1.0). 엔진의 Master 버스 자체를 조절하기 때문에
 ## 지금은 재생 중인 소리가 없어도, 나중에 효과음·배경음악이 추가되면 바로 이 값이 적용된다
@@ -218,6 +353,7 @@ func set_master_volume(volume: float) -> void:
 	master_volume = clampf(volume, 0.0, 1.0)
 	var bus_index := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(master_volume))
+	_apply_build_mute()   # 볼륨을 만져도 빌드에서는 계속 꺼진 채로 둔다
 	_save_setting("audio", "master_volume", master_volume)
 
 ## PortraitFrames.tscn을 인스턴스해서 각 캐릭터 프레임 안 "Portrait" 노드의 텍스처와,
@@ -253,6 +389,14 @@ func has_portrait(character_name: String) -> bool:
 func portrait_texture(character_name: String) -> Texture2D:
 	return _portrait_texture.get(character_name, null)
 
+## PortraitFrames.tscn에서 잡아 둔 **얼굴 네모의 중심·크기 비율**(0~1). 도감 칸처럼 TextureRect가
+## 아니라 직접 그리는 곳에서 같은 프레이밍을 쓰려고 열어 둔다 — 안 잡아 둔 캐릭터는 한가운데·꽉 참
+func portrait_frame_center(character_name: String) -> Vector2:
+	return _portrait_rect_center.get(character_name, Vector2(0.5, 0.5))
+
+func portrait_frame_size(character_name: String) -> Vector2:
+	return _portrait_rect_size.get(character_name, Vector2.ONE)
+
 ## 이 캐릭터의 인게임 몸(BodyRig) 씬이 등록돼 있는지
 func has_character_rig(character_name: String) -> bool:
 	return CHARACTER_RIGS.has(character_name)
@@ -262,6 +406,14 @@ func character_rig_scene(character_name: String) -> PackedScene:
 	if not CHARACTER_RIGS.has(character_name):
 		return null
 	return load(CHARACTER_RIGS[character_name])
+
+## p1_character_path/p2_character_path처럼 저장된 씬 경로로 CHARACTERS에서 표시 이름을 역으로 찾는다.
+## 못 찾으면 빈 문자열
+func character_name_for_path(scene_path: String) -> String:
+	for character_name in CHARACTERS:
+		if CHARACTERS[character_name] == scene_path:
+			return character_name
+	return ""
 
 ## 초상화 TextureRect를 box_size 상자 안에서 캐릭터별로 프레이밍한다.
 ## image는 상자를 꽉 채우는 앵커(anchor_right=1, anchor_bottom=1)에 놓여 있다고 가정한다.

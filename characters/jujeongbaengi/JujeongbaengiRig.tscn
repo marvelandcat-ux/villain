@@ -13,9 +13,9 @@
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
 vomit_head_texture = ExtResource("6_vomit")
 vomit_head_scale = Vector2(0.05, 0.05)
+hurt_head_texture = ExtResource("8_hurtface")
 drunk_head_texture = ExtResource("7_drunk")
 drunk_head_scale = Vector2(0.051, 0.051)
-hurt_head_texture = ExtResource("8_hurtface")
 weary_head_texture = ExtResource("9_wearyface")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]

@@ -22,7 +22,12 @@
 
 [node name="IljinCutIn" type="Node2D" unique_id=245726806]
 script = ExtResource("1")
-cutin_duration = 2.6
+cutin_duration = 3.0
+arrive_at = 0.9
+talk_open_time = 0.11
+talk_close_time = 0.09
+spit_gather_time = 0.28
+spit_hold_time = 0.18
 spit_gather_pose = NodePath("Friend/SpitGatherPose")
 spit_face_pose = NodePath("Friend/SpitFacePose")
 spit_node = NodePath("Spit")
@@ -153,10 +158,10 @@ texture = ExtResource("19")
 flip_h = true
 
 [node name="ShoutText" type="Label" parent="." unique_id=342240984]
-offset_left = -20.0
-offset_top = -320.0
-offset_right = 580.0
-offset_bottom = -140.0
+offset_left = -52.0
+offset_top = -313.0
+offset_right = 544.4269
+offset_bottom = -134.07193
 rotation = -0.052
 scale = Vector2(1.0326077, 1.1359252)
 pivot_offset = Vector2(300, 90)
@@ -164,10 +169,8 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.11, 0.08, 0.14, 1)
 theme_override_constants/outline_size = 13
 theme_override_fonts/font = ExtResource("15")
-theme_override_font_sizes/font_size = 38
-text = "준완아 니가 일진녀 몸
-안넣어서 임시로 만들었어
-어때, 물론 발도 마찬가지"
+theme_override_font_sizes/font_size = 54
+text = "야 손 좀 봐라."
 horizontal_alignment = 1
 vertical_alignment = 1
 

@@ -73,7 +73,7 @@ func _on_area_exited(area: Area2D) -> void:
 	_repeat_cooldowns.erase(area)
 
 ## repeat_interval이 켜져 있으면, 겹쳐 있는 동안 그 간격마다 계속 다시 때린다.
-## HazardPlatform과 같은 방식(대상별 쿨타임)이라 매 프레임 연속으로 맞지는 않는다
+## SpringJumpPad/SandPit과 같은 방식(대상별 쿨타임)이라 매 프레임 연속으로 맞지는 않는다
 func _process(delta: float) -> void:
 	if repeat_interval <= 0.0 or not monitoring:
 		return

@@ -40,14 +40,25 @@ signal finished(a_won: bool)
 ## 사람이 안 누르면 AI가 1.2초쯤에 끝까지 밀어 이긴다
 @export var ai_press_interval_min: float = 0.16
 @export var ai_press_interval_max: float = 0.24
-## 연타할 키의 슬롯 이름. **부딪힌 스킬이 뭐든 항상 이 키를 연타한다**(2026-09-10 기획) —
-## 부딪힌 슬롯 키를 그대로 쓰면 스킬1로 부딪혔는지 궁극기로 부딪혔는지에 따라 눌러야 할 키가 매번 달라져서,
-## 갑자기 화면이 멈춘 0.2초 안에 "이번엔 무슨 키더라"를 판단해야 한다. 항상 같은 키로 통일한다.
-## 빈 문자열로 두면 예전처럼 부딪힌 슬롯의 키를 쓴다
-@export var mash_action_id: String = "basic_attack"
+## 연타할 키의 슬롯 이름. **빈 문자열이면 방금 부딪힌 스킬의 키를 그대로 연타한다**(2026-09-16 변경).
+## 예전(2026-09-10)엔 "무슨 키로 부딪혔는지 0.2초 안에 판단하기 어렵다"는 이유로 항상 basic_attack으로 고정했었다.
+## 바꾼 이유: 부딪힌 순간 **손가락이 이미 그 키 위에 올라가 있다** — 방금 누른 키를 계속 두드리는 게 가장 자연스럽다.
+## 게다가 이제 얼굴 아래에 눌러야 할 키(ClashKeyHint)가 크게 떠서 판단할 필요 자체가 없다.
+## 다시 고정 키로 되돌리려면 여기에 "basic_attack" 같은 슬롯 이름을 넣으면 된다
+@export var mash_action_id: String = ""
 
 ## 얼굴 그림의 높이 (띠 높이 대비 비율)
 @export var face_height_ratio: float = 0.92
+
+@export_group("누를 키 안내")
+## 얼굴 아래에 "지금 두드릴 키 + 연타!"를 띄운다. AI 쪽에는 안 띄운다
+@export var show_key_hint: bool = true
+## 키 안내를 띄울 때는 얼굴을 줄여서 띠 위쪽으로 올린다 — 띠 안에 얼굴·키·글자를 다 넣으려고
+@export var hint_face_height_ratio: float = 0.5
+## 띠 가운데 기준 얼굴 / 키캡의 세로 위치(px, 음수가 위). 띠를 따라 기울어진다
+@export var hint_face_offset: float = -52.0
+@export var hint_key_offset: float = 20.0
+@export_group("")
 ## 밀당 상황에 따라 얼굴이 꺾이는 최대 각도(도). 이기는 쪽은 앞으로, 밀리는 쪽은 뒤로
 @export var face_tilt_deg: float = 26.0
 ## 얼굴이 목표 각도를 따라가는 빠르기 (클수록 즉각적)
@@ -80,6 +91,37 @@ signal finished(a_won: bool)
 ## 띠·얼굴(UI)이 게임 화면 흔들림을 몇 배로 따라 흔들릴지. 0이면 게임 화면만 흔들린다
 @export_range(0.0, 2.0, 0.05) var ui_shake_ratio: float = 0.6
 
+@export_group("승리 표시")
+## 이긴 쪽 얼굴 **바로 아래**에 뜨는 문구 (연타 키 안내가 있던 자리다)
+@export var win_text: String = "승리!"
+@export var win_font_size: int = 40
+@export var win_text_color: Color = Color(1, 1, 1)
+@export var win_outline_color: Color = Color(0.06, 0.05, 0.08)
+@export var win_outline_size: int = 10
+## 뜰 때 커졌다 돌아오는 시간(초)과 배율
+@export var win_pop_time: float = 0.22
+@export var win_pop_scale: float = 1.5
+
+@export_group("패배 연출")
+## 이긴 쪽이 주는 고정 데미지. 부딪힌 슬롯에 따라 다르다 (스킬1·2 / 궁극기)
+@export var clash_damage_skill: int = 7
+@export var clash_damage_ultimate: int = 12
+## 진 쪽이 날아가는 걸 보여주는 시간(초). 이 동안 카메라는 확대된 채, 띠도 가득 찬 채로 있는다
+@export var punish_time: float = 2.0
+## 날아가는 거리(px)와 높이(px, 음수가 위).
+## **카메라가 2.4배 확대된 상태라 화면에서는 이 값의 2.4배로 보인다** — 크게 주면 화면 밖으로 나간다
+@export var punish_fly_x: float = 110.0
+@export var punish_fly_up: float = -45.0
+## 날아가는 속도 곡선. 2면 처음이 빠르고 끝에서 느려진다(맞아 튕겨 나가는 느낌).
+## 크게 줄수록 앞부분에 더 몰려서, 남은 시간 동안 멈춰 있는 것처럼 보인다
+@export_range(1.0, 4.0, 0.1) var punish_ease: float = 2.0
+## 날아가면서 도는 바퀴 수
+@export var punish_spin_turns: float = 0.5
+## 날아가기 시작할 때 화면 흔들림
+@export_range(0.0, 1.0, 0.05) var punish_trauma: float = 0.6
+## 진 쪽 머리 위에 데미지 숫자를 띄운다
+@export var punish_damage_number: bool = true
+
 @export_group("결착 연출")
 ## 이긴 쪽 색이 상대 쪽으로 차오르는 시간(초) — 물 따르듯 처음엔 머뭇거리다 가운데서 확 쏟아진다.
 ## 게이지 절반(0.5)만큼 차오를 때 기준이고, 남은 거리에 비례해서 짧아진다 —
@@ -97,12 +139,18 @@ signal finished(a_won: bool)
 @export_range(0.0, 0.5, 0.01) var winner_face_punch: float = 0.18
 
 ## MASH가 끝나면 POUR(이긴 쪽 색으로 차오르기) -> HOLD(잠깐 멈춤) -> FLY(띠가 날아감) -> ZOOM_OUT
-enum Phase { IDLE, SLAM, MASH, POUR, HOLD, FLY, ZOOM_OUT }
+enum Phase { IDLE, SLAM, MASH, POUR, HOLD, PUNISH, FLY, ZOOM_OUT }
 
 @onready var _band: ClashBand = $Band
 @onready var _face_a: Sprite2D = $FaceA
 @onready var _face_b: Sprite2D = $FaceB
 @onready var _flash: ColorRect = $Flash
+## 승리 문구 — 코드로 만들어 띠 위에 얹는다 (씬에 노드를 안 늘리려고)
+var _win_label: Label = null
+## 문구가 뜬 뒤 지난 시간 (커졌다 돌아오는 연출용)
+var _win_time: float = -1.0
+@onready var _hint_a: ClashKeyHint = get_node_or_null("KeyHintA")
+@onready var _hint_b: ClashKeyHint = get_node_or_null("KeyHintB")
 
 var _phase: int = Phase.IDLE
 var _elapsed: float = 0.0
@@ -146,12 +194,19 @@ var _fly_dir: float = 1.0
 ## 얼굴의 원래 크기 — 이긴 쪽 얼굴을 튀길 때 기준
 var _face_a_base: Vector2 = Vector2.ONE
 var _face_b_base: Vector2 = Vector2.ONE
+## 부딪힌 슬롯 — 궁극기끼리 부딪혔는지에 따라 고정 데미지가 달라진다
+var _slot_id: String = ""
+## 진 쪽이 날아가기 시작한 자리와 방향(+1 오른쪽)
+var _punish_from: Vector2 = Vector2.ZERO
+var _punish_dir: float = 1.0
+var _punish_visual: Node2D = null
 
 ## fighter_a/fighter_b: 클래시를 벌이는 두 Fighter. slot_id: 부딪힌 스킬 슬롯("skill_1"/"skill_2"/
 ## "ultimate"/"basic_attack") — 이 슬롯의 키를 연타해야 한다. finished(a_won)으로 결과를 알린다
 func start(fighter_a: Fighter, fighter_b: Fighter, slot_id: String) -> void:
 	_fighter_a = fighter_a
 	_fighter_b = fighter_b
+	_slot_id = slot_id
 	var mash_slot: String = mash_action_id if mash_action_id != "" else slot_id
 	var control_a := _read_control(fighter_a, mash_slot)
 	var control_b := _read_control(fighter_b, mash_slot)
@@ -168,6 +223,8 @@ func start(fighter_a: Fighter, fighter_b: Fighter, slot_id: String) -> void:
 
 	_setup_face(_face_a, fighter_a)
 	_setup_face(_face_b, fighter_b)
+	_setup_hint(_hint_a, _action_a, _ai_a)
+	_setup_hint(_hint_b, _action_b, _ai_b)
 	# 서로 마주 보게 세운다 — 왼쪽(A)이 오른쪽을, 오른쪽(B)이 왼쪽을 본다
 	_face_b.scale.x *= -1.0
 	_face_a_base = _face_a.scale
@@ -199,9 +256,24 @@ func _setup_face(face: Sprite2D, fighter: Fighter) -> void:
 		return
 	var tex: Texture2D = load(path)
 	face.texture = tex
-	var target_h: float = _band.band_height() * face_height_ratio
+	var ratio: float = hint_face_height_ratio if show_key_hint else face_height_ratio
+	var target_h: float = _band.band_height() * ratio
 	var s: float = target_h / maxf(float(tex.get_height()), 1.0)
 	face.scale = Vector2(s, s)
+
+## 키 안내를 켠다. 사람이 조작하는 쪽에만 — AI는 누를 사람이 없다
+func _setup_hint(hint: ClashKeyHint, action: String, is_ai: bool) -> void:
+	if hint == null:
+		return
+	hint.visible = show_key_hint and not is_ai and action != ""
+	hint.modulate.a = 1.0
+	hint.set_action(action)
+
+## 띠를 따라 기울어진 세로 오프셋 — 얼굴·키캡이 띠와 같은 각도로 줄 선다
+func _along_band(offset_y: float) -> Vector2:
+	if not show_key_hint:
+		return Vector2.ZERO
+	return _band.band_transform().basis_xform(Vector2(0.0, offset_y))
 
 ## 두 캐릭터를 대치 자세로 세우거나(on) 푼다(off).
 ## **화면이 멈춰 있어도 자세가 움직여야 하므로 리그의 process_mode를 잠깐 ALWAYS로 올린다** —
@@ -281,6 +353,13 @@ func _process(delta: float) -> void:
 			var uh: float = clampf(_elapsed / maxf(fly_delay, 0.001), 0.0, 1.0)
 			_result_faces(uh)
 			if uh >= 1.0:
+				_begin_punish()
+		Phase.PUNISH:
+			# 카메라는 확대된 채, 띠도 가득 찬 채로 둔 채 **진 쪽이 날아가는 것만** 보여준다
+			_apply_camera(1.0)
+			_elapsed += delta
+			_update_punish(clampf(_elapsed / maxf(punish_time, 0.001), 0.0, 1.0))
+			if _elapsed >= punish_time:
 				_begin_fly()
 		Phase.FLY:
 			_apply_camera(1.0)
@@ -303,6 +382,7 @@ func _process(delta: float) -> void:
 				_finish()
 	_tick_effects(delta)
 	_update_faces(delta)
+	_update_win_label(delta)
 
 ## 두 덩어리가 맞물리는 순간 — 번쩍이고 흔들린다
 func _on_slam_impact() -> void:
@@ -331,12 +411,20 @@ func _update_faces(delta: float) -> void:
 	var push_a: float = clampf((_balance - 0.5) * 2.0, -1.0, 1.0)
 	_tilt_a = lerpf(_tilt_a, push_a, clampf(delta * face_follow_speed, 0.0, 1.0))
 	var tilt: float = deg_to_rad(face_tilt_deg) * _tilt_a
+	# 키 안내는 얼굴 바로 아래를 따라간다. 연타 구간이 끝나면(결착 연출부터) 흐려져 사라진다
+	var hint_alpha: float = 1.0 if (_phase == Phase.SLAM or _phase == Phase.MASH) else 0.0
+	for pair in [[_hint_a, true], [_hint_b, false]]:
+		var hint: ClashKeyHint = pair[0]
+		if hint and hint.visible:
+			hint.position = _band.face_anchor(pair[1]) + _along_band(hint_key_offset)
+			hint.rotation = _band.band_transform().get_rotation()
+			hint.modulate.a = move_toward(hint.modulate.a, hint_alpha, delta * 8.0)
 	if _face_a.visible:
-		_face_a.position = _band.face_anchor(true)
+		_face_a.position = _band.face_anchor(true) + _along_band(hint_face_offset)
 		# A는 오른쪽(상대)을 보고 있으므로 시계 방향(+)이 곧 "앞으로 꺾기"다
 		_face_a.rotation = tilt
 	if _face_b.visible:
-		_face_b.position = _band.face_anchor(false)
+		_face_b.position = _band.face_anchor(false) + _along_band(hint_face_offset)
 		# B는 좌우가 뒤집혀 있어(scale.x < 0) 같은 각도가 화면에서는 반대로 보인다.
 		# 그래서 같은 tilt를 넣어야 둘이 나란히 기우는 게 아니라 **서로 맞대고 밀치는** 그림이 된다
 		_face_b.rotation = tilt
@@ -390,6 +478,10 @@ func _push(is_a_side: bool) -> void:
 		_presses_b += 1
 	# 누를 때마다 화면이 툭 떨린다 — 둘이 같이 연타하면 계속 덜덜 흔들린다
 	_rumble = minf(_rumble + press_shake, rumble_max)
+	# 그 쪽 키캡이 꾹 눌린다 (AI 쪽은 안내 자체가 꺼져 있다)
+	var hint: ClashKeyHint = _hint_a if is_a_side else _hint_b
+	if hint:
+		hint.press()
 	# 누른 쪽 캐릭터가 주먹을 내지른다 — 연타 속도가 그대로 주먹질 속도가 된다
 	_punch_rig(_fighter_a if is_a_side else _fighter_b)
 	_balance = clampf(_balance + (push_per_press if is_a_side else -push_per_press), 0.0, 1.0)
@@ -441,6 +533,7 @@ func _decide_by_presses() -> bool:
 ## 승부가 난 순간 — 흔들림을 딱 멈추고(정적), 이긴 쪽 색이 상대 쪽으로 화면 밖까지 차오르게 한다.
 ## 차오르는 시간은 남은 거리에 비례한다 — 이미 끝까지 밀어서 이겼으면 남은 구석만 휙 채운다
 func _begin_result() -> void:
+	_show_win_label()
 	_rumble = 0.0
 	_fly_dir = 1.0 if _a_won else -1.0
 	_pour_from = _balance
@@ -460,6 +553,112 @@ func _begin_hold() -> void:
 	_band.solid = true
 	# 색이 다 바뀐 순간 가볍게 번쩍 — 맞물릴 때의 절반 세기
 	_flash_left = flash_fade_time * 0.5
+
+## 이긴 쪽 얼굴 아래에 "승리!"를 띄운다. 연타 키 안내가 있던 자리라 시선이 그대로 머문다
+func _show_win_label() -> void:
+	if win_text == "":
+		return
+	if _win_label == null:
+		_win_label = Label.new()
+		_win_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_win_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_win_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(_win_label)
+	_win_label.text = win_text
+	_win_label.add_theme_font_size_override("font_size", win_font_size)
+	_win_label.add_theme_color_override("font_color", win_text_color)
+	_win_label.add_theme_color_override("font_outline_color", win_outline_color)
+	_win_label.add_theme_constant_override("outline_size", win_outline_size)
+	_win_label.visible = true
+	_win_time = 0.0
+
+## 이긴 쪽 얼굴을 따라다닌다. 뜨는 순간 한 번 커졌다 돌아온다
+func _update_win_label(delta: float) -> void:
+	if _win_label == null or not _win_label.visible:
+		return
+	_win_time += delta
+	var pop: float = 1.0
+	if _win_time < win_pop_time:
+		var u: float = _win_time / maxf(win_pop_time, 0.001)
+		pop = lerpf(win_pop_scale, 1.0, u * u)
+	# 글자 상자 크기를 먼저 확정해야 가운데를 잡을 수 있다
+	_win_label.size = _win_label.get_minimum_size()
+	_win_label.pivot_offset = _win_label.size * 0.5
+	_win_label.scale = Vector2.ONE * pop
+	_win_label.rotation = _band.band_transform().get_rotation()
+	var anchor: Vector2 = _band.face_anchor(_a_won) + _along_band(hint_key_offset)
+	_win_label.position = anchor - _win_label.size * 0.5
+
+## 진 쪽을 뒤로 날려 보낸다 — "이겨서 때렸다"가 보이는 유일한 구간이다.
+## **실제 HP는 여기서 안 깎는다.** 지금은 화면이 멈춰 있어서, 죽는 처리까지 멈춘 채로 돌면 꼬인다 —
+## 체력은 SkillClashManager가 화면을 다시 움직인 직후에 깎는다(apply_clash_damage)
+func _begin_punish() -> void:
+	_phase = Phase.PUNISH
+	_elapsed = 0.0
+	var loser: Fighter = loser_fighter()
+	var winner: Fighter = winner_fighter()
+	if not is_instance_valid(loser):
+		return
+	_punish_from = loser.global_position
+	# 이긴 쪽 반대편으로 날아간다 (같은 자리면 바라보던 반대쪽)
+	_punish_dir = signf(loser.global_position.x - winner.global_position.x) if is_instance_valid(winner) else -loser.facing
+	if _punish_dir == 0.0:
+		_punish_dir = -loser.facing
+	_punish_visual = loser.get_node_or_null("Visual") as Node2D
+	# 날아가는 동안엔 몸이 스스로 움직이면 안 된다 (화면이 다시 돌아도 제자리를 지키게)
+	loser.velocity = Vector2.ZERO
+	_shake_left = shake_time
+	var camera: Camera2D = get_viewport().get_camera_2d()
+	if camera and camera.has_method("add_trauma"):
+		camera.add_trauma(punish_trauma)
+	if punish_damage_number:
+		_spawn_damage_number(loser)
+
+## 진 쪽 머리 위에 데미지 숫자를 띄운다. 화면이 멈춰 있으므로 팝업만 따로 계속 돌게 한다
+func _spawn_damage_number(loser: Fighter) -> void:
+	if not ResourceLoader.exists("res://combat/DamagePopup.tscn"):
+		return
+	var popup: Node2D = load("res://combat/DamagePopup.tscn").instantiate()
+	popup.process_mode = Node.PROCESS_MODE_ALWAYS
+	# **맵이 아니라 이 CanvasLayer에 붙인다.** 맵에 붙이면 가득 찬 띠(같은 레이어의 Control)가
+	# 위에 덮여서 숫자가 가려진다 — z_index로는 레이어를 못 넘는다.
+	# 대신 월드 좌표를 화면 좌표로 바꿔서 그 자리에 놓는다 (그 자리에 뜬 채로 떠오른다)
+	add_child(popup)
+	popup.position = get_viewport().get_canvas_transform() * (loser.global_position + Vector2(0, 26))
+	# 평소 팝업은 데미지가 클수록 크고 붉게 뜨는데, 클래시 데미지(7·12)는 그 기준으로 치면
+	# 작고 희미해서 노란 띠 위에서 안 읽힌다. 이 순간만큼은 "한 방"이므로 가장 크고 붉게 띄운다
+	popup.big_hit_damage = float(maxi(clash_damage(), 1))
+	popup.setup(clash_damage())
+
+## 날아가는 궤적 — 처음이 제일 빠르고 점점 느려진다(맞아서 튕겨 나가는 느낌)
+func _update_punish(u: float) -> void:
+	var loser: Fighter = loser_fighter()
+	if not is_instance_valid(loser):
+		return
+	var e: float = 1.0 - pow(1.0 - u, punish_ease)
+	loser.global_position = _punish_from + Vector2(_punish_dir * punish_fly_x, punish_fly_up) * e
+	if is_instance_valid(_punish_visual):
+		_punish_visual.rotation = _punish_dir * TAU * punish_spin_turns * e
+
+## 이번 클래시에서 이긴 쪽이 주는 고정 데미지
+func clash_damage() -> int:
+	return clash_damage_ultimate if _slot_id == "ultimate" else clash_damage_skill
+
+func winner_fighter() -> Fighter:
+	return _fighter_a if _a_won else _fighter_b
+
+func loser_fighter() -> Fighter:
+	return _fighter_b if _a_won else _fighter_a
+
+## 화면이 다시 움직인 **뒤에** SkillClashManager가 부른다 — 여기서 실제 체력이 깎이고,
+## 죽었으면 평소와 똑같은 KO 처리가 돈다. 넉백은 이미 날아간 뒤라 안 준다
+func apply_clash_damage() -> void:
+	var loser: Fighter = loser_fighter()
+	if not is_instance_valid(loser):
+		return
+	if is_instance_valid(_punish_visual):
+		_punish_visual.rotation = 0.0
+	loser.take_damage(clash_damage(), Vector2.ZERO, -1.0, true)
 
 ## 띠를 진행 방향으로 날려 보낸다. 출발할 때 한 번 쿵
 func _begin_fly() -> void:

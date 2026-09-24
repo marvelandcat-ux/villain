@@ -1,8 +1,11 @@
 class_name Settings
 extends Control
 
-## 설정 화면 — 메인 메뉴 위에 팝업(카드)으로 덮어 씌워진다. 뒤의 메인 메뉴는 Scrim(반투명 검정)을 통해
-## 살짝 비쳐 보인다. 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
+## 설정 화면 — 부르는 화면 위에 팝업(카드)으로 덮어 씌워진다. 뒤 화면은 Scrim(반투명 검정)을 통해
+## 살짝 비쳐 보인다. **메인 메뉴와 일시정지 화면 둘 다 이 방식으로 연다** —
+## 장면을 아예 안 바꾸므로 대전 중에 열어도 하던 판이 날아가지 않는다
+## (2026-09-16 머지: 예전 `overlay_mode` 스위치는 없앴다. 이제 **언제나** 자기만 닫고 `closed`를 보낸다)
+## 위쪽 3개 탭 버튼(그래픽/오디오/조작)을 누르면 그 아래 내용 영역이 바뀐다.
 ## 그래픽·오디오는 GameState가 즉시 적용 + 저장하고, 조작키는 여기서 바로 재배정 가능(GameState.rebind_action)
 
 ## 닫기 버튼을 누르거나 ESC를 눌러 팝업이 닫힐 때(슬라이드 연출이 끝난 뒤 나온다).
@@ -21,23 +24,23 @@ const ACTION_LABELS := {
 }
 const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate"]
 
-@onready var tab_buttons := {
+@onready var _tab_buttons := {
 	"graphics": $Card/CardVBox/HeaderVBox/TabRow/GraphicsTabButton,
 	"audio": $Card/CardVBox/HeaderVBox/TabRow/AudioTabButton,
 	"controls": $Card/CardVBox/HeaderVBox/TabRow/ControlsTabButton,
 }
-@onready var panels := {
+@onready var _panels := {
 	"graphics": $Card/CardVBox/BodyVBox/GraphicsPanel,
 	"audio": $Card/CardVBox/BodyVBox/AudioPanel,
 	"controls": $Card/CardVBox/BodyVBox/ControlsPanel,
 }
 
-@onready var fullscreen_check: CheckButton = $Card/CardVBox/BodyVBox/GraphicsPanel/FullscreenRow/FullscreenCheck
-@onready var resolution_option: OptionButton = $Card/CardVBox/BodyVBox/GraphicsPanel/ResolutionRow/ResolutionOption
-@onready var volume_slider: HSlider = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeSlider
-@onready var volume_value_label: Label = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeValueLabel
-@onready var p1_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P1Column
-@onready var p2_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P2Column
+@onready var _fullscreen_check: CheckButton = $Card/CardVBox/BodyVBox/GraphicsPanel/FullscreenRow/FullscreenCheck
+@onready var _resolution_option: OptionButton = $Card/CardVBox/BodyVBox/GraphicsPanel/ResolutionRow/ResolutionOption
+@onready var _volume_slider: HSlider = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeSlider
+@onready var _volume_value_label: Label = $Card/CardVBox/BodyVBox/AudioPanel/VolumeRow/VolumeValueLabel
+@onready var _p1_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P1Column
+@onready var _p2_column: VBoxContainer = $Card/CardVBox/BodyVBox/ControlsPanel/Columns/P2Column
 
 ## 지금 새 키 입력을 기다리고 있는 액션 이름. 빈 문자열이면 대기 중이 아님
 var _listening_action: String = ""
@@ -55,12 +58,12 @@ var _opening: bool = true
 
 func _ready() -> void:
 	for suffix in ROWS:
-		p1_column.add_child(_make_key_row("p1_" + suffix, ACTION_LABELS[suffix]))
+		_p1_column.add_child(_make_key_row("p1_" + suffix, ACTION_LABELS[suffix]))
 	for suffix in ROWS:
-		p2_column.add_child(_make_key_row("p2_" + suffix, ACTION_LABELS[suffix]))
+		_p2_column.add_child(_make_key_row("p2_" + suffix, ACTION_LABELS[suffix]))
 	_setup_graphics_audio_controls()
 	_show_tab("graphics")
-	tab_buttons["graphics"].grab_focus()
+	_tab_buttons["graphics"].grab_focus()
 	_scrim_target_alpha = _scrim.color.a
 	_opening = true
 	_anim_time = 0.0
@@ -90,33 +93,38 @@ func _process(delta: float) -> void:
 
 ## 탭 버튼을 누르면 그 탭의 패널만 보이고 나머지는 숨긴다. 버튼 자체도 선택된 탭만 밝게 눌린 느낌으로 표시한다
 func _show_tab(tab_name: String) -> void:
-	for name in panels:
-		panels[name].visible = (name == tab_name)
-	for name in tab_buttons:
-		tab_buttons[name].button_pressed = (name == tab_name)
+	for name in _panels:
+		_panels[name].visible = (name == tab_name)
+	for name in _tab_buttons:
+		_tab_buttons[name].button_pressed = (name == tab_name)
 
 ## 그래픽/오디오 컨트롤을 GameState에 저장된 현재 값으로 채운다(전체화면 여부, 해상도, 볼륨)
 func _setup_graphics_audio_controls() -> void:
 	for size in GameState.RESOLUTIONS:
-		resolution_option.add_item("%dx%d" % [size.x, size.y])
-	resolution_option.selected = GameState.resolution_index
-	resolution_option.disabled = GameState.is_fullscreen
+		_resolution_option.add_item("%dx%d" % [size.x, size.y])
+	_resolution_option.selected = GameState.resolution_index
+	_resolution_option.disabled = GameState.is_fullscreen
 
-	fullscreen_check.button_pressed = GameState.is_fullscreen
+	_fullscreen_check.button_pressed = GameState.is_fullscreen
 
-	volume_slider.value = GameState.master_volume
-	volume_value_label.text = "%d%%" % round(GameState.master_volume * 100)
+	_volume_slider.value = GameState.master_volume
+	_volume_value_label.text = "%d%%" % round(GameState.master_volume * 100)
+	# 빌드에서는 소리를 통째로 꺼 뒀으므로(GameState.MUTE_IN_BUILD) 슬라이더를 만져도 아무 일도 안 난다 —
+	# 헛돌게 두면 고장난 줄 아니까 아예 못 만지게 하고 "음소거"라고 알려준다
+	if GameState.is_audio_muted():
+		_volume_slider.editable = false
+		_volume_value_label.text = "음소거"
 
 func _on_fullscreen_toggled(enabled: bool) -> void:
 	GameState.set_fullscreen(enabled)
-	resolution_option.disabled = enabled  # 전체화면 중엔 해상도를 바꿔도 의미가 없어서 비활성화
+	_resolution_option.disabled = enabled  # 전체화면 중엔 해상도를 바꿔도 의미가 없어서 비활성화
 
 func _on_resolution_selected(index: int) -> void:
 	GameState.set_resolution(index)
 
 func _on_volume_changed(value: float) -> void:
 	GameState.set_master_volume(value)
-	volume_value_label.text = "%d%%" % round(value * 100)
+	_volume_value_label.text = "%d%%" % round(value * 100)
 
 func _make_key_row(action: String, label_text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -180,6 +188,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _listening_action != "":
 		return
 	if event.is_action_pressed("ui_cancel"):
-		# 여기서 처리했다고 알려야 뒤쪽 메인 메뉴의 ESC(타이틀로 나가기)가 같이 발동하지 않는다
+		# **먹었다는 표시를 닫기 전에 해야 한다** — 뒤쪽 메인 메뉴의 ESC(타이틀로 나가기)나
+		# 일시정지 화면의 ESC가 같은 입력을 받아 한꺼번에 닫히는 걸 막는다
 		get_viewport().set_input_as_handled()
 		_on_back_pressed()

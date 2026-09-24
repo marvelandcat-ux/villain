@@ -16,6 +16,7 @@ extends Node2D
 ##    걷기 속도가 튕긴 속도를 덮어써서 아무 일도 없던 것처럼 된다. 경직 중엔 넉백처럼 마찰로 미끄러지다 멈춘다
 ##  - **데미지는 없다** — 피해 0이라 `Fighter.damaged`가 안 나가서 왕관도 안 벗겨진다
 ##  - 같은 사람은 튕긴 직후 `rebounce_delay` 동안 다시 안 튕긴다 — 좌석과 겹친 채로 매 프레임 튕기는 걸 막는다
+##  - (2026-09-21) 튕겨 날아가는 동안(= 경직 동안) 촉법소년 자전거처럼 잔상이 남는다 (`Fighter.start_air_trail`)
 ##
 ## (2026-09-13) 겉모습이 파란 도형에서 그림 2장으로 바뀌었다 — **안 움직이는 틀(`Frame`)** 과
 ## **통째로 회전하는 줄+좌석(`Arm/SeatVisual`)**. 회전은 이 스크립트가 `Arm.rotation`으로 하므로
@@ -106,5 +107,8 @@ func _bounce(fighter: Fighter) -> void:
 	var speed: float = bounce_speed + absf(_seat_vel.x) * seat_speed_bonus
 	fighter.velocity = Vector2(dir * speed, bounce_lift)
 	# 경직 길이 = 마찰로 멈추는 데 걸리는 시간(넉백과 같은 계산). 너무 길면 조작을 오래 뺏으니 bounce_stun_max에서 끊는다
-	fighter.apply_hitstun(clampf(speed / Fighter.HITSTUN_FRICTION, 0.1, bounce_stun_max))
+	var stun: float = clampf(speed / Fighter.HITSTUN_FRICTION, 0.1, bounce_stun_max)
+	fighter.apply_hitstun(stun)
+	# 경직 동안이 튕겨 "날아가는" 구간이라, 그동안 촉법소년 자전거처럼 잔상을 남긴다
+	fighter.start_air_trail(stun)
 	bounced.emit(fighter, dir)

@@ -53,6 +53,9 @@ extends Control
 @export var illust_fade_seconds: float = 0.9
 ## 배경 위에 깔리는 어두운 판(`Scrim`)의 진하기. 왼쪽 메뉴 글씨가 배경에 묻히지 않게 하는 용도다
 @export_range(0.0, 1.0, 0.01) var scrim_alpha: float = 0.45
+## **여기 적은 일러스트는 아예 안 보여준다** (노드 이름). 씬에는 그대로 두고 순환에서만 뺀다 —
+## 아직 손볼 데가 남은 일러스트를 지우지 않고 잠깐 감출 때 쓴다. 짝이 되는 배경도 같이 빠진다
+@export var hidden_illusts: Array[String] = ["IllustCatMom"]
 ## **이 일러스트들일 때는 어두운 판을 걷는다** (노드 이름). 배경 자체가 이미 어두워서
 ## 덧씌우면 아무것도 안 보이는 경우에 쓴다 — 악플러(쓰레기방)가 그렇다
 @export var no_scrim_illusts: Array[String] = ["IllustAkpeulleo"]
@@ -62,7 +65,6 @@ extends Control
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
-@onready var _dex_button: Button = $DexButton
 ## 화면 전체를 덮는 검은 판 — 켜질 때 이게 걷히면서 화면이 열린다
 @onready var _screen_fade: ColorRect = $Fade
 ## 배경 위 어두운 판 — 일러스트마다 진하기가 다를 수 있어서 매 프레임 맞춰준다
@@ -100,7 +102,6 @@ func _ready() -> void:
 		_place_illustration()
 	_collect_illustrations()
 	_build_menu()
-	_dex_button.pressed.connect(_on_dex_pressed)
 	_screen_fade.color.a = 1.0
 	_confirm.confirmed.connect(_on_confirmed)
 	_confirm.cancelled.connect(func(): _pending = Callable())
@@ -116,6 +117,7 @@ func _build_menu() -> void:
 		"StoryItem": _on_story_pressed,
 		"VersusItem": _on_versus_pressed,
 		"TrainingItem": _on_training_pressed,
+		"DexItem": _on_dex_pressed,
 		"HowToItem": _on_how_to_pressed,
 		"SettingsItem": _on_settings_pressed,
 	}
@@ -203,11 +205,25 @@ func _animate_menu(delta: float) -> void:
 ## 이름이 "Illust"/"Background"로 시작하는 자식을 트리 순서대로 모으고, 첫 짝만 남기고 숨긴다.
 ## "Fx"로 시작하는 효과판은 여기서 안 모은다 — 트리 순서가 아니라 이름으로 짝짓는다(_pair_effect 참고)
 func _collect_illustrations() -> void:
+	# 먼저 트리 순서대로 다 모은 뒤(일러스트 i번 <-> 배경 i번이 짝),
+	# hidden_illusts에 든 것만 **짝째로** 빼낸다. 한쪽만 빼면 그 뒤 번호가 밀려 짝이 어긋난다
+	var all_illusts: Array[Node2D] = []
+	var all_backgrounds: Array[Node2D] = []
 	for child in get_children():
 		if child is Node2D and child.name.begins_with("Illust"):
-			_illusts.append(child)
+			all_illusts.append(child)
 		elif child is Node2D and child.name.begins_with("Background"):
-			_backgrounds.append(child)
+			all_backgrounds.append(child)
+	for i in range(all_illusts.size()):
+		var illust: Node2D = all_illusts[i]
+		var background: Node2D = all_backgrounds[i] if i < all_backgrounds.size() else null
+		if illust.name in hidden_illusts:
+			illust.visible = false
+			if background:
+				background.visible = false
+			continue
+		_illusts.append(illust)
+		_backgrounds.append(background)
 	for i in range(_illusts.size()):
 		if i == 0:
 			_show_pair(i, 1.0)
@@ -219,7 +235,8 @@ func _collect_illustrations() -> void:
 	if not _illusts.is_empty():
 		_scrim.color.a = _scrim_target(0)
 
-## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null)
+## i번째 일러스트와 그 짝 배경 (배경이 모자라면 null).
+## `_collect_illustrations`에서 이미 짝을 맞춰 담아 뒀으므로 같은 번호를 그대로 쓴다
 func _pair_background(i: int) -> Node2D:
 	return _backgrounds[i] if i < _backgrounds.size() else null
 
@@ -332,10 +349,10 @@ func _on_confirmed() -> void:
 ## 스토리 모드 — 2026-09-12 새로 짜는 중. 지금은 검은 화면 장면(ui/story/)이 페이드로 이어지는 뼈대만 있다.
 ## 옛 흐름(에피소드 선택 -> 캐릭터 선택 -> 대전 -> 개과천선 -> 클리어)은 통째로 걷어냈다
 func _start_story() -> void:
-	GameState.game_mode = "story"
-	GameState.story_next_scene = ""   # 지난 판에서 남은 값이 있으면 지운다 (장면이 다시 채워준다)
-	GameState.reset_round_wins()
-	get_tree().change_scene_to_file("res://ui/story/StoryScene1.tscn")
+	# 모드·진행도 초기화와 장면 전환은 GameState.start_story()가 한다 —
+	# 일시정지 화면의 스토리 목록에서 고를 때도 같은 함수를 쓰므로 시작 경로가 하나로 모인다
+	if not GameState.start_story("ep1"):
+		push_warning("MainMenu: ep1 스토리 장면을 못 찾았다")
 
 ## 대전 모드 — 방 설정(선취 라운드/시간제한)부터 고른다
 func _start_versus() -> void:
@@ -373,12 +390,13 @@ func _on_settings_closed() -> void:
 ## 설정 팝업이 떠 있는 동안 사선 메뉴 항목·도감 버튼·제목/힌트 글자를 통째로 숨긴다 —
 ## Scrim이 클릭은 막아주지만 반투명이라 뒤에 그대로 비치므로, 눈으로도 안 보이게 감춘다
 func _set_menu_buttons_visible(is_visible: bool) -> void:
+	# **도감 버튼을 따로 안 챙긴다** — 2026-09-16 머지에서 도감이 루트의 `DexButton`에서
+	# 사선 메뉴 항목(`Menu/DexItem`)으로 옮겨져서, 여기서 `Menu`를 숨기면 같이 숨겨진다.
+	# (예전 `_dex_button` 변수는 그때 없어졌다 — 그대로 두면 선언 없는 이름이라 파싱 에러가 난다)
 	for node_name in ["Menu", "TitleLabel", "HintLabel"]:
 		var node: CanvasItem = get_node_or_null(node_name)
 		if node:
 			node.visible = is_visible
-	if _dex_button:
-		_dex_button.visible = is_visible
 
 ## 도감은 되돌릴 게 없어서(읽기 전용) 확인 창 없이 바로 들어간다
 func _on_dex_pressed() -> void:

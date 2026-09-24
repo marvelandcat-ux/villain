@@ -3,12 +3,26 @@ extends Node
 
 ## 모든 스킬의 공용 베이스 — 쿨타임 관리와 use(fighter) 인터페이스를 제공한다.
 ## 실제 효과는 하위 클래스가 _execute(fighter)를 오버라이드해서 구현한다.
+##
+## `skill_name`/`description`은 **도감 표시 전용**이다(2026-09-16). 이 게임의 주 콘텐츠가 로컬 대전이라
+## 처음 하는 사람이 캐릭터가 뭘 하는지 알 방법이 도감뿐인데, 그동안 스킬 이름조차 데이터가 없었다.
+## 캐릭터 씬의 Skill1/Skill2/SkillUltimate/BasicAttack 노드 인스펙터에서 채우면 도감이 알아서 읽어간다.
 @export var cooldown: float = 1.0
 ## 이 스킬을 쓰는 동안(모션이 재생되는 동안) 다른 스킬·기본공격을 못 쓰게 막는 시간(초).
 ## 0이면 안 막는다. 마시기/토하기처럼 동작이 긴 스킬에만 값을 준다
 @export var lock_duration: float = 0.0
 ## HUD 쿨타임 슬롯에 뜨는 스킬 로고. 비워두면 로고 대신 캐릭터 색 사각형이 차오른다
 @export var icon: Texture2D
+## 도감에 뜨는 스킬 이름. **비워두면 도감이 스크립트 이름을 대신 보여준다**(아직 안 적었다는 표시).
+## 여기와 아래 설명은 전투 로직에 전혀 안 쓰인다 — 도감 표시 전용이다
+@export var skill_name: String = ""
+## 도감에 뜨는 한 줄 설명. 조작키와 쿨타임은 도감이 알아서 붙이므로 **효과만** 적으면 된다
+@export_multiline var description: String = ""
+## 도감 상세창의 시연 칸에 넣을 **반복 재생 영상**. Godot 4는 Ogg Theora(.ogv)만 재생한다
+## (mp4/webm 불가). 녹화본을 `ffmpeg -i 원본 -c:v libtheora -q:v 7 -an 결과.ogv`로 바꿔서 물리면 된다
+@export var demo_video: VideoStream
+## 영상이 없을 때 대신 보여줄 정지 그림 (스프라이트시트 아니고 한 장짜리)
+@export var demo_image: Texture2D
 ## 켜면 라운드가 시작될 때 이 스킬이 **쿨타임을 물고 시작한다**(바로 못 쓴다).
 ## 궁극기를 라운드 초반부터 던지지 못하게 하는 용도 — 전 캐릭터 궁극기에 켜져 있다.
 ##
@@ -22,9 +36,11 @@ var cooldown_left: float = 0.0
 ## 배수(attack_speed_multiplier)와 달리 원래 값이 얼마든 결과가 같은 절대값이다
 var cooldown_override: float = 0.0
 
-## 지금 실제로 쓸 쿨타임 — 덮어쓰기가 걸려 있으면 그 값, 아니면 원래 cooldown
+## 지금 실제로 쓸 쿨타임 — 덮어쓰기가 걸려 있으면 그 값, 아니면 원래 cooldown.
+## 방 설정에서 정한 전역 쿨타임 배율(GameState.cooldown_multiplier)을 마지막에 곱한다
 func effective_cooldown() -> float:
-	return cooldown_override if cooldown_override > 0.0 else cooldown
+	var base: float = cooldown_override if cooldown_override > 0.0 else cooldown
+	return base * GameState.cooldown_multiplier
 
 func _ready() -> void:
 	if start_on_cooldown:

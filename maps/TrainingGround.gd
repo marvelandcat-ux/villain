@@ -1,3 +1,4 @@
+class_name TrainingGround
 extends Node2D
 
 ## 훈련장 — 스토리 모드/로컬 대전과 별개로, 캐릭터 하나만 평평한 바닥에 세워두고

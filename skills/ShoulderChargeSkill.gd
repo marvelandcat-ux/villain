@@ -23,8 +23,6 @@ extends Skill
 @export var hit_range_y: float = 46.0
 ## 부딪히는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작)
 @export var impact_squash: Vector2 = Vector2(1.2, 0.86)
-
-var _time_left: float = 0.0
 ## 돌진하는 동안 바꿔 낄 얼굴 (일진은 신남일진). 비어 있으면 얼굴을 안 바꾼다
 @export var charge_face: Texture2D
 ## 그 얼굴의 배율 — 기본 머리와 그림 크기가 다르면 잡아준다((0,0)이면 기본 배율)
@@ -32,11 +30,13 @@ var _time_left: float = 0.0
 ## 잔상을 몇 초마다 남길지 (0이면 안 남긴다)
 @export var trail_interval: float = 0.045
 
-var _trail_timer: float = 0.0
 ## 타입을 안 붙인다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔 못 찾아서
 ## 파싱 에러가 난다(Fighter._shield를 무타입으로 둔 것과 같은 이유). preload로 직접 가져온다
 const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
 var _wind = null
+
+var _time_left: float = 0.0
+var _trail_timer: float = 0.0
 var _direction: float = 1.0
 var _hit: bool = false
 
@@ -99,17 +99,7 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 
 ## 돌진 방향 앞쪽(또는 거의 겹친) 상대를 찾는다 — 등 뒤에 있는 상대에는 안 맞는다
 func _enemy_in_range(fighter: Fighter) -> Fighter:
-	for other in fighter.get_tree().get_nodes_in_group("fighters"):
-		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
-			continue
-		var dx: float = other.global_position.x - fighter.global_position.x
-		var dy: float = other.global_position.y - fighter.global_position.y
-		if absf(dx) > hit_range_x or absf(dy) > hit_range_y:
-			continue
-		if dx * _direction < -20.0:
-			continue
-		return other
-	return null
+	return Fighter.find_fighter_in_box(fighter, hit_range_x, hit_range_y, _direction)
 
 ## 어깨가 닿은 순간 — 상대는 크게 뜨고 굳고, 자신도 같이 솟구친다
 func _slam(fighter: Fighter, enemy: Fighter) -> void:
@@ -141,9 +131,7 @@ func _burst(fighter: Fighter) -> void:
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return
-	var burst := CrashBurst.new()
-	parent.add_child(burst)
-	burst.global_position = fighter.global_position + Vector2(_direction * 22.0, -6.0)
+	CrashBurst.spawn(parent, fighter.global_position + Vector2(_direction * 22.0, -6.0))
 
 ## 돌진을 끝내고 이동 권한·자세·얼굴을 되돌린다
 func _end(fighter: Fighter) -> void:

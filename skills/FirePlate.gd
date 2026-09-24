@@ -10,12 +10,7 @@ var source_fighter: Fighter
 var _tick_timer: float = 0.0
 
 func _ready() -> void:
-	var timer := Timer.new()
-	timer.wait_time = lifetime
-	timer.one_shot = true
-	timer.timeout.connect(queue_free)
-	add_child(timer)
-	timer.start()
+	Timers.self_destruct(self, lifetime)
 	_start_pulse()
 
 ## 이글이글 타오르는 느낌을 주는 반복 펄스

@@ -58,8 +58,3 @@ func _start_pop() -> void:
 	else:
 		tween.tween_property(self, "position", _rest, pop_time) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-
-## 연출을 처음부터 다시 (장면을 껐다 켜지 않고 확인하고 싶을 때)
-func replay() -> void:
-	position = _rest + hide_offset
-	_start_pop()

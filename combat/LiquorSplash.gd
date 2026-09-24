@@ -108,15 +108,6 @@ func _draw() -> void:
 		draw_circle(d.pos, r + 0.8, Color(outline_color, alpha))
 		draw_circle(d.pos, r, Color(drop_color, alpha))
 
-## 스폰 지점에서 아래로 레이캐스트해 바닥 윗면 y를 찾는다. 캐릭터는 뚫고 지나가야 하므로 전부 제외한다
+## 스폰 지점에서 아래로 레이캐스트해 바닥 윗면 y를 찾는다. 못 찾으면(공중) 한참 아래를 바닥으로 친다
 func _find_ground_y(from: Vector2) -> float:
-	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, ground_probe))
-	query.collide_with_areas = false
-	var excludes: Array[RID] = []
-	for f in get_tree().get_nodes_in_group("fighters"):
-		excludes.append(f.get_rid())
-	query.exclude = excludes
-	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return from.y + 400.0   # 바닥을 못 찾으면(공중) 한참 아래를 바닥으로 친다
-	return hit.position.y
+	return PhysicsQuery.ground_y_below(self, from, ground_probe, from.y + 400.0)

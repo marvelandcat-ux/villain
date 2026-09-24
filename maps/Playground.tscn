@@ -12,20 +12,25 @@
 [ext_resource type="Texture2D" uid="uid://b3v4xo2wq5d0g" path="res://sprite/맵/놀이터/구름1.png" id="12"]
 [ext_resource type="Texture2D" uid="uid://b5t61ixqq76ep" path="res://sprite/맵/놀이터/구름2.png" id="13"]
 [ext_resource type="Texture2D" uid="uid://bysim7l6m3d0k" path="res://sprite/맵/놀이터/모래사장 (2).png" id="15"]
-[ext_resource type="Texture2D" uid="uid://dy0v74e0rd63s" path="res://sprite/맵/놀이터/정자.png" id="16"]
 [ext_resource type="Texture2D" uid="uid://bw8jf7rytjlrp" path="res://sprite/맵/놀이터/덜촘촘한울타리.png" id="18"]
 [ext_resource type="Texture2D" uid="uid://dmjrkeqwotk48" path="res://sprite/맵/놀이터/아파트1동.png" id="19"]
 [ext_resource type="Texture2D" uid="uid://b04jlui52c1ii" path="res://sprite/맵/놀이터/아파트2동.png" id="20"]
 [ext_resource type="Texture2D" uid="uid://cnk4dyrfxk770" path="res://sprite/맵/놀이터/아파트3동.png" id="21"]
-[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/놀이터바닥_모래띠제거.png" id="22"]
-[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/잔디.png" id="23"]
-[ext_resource type="Texture2D" path="res://sprite/맵/놀이터/파란시소.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://j7yrxha1hr57" path="res://sprite/맵/놀이터/놀이터바닥_모래띠제거.png" id="22"]
+[ext_resource type="Texture2D" uid="uid://ba8b0k3m3q5ob" path="res://sprite/맵/놀이터/잔디.png" id="23"]
+[ext_resource type="Texture2D" uid="uid://fs2h2p05qxmm" path="res://sprite/맵/놀이터/미끄럼틀-넓은버전.png" id="24"]
 
 [sub_resource type="RectangleShape2D" id="Shape_PavilionLeftRoof"]
-size = Vector2(390, 20)
+size = Vector2(219.25, 15)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_5h11f"]
+size = Vector2(17, 297)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bx8n8"]
+size = Vector2(264.16287, 22.149841)
 
 [sub_resource type="RectangleShape2D" id="Shape_PavilionRightRoof"]
-size = Vector2(390, 20)
+size = Vector2(315, 20)
 
 [sub_resource type="RectangleShape2D" id="Shape_CloudMidLeft"]
 size = Vector2(260, 20)
@@ -60,26 +65,26 @@ z_index = -10
 color = Color(0.63, 0.81, 0.95, 1)
 polygon = PackedVector2Array(-2200, -900, 2200, -900, 2200, 285, -2200, 285)
 
-[node name="GroundImage" type="Sprite2D" parent="DecoSky"]
+[node name="GroundImage" type="Sprite2D" parent="DecoSky" unique_id=1221009524]
 position = Vector2(0, 289.5)
 texture = ExtResource("22")
 
-[node name="GrassTile0" type="Sprite2D" parent="DecoSky"]
+[node name="GrassTile0" type="Sprite2D" parent="DecoSky" unique_id=1761776377]
 position = Vector2(-917.28, 307.36)
 scale = Vector2(0.48, 0.48)
 texture = ExtResource("23")
 
-[node name="GrassTile1" type="Sprite2D" parent="DecoSky"]
+[node name="GrassTile1" type="Sprite2D" parent="DecoSky" unique_id=1192718578]
 position = Vector2(-305.76, 307.36)
 scale = Vector2(0.48, 0.48)
 texture = ExtResource("23")
 
-[node name="GrassTile2" type="Sprite2D" parent="DecoSky"]
+[node name="GrassTile2" type="Sprite2D" parent="DecoSky" unique_id=2020575819]
 position = Vector2(305.76, 307.36)
 scale = Vector2(0.48, 0.48)
 texture = ExtResource("23")
 
-[node name="GrassTile3" type="Sprite2D" parent="DecoSky"]
+[node name="GrassTile3" type="Sprite2D" parent="DecoSky" unique_id=727456776]
 position = Vector2(917.28, 307.36)
 scale = Vector2(0.48, 0.48)
 texture = ExtResource("23")
@@ -371,31 +376,55 @@ region_rect = Rect2(554, 54, 1061, 588)
 z_index = -1
 
 [node name="Visual" type="Sprite2D" parent="PavilionLeft" unique_id=2013345039]
-position = Vector2(-510, 92.85)
-scale = Vector2(0.332415, 0.332415)
-texture = ExtResource("16")
+position = Vector2(-680.9601, 99.41)
+scale = Vector2(0.412301, 0.412301)
+texture = ExtResource("24")
 region_enabled = true
-region_rect = Rect2(15, 17, 1224, 1126)
+region_rect = Rect2(119, 94, 1292, 890)
 
 [node name="PavilionRight" type="Node2D" parent="." unique_id=315693333]
 z_index = -1
 
 [node name="Visual" type="Sprite2D" parent="PavilionRight" unique_id=692736542]
-position = Vector2(510, 92.85)
-scale = Vector2(0.332415, 0.332415)
-texture = ExtResource("16")
+position = Vector2(457.96, 99.41)
+scale = Vector2(0.412301, 0.412301)
+texture = ExtResource("24")
+flip_h = true
 region_enabled = true
-region_rect = Rect2(15, 17, 1224, 1126)
+region_rect = Rect2(119, 94, 1292, 890)
 
 [node name="PavilionLeftRoof" type="StaticBody2D" parent="." unique_id=371639188]
-position = Vector2(-510, -72)
+position = Vector2(-560, -72)
 
 [node name="Collision" type="CollisionShape2D" parent="PavilionLeftRoof" unique_id=238990522]
+position = Vector2(-222.25, -3)
 shape = SubResource("Shape_PavilionLeftRoof")
 one_way_collision = true
 
+[node name="PavilionLeftBar" type="StaticBody2D" parent="." unique_id=490487383]
+position = Vector2(-784.625, 136)
+
+[node name="Collision" type="CollisionShape2D" parent="PavilionLeftBar" unique_id=1490487384]
+shape = SubResource("Shape_PavilionLeftRoof")
+one_way_collision = true
+
+[node name="PavilionLeftPosts" type="StaticBody2D" parent="." unique_id=1337816332]
+position = Vector2(-782.25, -75)
+
+[node name="PostLeft" type="CollisionShape2D" parent="PavilionLeftPosts" unique_id=1337816333]
+position = Vector2(-119.75, 205)
+shape = SubResource("RectangleShape2D_5h11f")
+
+[node name="PavilionLeftSlide" type="StaticBody2D" parent="." unique_id=782958340]
+position = Vector2(-559, 202)
+
+[node name="Collision" type="CollisionShape2D" parent="PavilionLeftSlide" unique_id=782958341]
+position = Vector2(0.64764404, -3.1474304)
+rotation = 0.598648
+shape = SubResource("RectangleShape2D_bx8n8")
+
 [node name="PavilionRightRoof" type="StaticBody2D" parent="." unique_id=187124670]
-position = Vector2(510, -72)
+position = Vector2(560, -72)
 
 [node name="Collision" type="CollisionShape2D" parent="PavilionRightRoof" unique_id=992650429]
 shape = SubResource("Shape_PavilionRightRoof")
@@ -431,7 +460,6 @@ texture = ExtResource("13")
 region_enabled = true
 region_rect = Rect2(99, 53, 1978, 622)
 
-
 [node name="CloudTop" type="StaticBody2D" parent="." unique_id=1818773493]
 position = Vector2(22, -388)
 
@@ -463,17 +491,10 @@ region_enabled = true
 region_rect = Rect2(163, 150, 1257, 746)
 
 [node name="SpringRideLeft" parent="." unique_id=955710136 instance=ExtResource("4")]
-position = Vector2(-680, 0)
+position = Vector2(-770, 0)
 
 [node name="SpringRideRight" parent="." unique_id=579336509 instance=ExtResource("4")]
 position = Vector2(680, 0)
-
-[node name="Sprite" parent="SpringRideRight/Visual" index="0"]
-position = Vector2(-28.29, -81.16)
-scale = Vector2(0.078261, 0.078261)
-texture = ExtResource("7")
-region_rect = Rect2(173, 17, 1142, 1056)
-
 
 [node name="Ground" type="StaticBody2D" parent="." unique_id=324550587]
 position = Vector2(0, 300)

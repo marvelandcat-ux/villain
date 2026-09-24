@@ -4,6 +4,8 @@ extends Area2D
 ## 어린이용 스프링 시소를 **트램폴린**처럼 쓰는 기믹.
 ## 좌석에 닿는 순간 위로 튕겨 올라간다 — 점프 버튼과 무관하게 착지 자체가 반동이 된다.
 ## 세게 떨어질수록 더 높이 튕기고(bounce_restitution), 그냥 걸어 올라와도 최소 bounce_velocity만큼은 튕긴다.
+## (2026-09-21) 튕겨 올라가는 동안(꼭대기까지)은 촉법소년 자전거처럼 잔상이 남는다 (`Fighter.start_air_trail`).
+## 가장 약하게 튕겨도 일반 점프(약 100px)의 두 배가 넘게 뜨므로 튕길 때마다 남긴다
 ##
 ## 판정 위치가 좌석 바로 위(y 176~216)라 좌석에 올라선 캐릭터만 걸리고,
 ## 좌석 밑(지면 y 220~280)으로 지나가는 캐릭터는 반응하지 않는다.
@@ -48,7 +50,10 @@ func _physics_process(_delta: float) -> void:
 		standing[fighter] = true
 		if fighter.is_on_floor():
 			var fall: float = _prev_fall.get(fighter, 0.0)
-			fighter.velocity.y = -clampf(maxf(bounce_velocity, fall * bounce_restitution), 0.0, max_bounce_velocity)
+			var launch: float = clampf(maxf(bounce_velocity, fall * bounce_restitution), 0.0, max_bounce_velocity)
+			fighter.velocity.y = -launch
+			# 꼭대기에 닿을 때까지(올라가는 속도 / 중력 = 걸리는 시간) 잔상을 남긴다
+			fighter.start_air_trail(launch / maxf(Fighter.gravity, 1.0))
 			_bounced = true
 		# 튕긴 직후에는 velocity.y가 음수라 0으로 기록되고, 다음 착지까지 다시 쌓인다
 		_prev_fall[fighter] = maxf(fighter.velocity.y, 0.0)

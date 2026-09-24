@@ -1,7 +1,7 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://ui/RoomSettings.gd" id="1"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/배경프로토.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://sprite/대전모드/트레이닝룸.png" id="2_bg"]
 [ext_resource type="Shader" path="res://ui/cutin/blur.gdshader" id="3_blur"]
 [ext_resource type="FontFile" path="res://fonts/Jua-Regular.ttf" id="4_font"]
 
@@ -21,8 +21,48 @@ corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
+bg_color = Color(0.2, 0.17, 0.28, 0.86)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.42, 0.36, 0.56, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit"]
+bg_color = Color(0.13, 0.11, 0.19, 0.84)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.42, 0.36, 0.56, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 4.0
+content_margin_right = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit_focus"]
+bg_color = Color(0.13, 0.11, 0.19, 0.7)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.7, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 4.0
+content_margin_right = 4.0
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset"]
-bg_color = Color(0.18, 0.15, 0.26, 0.9)
+bg_color = Color(0.18, 0.15, 0.26, 0.86)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -34,7 +74,7 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset_hover"]
-bg_color = Color(0.34, 0.31, 0.44, 0.95)
+bg_color = Color(0.34, 0.31, 0.44, 0.55)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -87,74 +127,34 @@ layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-color = Color(0.04, 0.03, 0.07, 0.62)
+color = Color(0.04, 0.03, 0.07, 0.85)
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 0
-offset_top = 32.0
+offset_top = 10.0
 offset_right = 1280.0
-offset_bottom = 108.0
+offset_bottom = 58.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
-theme_override_constants/outline_size = 8
+theme_override_constants/outline_size = 7
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 58
+theme_override_font_sizes/font_size = 40
 text = "방 설정"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Subtitle" type="Label" parent="."]
+[node name="PresetA" type="Button" parent="."]
 layout_mode = 0
-offset_top = 104.0
-offset_right = 1280.0
-offset_bottom = 138.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.78, 0.72, 0.88, 1)
+offset_left = 110.0
+offset_top = 66.0
+offset_right = 450.0
+offset_bottom = 118.0
+theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 22
-text = "로컬 대전 - 둘이서 같은 키보드로"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PresetLabel" type="Label" parent="."]
-layout_mode = 0
-offset_left = 320.0
-offset_top = 156.0
-offset_right = 960.0
-offset_bottom = 182.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.7, 0.64, 0.8, 1)
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
-text = "빠른 설정"
-horizontal_alignment = 1
-
-[node name="PresetQuick" type="Button" parent="."]
-layout_mode = 0
-offset_left = 320.0
-offset_top = 186.0
-offset_right = 520.0
-offset_bottom = 236.0
-theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_preset")
-theme_override_styles/hover = SubResource("StyleBoxFlat_preset_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_hover")
-theme_override_styles/focus = SubResource("StyleBoxFlat_preset_hover")
-text = "빠른 대전"
-
-[node name="PresetStandard" type="Button" parent="."]
-layout_mode = 0
-offset_left = 540.0
-offset_top = 186.0
-offset_right = 740.0
-offset_bottom = 236.0
-theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_preset")
 theme_override_styles/hover = SubResource("StyleBoxFlat_preset_hover")
@@ -162,15 +162,17 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_hover")
 theme_override_styles/focus = SubResource("StyleBoxFlat_preset_hover")
 text = "표준"
 
-[node name="PresetLong" type="Button" parent="."]
+[node name="PresetB" type="Button" parent="."]
 layout_mode = 0
-offset_left = 760.0
-offset_top = 186.0
-offset_right = 960.0
-offset_bottom = 236.0
+offset_left = 470.0
+offset_top = 66.0
+offset_right = 810.0
+offset_bottom = 118.0
 theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 22
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_preset")
 theme_override_styles/hover = SubResource("StyleBoxFlat_preset_hover")
@@ -178,166 +180,347 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_hover")
 theme_override_styles/focus = SubResource("StyleBoxFlat_preset_hover")
 text = "장기전"
 
-[node name="RoundsCard" type="Panel" parent="."]
+[node name="PresetMore" type="Button" parent="."]
 layout_mode = 0
-offset_left = 190.0
-offset_top = 256.0
-offset_right = 610.0
-offset_bottom = 484.0
+offset_left = 830.0
+offset_top = 66.0
+offset_right = 1170.0
+offset_bottom = 118.0
+theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_hover")
+theme_override_styles/focus = SubResource("StyleBoxFlat_preset_hover")
+text = "프리셋"
+
+[node name="Card" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 110.0
+offset_top = 130.0
+offset_right = 1170.0
+offset_bottom = 504.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="CardTitle" type="Label" parent="RoundsCard"]
-layout_mode = 0
-offset_top = 18.0
-offset_right = 420.0
-offset_bottom = 54.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.85, 0.8, 0.95, 1)
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 26
-text = "선취 라운드"
-horizontal_alignment = 1
-
-[node name="Prev" type="Button" parent="RoundsCard"]
+[node name="RoundRow" type="Panel" parent="Card"]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 82.0
-offset_right = 84.0
-offset_bottom = 152.0
-flat = true
-theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
-theme_override_font_sizes/font_size = 34
-text = "◀"
+offset_top = 20.0
+offset_right = 520.0
+offset_bottom = 118.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
-[node name="Value" type="Label" parent="RoundsCard"]
+[node name="Label" type="Label" parent="Card/RoundRow"]
 layout_mode = 0
-offset_left = 84.0
-offset_top = 62.0
-offset_right = 336.0
-offset_bottom = 172.0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 98.0
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 74
-text = "2"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+text = "라운드"
 vertical_alignment = 1
 
-[node name="Next" type="Button" parent="RoundsCard"]
+[node name="Prev" type="Button" parent="Card/RoundRow"]
 layout_mode = 0
-offset_left = 336.0
-offset_top = 82.0
-offset_right = 400.0
-offset_bottom = 152.0
+offset_left = 344.0
+offset_right = 380.0
+offset_bottom = 98.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
-theme_override_font_sizes/font_size = 34
-text = "▶"
-
-[node name="Hint" type="Label" parent="RoundsCard"]
-layout_mode = 0
-offset_top = 176.0
-offset_right = 420.0
-offset_bottom = 212.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.68, 0.62, 0.78, 1)
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
-text = "먼저 2판 이기면 승리 (1~40)"
-horizontal_alignment = 1
-
-[node name="TimeCard" type="Panel" parent="."]
-layout_mode = 0
-offset_left = 670.0
-offset_top = 256.0
-offset_right = 1090.0
-offset_bottom = 484.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
-
-[node name="CardTitle" type="Label" parent="TimeCard"]
-layout_mode = 0
-offset_top = 18.0
-offset_right = 420.0
-offset_bottom = 54.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.85, 0.8, 0.95, 1)
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 26
-text = "라운드 시간"
-horizontal_alignment = 1
-
-[node name="Prev" type="Button" parent="TimeCard"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 82.0
-offset_right = 84.0
-offset_bottom = 152.0
-flat = true
-theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
-theme_override_font_sizes/font_size = 34
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
 text = "◀"
 
-[node name="Value" type="Label" parent="TimeCard"]
+[node name="Value" type="LineEdit" parent="Card/RoundRow"]
 layout_mode = 0
-offset_left = 84.0
-offset_top = 62.0
-offset_right = 336.0
-offset_bottom = 172.0
+offset_left = 380.0
+offset_top = 22.0
+offset_right = 448.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_lineedit")
+theme_override_styles/focus = SubResource("StyleBoxFlat_lineedit_focus")
+text = "2"
+alignment = 1
+max_length = 3
+select_all_on_focus = true
+
+[node name="Next" type="Button" parent="Card/RoundRow"]
+layout_mode = 0
+offset_left = 448.0
+offset_right = 484.0
+offset_bottom = 98.0
+flat = true
+theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "▶"
+
+[node name="TimeRow" type="Panel" parent="Card"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 138.0
+offset_right = 520.0
+offset_bottom = 236.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Label" type="Label" parent="Card/TimeRow"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+text = "제한시간"
+vertical_alignment = 1
+
+[node name="Prev" type="Button" parent="Card/TimeRow"]
+layout_mode = 0
+offset_left = 344.0
+offset_right = 380.0
+offset_bottom = 98.0
+flat = true
+theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "◀"
+
+[node name="Value" type="Label" parent="Card/TimeRow"]
+layout_mode = 0
+offset_left = 380.0
+offset_right = 448.0
+offset_bottom = 98.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 60
+theme_override_font_sizes/font_size = 20
 text = "무제한"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Next" type="Button" parent="TimeCard"]
+[node name="Next" type="Button" parent="Card/TimeRow"]
 layout_mode = 0
-offset_left = 336.0
-offset_top = 82.0
-offset_right = 400.0
-offset_bottom = 152.0
+offset_left = 448.0
+offset_right = 484.0
+offset_bottom = 98.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
-theme_override_font_sizes/font_size = 34
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
 text = "▶"
 
-[node name="Hint" type="Label" parent="TimeCard"]
+[node name="CooldownRow" type="Panel" parent="Card"]
 layout_mode = 0
-offset_top = 176.0
-offset_right = 420.0
-offset_bottom = 212.0
+offset_left = 20.0
+offset_top = 256.0
+offset_right = 520.0
+offset_bottom = 354.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Label" type="Label" parent="Card/CooldownRow"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 98.0
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.68, 0.62, 0.78, 1)
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
-text = "시간이 다 되면 체력이 많은 쪽이 승리"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+text = "쿨타임"
+vertical_alignment = 1
+
+[node name="Prev" type="Button" parent="Card/CooldownRow"]
+layout_mode = 0
+offset_left = 344.0
+offset_right = 380.0
+offset_bottom = 98.0
+flat = true
+theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "◀"
+
+[node name="Value" type="LineEdit" parent="Card/CooldownRow"]
+layout_mode = 0
+offset_left = 380.0
+offset_top = 22.0
+offset_right = 448.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_lineedit")
+theme_override_styles/focus = SubResource("StyleBoxFlat_lineedit_focus")
+text = "100%"
+alignment = 1
+max_length = 4
+select_all_on_focus = true
+
+[node name="Next" type="Button" parent="Card/CooldownRow"]
+layout_mode = 0
+offset_left = 448.0
+offset_right = 484.0
+offset_bottom = 98.0
+flat = true
+theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "▶"
+
+[node name="ClashRow" type="Panel" parent="Card"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 20.0
+offset_right = 1040.0
+offset_bottom = 118.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Label" type="Label" parent="Card/ClashRow"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+text = "연타 미니게임"
+vertical_alignment = 1
+
+[node name="Toggle" type="Button" parent="Card/ClashRow"]
+layout_mode = 0
+offset_left = 374.0
+offset_top = 22.0
+offset_right = 484.0
+offset_bottom = 76.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+text = "ON"
+
+[node name="GuardRow" type="Panel" parent="Card"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 138.0
+offset_right = 1040.0
+offset_bottom = 236.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Label" type="Label" parent="Card/GuardRow"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+text = "가드"
+vertical_alignment = 1
+
+[node name="Toggle" type="Button" parent="Card/GuardRow"]
+layout_mode = 0
+offset_left = 374.0
+offset_top = 22.0
+offset_right = 484.0
+offset_bottom = 76.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+text = "ON"
+
+[node name="DashRow" type="Panel" parent="Card"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 256.0
+offset_right = 1040.0
+offset_bottom = 354.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Label" type="Label" parent="Card/DashRow"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+text = "대시"
+vertical_alignment = 1
+
+[node name="Toggle" type="Button" parent="Card/DashRow"]
+layout_mode = 0
+offset_left = 374.0
+offset_top = 22.0
+offset_right = 484.0
+offset_bottom = 76.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+text = "ON"
 
 [node name="Summary" type="Label" parent="."]
 layout_mode = 0
-offset_top = 500.0
+offset_top = 520.0
 offset_right = 1280.0
-offset_bottom = 540.0
+offset_bottom = 552.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.95, 0.9, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
-theme_override_constants/outline_size = 6
+theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 26
-text = "2선승 / 시간 무제한"
+theme_override_font_sizes/font_size = 18
+text = "2선승 / 시간 무제한 / 쿨타임 100% / 연타 켬 / 가드 켬 / 대시 켬"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="NextButton" type="Button" parent="."]
 layout_mode = 0
 offset_left = 450.0
-offset_top = 554.0
+offset_top = 568.0
 offset_right = 830.0
-offset_bottom = 614.0
+offset_bottom = 620.0
 theme_override_colors/font_color = Color(1, 0.97, 0.98, 1)
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 28
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_next")
 theme_override_styles/hover = SubResource("StyleBoxFlat_next_hover")
@@ -347,13 +530,17 @@ text = "캐릭터 선택으로"
 
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 490.0
-offset_top = 624.0
-offset_right = 790.0
-offset_bottom = 666.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -64.0
+offset_right = 220.0
+offset_bottom = -20.0
 flat = true
 theme_override_colors/font_color = Color(0.78, 0.72, 0.88, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 20
-text = "메인 메뉴로 (ESC)"
+text = "뒤로가기 (ESC)"
