@@ -51,7 +51,7 @@ size = Vector2(1920, 40)
 size = Vector2(220, 40)
 
 [sub_resource type="RectangleShape2D" id="Shape_wall"]
-size = Vector2(40, 400)
+size = Vector2(40, 1600)
 
 [node name="Playground" type="Node2D" unique_id=287704265]
 texture_filter = 4
@@ -534,13 +534,13 @@ shape = SubResource("Shape_sand")
 position = Vector2(0, 280)
 
 [node name="LeftWall" type="StaticBody2D" parent="." unique_id=1063268291]
-position = Vector2(-960, 100)
+position = Vector2(-960, -500)
 
 [node name="Collision" type="CollisionShape2D" parent="LeftWall" unique_id=9561701]
 shape = SubResource("Shape_wall")
 
 [node name="RightWall" type="StaticBody2D" parent="." unique_id=1673166853]
-position = Vector2(960, 100)
+position = Vector2(960, -500)
 
 [node name="Collision" type="CollisionShape2D" parent="RightWall" unique_id=564250375]
 shape = SubResource("Shape_wall")

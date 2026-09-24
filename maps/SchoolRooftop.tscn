@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -6,6 +6,9 @@
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(700, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_edge_wall"]
+size = Vector2(40, 1600)
 
 [node name="SchoolRooftop" type="Node2D"]
 script = ExtResource("1")
@@ -32,3 +35,15 @@ position = Vector2(0, 150)
 script = ExtResource("3")
 
 [node name="CombatHUD" parent="." instance=ExtResource("2")]
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(-350, -500)
+
+[node name="Collision" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("Shape_edge_wall")
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(350, -500)
+
+[node name="Collision" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("Shape_edge_wall")

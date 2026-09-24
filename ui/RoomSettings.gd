@@ -45,7 +45,8 @@ const SAVED_PRESET_ID_BASE := 1
 @onready var _summary: Label = $Summary
 
 var _rounds: int = 2
-var _time_index: int = 0
+## TIME_OPTIONS 중 처음에 선택돼 있는 칸. 2 = "2분"(기본값). 저장된 설정이 있으면 그걸로 덮어쓴다
+var _time_index: int = 2
 var _cooldown_percent: int = 100
 var _clash_enabled: bool = true
 var _guard_enabled: bool = true

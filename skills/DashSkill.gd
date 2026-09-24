@@ -160,6 +160,17 @@ func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
 	# 반대 방향으로 튕겨나가며 자기도 피해 (브레이크 없는 픽시)
 	fighter.take_damage(enemy_hit_self_damage, Vector2(-kb.x * _direction, kb.y))
 
+## 밖에서 돌진을 강제로 끊는다 — 주인공이 던진 돌(ThrownStone)에 맞으면 여기로 들어온다.
+## 남은 돌진 시간·관성을 버리고 즉시 자전거에서 내린다 (급정거).
+## ThrownStone은 `movement_override`에 이 함수가 있는지만 보고 부르므로,
+## 다른 이동 가로채기 스킬은 이 함수가 없어서 돌을 맞아도 안 끊긴다
+func interrupt(fighter: Fighter) -> void:
+	if fighter == null or fighter.movement_override != self:
+		return
+	_time_left = 0.0
+	fighter.velocity.x = 0.0
+	_end_dash(fighter)
+
 func _end_dash(fighter: Fighter) -> void:
 	fighter.movement_override = null
 	# 벽·적에 부딪혀 일찍 끝났을 수도 있다 — 남은 바람 줄은 흩어질 때까지 그리고 스스로 사라진다

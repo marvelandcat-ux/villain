@@ -42,7 +42,7 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 @export_file("*.tscn") var battle_p2: String = ""
 ## 대전 규칙 — 먼저 몇 라운드를 따면 이기는지, 라운드 제한시간(초, 0이면 무제한)
 @export var battle_rounds: int = 2
-@export var battle_time_limit: int = 0
+@export var battle_time_limit: int = 120
 ## **그 대전에서 이겼을 때 이어서 갈 장면**(2026-09-13). Stage가 최종 승리 판정에서 여기로 넘어간다.
 ## 비워두면 예전처럼 결과창(재시도/메뉴)에서 멈춘다
 @export_file("*.tscn") var battle_win_scene: String = ""
@@ -72,7 +72,7 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 ## **`dialogue`를 지정한 장면에서만 뜬다** — 대사 없이 지나가는 연출 장면엔 나올 일이 없다
 @export var show_continue_indicator: bool = true
 ## (임시) 테스트용 — **S 키를 누르면 다음 장면으로 바로 건너뛴다.** 스토리를 다 만들면 이 기능을 지울 것
-@export var debug_skip_key: bool = true
+@export var debug_skip_key: bool = false
 ## 에디터에선 보이게 두고(배치 조정용) **게임이 시작될 때 숨길** 노드들 — 대화창 명령(@show, @stamp)으로 나중에 나타난다.
 ## 에디터 눈 아이콘으로 켜고 끈 채 저장해도 게임에선 항상 숨긴 채 시작한다
 @export var hide_on_start: Array[NodePath] = []

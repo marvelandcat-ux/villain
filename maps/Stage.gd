@@ -7,8 +7,9 @@ extends Node2D
 
 ## 스테이지 좌우 폭 (플레이어 이동 가능 범위)
 @export var stage_width: float = 960.0
-## 이 값보다 아래로 떨어지면 링아웃으로 즉시 패배 처리 (벽이 없는 링아웃형 맵에서만 의미 있음)
-@export var ring_out_y: float = 900.0
+## 이 높이보다 아래로 떨어지면 "맵 밖"으로 보고 처음 자리로 되돌린다(예전 링아웃 판정선).
+## 죽이는 게 아니라 구해주는 선이다
+@export var fall_rescue_y: float = 900.0
 ## 이 맵에서만 쓸 수 있는 전용 스킬(예: 아파트 내리찍기). 지정하면 스폰되는 두 캐릭터 모두에게
 ## 자동으로 붙는다(Fighter.map_skill) — 캐릭터 씬 쪽은 전혀 안 건드려도 된다. Skill을 상속한
 ## 스크립트가 루트인 씬이어야 하고, 비워두면 그냥 일반 맵(맵 전용 스킬 없음)
@@ -22,7 +23,7 @@ extends Node2D
 ## 한 번 겪고 Shift+S로 바꿨다가, **테스트가 번거로워서 사용자가 다시 그냥 `S`로 돌려 달라고 했다**(2026-09-14).
 ## 스토리 전투에서 방어를 테스트해야 할 땐 맵 루트의 `debug_story_skip_key`를 잠깐 끄면 된다.
 ## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
-@export var debug_story_skip_key: bool = true
+@export var debug_story_skip_key: bool = false
 
 ## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
 const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
@@ -99,15 +100,27 @@ func _ready() -> void:
 	_countdown_active = false
 	_unfreeze_controllers()
 
+## 맵 밖으로 떨어진 캐릭터를 처음 자리(PlayerSpawn 마커)로 되돌린다.
+## **링아웃을 없애면서 생긴 안전장치다** — 죽이지도, 점수를 주지도 않고 그냥 제자리에 놓는다.
+## 마커를 못 찾으면 맵 한가운데 위쪽에 놓는다
+func _rescue_fallen(fighter: Fighter) -> void:
+	var marker_name: String = "PlayerSpawn1" if fighter == _p1 else "PlayerSpawn2"
+	var marker: Node2D = get_node_or_null(marker_name)
+	fighter.global_position = marker.global_position if marker else Vector2(0.0, 0.0)
+	fighter.velocity = Vector2.ZERO
+
 ## died 시그널에 즉시 반응하지 않고 매 프레임 HP를 직접 확인한다.
 ## 신호에 반응하면 같은 프레임에 양쪽이 동시에 쓰러져도 먼저 처리된 시그널 순서에 따라
 ## 이미 죽은 쪽이 승자로 판정되는 문제가 있어서, 그 프레임의 데미지가 전부 반영된 뒤 한 번에 판정한다
 func _process(delta: float) -> void:
 	if _round_over or _countdown_active or _knockout_playing:
 		return
+	# **링아웃(낙사)은 없다**(2026-09-25 사용자 결정) — 맵 밖으로 떨어져도 지지 않는다.
+	# 좌우 벽을 바닥까지 높게 세워서 애초에 나갈 수 없지만, 혹시 어떤 기믹이 몸을 맵 밖으로
+	# 보내버렸을 때 영원히 떨어지지 않도록 처음 자리로 되돌려 놓기만 한다 (체력은 그대로)
 	for f in [_p1, _p2]:
-		if f and is_instance_valid(f) and f.global_position.y > ring_out_y:
-			f.ring_out()
+		if f and is_instance_valid(f) and f.global_position.y > fall_rescue_y:
+			_rescue_fallen(f)
 	if _p1.current_hp <= 0 or _p2.current_hp <= 0:
 		var p1_dead: bool = _p1.current_hp <= 0
 		var p2_dead: bool = _p2.current_hp <= 0

@@ -116,8 +116,9 @@ var current_story_id: String = ""
 var story_cleared: PackedStringArray = PackedStringArray()
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
-## 0이면 시간 제한 없음
-var time_limit_seconds: int = 0
+## 한 라운드 제한 시간(초). 0이면 시간 제한 없음.
+## 기본 2분 — 방 설정에서 고르면 그 값으로 덮어쓴다
+var time_limit_seconds: int = 120
 var p1_round_wins: int = 0
 var p2_round_wins: int = 0
 
