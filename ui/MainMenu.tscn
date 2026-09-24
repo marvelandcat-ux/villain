@@ -15,6 +15,9 @@
 [ext_resource type="Texture2D" uid="uid://eqbyc2uejeay" path="res://sprite/메인메뉴/일러스트/지하철아저씨/지하철아저씨일러스트배경.png" id="13_subbg"]
 [ext_resource type="PackedScene" path="res://ui/AkpeulleoIllust.tscn" id="14_akp"]
 [ext_resource type="Texture2D" uid="uid://7ux3ssorxah5" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러배경.png" id="15_akpbg"]
+[ext_resource type="FontFile" uid="uid://cce364c5ix826" path="res://fonts/SBAggro-Bold.ttf" id="16_font_bold"]
+[ext_resource type="FontFile" uid="uid://breq04o6pypsd" path="res://fonts/SBAggro-Medium.ttf" id="17_font_medium"]
+[ext_resource type="FontFile" uid="uid://dogj5kwjn3mpk" path="res://fonts/SBAggro-Light.ttf" id="18_font_light"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("7_blur")
@@ -22,7 +25,7 @@ shader_parameter/blur_amount = 6.0
 
 [sub_resource type="Gradient" id="Gradient_left"]
 offsets = PackedFloat32Array(0, 0.5, 1)
-colors = PackedColorArray(0.03, 0.02, 0.06, 0.94, 0.03, 0.02, 0.06, 0.82, 0.03, 0.02, 0.06, 0)
+colors = PackedColorArray(0.14509805, 0.16470589, 0.20392157, 0.94, 0.14509805, 0.16470589, 0.20392157, 0.82, 0.14509805, 0.16470589, 0.20392157, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_left"]
 gradient = SubResource("Gradient_left")
@@ -33,7 +36,7 @@ height = 1
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("9_outline")
-shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_color = Color(0.03137255, 0.8509804, 0.8392157, 1)
 shader_parameter/line_width = 2.0
 shader_parameter/line_alpha = 0.0
 
@@ -86,7 +89,7 @@ layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-color = Color(0.04, 0.03, 0.07, 0.45)
+color = Color(0.14509805, 0.16470589, 0.20392157, 0.45)
 
 [node name="LeftFade" type="TextureRect" parent="." unique_id=1820606133]
 layout_mode = 0
@@ -126,7 +129,8 @@ offset_left = 96.0
 offset_top = 40.0
 offset_right = 760.0
 offset_bottom = 106.0
-theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
+theme_override_colors/font_color = Color(1, 0.18039216, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("16_font_bold")
 theme_override_font_sizes/font_size = 46
 text = "트러블 메이커"
 
@@ -154,7 +158,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/StoryItem/Slide" unique_id=1538559751]
-modulate = Color(0.09, 0.07, 0.13, 0.82)
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
 offset_right = 540.0
@@ -167,7 +171,8 @@ layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
 offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
 theme_override_font_sizes/font_size = 30
 text = "스토리 모드"
 vertical_alignment = 1
@@ -188,7 +193,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/VersusItem/Slide" unique_id=1663399616]
-modulate = Color(0.09, 0.07, 0.13, 0.82)
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
 offset_right = 540.0
@@ -201,7 +206,8 @@ layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
 offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
 theme_override_font_sizes/font_size = 30
 text = "대전 모드"
 vertical_alignment = 1
@@ -222,7 +228,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/TrainingItem/Slide" unique_id=523956260]
-modulate = Color(0.09, 0.07, 0.13, 0.82)
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
 offset_right = 540.0
@@ -235,7 +241,8 @@ layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
 offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
 theme_override_font_sizes/font_size = 30
 text = "훈련장"
 vertical_alignment = 1
@@ -256,7 +263,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/DexItem/Slide" unique_id=1811621410]
-modulate = Color(0.09, 0.07, 0.13, 0.82)
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
 offset_right = 540.0
@@ -269,7 +276,8 @@ layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
 offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
 theme_override_font_sizes/font_size = 30
 text = "도감"
 vertical_alignment = 1
@@ -290,7 +298,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/HowToItem/Slide" unique_id=1505815246]
-modulate = Color(0.09, 0.07, 0.13, 0.82)
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
 offset_right = 540.0
@@ -303,7 +311,8 @@ layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
 offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
 theme_override_font_sizes/font_size = 30
 text = "조작 방법"
 vertical_alignment = 1
@@ -324,7 +333,7 @@ offset_bottom = 84.0
 mouse_filter = 2
 
 [node name="Shape" type="TextureRect" parent="Menu/SettingsItem/Slide" unique_id=324492272]
-modulate = Color(0.09, 0.07, 0.13, 0.82)
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
 material = SubResource("ShaderMaterial_outline")
 layout_mode = 0
 offset_right = 540.0
@@ -337,7 +346,8 @@ layout_mode = 0
 offset_left = 176.0
 offset_right = 510.0
 offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
 theme_override_font_sizes/font_size = 30
 text = "설정"
 vertical_alignment = 1
@@ -352,9 +362,10 @@ offset_left = -524.0
 offset_top = -56.0
 offset_right = -24.0
 offset_bottom = -24.0
-theme_override_colors/font_color = Color(0.86, 0.83, 0.9, 1)
-theme_override_colors/font_outline_color = Color(0.03, 0.02, 0.05, 0.85)
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_colors/font_outline_color = Color(0.14509805, 0.16470589, 0.20392157, 0.85)
 theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("18_font_light")
 theme_override_font_sizes/font_size = 18
 text = "방향키/마우스로 선택 · ESC로 타이틀로"
 horizontal_alignment = 2

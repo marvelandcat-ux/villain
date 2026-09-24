@@ -30,16 +30,23 @@ extends Control
 @export var menu_slide: float = 30.0
 ## 나오고 들어가는 빠르기. 클수록 빠릿하다
 @export var menu_slide_speed: float = 12.0
-## 평소 도형 색
-@export var menu_color: Color = Color(0.09, 0.07, 0.13, 0.82)
-## 골라져 있을 때 도형 색
-@export var menu_color_focus: Color = Color(0.72, 0.18, 0.28, 0.95)
-## 평소 / 골라져 있을 때 글자 색
-@export var menu_text_color: Color = Color(0.86, 0.82, 0.92, 1.0)
+## 평소 도형 색 — 다크 네이비(#252A34)
+@export var menu_color: Color = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
+## 골라져 있을 때 도형 색의 기본값(아래 menu_accent_colors가 비었을 때만 쓰는 예비값)
+@export var menu_color_focus: Color = Color(1.0, 0.18039216, 0.38823530, 0.95)
+## 평소 / 골라져 있을 때 글자 색 — 라이트 그레이(#EAEAEA) / 흰색
+@export var menu_text_color: Color = Color(0.91764706, 0.91764706, 0.91764706, 1.0)
 @export var menu_text_color_focus: Color = Color(1.0, 1.0, 1.0, 1.0)
-## 골라졌을 때 도형 둘레에 그려지는 선 색·두께 (ui/outline.gdshader — 사각형이 아니라 그림 모양을 따라간다)
-@export var menu_outline_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+## 골라졌을 때 도형 둘레에 그려지는 선 두께 (ui/outline.gdshader — 사각형이 아니라 그림 모양을 따라간다)
 @export var menu_outline_width: float = 2.0
+## **항목마다 돌아가며 쓰는 포인트 색 2개** — 시안(#08D9D6) / 핑크(#FF2E63)를 섞어서 배치한다.
+## i번째 항목은 이 목록의 (i % 크기)번째 색을 "골라졌을 때 도형 색"으로, 그 다음(i+1) 색을
+## "테두리 색"으로 써서 두 색이 항목마다 자리를 바꿔가며 나온다 — 메뉴 전체가 한 색으로만
+## 반짝이지 않고 시안/핑크가 번갈아 섞여 보이게 하려고 이렇게 나눴다
+@export var menu_accent_colors: Array[Color] = [
+	Color(0.03137255, 0.85098040, 0.83921570, 0.95),   # 시안 #08D9D6
+	Color(1.0, 0.18039216, 0.38823530, 0.95),           # 핑크 #FF2E63
+]
 
 @export_group("화면 전환")
 ## 타이틀에서 어두워진 채로 넘어오므로, 켜질 때 검은 판이 걷히는 시간(초).
@@ -71,6 +78,8 @@ extends Control
 @onready var _scrim: ColorRect = $Scrim
 ## 사선 메뉴 항목들 (트리 순서 = 위에서 아래 순서)
 var _menu_items: Array[Button] = []
+## 항목별로 정해진 "골라졌을 때 도형 색" — menu_accent_colors를 돌려가며 _build_menu()에서 채운다
+var _focus_colors: Dictionary = {}
 ## 지금 커서가 올라가 있는 항목 (없으면 null)
 var _hovered: Button = null
 ## 마지막으로 쓴 입력이 마우스인지. 마우스면 "커서가 올라간 것"만, 키보드면 "포커스"를 따라 튀어나온다.
@@ -121,6 +130,7 @@ func _build_menu() -> void:
 		"HowToItem": _on_how_to_pressed,
 		"SettingsItem": _on_settings_pressed,
 	}
+	var index: int = 0
 	for item_name in actions:
 		var button: Button = $Menu.get_node_or_null(item_name)
 		if button == null:
@@ -128,15 +138,26 @@ func _build_menu() -> void:
 		button.pressed.connect(actions[item_name])
 		button.mouse_entered.connect(_on_item_hovered.bind(button))
 		button.mouse_exited.connect(_on_item_unhovered.bind(button))
+		# 골라졌을 때 도형 색과 테두리 색을 서로 다른 포인트 색으로 배정한다 —
+		# 이웃한 색을 쓰므로(i번째 도형 / i+1번째 테두리) 항목마다 시안/핑크가 자리를 바꿔가며 섞인다
+		var focus_color: Color = _accent_color(index)
+		_focus_colors[button] = focus_color
 		# 항목마다 테두리를 따로 켜야 하므로 머티리얼을 복제한다 (같이 쓰면 5개가 한꺼번에 켜진다)
 		var shape: TextureRect = button.get_node_or_null("Slide/Shape")
 		if shape and shape.material:
 			shape.material = shape.material.duplicate()
-			shape.material.set_shader_parameter("line_color", menu_outline_color)
+			shape.material.set_shader_parameter("line_color", _accent_color(index + 1))
 			shape.material.set_shader_parameter("line_width", menu_outline_width)
 			shape.material.set_shader_parameter("line_alpha", 0.0)
 		_menu_items.append(button)
+		index += 1
 	_link_menu_focus()
+
+## menu_accent_colors를 순환하며 index번째 포인트 색을 돌려준다. 비어 있으면 menu_color_focus로 대신한다
+func _accent_color(index: int) -> Color:
+	if menu_accent_colors.is_empty():
+		return menu_color_focus
+	return menu_accent_colors[index % menu_accent_colors.size()]
 
 ## 위/아래 방향키가 끝에서 멈추지 않고 반대쪽으로 돌아가게 잇는다.
 ## 맨 위에서 위를 누르면 맨 아래로, 맨 아래에서 아래를 누르면 맨 위로 — 눌러둔 채로 두면 계속 돈다
@@ -191,7 +212,8 @@ func _animate_menu(delta: float) -> void:
 		slide.position.x = lerpf(slide.position.x, menu_slide if focused else 0.0, t)
 		var shape: TextureRect = slide.get_node_or_null("Shape")
 		if shape:
-			shape.modulate = shape.modulate.lerp(menu_color_focus if focused else menu_color, t)
+			var focus_color: Color = _focus_colors.get(button, menu_color_focus)
+			shape.modulate = shape.modulate.lerp(focus_color if focused else menu_color, t)
 			if shape.material:
 				# 슬라이드가 얼마나 나왔는지를 그대로 선 진하기로 쓴다 (같이 나타났다 같이 사라진다).
 				# 머티리얼에서 되읽지 않는 이유: get_shader_parameter는 값이 없으면 null을 준다

@@ -52,20 +52,20 @@ func _init() -> void:
 	print("기본 이동속도: ", naive.move_speed)
 	naive.apply_slow(0.5)  # 모래사장 둔화 (0.5배)
 	print("모래사장 밟음 -> ", naive.move_speed, " (기대: 100)")
-	naive.apply_slow(0.7)  # 도발 디버프 (0.7배) — 모래사장 효과가 곱해져야 하는데 그냥 덮어써진다
-	print("도발까지 당함 -> ", naive.move_speed, " (기대: 두 효과가 곱해진 70, 실제로는 140 -> 버그!)")
-	naive.apply_slow(0.5)  # 도발이 풀려서 모래사장 효과만 다시 걸었다고 가정하면
-	print("도발 풀림, 모래사장만 다시 -> ", naive.move_speed, " (원래 곱해져 있어야 할 다른 효과가 다 날아감)\n")
+	naive.apply_slow(0.7)  # 기타연주 둔화 (0.7배) — 모래사장 효과가 곱해져야 하는데 그냥 덮어써진다
+	print("기타연주 둔화까지 당함 -> ", naive.move_speed, " (기대: 두 효과가 곱해진 70, 실제로는 140 -> 버그!)")
+	naive.apply_slow(0.5)  # 둔화가 풀려서 모래사장 효과만 다시 걸었다고 가정하면
+	print("둔화 풀림, 모래사장만 다시 -> ", naive.move_speed, " (원래 곱해져 있어야 할 다른 효과가 다 날아감)\n")
 
 	print("=== 2. 지금 방식 (id별로 저장한 뒤 곱셈) — 서로 안 지움 ===")
 	var safe := SafeFighter.new()
 	print("기본 이동속도: ", safe.get_move_speed())
 	safe.set_modifier("move_speed_multiplier", "sand_pit", 0.5)
 	print("모래사장 밟음 -> ", safe.get_move_speed(), " (기대: 100)")
-	safe.set_modifier("move_speed_multiplier", "taunt", 0.7)
-	print("도발까지 당함 -> ", safe.get_move_speed(), " (기대: 100 * 0.7 = 70)")
-	safe.clear_modifier("move_speed_multiplier", "taunt")
-	print("도발만 풀림 -> ", safe.get_move_speed(), " (기대: 모래사장 효과 100은 그대로 남음)")
+	safe.set_modifier("move_speed_multiplier", "guitar_slow", 0.7)
+	print("기타연주 둔화까지 당함 -> ", safe.get_move_speed(), " (기대: 100 * 0.7 = 70)")
+	safe.clear_modifier("move_speed_multiplier", "guitar_slow")
+	print("둔화만 풀림 -> ", safe.get_move_speed(), " (기대: 모래사장 효과 100은 그대로 남음)")
 	safe.clear_modifier("move_speed_multiplier", "sand_pit")
 	print("모래사장에서도 나감 -> ", safe.get_move_speed(), " (기대: 원래 속도 200)\n")
 
