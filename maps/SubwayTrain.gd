@@ -37,6 +37,8 @@ extends Node2D
 @export var arrival_music: AudioStream
 
 ## --- 객실 창문 불빛 ---
+## 창문 불빛·벽에 비치는 빛기둥을 켤지 — **2026-09-26 사용자 요청("어색하다")으로 꺼 뒀다.** 켜면 아래 값대로 다시 나온다
+@export var window_lights: bool = false
 ## 창문 빛의 세기 (0이면 안 켜진다). 그림에 이미 세게 구워져 있으니 여기서 줄여 쓰면 된다
 @export var window_glow: float = 1.0
 ## 형광등이 미세하게 떨리는 폭 (0이면 일정하게 켜져 있다)
@@ -129,10 +131,12 @@ func _ready() -> void:
 	hitbox.repeat_interval = hit_interval
 	_music.stream = arrival_music
 	_set_hitbox_active(false)
-	_build_window_beams()
+	if window_lights:
+		_build_window_beams()
 	_park_body()
 	_warning_light.visible = false
 	if _window_light:
+		_window_light.visible = window_lights
 		_window_light.modulate.a = window_glow
 
 ## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
@@ -258,7 +262,7 @@ func _shape_beam(beam: Polygon2D, rect: Rect2, up: bool, length: float) -> void:
 ## 어디가 창문인지는 그림(열차창문빛.png)에 이미 구워져 있고 가산 블렌드로 얹히므로, 여기서는 세기만 조절한다.
 ## 주기가 다른 두 sin을 곱해서 규칙적인 깜빡임으로 안 보이게 한다
 func _update_window_light(delta: float) -> void:
-	if _window_light == null:
+	if _window_light == null or not window_lights:
 		return
 	_glow_phase += delta * window_flicker_speed
 	var wobble: float = sin(_glow_phase) * sin(_glow_phase * 0.37 + 1.3)

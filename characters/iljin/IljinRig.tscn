@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="8_foot"]
 [ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="9_cig"]
 [ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smokeface"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=650163351 instance=ExtResource("1_rig")]
 attack_two_handed = true
@@ -56,3 +57,8 @@ texture = ExtResource("9_cig")
 position = Vector2(-1.88, -34.05)
 scale = Vector2(0.0481, 0.0481)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(252.0, 98.0)
+script = ExtResource("99_blink")
+eye_size = Vector2(246, 200)

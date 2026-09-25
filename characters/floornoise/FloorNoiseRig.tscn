@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://b070fqpyg6rmj" path="res://sprite/층간소음/층간소음몸.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://c52uakfygx8to" path="res://sprite/층간소음/발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://2eahk8savgss" path="res://sprite/층간소음/손.png" id="5_hand"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=1130472801 instance=ExtResource("1_rig")]
 
@@ -33,3 +34,8 @@ texture = ExtResource("5_hand")
 position = Vector2(-3.14, -32)
 scale = Vector2(0.044, 0.044)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(286.5, -7.0)
+script = ExtResource("99_blink")
+eye_size = Vector2(236, 272)

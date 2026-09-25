@@ -83,6 +83,8 @@ static var landing_lag_height: float = DEFAULT_LANDING_LAG_HEIGHT
 static var landing_lag_time: float = 0.3
 ## 착지 먼지 이펙트 (그림 없이 _draw()로 그린다)
 const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
+## 점프할 때 발밑에 남는 바람 줄기 (그림 없이 _draw()로 그린다)
+const JUMP_WIND_SCRIPT := preload("res://combat/JumpWind.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
@@ -503,6 +505,17 @@ func _spawn_land_dust(power: float) -> void:
 	dust.global_position = global_position + Vector2(0.0, 30.0)
 	dust.setup(power)
 
+## 점프하는 순간 발밑에 바람 줄기를 남긴다 — 방향은 지금 속도(가로 이동 + 방금 넣은 점프 속도)라 대각선으로 뛰면 비스듬하다.
+## 착지 먼지와 같은 이유로 **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 뒤집히고 따라 움직인다 — 이건 뛴 자리에 남아야 한다)
+func _spawn_jump_wind(air: bool) -> void:
+	var map: Node = get_parent()
+	if map == null:
+		return
+	var wind := JUMP_WIND_SCRIPT.new()
+	map.add_child(wind)
+	wind.global_position = global_position + Vector2(0.0, 30.0)
+	wind.setup(velocity, air)
+
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
@@ -782,13 +795,15 @@ func jump() -> void:
 	# 경직 중엔 점프로 넉백을 못 벗어난다. 방어 중에도 못 뛴다(1.2초를 버티기로 한 대가)
 	if _hitstun_time > 0.0 or is_grabbed or is_guarding or _landing_lag > 0.0:
 		return
-	if is_on_floor():
+	var air: bool = not is_on_floor()
+	if not air:
 		velocity.y = jump_velocity * jump_multiplier
 	elif _air_jumps_left > 0:
 		_air_jumps_left -= 1
 		velocity.y = air_jump_velocity * jump_multiplier
 	else:
 		return
+	_spawn_jump_wind(air)
 	if vault_jump:
 		_play_vault_effect()
 	# 점프하는 순간 몸이 세로로 늘어나는 연출 (그 메서드가 있는 비주얼만)

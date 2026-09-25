@@ -15,8 +15,9 @@
 [ext_resource type="Script" uid="uid://dpo1pqrfpj8x" path="res://maps/SubwaySignBoard.gd" id="15"]
 [ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="16"]
 [ext_resource type="Shader" path="res://maps/far_blur.gdshader" id="17_farblur"]
+[ext_resource type="Script" path="res://maps/ParallaxFollow.gd" id="20_parallax"]
 [ext_resource type="Script" path="res://maps/ForegroundPillars.gd" id="18_pillars"]
-[ext_resource type="Texture2D" uid="uid://cth3a6as6eg0n" path="res://sprite/맵/지하철역/기둥.png" id="19_pillar"]
+[ext_resource type="Texture2D" uid="uid://b7ga4j48llp2w" path="res://sprite/맵/지하철역/기둥_반복.png" id="19_pillar"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(192, 27)
@@ -45,6 +46,7 @@ color = Color(0.55, 0.58, 0.7, 1)
 [node name="DecoBackground" type="CanvasGroup" parent="." unique_id=1132276878]
 z_index = -10
 material = SubResource("ShaderMaterial_farblur")
+script = ExtResource("20_parallax")
 
 [node name="BackWall" type="Polygon2D" parent="DecoBackground" unique_id=505108971]
 color = Color(0.86, 0.85, 0.83, 1)
@@ -146,98 +148,6 @@ long_off_chance = 0.4
 [node name="FluorescentLight3" parent="DecoBackground" unique_id=1435408178 instance=ExtResource("11")]
 position = Vector2(470, -30)
 
-[node name="PlatformEdge0" type="Sprite2D" parent="DecoBackground" unique_id=349320149]
-position = Vector2(-1800, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge1" type="Sprite2D" parent="DecoBackground" unique_id=2010434840]
-position = Vector2(-1400, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge2" type="Sprite2D" parent="DecoBackground" unique_id=1814982208]
-position = Vector2(-1000, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge3" type="Sprite2D" parent="DecoBackground" unique_id=1230962983]
-position = Vector2(-600, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge4" type="Sprite2D" parent="DecoBackground" unique_id=2017485692]
-position = Vector2(-200, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge5" type="Sprite2D" parent="DecoBackground" unique_id=1674674863]
-position = Vector2(200, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge6" type="Sprite2D" parent="DecoBackground" unique_id=1983756948]
-position = Vector2(600, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge7" type="Sprite2D" parent="DecoBackground" unique_id=977806966]
-position = Vector2(1000, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="PlatformEdge8" type="Sprite2D" parent="DecoBackground" unique_id=406071860]
-position = Vector2(1400, 220.55)
-scale = Vector2(0.281294, 0.281294)
-texture = ExtResource("9")
-centered = false
-region_enabled = true
-region_rect = Rect2(374, 220, 1422, 286)
-
-[node name="TrackPit" type="Polygon2D" parent="DecoBackground" unique_id=1823578296]
-color = Color(0.08, 0.08, 0.11, 1)
-polygon = PackedVector2Array(-1740, 300, 1740, 300, 1740, 760, -1740, 760)
-
-[node name="RailFarLeft" type="Sprite2D" parent="DecoBackground" unique_id=9749378]
-position = Vector2(-1740, 300)
-scale = Vector2(0.541297, 0.541297)
-texture = ExtResource("7")
-centered = false
-region_enabled = true
-region_rect = Rect2(14, 287, 2143, 177)
-
-[node name="RailFarRight" type="Sprite2D" parent="DecoBackground" unique_id=543042996]
-position = Vector2(580, 300)
-scale = Vector2(0.541297, 0.541297)
-texture = ExtResource("7")
-centered = false
-region_enabled = true
-region_rect = Rect2(14, 287, 2143, 177)
-
 [node name="SignBoard" type="Node2D" parent="DecoBackground" unique_id=481723870]
 material = SubResource("CanvasItemMaterial_unshaded")
 position = Vector2(-15, -98)
@@ -264,6 +174,101 @@ theme_override_fonts/font = ExtResource("16")
 theme_override_font_sizes/font_size = 28
 text = "다음 열차가 곧 도착합니다  ·  안전선 뒤로 물러나 주십시오  ·  "
 vertical_alignment = 1
+
+[node name="DecoGround" type="Node2D" parent="."]
+z_index = -10
+
+[node name="PlatformEdge0" type="Sprite2D" parent="DecoGround" unique_id=349320149]
+position = Vector2(-1800, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge1" type="Sprite2D" parent="DecoGround" unique_id=2010434840]
+position = Vector2(-1400, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge2" type="Sprite2D" parent="DecoGround" unique_id=1814982208]
+position = Vector2(-1000, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge3" type="Sprite2D" parent="DecoGround" unique_id=1230962983]
+position = Vector2(-600, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge4" type="Sprite2D" parent="DecoGround" unique_id=2017485692]
+position = Vector2(-200, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge5" type="Sprite2D" parent="DecoGround" unique_id=1674674863]
+position = Vector2(200, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge6" type="Sprite2D" parent="DecoGround" unique_id=1983756948]
+position = Vector2(600, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge7" type="Sprite2D" parent="DecoGround" unique_id=977806966]
+position = Vector2(1000, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="PlatformEdge8" type="Sprite2D" parent="DecoGround" unique_id=406071860]
+position = Vector2(1400, 220.55)
+scale = Vector2(0.281294, 0.281294)
+texture = ExtResource("9")
+centered = false
+region_enabled = true
+region_rect = Rect2(374, 220, 1422, 286)
+
+[node name="TrackPit" type="Polygon2D" parent="DecoGround" unique_id=1823578296]
+color = Color(0.08, 0.08, 0.11, 1)
+polygon = PackedVector2Array(-1740, 300, 1740, 300, 1740, 760, -1740, 760)
+
+[node name="RailFarLeft" type="Sprite2D" parent="DecoGround" unique_id=9749378]
+position = Vector2(-1740, 300)
+scale = Vector2(0.541297, 0.541297)
+texture = ExtResource("7")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
+
+[node name="RailFarRight" type="Sprite2D" parent="DecoGround" unique_id=543042996]
+position = Vector2(580, 300)
+scale = Vector2(0.541297, 0.541297)
+texture = ExtResource("7")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
 
 [node name="Track" type="Node2D" parent="." unique_id=1304679921]
 
@@ -370,6 +375,7 @@ polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
 z_index = 50
 script = ExtResource("18_pillars")
 texture = ExtResource("19_pillar")
+texture_region = Rect2(5, 0, 318, 1655)
 
 [node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=1273308138]
 position = Vector2(-320, 260)
