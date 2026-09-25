@@ -14,6 +14,9 @@
 [ext_resource type="Script" uid="uid://bvcyaig8lfg0g" path="res://maps/WindNewspaper.gd" id="12"]
 [ext_resource type="Script" uid="uid://dpo1pqrfpj8x" path="res://maps/SubwaySignBoard.gd" id="15"]
 [ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="16"]
+[ext_resource type="Shader" path="res://maps/far_blur.gdshader" id="17_farblur"]
+[ext_resource type="Script" path="res://maps/ForegroundPillars.gd" id="18_pillars"]
+[ext_resource type="Texture2D" uid="uid://cth3a6as6eg0n" path="res://sprite/맵/지하철역/기둥.png" id="19_pillar"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(192, 27)
@@ -24,15 +27,24 @@ size = Vector2(1120, 40)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 900)
 
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_unshaded"]
+light_mode = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_farblur"]
+shader = ExtResource("17_farblur")
+shader_parameter/blur_px = 0.8
+shader_parameter/dim = 0.08
+
 [node name="SubwayPlatform" type="Node2D" unique_id=521268642]
 script = ExtResource("1")
 stage_width = 1080.0
 
 [node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=801279361]
-color = Color(0.88, 0.9, 0.96, 1)
+color = Color(0.55, 0.58, 0.7, 1)
 
-[node name="DecoBackground" type="Node2D" parent="." unique_id=1132276878]
+[node name="DecoBackground" type="CanvasGroup" parent="." unique_id=1132276878]
 z_index = -10
+material = SubResource("ShaderMaterial_farblur")
 
 [node name="BackWall" type="Polygon2D" parent="DecoBackground" unique_id=505108971]
 color = Color(0.86, 0.85, 0.83, 1)
@@ -102,14 +114,17 @@ region_enabled = true
 region_rect = Rect2(44, 40, 1446, 926)
 
 [node name="SignBandOutline" type="Polygon2D" parent="DecoBackground" unique_id=1818438848]
+material = SubResource("CanvasItemMaterial_unshaded")
 color = Color(0.05, 0.05, 0.07, 1)
 polygon = PackedVector2Array(-1000, -4, 1000, -4, 1000, 61, -1000, 61)
 
 [node name="SignBand" type="Polygon2D" parent="DecoBackground" unique_id=1339271864]
+material = SubResource("CanvasItemMaterial_unshaded")
 color = Color(0.2431, 0.2431, 0.5569, 1)
 polygon = PackedVector2Array(-1000, 0, 1000, 0, 1000, 57, -1000, 57)
 
 [node name="StationSign" type="Sprite2D" parent="DecoBackground" unique_id=1308559977]
+material = SubResource("CanvasItemMaterial_unshaded")
 position = Vector2(0.99999994, 25.000002)
 scale = Vector2(0.496278, 0.496278)
 texture = ExtResource("6")
@@ -224,10 +239,12 @@ region_enabled = true
 region_rect = Rect2(14, 287, 2143, 177)
 
 [node name="SignBoard" type="Node2D" parent="DecoBackground" unique_id=481723870]
+material = SubResource("CanvasItemMaterial_unshaded")
 position = Vector2(-15, -98)
 script = ExtResource("15")
 
 [node name="Clip" type="Control" parent="DecoBackground/SignBoard" unique_id=792089010]
+use_parent_material = true
 clip_contents = true
 layout_mode = 3
 anchors_preset = 0
@@ -238,6 +255,7 @@ offset_bottom = 22.0
 mouse_filter = 2
 
 [node name="Text" type="Label" parent="DecoBackground/SignBoard/Clip" unique_id=148512256]
+use_parent_material = true
 modulate = Color(1, 0.78, 0.28, 1)
 layout_mode = 0
 offset_right = 649.0
@@ -347,6 +365,11 @@ shape = SubResource("RectangleShape2D_wall")
 [node name="RightWallVisual" type="Polygon2D" parent="RightWall" unique_id=1803689358]
 color = Color(0.08, 0.08, 0.11, 1)
 polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
+
+[node name="DecoForeground" type="Node2D" parent="."]
+z_index = 50
+script = ExtResource("18_pillars")
+texture = ExtResource("19_pillar")
 
 [node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=1273308138]
 position = Vector2(-320, 260)

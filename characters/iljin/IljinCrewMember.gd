@@ -473,7 +473,6 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	_apply_knockback(knockback, amount, pop_override)
 	_flash()
 	_play_hurt_face()
-	_update_hp_face()
 	if current_hp <= 0:
 		_fall()
 
@@ -482,12 +481,6 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 func _play_hurt_face() -> void:
 	if _visual and _visual.has_method("play_hurt_face"):
 		_visual.play_hurt_face()
-
-## 남은 HP 비율을 몸에 알려준다 — 얼마 안 남으면 지친 얼굴로 바뀐다(`BodyRig.weary_hp_ratio` 0.3 이하).
-## HP 30이면 9 이하에서 바뀐다. 회복이 없으므로 맞을 때만 갱신하면 된다
-func _update_hp_face() -> void:
-	if _visual and _visual.has_method("update_hp_ratio"):
-		_visual.update_hp_ratio(float(current_hp) / float(maxi(max_hp, 1)))
 
 ## 맵 기믹(지나가는 열차 등)이 주는 피해. 패거리에겐 구분할 게 없어 똑같이 받는다
 func take_map_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:

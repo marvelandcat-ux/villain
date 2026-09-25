@@ -23,7 +23,6 @@ region_enabled = true
 region_rect = Rect2(36, 221, 2101, 250)
 
 [node name="WindowGlow" type="Sprite2D" parent="Body"]
-modulate = Color(0.625, 0.644, 0.729, 1)
 material = SubResource("CanvasItemMaterial_windowglow")
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("4")

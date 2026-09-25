@@ -79,8 +79,8 @@ static var land_dust_height: float = DEFAULT_LAND_DUST_HEIGHT
 ## 0이면 꺼진다. 맞아서 날아가다 떨어진 착지는 안 걸린다
 const DEFAULT_LANDING_LAG_HEIGHT: float = 180.0
 static var landing_lag_height: float = DEFAULT_LANDING_LAG_HEIGHT
-## 착지 경직 시간(초)
-static var landing_lag_time: float = 0.5
+## 착지 경직 시간(초) — 2026-09-26 사용자 요청으로 0.5 -> 0.3
+static var landing_lag_time: float = 0.3
 ## 착지 먼지 이펙트 (그림 없이 _draw()로 그린다)
 const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
 
@@ -349,7 +349,6 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	else:
 		velocity += knockback
 	health_changed.emit(current_hp, stats.max_hp)
-	_update_hp_face()
 	# 실제로 깎였을 때만 — 가드로 전부 막았으면 "맞았다"고 치지 않는다
 	if reduced_amount > 0:
 		# 처치 연출이 "마지막으로 맞은 반대쪽(=넉백 방향)"으로 날려보낼 때 쓴다.
@@ -450,14 +449,6 @@ func _play_hurt_face() -> void:
 	if visual and visual.has_method("play_hurt_face"):
 		visual.play_hurt_face()
 
-## 남은 HP 비율을 몸에 알려준다 — HP가 얼마 안 남으면 지친 얼굴로 바뀐다.
-## 그 표정이 없는 캐릭터나 임시 사각형 비주얼이면 그냥 넘어간다. HP가 바뀔 때마다 부른다
-func _update_hp_face() -> void:
-	var visual: Node = get_node_or_null("Visual")
-	if visual and visual.has_method("update_hp_ratio"):
-		var max_hp: int = stats.max_hp if stats else 0
-		visual.update_hp_ratio(float(current_hp) / float(max_hp) if max_hp > 0 else 1.0)
-
 ## 바닥에 닿은 순간 — 충분히 높은 데서 떨어졌으면 발밑에 먼지를 퍼뜨린다.
 ## fall_speed는 **move_and_slide()가 0으로 지우기 전의** 낙하 속도(아래로 떨어지는 중이면 양수)
 ## 떨어질 때 실제로 받는 중력 — "이 높이에서 떨어지면 속도가 얼마"를 거꾸로 계산할 때 쓴다(착지 경직·착지 먼지).
@@ -525,7 +516,6 @@ func _flash_hit() -> void:
 func heal(amount: int) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
-	_update_hp_face()
 
 ## 여러 상태이상 색조가 겹쳐도 서로 안 지우도록 관리하는 저장소. {id: Color} — 화면에는 가장 최근 것이 보이고,
 ## 그게 풀리면 그 전에 걸려있던 것으로 되돌아간다 (전부 사라지면 원래 색)
@@ -619,7 +609,6 @@ func ring_out() -> void:
 		return
 	current_hp = 0
 	health_changed.emit(current_hp, stats.max_hp)
-	_update_hp_face()
 	died.emit()
 
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다

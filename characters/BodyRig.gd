@@ -238,6 +238,29 @@ extends Node2D
 ## 엉덩이를 따라 두 발이 뒤로 빠지는 거리(px)
 @export var hit_flinch_foot_back: float = 3.0
 
+## --- 뒤돌아보기 때 머리 돌리기 (2026-09-25) ---
+## 가만히 있다 나오는 뒤돌아보기(idle)에서 머리가 옆 -> 측면1 -> 측면2 -> 정면 -> 측면2 -> 측면1 -> 반대쪽 옆으로 돌았다가
+## 같은 길로 돌아온다. 비워 두면(기본) 예전처럼 머리 가로 크기를 뒤집어 돌아본다.
+## 평소 얼굴(Head의 처음 그림)일 때만 쓴다 — 다른 표정은 옆모습 그림뿐이라서.
+## (처음엔 방향을 바꿀 때 돌게 만들었다가 사용자 요청으로 뒤돌아보기로 옮겼다 — 방향 전환은 예전처럼 탁 뒤집힌다)
+## 돌아가는 그림들 — 옆에서 조금 돈 것부터 차례로, **마지막 장이 정면**이다(예: [측면1, 측면2, 측면3, 정면]).
+## 장수는 몇 장이든 된다 — 뒤돌아보기가 장수에 맞춰 단계를 나눈다
+@export var head_turn_textures: Array[Texture2D] = []
+## 그림마다 머리 공(두개골)의 (중심 x, 중심 y, 지름) — 그림 픽셀. 프로펠러·챙·코·혀를 뺀 둥근 머리만 잰 값이다.
+## **0번은 Head의 원래 옆모습**, 1번부터 head_turn_textures 순서다(그림 수 + 1칸). 머리 공 중심이 같은 자리, 지름이 같은 크기가 되도록
+## 배율·위치를 계산한다. 그림을 바꾸면 다시 잴 것(처음엔 구슬 x·턱 끝 y로 맞췄는데 각도마다 중심이 흔들렸다)
+@export var head_turn_anchors: Array[Vector3] = []
+## 그림이 원래 **왼쪽**을 보고 그려졌는지(0번 포함, 그림 수 + 1칸). 왼쪽을 보는 그림은 좌우로 뒤집어 쓴다
+@export var head_turn_faces_left: Array[bool] = []
+## 방향을 바꿀 때도 머리가 위 그림들을 넘기며 돈다(2026-09-26 시험) — 몸은 예전처럼 바로 뒤집히고,
+## 머리가 옛 방향 쪽 측면1 -> ... -> 정면 -> ... -> 새 방향 옆모습으로 따라 돌아온다. 끄면 머리도 몸과 같이 탁 뒤집힌다
+@export var head_turn_on_face: bool = false
+## 방향 전환 때 머리가 다 돌아오는 데 걸리는 시간(초). 짧을수록 휙, 길수록 그림 한 장 한 장이 보인다.
+## 몸은 이 시간의 절반(머리가 정면에 온 순간)에 뒤집힌다 — 그 전까지는 옛 방향을 본 채 움직인다
+@export var face_turn_duration: float = 0.22
+## 몸이 뒤집히는 순간 손·발을 몸 가운데로 얼마나 모으는지(0 = 안 모음, 1 = 한가운데까지). 앞뒤로 서서히 모였다 벌어진다
+@export_range(0.0, 1.0) var face_turn_limb_gather: float = 0.7
+
 ## --- 휘두르기 잔상 (2026-09-25) ---
 ## 켜면 후려치는 동안 오른손과 손에 든 물건이 지나간 자리에 옅은 잔상이 남는다(스미어).
 ## 잔상은 월드에 고정돼 그 자리에서 흐려진다. 기본 꺼짐
@@ -283,6 +306,21 @@ extends Node2D
 ## **판정 시각 = spin_duration x spin_end x 이 값** 이라 ComboMeleeAttack.finisher_windup을 여기에 맞출 것(0.55 x 0.62 x 0.72 = 0.25).
 ## 판정이 잡히는 데 1~2프레임 걸려서 0.85처럼 크게 주면 몸이 거의 다 돌아온 뒤에 맞아 "돌고 나서"로 보인다
 @export_range(0.5, 1.0, 0.01) var spin_strike: float = 0.72
+## 머리 돌리기 그림(head_turn_textures)이 있으면 몸을 얇게 누르는 대신 **방향 전환과 같은 방식**으로 돈다(2026-09-26):
+## 앞 반 바퀴는 머리가 측면1 -> ... -> 정면 -> ... -> 반대쪽 옆으로 돌고 정면인 순간 몸이 뒤집힌다,
+## 뒤 반 바퀴는 뒤통수 그림이 없어서 머리는 옆모습 그대로, spin_back_flip에서 몸이 다시 뒤집힌다. 뒤집힐 때마다 손·발이 가운데로 모인다.
+## 끄거나 머리 그림이 없으면 예전처럼 몸 전체를 얇게 눌렀다 편다
+@export var spin_uses_head_turn: bool = true
+## 뒤 반 바퀴에서 몸이 다시 앞으로 뒤집히는 시점(한 바퀴 대비 비율). **spin_strike보다 작아야** 사탕을 휘두를 때 몸이 앞을 본다
+@export_range(0.5, 1.0, 0.01) var spin_back_flip: float = 0.64
+## 몸이 뒤집히는 순간 앞뒤로 손·발을 모으는 구간 폭(한 바퀴 대비 비율). spin_strike - spin_back_flip보다 작아야 휘두를 때 팔이 안 움츠러든다
+@export_range(0.01, 0.25, 0.01) var spin_gather_width: float = 0.08
+## 뒤통수 그림 — 있으면 뒤 반 바퀴에서 몸이 뒤집히는 순간(spin_back_flip) 앞뒤로 머리가 뒤통수를 보인다(옆 -> 뒤통수 -> 옆)
+@export var head_back_texture: Texture2D
+## 뒤통수 그림의 머리 공 (중심 x, 중심 y, 지름) — head_turn_anchors와 같은 방법으로 잰 그림 픽셀
+@export var head_back_anchor: Vector3 = Vector3.ZERO
+## 뒤통수를 보여주는 구간 반폭(한 바퀴 대비 비율) — spin_back_flip 앞뒤로 이만큼. **spin_back_flip + 이 값이 spin_strike보다 작아야** 때릴 때 얼굴(옆모습)이 보인다
+@export_range(0.01, 0.2, 0.01) var spin_back_show: float = 0.07
 
 ## --- 파고들 때 내딛기 ---
 ## 콤보가 앞으로 파고드는 동안(ComboMeleeAttack.combo_lunge) 앞발이 먼저 나가고 뒷발이 따라붙는다.
@@ -474,12 +512,6 @@ extends Node2D
 ## 액션 표정일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var action_head_scale: Vector2 = Vector2.ZERO
 
-## HP가 얼마 안 남았을 때 이 얼굴(지친 표정)로 계속 유지한다. 비어 있으면 안 바꾼다.
-## 잠깐 바뀌는 표정(피격 등)과 달리 **HP가 회복될 때까지 계속 걸려 있는 상태 표정**이다
-@export var weary_head_texture: Texture2D
-## 지친 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
-@export var weary_head_scale: Vector2 = Vector2.ZERO
-
 ## 처치당했을 때(HP 0) 바뀌는 표정 — 눈이 X로 변한 얼굴. 비워두면 표정이 안 바뀐다.
 ## 처치 연출(`Stage`가 부르는 `play_knockout`)에서만 쓴다
 @export var ko_head_texture: Texture2D
@@ -490,8 +522,6 @@ extends Node2D
 @export var ko_head_offset: Vector2 = Vector2(0, -6)
 @export var ko_hand_offset: Vector2 = Vector2(-10, 8)
 @export var ko_foot_offset: Vector2 = Vector2(-12, 6)
-## HP 비율이 이 값 이하로 떨어지면 지친 얼굴이 된다 (0.3 = 30% 이하). 회복하면 다시 원래 얼굴로 돌아온다
-@export_range(0.0, 1.0, 0.05) var weary_hp_ratio: float = 0.3
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -567,6 +597,12 @@ var _flinch_len: float = 0.0
 var _flinch_power: float = 1.0
 ## 이번 움찔에서 밀리는 방향 — 리그 로컬 x 부호(-1 = 바라보는 반대쪽 = 뒤)
 var _flinch_push_dir: float = -1.0
+## 뒤돌아보기 중 머리 그림을 돌리는 그림으로 바꿔 끼웠는지 — 끝날 때 평소 머리로 되돌려야 하는지 판단한다
+var _turn_applied: bool = false
+# 방향 전환 머리 돌리기 남은 시간, 직전 프레임에 바라보던 방향 부호(0 = 아직 모름), 돌기 전 방향 부호
+var _face_turn_time: float = 0.0
+var _face_sign: float = 0.0
+var _face_turn_from: float = 0.0
 ## 클래시 동안 손에 든 물건(소주병·키보드 등)을 숨겼는지 — 끝나면 다시 보여주려고 기억한다
 var _hold_hidden_by_clash: bool = false
 ## 페달 회전 각도 (계속 커짐)
@@ -668,8 +704,6 @@ var _dk_getup_total: float = 0.0
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
 var _action_face_on: bool = false
-## 지금 HP가 얼마 안 남아 지친 얼굴 상태인지 (weary_hp_ratio 이하로 떨어지면 true)
-var _weary_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
 ## 처치 연출 중인지 — 켜지면 걷기·표정 갱신을 전부 멈추고 쓰러진 자세를 유지한다
 var _knocked_out: bool = false
@@ -797,6 +831,15 @@ func _process(delta: float) -> void:
 				_scratch_time = scratch_duration
 			elif _head:
 				_lookback_time = lookback_duration
+
+	# 방향 전환 머리 돌리기 — 다 돌면 평소 머리로 되돌린다.
+	# 공격·스킬 같은 동작이 시작되면 그 자리에서 끝내 몸을 새 방향으로 맞춘다(그림은 옛 방향인데 공격은 새 방향으로 나가면 안 된다)
+	if _face_turn_time > 0.0:
+		_face_turn_time = maxf(_face_turn_time - delta, 0.0)
+		if _face_turn_blocked():
+			_face_turn_time = 0.0
+		if is_zero_approx(_face_turn_time):
+			_clear_head_frame()
 
 	# 점프/착지 스쿼시&스트레치 — 착지하는 순간(공중→바닥)을 감지해 몸을 납작하게 눌렀다 편다
 	if on_floor and not _was_on_floor:
@@ -956,6 +999,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _lookback_time > 0.0:
 		_pose_lookback()
 
+	# 방금 방향을 바꿨으면 머리가 그림을 넘기며 새 방향으로 따라 돈다 (뒤돌아보기보다 나중이라 우선한다)
+	if _face_turn_time > 0.0:
+		_pose_face_turn()
+
 	# 방어 중이면 두 손을 몸 앞으로 올려 막는다 (다른 자세보다 나중이라 우선한다 —
 	# 방어 중에는 이동·공격·스킬이 다 막히므로 실제로 겹칠 일도 거의 없다)
 	if _guard_blend > 0.001:
@@ -994,6 +1041,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 피격 움찔 — 상체를 앞으로 숙이고 엉덩이를 뺀다(다른 자세 위에 더한다)
 	if _flinch_time > 0.0:
 		_pose_hit_flinch()
+
+	# 방향 전환 중이면 손·발을 몸 가운데로 모았다가 벌린다(손에 든 물건이 복사해가기 전에)
+	if _face_turn_time > 0.0:
+		_pose_face_turn_limbs()
 
 	# 대치 자세 — 위에서 잡힌 손 자세에 더하기만 한다(두 손 잡기 중엔 왼손은 오른손을 따라가므로 뺀다)
 	if _stance_blend > 0.001:
@@ -1068,6 +1119,9 @@ func _apply_spin_turn() -> void:
 		return
 	# **일정한 속도로 돈다** — 중간에 느려지면 "돌고 멈췄다가 때린다"로 보인다. 손/발은 이 회전 도중(spin_strike)에 들어간다
 	var p: float = progress / s_end
+	if spin_uses_head_turn and _can_head_turn():
+		_apply_spin_head_turn(p)
+		return
 	var turn: float = cos(p * TAU)
 	# 정확히 0이면 몸 크기가 0이 돼 자식 변환이 깨진다 — 아주 얇게만 남긴다
 	if absf(turn) < 0.04:
@@ -1075,6 +1129,36 @@ func _apply_spin_turn() -> void:
 	_spin_base_x = scale.x
 	scale.x = _spin_base_x * turn
 	_spin_applied = true
+
+## 머리 그림으로 한 바퀴 돌기(p = 한 바퀴 진행도 0~1).
+## 0 ~ 0.5: 머리가 측면1 -> ... -> 정면 -> ... -> 옆모습(방향 전환과 같은 길), 0.25(머리 정면)에 몸이 뒤집힌다
+## 0.5 ~ : 머리는 옆모습 그대로(뒤통수 그림이 없다), spin_back_flip에 몸이 다시 앞으로 뒤집힌다
+## 몸 뒤집기는 가로 부호만 바꾸고 다음 프레임 첫머리에서 되돌린다(얇게 누르던 예전 방식과 같은 장치)
+func _apply_spin_head_turn(p: float) -> void:
+	var back_flip: float = clampf(spin_back_flip, 0.5, 0.99)
+	var mirrored: bool = p >= 0.25 and p < back_flip
+	if p < 0.5:
+		var front: int = head_turn_textures.size()
+		var shown: int = front * 2
+		var step: int = clampi(int(p / 0.5 * shown), 0, shown - 1)
+		_set_head_frame(step + 1 if step < front else shown - 1 - step, 1.0)
+	elif head_back_texture != null and head_back_anchor.z > 0.0 and absf(p - back_flip) < spin_back_show:
+		# 몸이 다시 앞으로 뒤집히는 순간 앞뒤로 뒤통수를 보인다 — 옆 -> 뒤통수 -> 옆
+		_set_head_image(head_back_texture, head_back_anchor, false, 1.0)
+	else:
+		_clear_head_frame()
+	# 뒤집히는 두 순간(0.25, back_flip) 앞뒤로 손·발을 가운데로 모은다 — 사탕(HandRHold)은 이미 손을 복사해 갔으니 같이 모은다
+	var width: float = maxf(spin_gather_width, 0.001)
+	var gather: float = maxf(1.0 - absf(p - 0.25) / width, 1.0 - absf(p - back_flip) / width)
+	if gather > 0.0:
+		var squeeze: float = 1.0 - face_turn_limb_gather * gather
+		for part in [_hand_l, _hand_r, _hand_r_hold, _foot_l, _foot_r]:
+			if part:
+				part.position.x *= squeeze
+	if mirrored:
+		_spin_base_x = scale.x
+		scale.x = -_spin_base_x
+		_spin_applied = true
 
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
@@ -2117,24 +2201,9 @@ func set_action_face(on: bool) -> void:
 	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
-## HP 비율(0~1)을 알려준다 — Fighter가 HP가 바뀔 때마다 부른다.
-## weary_hp_ratio 이하면 지친 얼굴로, 회복해서 그 위로 올라가면 원래 얼굴로 돌아온다.
-## weary_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
-func update_hp_ratio(ratio: float) -> void:
-	if _head == null or weary_head_texture == null:
-		return
-	var weary: bool = ratio <= weary_hp_ratio
-	if weary == _weary_on:
-		return
-	_weary_on = weary
-	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
-		_apply_base_head()
-
-## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 지침 > 맨정신 순 우선).
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선).
 ## 액션 표정이 맨 위인 이유: 스킬을 쓰는 순간만큼은 그 표정이 보여야 한다.
-## **취함이 지침보다 위다(2026-09-10, 사용자 결정)** — 주정뱅이가 둘을 동시에 가진 유일한 캐릭터인데,
-## 술 스택은 토하기 사거리를 정하는 핵심 정보라 빈사 상태에서도 취한 얼굴이 보여야 한다.
-## 그래서 지친 얼굴은 "맨정신인데 HP가 얼마 안 남았을 때"만 뜬다
+## (HP가 적을 때의 지친 얼굴은 2026-09-26 사용자 요청으로 전 캐릭터에서 뺐다)
 func _apply_base_head() -> void:
 	if _head == null or _knocked_out:
 		return
@@ -2144,9 +2213,6 @@ func _apply_base_head() -> void:
 	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
-	elif _weary_on and weary_head_texture != null:
-		_head.texture = weary_head_texture
-		_head.scale = weary_head_scale if weary_head_scale != Vector2.ZERO else _head_rest_scale
 	else:
 		_head.texture = _head_rest_texture
 		_head.scale = _head_rest_scale
@@ -2226,20 +2292,126 @@ func _pose_scratch() -> void:
 	_hand_l.position = _rest_positions[_hand_l] + scratch_hand_offset * reach + Vector2(wiggle, 0.0)
 	_hand_l.rotation = deg_to_rad(scratch_hand_deg * reach)
 
+## 머리를 돌리는 그림으로 바꿔 끼울 준비가 됐는지 — 그림마다 기준점·방향이 다 있고(0번 옆모습 포함), 머리가 평소 얼굴(또는 이미 돌리는 중)일 때만
+func _can_head_turn() -> bool:
+	var count: int = head_turn_textures.size()
+	if _head == null or count < 1 or head_turn_anchors.size() < count + 1 or head_turn_faces_left.size() < count + 1:
+		return false
+	return _is_turn_texture(_head.texture)
+
+## 평소 얼굴이거나 머리 돌리기용 그림(측면·정면·뒤통수)인지 — 이 밖의 그림이면 다른 표정이 들어온 것이다
+func _is_turn_texture(tex: Texture2D) -> bool:
+	return tex == _head_rest_texture or head_turn_textures.has(tex) or (tex != null and tex == head_back_texture)
+
+## 머리를 돌리는 단계 그림 하나로 바꿔 끼운다. frame: 0 옆 / 1~ head_turn_textures 순서(마지막이 정면).
+## dir: 1이면 바라보는 쪽, -1이면 그 반대쪽(그림을 한 번 더 뒤집는다 = 뒤를 본다).
+## 머리 공 중심이 평소 옆모습과 같은 자리, 지름이 같은 크기가 되도록 배율·위치를 계산한다.
+## 걷기 들썩임·움찔 같은 앞선 자세 오프셋은 그대로 두고 제자리 차이만 더한다
+func _set_head_frame(frame: int, dir: float) -> void:
+	var tex: Texture2D = _head_rest_texture if frame == 0 else head_turn_textures[frame - 1]
+	_set_head_image(tex, head_turn_anchors[frame], head_turn_faces_left[frame], dir)
+
+## 머리를 그림 한 장(tex, 머리 공 here, 왼쪽을 보는지 faces_left)으로 바꿔 끼운다 — _set_head_frame과 뒤통수가 같이 쓴다
+func _set_head_image(tex: Texture2D, here: Vector3, faces_left: bool, dir: float) -> void:
+	_turn_applied = true
+	var base: Vector3 = head_turn_anchors[0]
+	var base_size: Vector2 = _head_rest_texture.get_size()
+	var size: Vector2 = tex.get_size()
+	var ratio: float = base.z / maxf(here.z, 1.0)
+	var sx: float = absf(_head_rest_scale.x) * ratio
+	var sy: float = _head_rest_scale.y * ratio
+	var mirror: float = (-1.0 if faces_left else 1.0) * dir
+	var rest_pos: Vector2 = _rest_positions[_head]
+	# 평소 옆모습의 머리 공 중심이 리그의 어디에 있는지 — 반대쪽을 볼 땐 좌우 대칭 자리로 간다
+	var center_x: float = (rest_pos.x + (base.x - base_size.x * 0.5) * absf(_head_rest_scale.x)) * dir
+	var center_y: float = rest_pos.y + (base.y - base_size.y * 0.5) * _head_rest_scale.y
+	var target := Vector2(
+		center_x - (here.x - size.x * 0.5) * sx * mirror,
+		center_y - (here.y - size.y * 0.5) * sy)
+	_head.texture = tex
+	_head.scale = Vector2(sx * mirror, sy)
+	_head.position += target - rest_pos
+
+## 머리 돌리기로 바꿔 끼운 그림을 평소 머리로 되돌린다. 그사이 다른 표정(피격 등)이 들어왔으면 그대로 둔다
+func _clear_head_frame() -> void:
+	if not _turn_applied or _head == null:
+		return
+	_turn_applied = false
+	# 반대쪽을 볼 땐 평소 옆모습 그림을 뒤집어 쓰므로, 그림이 같아도 배율은 꼭 되돌린다
+	if _is_turn_texture(_head.texture):
+		_head.texture = _head_rest_texture
+		_head.scale = _head_rest_scale
+
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,
 ## 크기는 건드리지 않고 x의 부호만 바라보는 방향에 맞춘다
 func _face_moving_direction() -> void:
 	if not (_fighter and is_instance_valid(_fighter)):
 		return
-	var facing_x: float = absf(scale.x) * signf(_fighter.facing)
+	var facing_sign: float = signf(_fighter.facing)
+	# 방향이 뒤집힌 순간 머리 돌리기를 시작한다(처음 한 번은 원래 방향을 기억만 한다)
+	if head_turn_on_face and _face_sign != 0.0 and facing_sign != _face_sign:
+		if _face_turn_time > 0.0 and facing_sign == _face_turn_from and _face_turn_progress() < 0.5:
+			# 몸이 아직 옛 방향인 채 도로 돌아왔다 — 몸은 그대로 맞으니 머리만 제자리로 둔다
+			_face_turn_time = 0.0
+			_clear_head_frame()
+		elif _can_head_turn() and not _face_turn_blocked():
+			_face_turn_from = _face_sign
+			_face_turn_time = face_turn_duration
+	_face_sign = facing_sign
+	# 머리가 정면에 오기 전(앞 절반)엔 몸이 아직 옛 방향을 본다 — 고개가 먼저 돌고 몸이 따라간다
+	var shown_sign: float = facing_sign
+	if _face_turn_time > 0.0 and _face_turn_progress() < 0.5:
+		shown_sign = _face_turn_from
+	var facing_x: float = absf(scale.x) * shown_sign
 	if not is_equal_approx(scale.x, facing_x):
 		scale.x = facing_x
+
+## 방향 전환 진행도(0 = 막 시작, 1 = 다 돔)
+func _face_turn_progress() -> float:
+	return 1.0 - _face_turn_time / maxf(face_turn_duration, 0.001)
+
+## 방향 전환을 그 자리에서 끝내야 하는 동작 중인지 — 손·몸을 따로 쓰는 동작이 시작되면 몸을 바로 새 방향으로 맞춘다
+func _face_turn_blocked() -> bool:
+	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
+		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 \
+		or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
+
+## 방향 전환 머리 돌리기 — 앞 절반은 몸이 옛 방향인 채 머리가 측면1 -> ... -> 정면으로 돌고,
+## 머리가 정면을 본 순간 몸이 뒤집힌 뒤 뒤 절반은 새 방향에서 측면3 -> ... -> 옆모습으로 마저 돈다.
+## 몸이 뒤집히는 걸 머리가 정면인 순간에 숨긴다. 옛 방향 옆모습(첫 단계)은 뒤집기 전과 같은 그림이라 건너뛴다
+func _pose_face_turn() -> void:
+	# 도는 도중 다른 표정(피격 등)이 들어오면 그쪽에 양보하고 멈춘다
+	if not _can_head_turn():
+		_face_turn_time = 0.0
+		return
+	var front: int = head_turn_textures.size()
+	var shown: int = front * 2
+	var step: int = clampi(int(_face_turn_progress() * shown), 0, shown - 1)
+	# 그림 n장이면: 앞 절반 1, 2, ..., n(정면) / 뒤 절반 n-1, ..., 0(옆모습). 둘 다 "그때 몸이 보는 쪽" 기준이라 dir은 1
+	var frame: int = step + 1 if step < front else shown - 1 - step
+	_set_head_frame(frame, 1.0)
+
+## 방향 전환 중 손·발을 몸 가운데(x = 0)로 모았다가 벌린다 — 몸이 뒤집히는 순간(진행도 절반) 가장 많이 모인다.
+## 그림 크기는 안 건드리고 위치만 좁혀서, 종이처럼 납작해지지 않고 "몸을 돌리며 팔다리가 모인다"로 보이게 한다
+func _pose_face_turn_limbs() -> void:
+	var squeeze: float = 1.0 - face_turn_limb_gather * sin(_face_turn_progress() * PI)
+	for part in [_hand_l, _hand_r, _foot_l, _foot_r]:
+		if part:
+			part.position.x *= squeeze
 
 ## 몸은 그대로 두고 머리만 반대쪽을 돌아본다 — 머리 scale.x가 옆모습(0)을 지나 부호가 뒤집혔다가 돌아온다.
 ## 머리 세로 크기(scale.y)는 안 뒤집으므로 그게 곧 원래 크기다 — 가로를 거기에 맞춰 부호만 바꾼다
 func _pose_lookback() -> void:
 	if _head == null:
+		return
+	# 돌리는 그림이 있으면 옆 -> 측면1 -> ... -> 정면 -> ... -> 측면1 -> 반대쪽 옆으로 돈다(돌아올 땐 거꾸로).
+	# 그림이 n장이면 단계는 2n+1개 — 정면(n번)까지는 바라보는 쪽, 그 뒤로는 뒤집어서 반대쪽 그림이 된다
+	if _can_head_turn():
+		var front: int = head_turn_textures.size()
+		var steps: int = front * 2 + 1
+		var step: int = clampi(int(_lookback_reach() * steps), 0, steps - 1)
+		_set_head_frame(front - absi(step - front), 1.0 if step <= front else -1.0)
 		return
 	_head.scale.x = _head.scale.y * (1.0 - 2.0 * _lookback_reach())
 
@@ -2267,8 +2439,37 @@ func _pose_guard() -> void:
 
 ## 뒤돌아보기를 끝내고 머리를 앞 방향으로 되돌린다 (정상 종료·중단 공통).
 ## 세로 크기(scale.y)가 원래 크기이므로 가로를 거기에 양수로 맞춘다 — 끊겨도 머리가 뒤집힌 채 굳지 않는다
+## 머리 긁기를 지금 바로 한다(훈련장 테스트 버튼용). 가만히 서 있을 때만 이어진다 — 움직이면 평소처럼 바로 끊긴다
+func play_scratch() -> void:
+	_end_lookback()
+	_idle_time = 0.0
+	_scratch_time = scratch_duration
+
+## 뒤돌아보기를 지금 바로 한다(훈련장 테스트 버튼용). 가만히 서 있을 때만 이어진다
+func play_lookback() -> void:
+	if _head == null:
+		return
+	_scratch_time = 0.0
+	_idle_time = 0.0
+	_lookback_time = lookback_duration
+
+## 머리에 붙은 눈 깜빡임(EyeBlink)을 지금 바로 한 번 깜빡이게 한다(훈련장 테스트 버튼용). 눈 깜빡임이 없으면 false
+func play_blink() -> bool:
+	if _head == null:
+		return false
+	var found: bool = false
+	for child in _head.get_children():
+		if child.has_method("blink_now"):
+			child.blink_now()
+			found = true
+	return found
+
 func _end_lookback() -> void:
 	_lookback_time = 0.0
+	# 방향 전환으로 머리가 도는 중이면(걷는 중이라 여기로 매 프레임 온다) 그 그림을 지우지 않는다
+	if _face_turn_time > 0.0:
+		return
+	_clear_head_frame()
 	if _head:
 		_head.scale.x = _head.scale.y
 

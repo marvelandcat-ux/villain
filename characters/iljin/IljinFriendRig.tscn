@@ -6,13 +6,10 @@
 [ext_resource type="Texture2D" uid="uid://chpjsgto7t383" path="res://sprite/일진/일진의 친구1/일진의 친구 발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://b01pqlbcqohr2" path="res://sprite/일진/일진의 친구1/일진의 친구 손.png" id="5_hand"]
 [ext_resource type="Texture2D" uid="uid://h1wjbyi8uiuw" path="res://sprite/일진/일진의 친구1/아픈 일진의 친구.png" id="6_hurt"]
-[ext_resource type="Texture2D" uid="uid://ccwdwoefhbwb7" path="res://sprite/일진/일진의 친구1/일진의 친구 힘듬.png" id="7_weary"]
 
 [node name="BodyRig" instance=ExtResource("1_rig")]
 idle_gestures = false
 hurt_head_texture = ExtResource("6_hurt")
-weary_head_texture = ExtResource("7_weary")
-weary_head_scale = Vector2(0.0461, 0.0461)
 
 [node name="FootL" parent="." index="0"]
 texture = ExtResource("4_foot")

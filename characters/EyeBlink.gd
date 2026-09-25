@@ -9,7 +9,7 @@ extends Node2D
 ## (Head의 배율을 물려받으므로). 에디터에서 `preview_closed`를 올려 보면서 타원이 눈을 딱 덮게 맞추면 된다.
 ##
 ## 위아래 눈꺼풀이 `close_line`(눈 높이 대비 위치)에서 만나며 닫히고, 만나는 자리에 검은 곡선이 그어진다.
-## **머리 그림이 처음 것(기본 얼굴)일 때만 깜빡인다** — 아픈·지친·취한 얼굴은 눈 자리가 달라서 타원이 어긋난다
+## **머리 그림이 처음 것(기본 얼굴)일 때만 깜빡인다** — 아픈·취한 얼굴은 눈 자리가 달라서 타원이 어긋난다
 
 ## 눈 크기(머리 그림 픽셀). 눈 테두리까지 살짝 넉넉하게 덮어야 감았을 때 테두리 링이 안 남는다
 @export var eye_size: Vector2 = Vector2(200, 170)
@@ -56,6 +56,10 @@ func _ready() -> void:
 		_base_texture = head.texture
 	_color = skin_color if skin_color.a > 0.0 else _sample_skin()
 	_wait = randf_range(interval_min, interval_max)
+
+## 지금 바로 한 번 깜빡인다(훈련장 테스트 버튼용). 평소 얼굴이 아니면 _process가 그 자리에서 눈을 뜬 채로 되돌린다
+func blink_now() -> void:
+	_t = 0.0
 
 ## 눈 바로 아래(볼)의 색을 머리 그림에서 읽는다 — 살색을 일일이 적지 않아도 된다
 func _sample_skin() -> Color:
