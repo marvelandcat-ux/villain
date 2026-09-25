@@ -71,11 +71,18 @@ const GAME_STATE := preload("res://GameState.gd")
 @export var tile_gap: float = 26.0
 ## 줄 사이 세로 간격
 @export var tile_row_gap: float = 34.0
-## 아랫줄을 오른쪽으로 밀어내는 거리(px) — 러프처럼 계단식으로 어긋나게 둔다
-@export var tile_row_offset: float = 62.0
-## 한 줄에 몇 칸까지 놓는지. 캐릭터는 8명이라 4칸씩 두 줄, 맵은 10개라 5칸씩 두 줄이면 딱 떨어진다
+## 아랫줄을 **가운데 정렬한 자리에서 추가로** 오른쪽으로 밀어내는 거리(px).
+## 줄 가운데 맞춤은 코드가 알아서 하므로 0이면 두 줄의 가운데가 딱 맞는다.
+## 러프처럼 계단식으로 어긋나게 두고 싶을 때만 값을 준다
+@export var tile_row_offset: float = 0.0
+## 한 줄에 몇 칸까지 놓는지.
+## 캐릭터는 한 줄에 다 놓고(전신 세로 칸), **맵은 5종이라 3칸 + 2칸 두 줄**이다(2026-09-25 사용자 지정)
 @export var tiles_per_row: int = 8
-@export var tiles_per_row_map: int = 5
+@export var tiles_per_row_map: int = 3
+## **에디터에서만 쓰는 미리보기 탭.** 게임에는 아무 영향이 없다 —
+## 에디터는 항상 캐릭터 탭만 그려서 맵 칸 정렬을 눈으로 보며 고칠 수가 없었다.
+## "맵"으로 두면 에디터 화면이 맵 칸으로 바뀌어서 간격·줄 수를 보면서 맞출 수 있다
+@export_enum("캐릭터", "맵") var editor_preview_tab: int = 0
 
 @export_group("칸 안")
 ## 칸 아래 **이름 띠**의 높이 (칸 높이 대비). 이름을 읽어야 하는 화면이라 띠를 깔고 그 위에 쓴다
@@ -170,6 +177,8 @@ func _ready() -> void:
 
 ## 에디터에서 자리 값이 바뀌면 다시 그린다. 매 프레임 문자열 하나 비교라 부담이 없다
 func _refresh_editor() -> void:
+	# 에디터에서 보고 있는 탭을 미리보기 설정대로 맞춘다 (게임에서는 탭 버튼이 정한다)
+	_mode = "map" if editor_preview_tab == 1 else "character"
 	# 탭은 씬 노드라 여기서 다시 만들 필요가 없다 — 칸 배치에 관계된 값만 본다
 	# 인스펙터에서 만지는 값은 **빠짐없이** 여기 들어가야 한다 —
 	# 빠진 값은 에디터에서 아무리 바꿔도 화면이 그대로라 "안 먹는다"고 보인다
@@ -182,7 +191,9 @@ func _refresh_editor() -> void:
 		return
 	_editor_stamp = stamp
 	_build_tiles()
-	_place_guides(_tile_shape_changed(stamp))
+	# 초록 편집 네모는 캐릭터 전신샷 자리를 잡는 도구라 맵 탭에서는 띄우지 않는다
+	if _mode == "character":
+		_place_guides(_tile_shape_changed(stamp))
 	# 에디터에서는 **자리를 절대 건드리지 않는다** — 색만 입힌다.
 	# 예전엔 여기서 position까지 다시 잡는 바람에, 탭을 끌어다 옮겨도 다음 프레임에 원래 자리로
 	# 돌아가 버렸다(옮겨지지도 줄어들지도 않는 것처럼 보였다). 튀어나오기는 게임에서만 하면 된다
@@ -235,12 +246,15 @@ func _set_mode(mode: String) -> void:
 func _columns() -> int:
 	return maxi(tiles_per_row if _mode == "character" else tiles_per_row_map, 1)
 
-## 지금 탭에 맞는 목록 — 캐릭터는 대전 로스터, 맵은 선택 가능한 맵 전부
+## 지금 탭에 맞는 목록.
+## 캐릭터는 **대전 로스터(CHARACTERS) 그대로** — 훈련장에서만 고를 수 있는 캐릭터(주인공)는
+## 애초에 이 목록에 없어서 도감에도 안 나온다.
+## 맵은 **DEX_MAPS**(아직 안 만든 맵까지 포함한 최종 5종)를 쓴다 — 고를 수 있는 맵만 담은 MAPS와 다르다
 func _entries() -> Array:
+	# 에디터에는 오토로드 인스턴스가 없어서 preload한 스크립트의 const를 읽는다
 	if Engine.is_editor_hint():
-		# 에디터에서도 진짜 이름·그림이 보여야 칸 안 자리를 눈으로 잡을 수 있다
-		return GAME_STATE.CHARACTERS.keys() if _mode == "character" else GAME_STATE.MAPS.keys()
-	return GameState.CHARACTERS.keys() if _mode == "character" else GameState.MAPS.keys()
+		return GAME_STATE.DEX_MAPS.keys() if _mode == "map" else GAME_STATE.CHARACTERS.keys()
+	return GameState.DEX_MAPS.keys() if _mode == "map" else GameState.CHARACTERS.keys()
 
 ## 오른쪽 사선 칸들. 한 줄에 tiles_per_row개씩, 아랫줄은 오른쪽으로 밀어 계단식으로 놓는다.
 ## **기울기(tile_lean)만큼 겹쳐서** 놓아야 옆 칸과 대각선 변이 맞물린다
@@ -255,9 +269,17 @@ func _build_tiles() -> void:
 	var keys: Array = _entries()
 	var box: Vector2 = _tile_size_for(keys.size())
 	var pitch: float = box.x - tile_lean + tile_gap
+	var columns: int = _columns()
+	# **줄마다 가운데 정렬** — 그 줄에 놓인 칸 수만큼만 폭을 차지하므로, 남는 자리를 반씩 나눠 갖는다.
+	# 맵 탭(3칸 + 2칸)은 아랫줄이 윗줄 정가운데에 오고, 캐릭터 탭(7칸/8칸 자리)도 가운데로 모인다
+	var row_count: int = maxi(ceili(float(keys.size()) / float(columns)), 1)
+	var row_start: Array = []
+	for r in range(row_count):
+		var in_row: int = mini(keys.size() - r * columns, columns)
+		var span: float = pitch * float(in_row - 1) + box.x
+		row_start.append((_tile_root.size.x - span) * 0.5 + tile_row_offset * float(r))
 	for i in range(keys.size()):
 		var key: String = keys[i]
-		var columns: int = _columns()
 		var row: int = i / columns
 		var column: int = i % columns
 		var tile := FanTile.new()
@@ -271,7 +293,7 @@ func _build_tiles() -> void:
 		tile.name_text = key
 		# Tiles 노드 안쪽 좌표다 — 전체를 옮기려면 그 노드를 끌면 된다
 		tile.position = Vector2(
-			pitch * float(column) + tile_row_offset * float(row),
+			row_start[row] + pitch * float(column),
 			(box.y + tile_row_gap) * float(row))
 		var art: Texture2D = _tile_art(key)
 		if _mode == "character" and art != null:
@@ -389,8 +411,10 @@ func _tile_size_for(count: int) -> Vector2:
 		return tile_size
 	var columns: int = maxi(_columns(), 1)
 	var rows: int = maxi(ceili(float(count) / float(columns)), 1)
-	var usable: Vector2 = _tile_root.size - Vector2(tile_row_offset if rows > 1 else 0.0,
-		tile_row_gap * float(rows - 1))
+	# **가로 크기는 "한 줄에 몇 칸"(columns)으로만 정한다** — 목록에서 한 명이 빠져도
+	# 평행사변형 크기가 변하지 않는다(전에는 실제 인원수로 나눠서 8명 -> 7명이 되자 칸이 넓어졌다).
+	# 줄이 덜 찬 만큼 남는 자리는 _build_tiles가 줄을 가운데로 밀어 메운다
+	var usable: Vector2 = _tile_root.size - Vector2(0.0, tile_row_gap * float(rows - 1))
 	return Vector2(
 		maxf((usable.x + (tile_lean - tile_gap) * float(columns - 1)) / float(columns), 40.0),
 		maxf(usable.y / float(rows), 40.0))

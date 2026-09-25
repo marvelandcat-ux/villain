@@ -335,15 +335,15 @@ extends Node2D
 @export var throw_hand_l_pull: Vector2 = Vector2(-10, 4)
 ## 몸통 기울기(도) — 음수가 뒤로 젖힘, 양수가 앞으로 쏟아짐
 @export var throw_body_windup_deg: float = -18.0
-@export var throw_body_release_deg: float = 26.0
+@export var throw_body_release_deg: float = 34.0
 ## 머리가 몸통 기울기를 따라가는 정도(0~1)
-@export var throw_head_follow: float = 0.55
+@export var throw_head_follow: float = 0.65
 ## --- 몸 숙이기 ---
 ## 기울기(회전)만으로는 "숙였다"가 잘 안 읽힌다. 뿌리는 순간부터 허리를 굽히듯
 ## 몸통과 머리를 이만큼 아래로 내려앉히고, 머리는 앞으로도 조금 내민다 (px)
-@export var throw_body_crouch: float = 9.0
-@export var throw_head_dip: float = 7.0
-@export var throw_head_lead: float = 7.0
+@export var throw_body_crouch: float = 17.0
+@export var throw_head_dip: float = 14.0
+@export var throw_head_lead: float = 11.0
 ## **이 동작의 핵심** — 앞발이 제자리보다 이만큼 앞으로 나가 디딘다(px).
 ## 한 번 디디면 throw_foot_hold_ratio까지 그 자리에 못박혀 움직이지 않는다
 @export var throw_step_foot: float = 14.0

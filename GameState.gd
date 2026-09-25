@@ -10,7 +10,6 @@ const CHARACTERS := {
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
-	"헬스장 빌런": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로고 표시 이름만 바꿨다. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
 	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
@@ -37,7 +36,6 @@ const CHARACTER_COLORS := {
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
-	"헬스장 빌런": Color(0.55, 0.6, 0.65),
 	"일진": Color(0.25, 0.3, 0.5),
 	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
 }
@@ -74,18 +72,31 @@ const PORTRAIT_FRAMES_PATH := "res://ui/PortraitFrames.tscn"
 const PORTRAIT_FRAME_SIZE := Vector2(200, 180)
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
+## **2026-09-25: 최종 맵을 다섯으로 줄였다**(사용자 결정) — 지하철역 / 놀이터 / 악플러의 집 / 헬스장 / 번화가.
+## 이 중 헬스장·번화가는 아직 안 만들었다.
+##
+## **여기엔 실제로 고를 수 있는 맵만 둔다.** MapSelect가 이 경로를 그대로 불러서 미리보기를 띄우기 때문에
+## 빈 경로를 섞으면 맵 선택 화면이 깨진다. 아직 없는 맵은 아래 DEX_MAPS에만 있다.
+##
+## 목록에서 뺀 맵들(편의점 앞·PC방·학교 옥상·아파트 단지 놀이터·층간소음 아파트·지하철 선로·공사현장)은
+## **씬 파일은 maps/에 그대로 남아 있다** — 되살리려면 여기에 다시 적기만 하면 된다
 const MAPS := {
-	"편의점 앞": "res://maps/ConvenienceStore.tscn",
-	"PC방": "res://maps/PcBang.tscn",
-	"학교 옥상 (링아웃)": "res://maps/SchoolRooftop.tscn",
-	"지하철 승강장 (열차)": "res://maps/SubwayPlatform.tscn",
-	"아파트 단지 놀이터": "res://maps/ApartmentPlayground.tscn",
-	"악플러의 방(쓰레기집)": "res://maps/TrashRoom.tscn",
-	"층간소음 아파트": "res://maps/NoisyApartment.tscn",
+	"지하철역": "res://maps/SubwayPlatform.tscn",
 	"놀이터": "res://maps/Playground.tscn",
-	"지하철 선로": "res://maps/SubwayTrack.tscn",
-	"공사현장 (내리찍기)": "res://maps/CollapsingApartment.tscn",
+	"악플러의 집": "res://maps/TrashRoom.tscn",
 }
+
+## 도감 맵 탭에 보여줄 목록 — 만들 예정인 맵까지 넣은 최종 5종이다.
+## 경로가 비어 있으면 아직 안 만든 맵이라는 뜻이다(STORY_EPISODES의 빈 scene과 같은 규칙).
+## 다 만들면 그 줄의 경로를 채우고 위 MAPS에도 같이 옮겨 적으면 된다
+const DEX_MAPS := {
+	"지하철역": "res://maps/SubwayPlatform.tscn",
+	"놀이터": "res://maps/Playground.tscn",
+	"악플러의 집": "res://maps/TrashRoom.tscn",
+	"헬스장": "",
+	"번화가": "",
+}
+
 
 ## 스토리 에피소드 목록 — **일시정지 화면의 스토리 목록이 이 순서 그대로 쓴다.**
 ## `scene`이 비어 있으면 아직 안 만든 자리(고를 수 없음)다. 새 이야기를 만들면 그 줄의 scene만 채우면 된다.
