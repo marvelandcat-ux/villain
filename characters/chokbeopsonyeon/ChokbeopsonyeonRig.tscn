@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://c6k234qtqgk5a" path="res://sprite/축법소년/막대 사탕.png" id="9_candy"]
 [ext_resource type="Texture2D" uid="uid://vx1uoqskg6c8" path="res://sprite/축법소년/힘든 축법소년.png" id="10_wearyface"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/잼민이 처치표정.png" id="11_koface"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 action_head_texture = ExtResource("7_dashface")
@@ -26,6 +27,8 @@ attack_duration = 0.35
 spin_strike = 0.72
 lunge_step_foot = 36.0
 attack_thrust = true
+attack_snap = true
+attack_smear = true
 gun_hides_held_item = true
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
@@ -61,6 +64,11 @@ texture = ExtResource("9_candy")
 position = Vector2(1.5, -32.6)
 scale = Vector2(0.055, 0.055)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(219, 76.5)
+script = ExtResource("99_blink")
+eye_size = Vector2(206, 176)
 
 [node name="Gun" type="Sprite2D" parent="." index="8" unique_id=2130215053]
 visible = false

@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="9"]
@@ -19,6 +19,10 @@ size = Vector2(30, 30)
 radius = 20.0
 height = 60.0
 
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hurt"]
+radius = 20.0
+height = 91.0
+
 [node name="SubwayVillain" type="CharacterBody2D"]
 script = ExtResource("1")
 stats = ExtResource("2")
@@ -33,7 +37,8 @@ shape = SubResource("CapsuleShape2D_body")
 script = ExtResource("3")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
-shape = SubResource("CapsuleShape2D_body")
+position = Vector2(0, -15.5)
+shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("20_combo")

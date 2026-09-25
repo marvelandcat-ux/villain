@@ -38,7 +38,7 @@ const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 @export var knockout_effect: bool = true
 ## 이 연출을 쓸 캐릭터 이름 (CharacterStats.character_name). **비우면 전원**.
 ## 지금은 스토리에서 잼민이가 쓰러질 때만 쓰기로 해서 촉법소년만 넣어 뒀다
-@export var knockout_characters: Array[String] = ["버릇없는 아이"]
+@export var knockout_characters: Array[String] = ["금쪽이"]
 ## 스토리 모드에서만 연출을 쓸지. 끄면 일반 대전에서도 나온다
 @export var knockout_story_only: bool = true
 ## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다

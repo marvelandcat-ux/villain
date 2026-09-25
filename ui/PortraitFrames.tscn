@@ -42,7 +42,7 @@ anchors_preset = 0
 offset_right = 1320.0
 offset_bottom = 200.0
 
-[node name="버릇없는 아이" type="Panel" parent="." unique_id=2051123541]
+[node name="금쪽이" type="Panel" parent="." unique_id=2051123541]
 clip_contents = true
 layout_mode = 0
 offset_left = 10.0
@@ -50,7 +50,7 @@ offset_top = 10.0
 offset_right = 210.0
 offset_bottom = 190.0
 
-[node name="Portrait" type="TextureRect" parent="버릇없는 아이" unique_id=600064873]
+[node name="Portrait" type="TextureRect" parent="금쪽이" unique_id=600064873]
 layout_mode = 0
 offset_left = -15.0
 offset_top = -8.0

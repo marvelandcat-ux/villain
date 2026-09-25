@@ -20,11 +20,14 @@ extends Node2D
 ## 걸을 때 발끝이 위로 들리는 최대 각도(도)
 @export var foot_swing_deg: float = 36.0
 ## 발이 제자리에서 앞뒤로 움직이는 거리(px) — 클수록 보폭이 커지고 앞발/뒷발이 뚜렷하게 바뀐다
-@export var foot_stride: float = 15.0
+@export var foot_stride: float = 11.0
+## 걸을 때 앞으로 옮겨지는 발이 들리는 높이(px). 바닥을 디딘 발은 안 뜬다 — 한 발씩 들었다 놓는 걸음(2026-09-25).
+## 0이면 예전처럼 두 발이 바닥에 붙은 채 미끄러진다
+@export var foot_step_lift: float = 5.0
 ## 몸이 들썩이는 높이(px)
 @export var body_bob: float = 4.0
 ## 손이 앞뒤로 흔들리는 거리(px)
-@export var hand_swing: float = 12.0
+@export var hand_swing: float = 7.0
 ## 가만히 서 있을 때 몸/머리/손이 위아래로 미묘하게 숨쉬는 폭(px). 걷기 시작하면 서서히 사라진다
 @export var breathe_amount: float = 2.6
 ## 숨쉬기 속도(라디안/초) — 낮을수록 느긋하게 숨쉰다
@@ -173,6 +176,78 @@ extends Node2D
 @export var thrust3_swing_deg: float = 130.0
 @export var thrust3_raise_offset: Vector2 = Vector2(-26, -22)
 @export var thrust3_slam_offset: Vector2 = Vector2(16, 6)
+
+## --- 격투게임식 끊어 치기 (2026-09-25) ---
+## 켜면 기본공격 자세가 부드럽게 흐르지 않고 **"멈칫 -> 휙 -> 버팀 -> 툭"** 으로 끊긴다.
+## 예비동작 자세에 빨리 도달해 잠깐 멈추고, 후려치기는 짧게 끝내 뻗은 자세로 버티다가, 마지막에 확 제자리로 돌아온다.
+## 판정 시각(40% 지점)은 그대로라 콤보 타이밍은 안 바뀐다. 기본 꺼짐(다른 캐릭터 영향 없음)
+@export var attack_snap: bool = false
+## 예비동작 구간(0~40%) 중 이 비율 안에 감기 자세가 완성되고, 나머지는 그 자세로 멈춰 있다
+@export_range(0.1, 1.0, 0.05) var snap_windup_reach: float = 0.55
+## 후려치기 구간(40~62%) 중 이 비율 안에 다 뻗는다 — 작을수록 빠르게 튀어나간다
+@export_range(0.1, 1.0, 0.05) var snap_strike_reach: float = 0.45
+## 복귀 구간(62~100%) 중 이 비율 동안은 뻗은 자세로 버티고, 남은 시간에 확 돌아온다
+@export_range(0.0, 0.95, 0.05) var snap_recovery_hold: float = 0.6
+
+## --- 대치 자세 (2026-09-25) ---
+## 켜면 평소에 두 손을 가슴 앞으로 조금 내밀고 있는다(격투게임 대기 자세). 걷기·공격 자세 위에 **더해지므로**
+## 공격도 이 자세에서 출발해 이 자세로 돌아온다. 손을 따로 쓰는 동작(마시기·총·잡기·던지기·방어·돌진·자전거·클래시·머리 긁기) 중엔 풀린다.
+## 기본 꺼짐(다른 캐릭터 영향 없음)
+@export var fight_stance: bool = false
+## 제자리에서 더 옮기는 거리(px, +x가 바라보는 쪽, -y가 위)
+@export var stance_hand_r_offset: Vector2 = Vector2(5, -9)
+@export var stance_hand_l_offset: Vector2 = Vector2(36, -6)
+## 더 돌리는 각도(도). 음수면 손에 든 물건이 위로 선다
+@export var stance_hand_r_deg: float = -10.0
+@export var stance_hand_l_deg: float = 15.0
+## 자세가 켜지고 풀리는 속도(1/초)
+@export var stance_blend_speed: float = 8.0
+
+## --- 착지 경직 자세 (2026-09-25) ---
+## 높은 데서 떨어져 착지 경직이 걸렸을 때(`Fighter.landing_lag_*`) 쪼그려 굳은 자세.
+## 다리 파츠가 없어서 **발은 제자리에 두고 몸통·머리·손만 발 쪽으로 내려** 몸과 다리가 가까워지게 한다
+## (처음엔 두 발을 벌려 비틀었는데 "다리 각도가 이상하다"고 해서 뺐다 — 2026-09-25 사용자 요청)
+## 몸이 내려가는 깊이(px)
+@export var land_crouch_depth: float = 7.0
+## 고개를 아래로 숙이는 각도(도) — 방어·피격 움찔과 같은 방향(양수 = 숙임)
+@export var land_crouch_head_deg: float = 10.0
+
+## --- 피격 움찔 자세 (2026-09-25) ---
+## 맞은 순간 배를 맞은 것처럼 **상체를 앞으로 숙이고(ㄱ자) 엉덩이는 뒤로 빼고 두 손은 앞으로 모은다.**
+## 모든 오프셋은 바라보는 쪽 기준(+x가 앞)이다. 조각의 로컬 좌표라 좌우 반전은 저절로 맞는다
+## 전체 시간(초) — 앞 15%에 확 숙이고, 40%까지 버티다가, 나머지 동안 펴진다
+@export var hit_flinch_duration: float = 0.32
+## 몸통이 앞으로 숙는 각도(도) — 몸통 한가운데를 축으로 돌아서 위는 앞으로, 아래(엉덩이)는 뒤로 간다
+@export var hit_flinch_lean_deg: float = 16.0
+## 몸통을 뒤로 더 빼는 거리(px) — 엉덩이가 뒤로 빠진 느낌을 키운다
+@export var hit_flinch_hip_back: float = 4.0
+## 머리가 숙여진 상체를 따라 앞·아래로 가는 거리(px)와 숙이는 각도(도)
+@export var hit_flinch_head_offset: Vector2 = Vector2(5, 4)
+@export var hit_flinch_head_deg: float = 12.0
+## 두 손이 앞으로 모이는 거리(px). 왼손은 몸 뒤에 있어서 더 많이 나온다
+@export var hit_flinch_hand_r_offset: Vector2 = Vector2(8, 4)
+@export var hit_flinch_hand_l_offset: Vector2 = Vector2(24, 3)
+## 맞는 순간 몸 전체(발 포함)가 잠깐 떠오르는 높이(px). **그림만 뜨고 실제 위치·판정은 그대로**라
+## 콤보(1·2타 팝업 0으로 지상에 붙잡아 두는 것)가 깨지지 않는다. 움찔 시간의 앞 30%에 올라가 60%에 내려앉는다
+@export var hit_flinch_hop: float = 10.0
+## 맞는 순간 몸 전체(발 포함)가 넉백 쪽으로 휙 밀렸다 돌아오는 거리(px). **그림만 밀리고 실제 위치·판정은 그대로**라
+## 콤보 간격이 안 바뀐다(2026-09-25 사용자 요청 "뒤로 밀려나는 느낌")
+@export var hit_flinch_push: float = 8.0
+## 움찔할 때 두 발이 꺾이는 각도(도) — 양수면 발끝이 아래로 떨어진다(공중 자세와 같은 방향)
+@export var hit_flinch_foot_deg: float = 25.0
+## 엉덩이를 따라 두 발이 뒤로 빠지는 거리(px)
+@export var hit_flinch_foot_back: float = 3.0
+
+## --- 휘두르기 잔상 (2026-09-25) ---
+## 켜면 후려치는 동안 오른손과 손에 든 물건이 지나간 자리에 옅은 잔상이 남는다(스미어).
+## 잔상은 월드에 고정돼 그 자리에서 흐려진다. 기본 꺼짐
+@export var attack_smear: bool = false
+## 잔상이 사라지기까지 걸리는 시간(초)
+@export var smear_life: float = 0.12
+## 잔상 처음 투명도
+@export_range(0.0, 1.0, 0.05) var smear_alpha: float = 0.45
+## 프레임 사이에 끼워 넣는 잔상 수 — 휘두르기가 몇 프레임밖에 안 돼서, 안 채우면 뚝뚝 끊긴 도장처럼 보인다
+@export var smear_fill: int = 2
 
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
@@ -473,6 +548,25 @@ var _punch_ghosted: bool = false
 ## 주먹 잔상 — 처음 쓸 때 만들어두고 계속 재활용한다. owner를 안 줘서 씬에 저장되지 않는다
 var _ghosts: Array[Sprite2D] = []
 var _ghost_life: Array[float] = []
+## 기본공격 잔상 칸(클래시 주먹 잔상과 따로 쓴다) — 처음 쓸 때 만든다
+var _smears: Array[Sprite2D] = []
+var _smear_left: Array[float] = []
+## 잔상 원본별 직전 프레임 자세(리그 기준 변환) — 프레임 사이를 채울 때 쓴다
+var _smear_prev: Dictionary = {}
+## 끊어 치기가 출발하는 손 자세 — 앞 타가 끝나기 전에 다음 타가 나가도 손이 제자리로 툭 튀지 않게
+var _swing_from_off := Vector2.ZERO
+var _swing_from_deg: float = 0.0
+## 대치 자세가 얼마나 들어가 있는지(0~1)
+var _stance_blend: float = 0.0
+## 착지 경직 자세 남은 시간 / 전체 시간(초)
+var _crouch_time: float = 0.0
+var _crouch_len: float = 0.0
+## 피격 움찔 남은 시간 / 전체 시간(초) / 세기(0~1)
+var _flinch_time: float = 0.0
+var _flinch_len: float = 0.0
+var _flinch_power: float = 1.0
+## 이번 움찔에서 밀리는 방향 — 리그 로컬 x 부호(-1 = 바라보는 반대쪽 = 뒤)
+var _flinch_push_dir: float = -1.0
 ## 클래시 동안 손에 든 물건(소주병·키보드 등)을 숨겼는지 — 끝나면 다시 보여주려고 기억한다
 var _hold_hidden_by_clash: bool = false
 ## 페달 회전 각도 (계속 커짐)
@@ -631,6 +725,10 @@ func _process(delta: float) -> void:
 		_attack_time = maxf(_attack_time - delta, 0.0)
 	if _step_time > 0.0:
 		_step_time = maxf(_step_time - delta, 0.0)
+	if _crouch_time > 0.0:
+		_crouch_time = maxf(_crouch_time - delta, 0.0)
+	if _flinch_time > 0.0:
+		_flinch_time = maxf(_flinch_time - delta, 0.0)
 	if _drink_time > 0.0:
 		_drink_time = maxf(_drink_time - delta, 0.0)
 	if _vomit_time > 0.0:
@@ -721,6 +819,12 @@ func _process(delta: float) -> void:
 		else:
 			_bike.visible = false
 
+	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
+	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 \
+		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 \
+		and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
+	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
+
 	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
 	_clash_blend = move_toward(_clash_blend, _clash_target, delta * clash_blend_speed)
 	_tick_clash_punches(delta)
@@ -735,6 +839,7 @@ func _process(delta: float) -> void:
 			_phase = 0.0
 
 	_apply_pose(speed_ratio)
+	_update_smear(delta)
 
 func _apply_pose(speed_ratio: float) -> void:
 	# 지난 프레임에 뒤돌기로 얇게 눌러둔 가로 크기를 먼저 되돌린다
@@ -753,8 +858,11 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	# 앞으로 나가는 동안(swing이 양수)에만 발끝을 들고, 뒤로 밀리는 동안엔 바닥을 딛는 것처럼 눕힌다.
 	# 공중에서는 걷기 쪽이 0으로 잦아들고 대신 두 발이 함께 점프 각도로 뻗는다
-	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount)
-	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount)
+	# 들어 올리기는 "앞으로 옮겨지는 중"인 발에만 — 앞뒤 위치가 sin이라 그 변화 방향(cos)이 양수인 동안이다.
+	# 가운데를 지나며 가장 높이 뜨고 앞에 닿을 때 내려앉는다. 그동안 다른 발은 바닥을 디딘 채 뒤로 밀린다
+	var stepping: float = cos(_phase)
+	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount, maxf(stepping, 0.0) * amount)
+	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount, maxf(-stepping, 0.0) * amount)
 
 	# 발이 가장 높이 들렸을 때 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
 	var bob: float = -absf(swing) * body_bob * amount
@@ -879,6 +987,24 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _clash_blend > 0.001:
 		_pose_clash()
 
+	# 착지 경직 — 무릎을 굽힌다(걷기·숨쉬기 위에 더한다)
+	if _crouch_time > 0.0:
+		_pose_land_crouch()
+
+	# 피격 움찔 — 상체를 앞으로 숙이고 엉덩이를 뺀다(다른 자세 위에 더한다)
+	if _flinch_time > 0.0:
+		_pose_hit_flinch()
+
+	# 대치 자세 — 위에서 잡힌 손 자세에 더하기만 한다(두 손 잡기 중엔 왼손은 오른손을 따라가므로 뺀다)
+	if _stance_blend > 0.001:
+		if _hand_r:
+			_hand_r.position += stance_hand_r_offset * _stance_blend
+			_hand_r.rotation += deg_to_rad(stance_hand_r_deg) * _stance_blend
+		if _hand_l:
+			var l: float = _stance_blend * (1.0 - _grip_blend)
+			_hand_l.position += stance_hand_l_offset * l
+			_hand_l.rotation += deg_to_rad(stance_hand_l_deg) * l
+
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
@@ -952,7 +1078,8 @@ func _apply_spin_turn() -> void:
 
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
-func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
+## raise: 앞으로 옮겨지는 중인 정도(0~1) — foot_step_lift만큼 발을 들어 올린다
+func _pose_foot(foot: Sprite2D, lift: float, slide: float, raise: float = 0.0) -> void:
 	if foot == null:
 		return
 	# 걷기는 발끝이 위로 들리게(각도 양수 = 시계 방향이라 부호를 뒤집는다),
@@ -960,7 +1087,7 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	foot.rotation = deg_to_rad(-foot_swing_deg * lift + jump_foot_deg * _air_blend)
 	foot.position.x = _rest_positions[foot].x + foot_stride * slide
 	# 세로 위치는 항상 제자리로 되돌린다 — 페달 동작(자전거)이 바꿔놓은 발 Y가 돌진 후에 남지 않게
-	foot.position.y = _rest_positions[foot].y
+	foot.position.y = _rest_positions[foot].y - foot_step_lift * raise
 
 ## 콤보가 앞으로 파고드는 동안 발을 내딛는다 — duration은 파고드는 시간과 같게 준다
 ## lead: 앞쪽 이 비율 동안은 발만 먼저 나가고 몸은 그 뒤에 따라온다(ComboMeleeAttack의 이동 곡선과 같은 값을 준다)
@@ -1020,6 +1147,10 @@ func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = fa
 	_spin_now = spin or (spin_hit_index >= 0 and variant == spin_hit_index)
 	_attack_time = _attack_len
 	_attack_variant = variant
+	if _hand_r and _rest_positions.has(_hand_r):
+		# 대치 자세는 공격 자세 위에 따로 더해지므로 출발 자세에서는 빼 둔다 — 안 빼면 두 번 더해져 손이 튄다
+		_swing_from_off = _hand_r.position - _rest_positions[_hand_r] - stance_hand_r_offset * _stance_blend
+		_swing_from_deg = rad_to_deg(_hand_r.rotation) - stance_hand_r_deg * _stance_blend
 
 ## 이 모션으로 휘두르면 **시작부터 몇 초 뒤에 맞는지** — 콤보가 판정을 켤 시각이다(AttackData는 이 값을 따른다).
 ## 보통 타는 내리치기 시작 지점(40%), 회전 타는 회전 도중 후려치는 지점(spin_end x spin_strike).
@@ -1047,6 +1178,9 @@ func _pose_attack_hand() -> void:
 	var slam_off: Vector2 = v["slam_off"]
 	var angle: float
 	var offset: Vector2
+	if attack_snap:
+		_snap_attack_pose(progress, raise_deg, swing_deg, raise_off, slam_off)
+		return
 	if progress < ATTACK_STRIKE_START:
 		# ① 예비동작 — 손을 감는다 (끝으로 갈수록 느려지게)
 		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
@@ -1065,6 +1199,206 @@ func _pose_attack_hand() -> void:
 	_hand_r.rotation = deg_to_rad(angle)
 	_hand_r.position = _rest_positions[_hand_r] + offset
 	# 두 손 잡기는 스윙이 끝난 뒤에도 블렌드가 남아 있어야 하므로 _apply_pose에서 따로 부른다
+
+## 격투게임식 끊어 치기(attack_snap) — 구간 나누는 지점(40% / 62%)은 원래 스윙과 같고, 구간 안의 흐름만 다르다.
+## ① 감기: 앞 snap_windup_reach 안에 감기 자세 완성 -> 나머지는 멈칫
+## ② 후려치기: 앞 snap_strike_reach 안에 다 뻗음(감속 곡선이라 확 튀어나가 탁 멈춘다) -> 나머지는 뻗은 채
+## ③ 복귀: snap_recovery_hold 동안 뻗은 자세로 버티다가 남은 시간에 제자리로 툭
+func _snap_attack_pose(progress: float, raise_deg: float, swing_deg: float, raise_off: Vector2, slam_off: Vector2) -> void:
+	var angle: float
+	var offset: Vector2
+	if progress < ATTACK_STRIKE_START:
+		var t: float = clampf(progress / ATTACK_STRIKE_START / maxf(snap_windup_reach, 0.01), 0.0, 1.0)
+		var p: float = 1.0 - (1.0 - t) * (1.0 - t)
+		# 앞 타가 뻗은 자리에서 출발한다 — 제자리에서 출발하면 연타할 때 손이 툭 튄다
+		angle = lerpf(_swing_from_deg, -raise_deg, p)
+		offset = _swing_from_off.lerp(raise_off, p)
+	elif progress < ATTACK_STRIKE_END:
+		var t: float = clampf((progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START) / maxf(snap_strike_reach, 0.01), 0.0, 1.0)
+		var p: float = 1.0 - pow(1.0 - t, 3.0)
+		angle = lerpf(-raise_deg, swing_deg, p)
+		offset = raise_off.lerp(slam_off, p) + _swing_arc(p, raise_off, slam_off)
+	else:
+		var q: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		var t: float = clampf((q - snap_recovery_hold) / maxf(1.0 - snap_recovery_hold, 0.01), 0.0, 1.0)
+		var p: float = t * t * (3.0 - 2.0 * t)
+		angle = lerpf(swing_deg, 0.0, p)
+		offset = slam_off.lerp(Vector2.ZERO, p)
+	_hand_r.rotation = deg_to_rad(angle)
+	_hand_r.position = _rest_positions[_hand_r] + offset
+
+## 착지 경직 자세를 duration초 동안 잡는다 — Fighter가 높은 데서 떨어져 착지한 순간 부른다
+## 0 이하를 주면 자세를 그 자리에서 푼다
+func play_land_crouch(duration: float) -> void:
+	if duration <= 0.0:
+		_crouch_time = 0.0
+		return
+	_crouch_len = duration
+	_crouch_time = _crouch_len
+
+## 굽힌 정도: 착지 순간 확 주저앉고(앞 12%) -> 버티다가 -> 끝 35% 동안 일어난다
+func _land_crouch_amount() -> float:
+	var progress: float = 1.0 - _crouch_time / _crouch_len
+	if progress < 0.12:
+		var t: float = progress / 0.12
+		return 1.0 - (1.0 - t) * (1.0 - t)
+	if progress < 0.65:
+		return 1.0
+	var t2: float = (progress - 0.65) / 0.35
+	return 1.0 - t2 * t2 * (3.0 - 2.0 * t2)
+
+## 몸통·머리·손을 발 쪽으로 내린다. 발은 바닥에 붙어 있어야 하므로 안 건드린다
+func _pose_land_crouch() -> void:
+	var k: float = _land_crouch_amount()
+	var down: float = land_crouch_depth * k
+	if _body:
+		_body.position.y += down
+	if _head:
+		_head.position.y += down
+		_head.rotation += deg_to_rad(land_crouch_head_deg) * k
+	if _hand_r:
+		_hand_r.position.y += down * 0.85
+	if _hand_l:
+		_hand_l.position.y += down * 0.85
+
+## 맞은 순간 움찔 자세를 시작한다. power(0~1)가 클수록 크게 숙인다 — Fighter가 데미지로 정해 넘긴다.
+## 이미 움찔하는 중에 또 맞으면 처음부터 다시(연타를 맞을 때마다 다시 꺾인다)
+## push_dir: 그림이 밀리는 쪽(리그 로컬 x 부호) — -1이 뒤(바라보는 반대쪽), +1이 앞(등 뒤에서 맞았을 때)
+func play_hit_flinch(power: float = 1.0, push_dir: float = -1.0) -> void:
+	_flinch_len = maxf(hit_flinch_duration, 0.01)
+	_flinch_time = _flinch_len
+	_flinch_power = clampf(power, 0.0, 1.0)
+	_flinch_push_dir = -1.0 if push_dir < 0.0 else 1.0
+
+## 숙인 정도: 앞 15%에 확 숙이고 -> 40%까지 버티고 -> 나머지 동안 부드럽게 펴진다
+func _hit_flinch_amount() -> float:
+	var progress: float = 1.0 - _flinch_time / _flinch_len
+	var k: float
+	if progress < 0.15:
+		var t: float = progress / 0.15
+		k = 1.0 - (1.0 - t) * (1.0 - t)
+	elif progress < 0.4:
+		k = 1.0
+	else:
+		var t2: float = (progress - 0.4) / 0.6
+		k = 1.0 - t2 * t2 * (3.0 - 2.0 * t2)
+	return k * _flinch_power
+
+func _pose_hit_flinch() -> void:
+	var k: float = _hit_flinch_amount()
+	if _body:
+		_body.position.x -= hit_flinch_hip_back * k
+		_body.rotation += deg_to_rad(hit_flinch_lean_deg) * k
+	if _head:
+		_head.position += hit_flinch_head_offset * k
+		_head.rotation += deg_to_rad(hit_flinch_head_deg) * k
+	if _hand_r:
+		_hand_r.position += hit_flinch_hand_r_offset * k
+	if _hand_l:
+		_hand_l.position += hit_flinch_hand_l_offset * k
+	# 발도 손처럼 꺾인다 — 발끝이 아래로 떨어지고 엉덩이를 따라 뒤로 빠진다
+	for foot in [_foot_l, _foot_r]:
+		if foot:
+			foot.rotation += deg_to_rad(hit_flinch_foot_deg) * k
+			foot.position.x -= hit_flinch_foot_back * k
+	# 잠깐 떠오르기 — 숙이는 곡선과 따로, 앞 60% 동안 sin 반주기로 떴다 내려앉는다
+	var progress: float = 1.0 - _flinch_time / _flinch_len
+	var lift: float = hit_flinch_hop * _flinch_power * sin(PI * clampf(progress / 0.6, 0.0, 1.0))
+	# 밀려나기 — 숙이는 곡선(k)과 같은 박자라 확 밀렸다가 버티고 돌아온다. k에 이미 세기가 곱해져 있다
+	var push: float = hit_flinch_push * k * _flinch_push_dir
+	if lift > 0.001 or absf(push) > 0.001:
+		for part in [_body, _head, _hand_r, _hand_l, _foot_l, _foot_r]:
+			if part:
+				part.position += Vector2(push, -lift)
+
+## 잔상을 남길 구간인지 — 후려치는 동안(끊어 치기면 다 뻗을 때까지)만 남긴다
+func _smear_window() -> bool:
+	if _attack_time <= 0.0:
+		return false
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var end: float = ATTACK_STRIKE_END
+	if attack_snap:
+		end = ATTACK_STRIKE_START + (ATTACK_STRIKE_END - ATTACK_STRIKE_START) * snap_strike_reach
+	# 한 프레임 여유 — 다 뻗는 순간의 자세까지 잔상에 들어가야 궤적이 끝까지 이어진다
+	return progress >= ATTACK_STRIKE_START and progress <= end + 0.06
+
+## 잔상의 원본 — 오른손 + 손에 든 물건 중 보이는 스프라이트
+func _smear_sources() -> Array[Sprite2D]:
+	var list: Array[Sprite2D] = []
+	if _hand_r and _hand_r.visible:
+		list.append(_hand_r)
+	if _hand_r_hold and _hand_r_hold.visible:
+		for child in _hand_r_hold.get_children():
+			if child is Sprite2D and child.visible:
+				list.append(child)
+	return list
+
+## 매 프레임: 남아 있는 잔상을 흐리게 하고, 후려치는 중이면 새 잔상을 남긴다.
+## 자세 계산(_apply_pose)이 끝난 뒤에 불러야 이번 프레임 손 자리를 찍는다
+func _update_smear(delta: float) -> void:
+	for i in _smears.size():
+		if _smear_left[i] <= 0.0:
+			continue
+		_smear_left[i] -= delta
+		if _smear_left[i] <= 0.0:
+			_smears[i].visible = false
+		else:
+			_smears[i].modulate.a = smear_alpha * (_smear_left[i] / maxf(smear_life, 0.001))
+	if not attack_smear or not _smear_window():
+		_smear_prev.clear()
+		return
+	var rig_xf: Transform2D = get_global_transform()
+	var rig_inv: Transform2D = rig_xf.affine_inverse()
+	for src in _smear_sources():
+		# 리그 기준 변환으로 저장·보간한다 — 월드 변환은 왼쪽을 볼 때 배율이 음수라 보간하면 뒤집힐 수 있다
+		var now: Transform2D = rig_inv * src.get_global_transform()
+		if _smear_prev.has(src):
+			var prev: Transform2D = _smear_prev[src]
+			for k in range(1, smear_fill + 1):
+				var w: float = float(k) / float(smear_fill + 1)
+				# 앞(오래된) 쪽일수록 조금 더 빨리 사라지게 해서 끝이 가늘어지는 꼬리가 된다
+				_spawn_smear(src, rig_xf * prev.interpolate_with(now, w), 0.7 + 0.3 * w)
+		_spawn_smear(src, rig_xf * now, 1.0)
+		_smear_prev[src] = now
+
+## 잔상 하나를 월드 변환 xf 자리에 남긴다 — 가장 오래된 칸을 재활용한다
+func _spawn_smear(src: Sprite2D, xf: Transform2D, life_ratio: float) -> void:
+	if _smears.is_empty():
+		_build_smears()
+	var idx: int = 0
+	for i in _smear_left.size():
+		if _smear_left[i] < _smear_left[idx]:
+			idx = i
+	var g: Sprite2D = _smears[idx]
+	g.texture = src.texture
+	g.centered = src.centered
+	g.offset = src.offset
+	g.flip_h = src.flip_h
+	g.flip_v = src.flip_v
+	g.region_enabled = src.region_enabled
+	g.region_rect = src.region_rect
+	g.z_index = src.z_index
+	g.global_transform = xf
+	_smear_left[idx] = smear_life * life_ratio
+	g.modulate.a = smear_alpha * life_ratio
+	g.visible = true
+
+## 잔상 칸을 만든다. top_level이라 리그가 움직여도 그 자리에 남고,
+## 오른손·손에 든 물건보다 앞 순서에 끼워 진짜 손·무기 뒤에 그려진다. owner를 안 줘서 씬에 저장되지 않는다
+func _build_smears() -> void:
+	var at: int = get_child_count()
+	if _hand_r:
+		at = mini(at, _hand_r.get_index())
+	if _hand_r_hold:
+		at = mini(at, _hand_r_hold.get_index())
+	for i in 48:
+		var g := Sprite2D.new()
+		g.top_level = true
+		g.visible = false
+		add_child(g)
+		move_child(g, at + i)
+		_smears.append(g)
+		_smear_left.append(0.0)
 
 ## 스윙 타 번호(_attack_variant)에 따른 감기 각도/후리기 각도/손 경로.
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.

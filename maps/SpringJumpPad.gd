@@ -28,8 +28,14 @@ var _spring: Node2D
 var _spring_base_scale := Vector2.ONE
 ## 이번 프레임에 누가 튕겼는지 (연출용)
 var _bounced: bool = false
+## 판정 사각형 세로 절반(px) — 좌석 위에 선 캐릭터인지 가를 때 쓴다
+var _pad_half_height: float = 20.0
 
 func _ready() -> void:
+	for child in get_children():
+		if child is CollisionShape2D and child.shape is RectangleShape2D:
+			_pad_half_height = child.shape.size.y * 0.5 + child.position.y
+			break
 	if spring_visual != NodePath():
 		_spring = get_node_or_null(spring_visual)
 		if _spring:
@@ -47,11 +53,17 @@ func _physics_process(_delta: float) -> void:
 		var fighter := area.fighter as Fighter
 		if fighter == null or not is_instance_valid(fighter):
 			continue
+		# 허트박스가 머리까지 올라가서(위로 90px) 좌석 밑 지면에 선 캐릭터도 판정에 닿는다 —
+		# 몸 중심이 판정 아래로 벗어나 있으면 좌석 밑을 지나가는 중이라 튕기지 않는다
+		if fighter.global_position.y > global_position.y + _pad_half_height:
+			continue
 		standing[fighter] = true
 		if fighter.is_on_floor():
 			var fall: float = _prev_fall.get(fighter, 0.0)
 			var launch: float = clampf(maxf(bounce_velocity, fall * bounce_restitution), 0.0, max_bounce_velocity)
 			fighter.velocity.y = -launch
+			# 좌석에 떨어지며 걸린 착지 경직은 풀어준다 — 튕기는 건 착지가 아니다
+			fighter.cancel_landing_lag()
 			# 꼭대기에 닿을 때까지(올라가는 속도 / 중력 = 걸리는 시간) 잔상을 남긴다
 			fighter.start_air_trail(launch / maxf(Fighter.gravity, 1.0))
 			_bounced = true

@@ -183,8 +183,8 @@ corners = PackedVector2Array()
 flip_h = true
 fill_color = Color(0.95, 0.85, 0.2, 1)
 portrait_texture = ExtResource("3")
-name_text = "버릇없는 아이"
-character_key = "버릇없는 아이"
+name_text = "금쪽이"
+character_key = "금쪽이"
 
 [node name="TileAkpeulleo" type="Button" parent="Center/VBox/ThumbRow" unique_id=1868184841]
 layout_mode = 0

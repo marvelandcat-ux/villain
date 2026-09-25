@@ -6,4 +6,4 @@
 script = ExtResource("1")
 character_name = "층간소음 청년"
 max_hp = 105
-move_speed = 442.5
+move_speed = 398.25

@@ -7,9 +7,9 @@
 
 [resource]
 script = ExtResource("1")
-character_name = "버릇없는 아이"
+character_name = "금쪽이"
 max_hp = 100
-move_speed = 420.0
+move_speed = 378
 attack_multiplier = 1.0
 ultimate_cutin_scene = ExtResource("2")
 attack_rating = 3
