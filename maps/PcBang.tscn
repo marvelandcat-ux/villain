@@ -30,6 +30,7 @@ position = Vector2(-480, -500)
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="LeftWallVisual" type="Polygon2D" parent="LeftWall"]
+position = Vector2(0, 600)
 color = Color(0.15, 0.4, 0.55, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 
@@ -40,6 +41,7 @@ position = Vector2(480, -500)
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="RightWallVisual" type="Polygon2D" parent="RightWall"]
+position = Vector2(0, 600)
 color = Color(0.15, 0.4, 0.55, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 

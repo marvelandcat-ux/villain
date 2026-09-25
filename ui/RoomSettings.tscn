@@ -146,9 +146,9 @@ vertical_alignment = 1
 
 [node name="PresetA" type="Button" parent="."]
 layout_mode = 0
-offset_left = 110.0
+offset_left = 110
 offset_top = 66.0
-offset_right = 450.0
+offset_right = 360
 offset_bottom = 118.0
 theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -164,9 +164,9 @@ text = "표준"
 
 [node name="PresetB" type="Button" parent="."]
 layout_mode = 0
-offset_left = 470.0
+offset_left = 380
 offset_top = 66.0
-offset_right = 810.0
+offset_right = 630
 offset_bottom = 118.0
 theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -180,11 +180,29 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_hover")
 theme_override_styles/focus = SubResource("StyleBoxFlat_preset_hover")
 text = "장기전"
 
+[node name="PresetC" type="Button" parent="."]
+layout_mode = 0
+offset_left = 650
+offset_top = 66.0
+offset_right = 900
+offset_bottom = 118.0
+theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_hover")
+theme_override_styles/focus = SubResource("StyleBoxFlat_preset_hover")
+text = "난장판"
+
 [node name="PresetMore" type="Button" parent="."]
 layout_mode = 0
-offset_left = 830.0
+offset_left = 920
 offset_top = 66.0
-offset_right = 1170.0
+offset_right = 1170
 offset_bottom = 118.0
 theme_override_colors/font_color = Color(0.95, 0.92, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)

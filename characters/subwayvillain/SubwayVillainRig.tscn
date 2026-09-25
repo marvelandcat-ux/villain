@@ -8,7 +8,6 @@
 [ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌/단소.png" id="6_danso"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
-position = Vector2(264, 124)
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

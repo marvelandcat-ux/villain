@@ -5,6 +5,9 @@ extends Control
 ## 에디터에서도 실제 목록·그림을 보려고 스크립트를 직접 읽어 둔다.
 ## 오토로드 **인스턴스**(GameState)는 에디터에 없지만, 스크립트 안의 const는 이렇게 꺼낼 수 있다
 const GAME_STATE := preload("res://GameState.gd")
+## 맵 칸에 실제 맵 모양을 그릴 때 쓰는 스크립트 — **맵 선택 화면이 쓰는 것과 같은 것**이라
+## 두 화면의 맵 그림이 저절로 똑같이 나온다. class_name 대신 preload로 가져온다(에디터 캐시 함정)
+const MAP_PREVIEW := preload("res://ui/MapPreview.gd")
 
 ## 도감 — **한 화면에서 캐릭터/맵을 넘겨 보고, 칸을 고르면 상세로 들어간다.**
 ##
@@ -79,6 +82,11 @@ const GAME_STATE := preload("res://GameState.gd")
 ## 캐릭터는 한 줄에 다 놓고(전신 세로 칸), **맵은 5종이라 3칸 + 2칸 두 줄**이다(2026-09-25 사용자 지정)
 @export var tiles_per_row: int = 8
 @export var tiles_per_row_map: int = 3
+## 도감 맵 칸 그림을 칸 비율로 자를 때 **세로로 어느 쪽을 남길지**. 0=위쪽, 0.5=가운데, 1=아래쪽.
+## 기본 1 — 지하철역의 열차나 각 맵의 바닥이 아래쪽에 있어서, 잘려도 되는 하늘·천장 쪽을 자른다
+@export_range(0.0, 1.0, 0.05) var map_art_crop_anchor: float = 1.0
+## 칸보다 몇 배 크게 떠올지 (클수록 선명하지만 메모리를 더 쓴다)
+@export_range(1.0, 3.0, 0.1) var map_art_oversample: float = 1.6
 ## **에디터에서만 쓰는 미리보기 탭.** 게임에는 아무 영향이 없다 —
 ## 에디터는 항상 캐릭터 탭만 그려서 맵 칸 정렬을 눈으로 보며 고칠 수가 없었다.
 ## "맵"으로 두면 에디터 화면이 맵 칸으로 바뀌어서 간격·줄 수를 보면서 맞출 수 있다
@@ -125,6 +133,8 @@ var _tab_rest_pos: Dictionary = {}  # {mode: 씬에 놓인 자리} — 튀어나
 var _tiles: Array[FanTile] = []
 ## 전신샷 캐시 {캐릭터이름: Texture2D 또는 null}
 var _fullbody_cache: Dictionary = {}
+## 맵 이름 -> 한 번 그려서 떠 둔 맵 그림. 탭을 오갈 때마다 다시 그리지 않으려고 들고 있는다
+var _map_art_cache: Dictionary = {}
 var _selected_key: String = ""
 ## 흰 커서가 지금 어디에 있는지 — "tabs"(캐릭터/맵 탭) 또는 "tiles"(칸).
 ## 도감에 들어오면 탭에서 시작한다. 아래 방향키로 칸으로 내려가고, 윗줄에서 위를 누르면 다시 탭으로
@@ -138,6 +148,8 @@ var _repeat_left: float = 0.0
 @onready var _tab_root: Control = $Tabs
 @onready var _tile_root: Control = $Tiles
 @onready var _detail: Control = $Detail
+## 맵 상세 화면 (위 평행사변형에 맵 외형, 아래 네모에 설명)
+@onready var _map_detail: Control = $MapDetail
 ## 에디터에서 캐릭터 자리를 눈으로 잡는 초록 네모. 게임에서는 숨긴다
 @onready var _guide: Control = $PortraitGuide
 @onready var _back_button: Button = $BackButton
@@ -317,6 +329,10 @@ func _build_tiles() -> void:
 		_tiles.append(tile)
 	if not keys.is_empty():
 		_select(keys[0])
+	# 맵 칸은 이름만 있는 빈 칸이라, 맵 선택 화면과 같은 그림을 떠서 채워 넣는다.
+	# await가 들어 있어 바로 안 끝나므로 기다리지 않고 시작만 시킨다(칸은 먼저 뜨고 그림이 곧 붙는다)
+	if _mode == "map" and not Engine.is_editor_hint():
+		_fill_map_art(box)
 
 func _tile_shape_changed(stamp: String) -> bool:
 	var shape: String = stamp.split("|portrait|")[0]
@@ -372,6 +388,95 @@ func _read_guides() -> void:
 		portrait_overrides[key] = wanted
 
 ## 칸에 넣을 그림 — 전신샷이 있으면 그것, 없으면 예전 얼굴 초상화
+## 맵 칸에 실제 맵 모양을 그려 넣는다.
+## **칸이 평행사변형이라 MapPreview 노드를 자식으로 그냥 얹을 수 없다** — 네모난 모서리가 칸 밖으로
+## 삐져나온다. 그래서 작은 화면(SubViewport)에 한 번 그려 그림으로 떠온 뒤 칸의 초상화 자리에 넣는다
+func _fill_map_art(box: Vector2) -> void:
+	var keys: Array = _entries()
+	for i in range(keys.size()):
+		var key: String = str(keys[i])
+		var tex: Texture2D = _map_art_cache.get(key)
+		if tex == null:
+			tex = await _render_map_art(key, box)
+		# 그리는 동안 탭을 바꿨거나 칸을 다시 만들었으면 그만둔다
+		if _mode != "map" or i >= _tiles.size() or not is_instance_valid(_tiles[i]):
+			return
+		if tex == null:
+			continue
+		var tile: FanTile = _tiles[i]
+		tile.portrait_texture = tex
+		# 이미 칸 비율로 잘라서 가져왔으므로 칸 전체에 그대로 펴 넣으면 딱 맞는다(빈 띠가 안 생긴다)
+		tile.portrait_frame = Rect2(0.0, 0.0, 1.0, 1.0)
+		tile.display_text = ""
+		tile.name_text = key
+
+## 맵 하나를 SubViewport에 그려서 그림으로 떠온다.
+##
+## **두 단계로 나눈다.** 먼저 맵이 실제로 차지하는 비율 그대로 크게 그려서 여백 없이 꽉 찬 그림을 얻고,
+## 그 다음 칸 비율에 맞게 잘라낸다. MapPreview는 자기 크기 안에 맵을 통째로 넣느라 위아래(또는 좌우)에
+## 빈 띠를 남기는데, 그 띠째로 칸에 넣으면 맵이 작게 보였다.
+##
+## 세로로 자를 때는 `map_art_crop_anchor`를 따른다 — 기본 1.0이라 **아래쪽을 남기고 위를 자른다**.
+## 지하철역은 열차가, 다른 맵은 바닥이 아래쪽에 있어서 위를 자르는 게 안전하다(2026-09-26 사용자 지정).
+## 아직 안 만든 맵(경로가 빈 칸)은 null
+func _render_map_art(key: String, box: Vector2) -> Texture2D:
+	var path: String = str(GameState.DEX_MAPS.get(key, ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	var viewport := SubViewport.new()
+	viewport.transparent_bg = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var preview: Control = MAP_PREVIEW.new()
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	viewport.add_child(preview)
+	add_child(viewport)
+	# 1) 맵이 차지하는 비율을 먼저 재고, 그 비율대로 화면을 잡아 다시 그린다
+	preview.size = Vector2(256, 256)
+	viewport.size = Vector2i(256, 256)
+	preview.set_map(path)
+	var bbox: Vector2 = preview._bbox_max - preview._bbox_min
+	var shot: Vector2i = _map_shot_size(bbox, box)
+	viewport.size = shot
+	preview.size = Vector2(shot)
+	preview.queue_redraw()
+	# 그려진 결과가 실제로 나오려면 한 프레임이 끝나야 한다
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var image: Image = viewport.get_texture().get_image() if is_instance_valid(viewport) else null
+	if is_instance_valid(viewport):
+		viewport.queue_free()
+	if image == null:
+		return null
+	# 2) 칸 비율에 맞게 잘라낸다
+	image = image.get_region(_map_crop_rect(image.get_size(), box))
+	var tex := ImageTexture.create_from_image(image)
+	_map_art_cache[key] = tex
+	return tex
+
+## 맵을 여백 없이 그릴 화면 크기 — 맵 비율은 그대로 두되, 잘라낸 뒤에도 칸보다 크도록 넉넉히 잡는다
+func _map_shot_size(bbox: Vector2, box: Vector2) -> Vector2i:
+	var aspect: float = bbox.x / bbox.y if bbox.y > 0.0 else 1.0
+	var tile_aspect: float = box.x / box.y if box.y > 0.0 else 1.0
+	# 칸보다 납작한 맵이면 가로를, 홀쭉한 맵이면 세로를 기준으로 키운다
+	var target_w: float = box.x * map_art_oversample
+	var target_h: float = target_w / maxf(aspect, 0.01)
+	if aspect > tile_aspect:
+		target_h = box.y * map_art_oversample
+		target_w = target_h * aspect
+	return Vector2i(maxi(int(target_w), 64), maxi(int(target_h), 64))
+
+## 떠온 그림에서 칸 비율만큼 잘라낼 자리. 세로로 자를 땐 map_art_crop_anchor 쪽을 남긴다
+func _map_crop_rect(shot: Vector2i, box: Vector2) -> Rect2i:
+	var tile_aspect: float = box.x / box.y if box.y > 0.0 else 1.0
+	var w: int = shot.x
+	var h: int = int(round(float(shot.x) / tile_aspect))
+	if h > shot.y:
+		h = shot.y
+		w = int(round(float(shot.y) * tile_aspect))
+	var x: int = int(round(float(shot.x - w) * 0.5))
+	var y: int = int(round(float(shot.y - h) * clampf(map_art_crop_anchor, 0.0, 1.0)))
+	return Rect2i(x, y, w, h)
+
 func _tile_art(key: String) -> Texture2D:
 	var full: Texture2D = _fullbody(key)
 	if full != null:
@@ -451,8 +556,10 @@ func _on_tile_pressed(key: String) -> void:
 func _open_detail(key: String) -> void:
 	if Engine.is_editor_hint():
 		return
-	# 맵 탭은 아직 상세 화면을 안 만들었다 (캐릭터만 작업 중)
-	if _mode != "character":
+	if _mode == "map":
+		# 맵은 아직 안 만든 맵(경로가 빈 칸)이어도 이름·설명은 볼 수 있게 그냥 연다
+		_set_list_visible(false)
+		_map_detail.open(key, str(GameState.DEX_MAPS.get(key, "")))
 		return
 	var path: String = str(GameState.CHARACTERS.get(key, ""))
 	if path == "":
@@ -468,6 +575,10 @@ func _close_detail() -> void:
 		_detail.close()
 	else:
 		_detail.visible = false
+	if _map_detail and _map_detail.has_method("close"):
+		_map_detail.close()
+	elif _map_detail:
+		_map_detail.visible = false
 	_set_list_visible(true)
 
 ## 목록 화면을 이루는 노드들을 한꺼번에 켜고 끈다
@@ -533,7 +644,7 @@ func _update_tile_hover(delta: float) -> void:
 ## 방향키를 꾹 누르고 있으면 촤르륵 넘어간다 — 처음 한 번, 잠깐 쉬고, 그 뒤로 빠르게 반복.
 ## **Godot 기본 포커스 이동을 안 쓰기 때문에**(칸 포커스를 꺼 뒀다) 반복도 직접 돌려야 한다
 func _update_key_repeat(delta: float) -> void:
-	if _detail.visible:
+	if _detail.visible or (_map_detail and _map_detail.visible):
 		_held_step = 0
 		return
 	var step: int = 0
@@ -605,7 +716,7 @@ func _on_back_hover(entered: bool) -> void:
 	tw.tween_property(_back_button, "scale", goal, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _on_back_pressed() -> void:
-	if _detail.visible:
+	if _detail.visible or (_map_detail and _map_detail.visible):
 		_close_detail()
 	else:
 		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")

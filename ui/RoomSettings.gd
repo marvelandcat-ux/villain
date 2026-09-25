@@ -4,7 +4,7 @@ extends Control
 ## 로컬 대전 방 만들기 — 선취 라운드 수(1~40), 라운드 시간제한, 전역 쿨타임 배율(10~200%),
 ## 스킬 클래시(연타 미니게임)·가드·대시 on/off를 정하고 캐릭터 선택으로 넘어간다.
 ##
-## 2026-09-15 개편: 위쪽엔 빠른 프리셋 버튼 2개("표준"/"장기전") + "프리셋" 저장·불러오기 메뉴,
+## 2026-09-15 개편: 위쪽엔 빠른 프리셋 버튼 3개("표준"/"장기전"/"난장판") + "프리셋" 저장·불러오기 메뉴,
 ## 아래엔 카드 하나 안에 왼쪽(라운드/제한시간/쿨타임)·오른쪽(연타/가드/대시) 2열로
 ## 여섯 항목을 나열한다.
 ##
@@ -66,8 +66,11 @@ func _ready() -> void:
 	_clash_toggle.pressed.connect(_on_clash_toggle_pressed)
 	_guard_toggle.pressed.connect(_on_guard_toggle_pressed)
 	_dash_toggle.pressed.connect(_on_dash_toggle_pressed)
-	$PresetA.pressed.connect(func(): _apply_preset(2, 2))
-	$PresetB.pressed.connect(func(): _apply_preset(3, 0))
+	# 프리셋은 **쿨타임까지 같이 정한다** — 안 그러면 난장판(10%)을 눌렀다가 표준을 눌러도
+	# 쿨타임이 10%로 남아서 "표준"이 표준이 아니게 된다
+	$PresetA.pressed.connect(func(): _apply_preset(2, 2, 100))
+	$PresetB.pressed.connect(func(): _apply_preset(3, 0, 100))
+	$PresetC.pressed.connect(func(): _apply_preset(2, 2, 10))
 	$PresetMore.pressed.connect(_on_more_presets_pressed)
 	$NextButton.pressed.connect(_on_next_pressed)
 	$BackButton.pressed.connect(_on_back_pressed)
@@ -118,10 +121,15 @@ func _on_dash_toggle_pressed() -> void:
 	_dash_enabled = not _dash_enabled
 	_refresh()
 
-## 라운드 수 + 시간 인덱스를 한 번에 정한다
-func _apply_preset(rounds: int, time_index: int) -> void:
+## 라운드 수 + 시간 인덱스 + 쿨타임 배율을 한 번에 정한다.
+## 지금 쓰는 프리셋 버튼 세 개:
+##   표준   = 2선승 / 2분 / 쿨타임 100%
+##   장기전 = 3선승 / 무제한 / 쿨타임 100%
+##   난장판 = 2선승 / 2분 / **쿨타임 10%** — 표준과 딱 하나, 쿨타임만 다르다(2026-09-26 사용자 지정)
+func _apply_preset(rounds: int, time_index: int, cooldown_percent: int) -> void:
 	_rounds = clampi(rounds, MIN_ROUNDS, MAX_ROUNDS)
 	_time_index = clampi(time_index, 0, TIME_OPTIONS.size() - 1)
+	_cooldown_percent = clampi(cooldown_percent, MIN_COOLDOWN_PERCENT, MAX_COOLDOWN_PERCENT)
 	_refresh()
 
 ## "프리셋" 버튼 아래에 메뉴를 띄운다 — 맨 위 "현재 설정 저장", 그 아래 저장해둔 내 프리셋

@@ -73,7 +73,7 @@ const PORTRAIT_FRAME_SIZE := Vector2(200, 180)
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
 ## **2026-09-25: 최종 맵을 다섯으로 줄였다**(사용자 결정) — 지하철역 / 놀이터 / 악플러의 집 / 헬스장 / 번화가.
-## 이 중 헬스장·번화가는 아직 안 만들었다.
+## 2026-09-26에 헬스장·번화가도 배경 그림으로 만들어 다섯 개가 다 고를 수 있게 됐다.
 ##
 ## **여기엔 실제로 고를 수 있는 맵만 둔다.** MapSelect가 이 경로를 그대로 불러서 미리보기를 띄우기 때문에
 ## 빈 경로를 섞으면 맵 선택 화면이 깨진다. 아직 없는 맵은 아래 DEX_MAPS에만 있다.
@@ -84,6 +84,8 @@ const MAPS := {
 	"지하철역": "res://maps/SubwayPlatform.tscn",
 	"놀이터": "res://maps/Playground.tscn",
 	"악플러의 집": "res://maps/TrashRoom.tscn",
+	"헬스장": "res://maps/Gym.tscn",
+	"번화가": "res://maps/Downtown.tscn",
 }
 
 ## 도감 맵 탭에 보여줄 목록 — 만들 예정인 맵까지 넣은 최종 5종이다.
@@ -93,8 +95,8 @@ const DEX_MAPS := {
 	"지하철역": "res://maps/SubwayPlatform.tscn",
 	"놀이터": "res://maps/Playground.tscn",
 	"악플러의 집": "res://maps/TrashRoom.tscn",
-	"헬스장": "",
-	"번화가": "",
+	"헬스장": "res://maps/Gym.tscn",
+	"번화가": "res://maps/Downtown.tscn",
 }
 
 
@@ -109,6 +111,12 @@ const STORY_EPISODES := [
 	{"id": "ep5", "name": "에피소드 5", "scene": ""},
 	{"id": "ep6", "name": "에피소드 6", "scene": ""},
 ]
+
+## 도감 맵 상세 화면에 뜨는 맵 설명. 아직 안 쓴 맵은 여기 없으면 "아직 설명을 적지 않은 맵입니다"가 뜬다.
+## 조작법이 아니라 **그 맵에서 무슨 일이 벌어지는지**를 적는다
+const MAP_DESCRIPTIONS := {
+	"지하철역": "승강장 한복판으로 열차가 지나간다. 경기 시작 12초 뒤부터 30초마다 들어오고, 5초 전부터 경고등이 깜빡이니 그동안 양쪽 벤치 위로 올라가 피해야 한다. 열차에 깔리면 0.35초마다 12씩 깎이면서 진행 방향으로 밀려나고, 가드로도 막을 수 없다. 좌우 벽이 좁아 도망칠 곳이 벤치뿐이다.",
+}
 
 var p1_character_path: String = CHARACTERS.values()[0]
 var p2_character_path: String = CHARACTERS.values()[1]

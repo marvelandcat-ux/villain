@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://h8rcws1tktkj" path="res://sprite/도감/캐릭터도감뒷배경.png" id="4_bg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="5_blur"]
 [ext_resource type="Script" uid="uid://q0bqrjipxb7n" path="res://ui/CharacterDetail.gd" id="6_detail"]
+[ext_resource type="Script" path="res://ui/MapDetail.gd" id="9_mapdetail"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("3_outline")
@@ -493,3 +494,14 @@ offset_right = 1188.0
 offset_bottom = 294.0
 mouse_filter = 2
 color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="MapDetail" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_mapdetail")
