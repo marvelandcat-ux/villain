@@ -72,6 +72,7 @@ shape = SubResource("RectangleShape2D_hitbox")
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("2")
 cooldown = 6.0
+dash_speed_multiplier = 1.7
 icon = ExtResource("11")
 skill_name = "브레이크가 \"없는\" 자전거"
 demo_video = ExtResource("21_vid_dash")

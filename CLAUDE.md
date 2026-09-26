@@ -31,7 +31,9 @@
 - **⚠️ 스킬에서 `Visual.scale`을 직접 트윈 금지 → `BodyRig.play_squash(배율)` 사용.** 리그는 왼쪽을 볼 때 `scale.x` 음수라 양수 목표로 트윈하면 0을 지나 오른쪽으로 뒤집히고 `_face_moving_direction()`과 싸움. `play_squash()`는 방향 부호를 곱해 적용·자동 복귀. 사용처: `HealSkill.heal_pop`, `ScreamConeUltimate.shout_squash`. 자기 자식 스프라이트 트윈(`FirePlate`)은 무관
 - `combat/Hitbox.gd`/`Hurtbox.gd`: `Hurtbox`(Fighter 자식 Area2D)가 피격 시 `take_damage()`, `Hitbox`는 겹치면 데미지(자기 자신 무시)
   - **허트박스는 머리 꼭대기까지**(사용자 요청): 캐릭터 씬 12개의 `HurtboxCollision`이 별도 `CapsuleShape2D_hurt`, 발끝 +30 고정·윗끝 = 머리 그림 꼭대기(높이 = 30 - 꼭대기, `position.y` = (30 + 꼭대기)/2; 금쪽이는 프로펠러 빼고 모자까지). **머리 그림을 바꾸면 다시 잴 것.** 몸 충돌 캡슐은 그대로. 이 때문에 `SpringJumpPad`는 몸 중심이 판정 아래면 무시
-- `skills/ComboMeleeAttack.gd`(`MeleeAttack` 상속): **기본공격 3타 콤보, 기본공격 있는 캐릭터 전원 사용**(지하철 아저씨만 기본공격 없음 — `vault_jump`). 히트 확인식: 헛치면 예약 입력 버림 + `miss_cooldown` + 1타 리셋, 3타 성공 시 `cooldown`. 타별 값은 `combo_damage`/`combo_knockback` 배열이라 `damage`는 안 씀(씬에서 지울 것)
+- `skills/ComboMeleeAttack.gd`(`MeleeAttack` 상속): **기본공격 3타 콤보, 기본공격 있는 캐릭터 전원 사용**(2026-09-26 확인: 지하철 아저씨 `SubwayVillain.tscn`에도 붙어 있다 — 예전 "지하철만 기본공격 없음" 서술은 옛 내용). 히트 확인식: 헛치면 예약 입력 버림 + `miss_cooldown` + 1타 리셋, 3타 성공 시 `cooldown`. 타별 값은 `combo_damage`/`combo_knockback` 배열이라 `damage`는 안 씀(씬에서 지울 것)
+  - **마무리 타 더 멀리 + 이펙트(2026-09-26 사용자 요청, 전원):** `finisher_distance_scale`(1.25)을 마무리 타 가로 넉백에 곱한다. **거리가 아니라 속도 배수**라 1.5를 주면 거리가 1.8~2.1배가 됐다(바닥 미끄러짐이 속도² 비례) — 1.25가 거리 약 1.5배(실측 금쪽이 3타 몫 194 -> 280px, 악플러 38 -> 57px). `finisher_trail`이면 `_launch_finisher()`가 경직·구르기 설정과 상관없이(그 early return **앞에서**) `combat/LaunchTrail.gd`를 맵에 붙인다: ① 맞은 자리 충격(첫 순간 섬광 + 가시 + 퍼지는 고리 — 사용자 요청으로 크게 키움, `burst_*`) ② 날아가는 동안 몸 뒤 바람 줄기 ③ 지나간 길에 C자 먼지 고리(입이 날아가는 쪽). 흰색 + 옅은 테두리, 땅에 닿거나 느려지면(`stop_speed`) 따라가기를 멈춘다. 막힌 타엔 안 나옴
+  - 참고: 옛 방식 캐릭터(금쪽이 외)는 3타 넉백 (220, -90)에 경직이 따로 없어 원래 38px 정도밖에 안 날아간다 — 더 날리려면 캐릭터별 `combo_knockback[2]`/`launch_stun`을 만질 것
   - **확정 콤보 설계(사용자 요청 "경직 vs 후딜")**:
     - 판정은 캐릭터 앞 40px의 30x30 상자 → 상대 중심 약 75px 안. **넉백을 키우면 파고들기(lunge)도 같이 키울 것**(1·2타 기본 넉백 (60,0)·`combo_pop` 0)
     - windup 0이면 `_fire()`가 물리 프레임 **두 번** 대기(한 번이면 area_entered가 안 남). 선딜 0이던 캐릭터는 `windup` 0.16(= 모션 0.4초의 40%)
@@ -61,6 +63,7 @@
 - **주의:** `Skill`은 `Node`라 좌표가 없다 → Skill 자식 `Hitbox`에 `position`을 주면 항상 (0,0) 기준(에러 없이 안 맞음). **반드시 `hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0)`**(`MeleeAttack.gd`). 맵에 직접 add_child하는 `Projectile`/`FirePlate`는 무관
 - 이동을 가로채는 스킬: `Fighter.movement_override`에 자신 등록 + `get_move_velocity_x()`/`after_physics(fighter, delta)` 구현(`DashSkill.gd`)
   - 돌진 바람 줄 `skills/ChargeWind.gd`(`DashSkill.wind_lines`): **맵에 붙여 시전자를 따라다니게** — 캐릭터 자식이면 좌우 반전에 뒤집혀 반대로 흐름. 일찍 끝나면 `_end_dash()`가 `stop()`
+  - 금쪽이 자전거 속도 = 이동속도 x `dash_speed_multiplier` — 금쪽이 씬 `Skill1`에서 **1.7**(2026-09-26 사용자 요청으로 2.5 -> 2.1 -> 1.7, 스크립트 기본 2.5). `dash_duration` 0.9초는 그대로라 거리도 약 850 -> 578px로 같이 줄었다. `DashSkill`은 금쪽이만 씀
 - `Fighter.is_feared`/`apply_fear(duration)`(`FearSkill.gd`): 이동은 되고 스킬·기본공격 전부 무시, `set_tint`로 표시
 - `Hitbox.pull_to_source`/`pull_strength`: 고정 넉백 대신 공격자 쪽으로 끌어당김(`VacuumSkill`)
 - `skills/AoeAttack.gd`: 자신 중심 원형 범위 공격, `slow_multiplier`/`slow_duration`으로 둔화(`apply_temp_multiplier`)
@@ -139,6 +142,8 @@
   - 이동속도는 `stats/*.tres`의 `move_speed`
   - **낙하 중력 배수** `Fighter.fall_gravity_multiplier`(static, `velocity.y > 0`일 때만; 사용자 요청으로 현재 1.0=꺼짐). 경직 중엔 안 곱함(콤보 궤적 보호). 낙하 높이→속도 역산은 반드시 `_fall_gravity()` 사용(착지 경직·먼지 기준). `IljinCrewMember`·`LivingShadow`는 `Fighter.gravity`만 씀
   - **착지 경직**(사용자 결정: 높이 기준 하나): `landing_lag_height` 이상 낙하 착지 시 `landing_lag_time` 동안 전부 막힘(`is_busy()` 포함), `BodyRig.play_land_crouch`(발은 제자리, 몸·머리·손만 내림). 둘 다 static var, 0이면 꺼짐
+    - 경직 동안 몸 전체가 납작하게 눌린다(`BodyRig.land_lag_squash` (1.15, 0.86), 2026-09-26 사용자 요청) — 주저앉는 정도(`_land_crouch_amount()`)만큼 `_squash`를 잡아두고, 착지 순간 스쿼시(`land_squash`)가 더 세면 그게 풀릴 때까지 그쪽을 따른다
+    - **모든 스쿼시·스트레치는 발바닥(`squash_pivot_y` +30) 기준** — 몸 중심 기준으로 누르면 발이 뜬다. 리그 y를 통째로 덮지 않고 `_squash_lift`로 더한 만큼만 뺐다 더한다(`BodySuplexSkill`처럼 리그 위치를 잠깐 쓰는 스킬과 안 싸우게). `play_squash()`(회복 팝·괴성)도 이제 발 기준으로 부푼다
     - 피격 낙하(`_launch_momentum`/경직)·`movement_override` 착지는 제외. 낙하 속도·공중점프 사용 여부는 `move_and_slide()` **전에** 기억(착지하면 지워짐)
     - 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 호출 필수(`SpringJumpPad`처럼 — 안 하면 공중에서 조작 불가)
   - **대시**(방향키 두 번, `PlayerController.DOUBLE_TAP_WINDOW`): 거리 = `dash_speed` x `dash_duration`(static var). 스킬 아님(클래시·`is_busy()` 무관), 공중 가능, 중력 받음
@@ -214,6 +219,10 @@
   - export `head_turn_textures` / `head_turn_anchors`(0번 = 원래 옆모습, 각 **머리 공의 (중심x, 중심y, 지름)** 그림 픽셀) / `head_turn_faces_left`
   - ⚠️ 앵커는 프로펠러·턱 기준이면 흔들림 → **머리 공만** 잴 것(알파 1/4 축소 후 bbox 높이 22% 사각형 열림 연산, 무게중심·`2sqrt(넓이/pi)`). 그림 바꾸면 재측정
   - 금쪽이 그림 `sprite/축법소년/`: 측면2 파일명이 `축법소년 픅면 2.png`(오타 그대로). 측면1·2·3은 왼쪽을 봄(뒤집어 씀). 뒤통수 그림도 `_is_turn_texture()`에 포함(안 넣으면 다른 표정으로 착각해 멈춤)
+  - **몸통도 같이 돈다(2026-09-26, 금쪽이만)** — 머리만 돌고 몸통은 그대로라 "몸이 이상하다"는 지적으로. **평소 몸통은 정면 그대로**(사용자 결정 — 옆모습 몸통을 평소 몸통으로 써 봤다가 되돌림, `금쪽이 몸 측면.png`은 지금 안 씀). 머리가 **도는 도중에만** `body_turn_textures` = [`금쪽이 몸 측면 2.png`(3/4), `금쪾이 몸 측면3.png`(거의 정면 — 파일명 "쪾" 오타 그대로)]를 끼운다
+    - `_set_head_frame()`이 `_set_body_frame(frame, dir)`도 부른다 — 머리가 옆(0)·정면(마지막)이면 원래 정면 몸통, 그 사이 단계만 그림을 내림 비율로 나눠 끼움(머리 측면1·2 -> 3/4, 측면3 -> 거의 정면). 뒤통수 순간·그 밖엔 원래 몸통(`_clear_head_frame()` -> `_clear_body_frame()`)
+    - 몸통 그림은 전부 **오른쪽을 보고 원래 몸통과 같은 캔버스(1536x1024)** 여야 한다 — 배율은 그대로 쓰고 `_body_anchor_of()`가 불투명 영역의 **바닥 가운데**를 한 번 재서 그 점이 원래 자리에 오게 위치를 더한다(반대쪽이면 dir로 뒤집음)
+    - 도는 도중 손이 몸 앞에 모이는 건(`face_turn_limb_gather`) 그대로다
   - 평소 얼굴일 때만 돔(다른 표정 들어오면 양보), Fighter 있을 때만. 위치는 앞선 자세 오프셋 유지 + 제자리 차이만 더함
 - **대치 자세 `fight_stance`**(사용자 결정으로 꺼짐, 기능만 있음): `HandRHold` 복사 직전에 더하기만, 공격 출발 자세에서 대치 오프셋을 빼둘 것(안 빼면 두 번 더해져 튐)
 - **눈 깜빡임 `characters/EyeBlink.gd`**(@tool): 살색 타원+곡선을 코드로 그림. 리그 상속 씬에서 **`Head`의 자식**, 위치(눈 중심 - 그림 중심)·`eye_size`는 **머리 그림 픽셀 단위**. 기본 얼굴 텍스처일 때만 깜빡임(사용자 결정), 부모에 `play_attack_swing` 없으면(잔상) 안 함
@@ -221,6 +230,15 @@
   - 눈 재는 법: 흰자 덩어리를 찾고 거기서 바깥으로 검은 테두리가 끝나는 곳까지 = 눈 테두리 상자, `eye_size`는 그보다 가로 ~15·세로 ~18px 넉넉히(금쪽이 값과 같은 규칙). 흰자가 거의 없는 가는 눈(여자친구·경찰)은 눈으로 보고 잡았다. 감으면 위 눈꺼풀 양끝이 조금 남아 속눈썹처럼 보인다
   - 층간소음은 동그란 코가 눈 테두리 오른쪽 아래를 덮고 있어 감을 때 코 윗부분이 조금 가려진다(게임 크기에선 1~2px)
   - 칠하기는 세로 띠 `draw_primitive`(다각형 하나로 만들면 분할 실패 에러)
+- **눈이 안 보이는 캐릭터의 생동감(2026-09-26 사용자 요청)** — 셋 다 기본 얼굴 텍스처일 때만, 부모에 `play_attack_swing` 없으면(잔상) 안 함. `Head`의 자식, 좌표·크기는 머리 그림 픽셀
+  - **렌즈 반짝임 `characters/LensGlint.gd`**(@tool, unshaded라 어두운 맵에서도 번쩍): 악플러·캣맘·지하철. 가끔(`interval_*`) 사선 빛줄기가 렌즈 타원(`lens_size`) 안을 훑고 지나감(세로 띠 조각으로 잘라 칠함). `blink_now()`가 있어 훈련장 "눈 깜빡임" 버튼으로도 나온다. 에디터에선 렌즈 범위가 하늘색 선으로 보이고 `preview`로 빛줄기 미리보기
+    - **악플러는 렌즈가 흰색이라 흰 빛이 안 보여** `glint_color` 옅은 하늘색 + 모서리 반짝 별(`sparkle_size` 80, `sparkle_at`)
+    - 렌즈 재는 법: 악플러 흰 덩어리 / 캣맘 진한 하늘색(빨강 낮은 픽셀 — 두건의 옅은 하늘색과 구분) / 지하철 검정 덩어리를 **열림 연산으로 외곽선 떼고**(안경다리는 눈으로 빼고) 그 bbox. `lens_size`는 렌즈 테두리 안쪽으로 조금 작게
+  - **소용돌이 회전 `characters/SwirlEye.gd`**(@tool): 주정뱅이. 그림의 소용돌이를 흰 원(`eye_size`, 눈 테두리 **안쪽**)으로 덮고 코드로 그린 나선(`turns`/`spiral_radius`/`line_width`)을 `spin_speed`로 돌린다. 몇 초마다 빨라짐(`surge`). 흰 원·나선은 조명을 받는다(머리와 같은 밝기)
+  - **특수 idle 몸짓 `BodyRig.idle_special`**: 1 안경 올리기(악플러) / 2 딸꾹질(주정뱅이). 가만히 있으면 머리 긁기·뒤돌아보기와 셋 중 하나로 랜덤(`_start_special`/`_pose_special`/`_end_special`, 움직이면 즉시 취소)
+    - 안경 올리기: 왼손이 `glasses_hand_pos`(리그 좌표 — 악플러 렌즈 앞쪽 끝 (17, -25), 머리 위치·배율로 계산)로 올라가 쓱 밀고 고개가 살짝 들린다. **왼손은 원래 머리 뒤에 그려져서 올라가 있는 동안만 `z_index` 3**, 끝나면 `_hand_l_rest_z`로 복구
+    - 딸꾹질: `hiccup_count`번 머리가 톡 튀며 젖혀지고, 매번 머리 위에 `hiccup_text`("딸꾹!", 주아체) Label이 떠올랐다 사라진다 — **top_level**이라 리그가 좌우로 뒤집혀도 글자는 안 뒤집힘
+    - 훈련장 "특수 몸짓" 버튼(`play_special()`)
 - **피격 표정** `hurt_head_texture`(`play_hurt_face()`). 그림 없으면 스킵, 여백 다르면 `hurt_head_scale`. (HP 낮을 때 지친 표정은 2026-09-26 삭제됨)
   - 잠깐 표정 우선순위 **피격 > 토하기**, 그 아래 기본 머리 **액션 > 취함 > 지침 > 맨정신**(`_apply_base_head()`, 취함>지침은 사용자 결정 — 술 스택 정보라). `set_action_face`/`set_drunk_head`는 미뤘다가 `_restore_head()`로 복귀
   - `Fighter._update_hp_face()`는 `take_damage`/`heal`/`ring_out` **세 군데 전부**에서 호출(하나 빠지면 회복 후에도 지쳐 보임)
@@ -446,7 +464,7 @@
   - `_draw()` 세 겹(번쩍 + 넉백 방향 마름모 섬광 + 방향 쪽 불꽃, `direction_bias`). 세기 = 데미지 / `Hitbox.SPARK_POWER_DAMAGE`, 세기 1.5 이상이면 충격파 고리. 방어에 막히면 파랗게 작게
   - `Hitbox.hit_spark`로 히트박스별 끄기(막힘 파란 스파크는 유지). **지금 금쪽이 기본공격(`Chokbeopsonyeon.tscn` `BasicAttack/Hitbox`)만 꺼짐**
   - `start_progress`로 진행된 상태에서 시작(히트스톱 중 점만 보이는 것 방지). 투사체 착탄·총구 섬광·도발 표시가 `setup()` 없이 기본값으로 재사용
-- **착지 먼지 `combat/LandDust.gd`**(장식): 착지 경직 걸린 착지는 무조건, 아니면 `Fighter.land_dust_height` 이상 낙하 시. 음수(기본)면 `_land_dust_height()`가 점프력·중력으로 이단 점프 최고 높이를 계산(점프 값 바뀌어도 따라감), 양수 고정, 0이면 경직 착지만. 기준은 높이로 적고 `v = sqrt(2 x 중력 x 높이)`로 환산. 맵에 붙임(캐릭터 자식 금지). 그림 없이 `_draw()`
+- **착지 먼지 `combat/LandDust.gd`**(장식): **모든 착지**(떨어진 높이 `land_dust_min_height` 20px 이상)에서 **발 양옆에 몽글몽글한 구름 뭉치가 하나씩** 생겨 바닥을 따라 바깥으로 미끄러지며 부풀었다 사라진다(2026-09-26 사용자 레퍼런스·결정). 흰색 + 옅은 테두리(점프 바람과 같은 톤). 크기 = 떨어진 높이 / `Fighter.land_dust_height`(기본 크기가 되는 높이, 음수면 `_land_dust_height()`가 이단 점프 최고 높이 약 216px로 계산) — 땅 점프(약 100px)면 약 70% 크기. 착지 경직 걸린 착지는 최소 기본 크기. 높이는 `속도² / (2 x 낙하 중력)`으로 환산. 맵에 붙임(캐릭터 자식 금지). 그림 없이 `_draw()`(동그라미 5개로 구름 모양, 테두리 먼저 깔고 흰 몸통)
 - **점프 바람 줄기 `combat/JumpWind.gd`**(장식, 2026-09-26 사용자 요청 — 타 게임 레퍼런스): 지상·이단 점프 모두 `Fighter.jump()` -> `_spawn_jump_wind(air)`가 발밑(원점 +30)에 맵에 붙인다. 뛴 방향(`velocity`, 가로 이동 포함이라 대각선이면 비스듬)을 따라 흰 삐죽한 줄기 3가닥이 뻗었다가 **뛴 자리(꼬리)부터 따라 올라가며** 사라진다(사용자 결정: 흰색·발밑에서 진행 반대로 끌림). 흰색만으론 밝은 배경에 묻혀 옅은 어두운 테두리(`outline_color`/`outline_px`)를 먼저 깐다. 마디마다 사각형으로 나눠 그림(삐죽한 다각형 하나는 분할 실패 위험 — EyeBlink와 같은 이유)
   - ⚠️ 낙하 속도는 `move_and_slide()` **전에** 기억할 것(충돌 후 `velocity.y` = 0) — 스프링 `_prev_fall`과 같은 이유
 - **⚠️ 히트스톱은 지금 꺼져 있다(사용자 요청)** — `Hitbox.hitstop_time` = 0이면 `_apply_hitstop()`이 즉시 리턴(데미지 비례분·`AttackData.hitstop_scale` 무시). 켜려면 0.022. KO 슬로모션(`Stage.knockout_*`)은 별개

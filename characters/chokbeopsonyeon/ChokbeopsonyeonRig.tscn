@@ -16,6 +16,8 @@
 [ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 측면3.png" id="95_turn25"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 정면.png" id="96_turn3"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 뒷머리.png" id="94_back"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/금쪽이 몸 측면 2.png" id="92_body_turn1"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/금쪾이 몸 측면3.png" id="91_body_turn2"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 action_head_texture = ExtResource("7_dashface")
@@ -38,6 +40,7 @@ head_turn_faces_left = Array[bool]([false, true, true, true, false])
 head_turn_on_face = true
 head_back_texture = ExtResource("94_back")
 head_back_anchor = Vector3(625, 747, 863)
+body_turn_textures = Array[Texture2D]([ExtResource("92_body_turn1"), ExtResource("91_body_turn2")])
 gun_hides_held_item = true
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]

@@ -235,7 +235,7 @@ func _build_ui() -> void:
 	box.add_child(motion_title)
 	var motion_row := HBoxContainer.new()
 	box.add_child(motion_row)
-	for entry in [["머리 긁기", _on_scratch_pressed], ["뒤돌아보기", _on_lookback_pressed], ["눈 깜빡임", _on_blink_pressed]]:
+	for entry in [["머리 긁기", _on_scratch_pressed], ["뒤돌아보기", _on_lookback_pressed], ["눈 깜빡임", _on_blink_pressed], ["특수 몸짓", _on_special_pressed]]:
 		var button := Button.new()
 		button.text = entry[0]
 		button.pressed.connect(entry[1])
@@ -337,7 +337,11 @@ func _play_motion(method: String) -> void:
 		return
 	var result = visual.call(method)
 	if result is bool and not result:
-		_motion_note.text = "이 캐릭터는 눈 깜빡임이 아직 없어요"
+		_motion_note.text = "이 캐릭터는 특수 몸짓이 없어요" if method == "play_special" else "이 캐릭터는 눈 깜빡임(렌즈 반짝임)이 아직 없어요"
+
+## 캐릭터별 특수 idle 몸짓(악플러 안경 올리기, 주정뱅이 딸꾹질)
+func _on_special_pressed() -> void:
+	_play_motion("play_special")
 
 func _on_scratch_pressed() -> void:
 	_play_motion("play_scratch")

@@ -54,6 +54,9 @@ extends Node2D
 @export var land_squash: Vector2 = Vector2(1.33, 0.75)
 ## 스쿼시/스트레치가 원래 크기(1,1)로 돌아오는 속도 (클수록 빨리 복구)
 @export var squash_recover_speed: float = 2.5
+## 스쿼시·스트레치의 기준점(리그 기준 y, 발바닥) — 몸 중심 기준으로 누르면 발이 바닥에서 뜨므로
+## 이 높이가 제자리에 남도록 리그를 위아래로 보정한다(2026-09-26). 캡슐 반지름 20 + 절반 30 = 발바닥 +30
+@export var squash_pivot_y: float = 30.0
 
 ## --- 자전거 타기 (촉법소년 돌진) ---
 ## 자전거가 "탄 위치"에서 이만큼 떨어진 곳(캐릭터 뒤쪽)에서 슬라이드해 들어온다. x가 음수면 진행 반대쪽(뒤)
@@ -130,6 +133,23 @@ extends Node2D
 @export var scratch_amount: float = 3.0
 ## 뒤돌아보는 동작 하나의 전체 길이(초) — 돌아보기 → 잠깐 정지 → 다시 앞으로
 @export var lookback_duration: float = 1.2
+## 캐릭터별 특수 idle 몸짓 — 머리 긁기·뒤돌아보기와 번갈아 랜덤으로 나온다(2026-09-26 사용자 요청, 눈이 안 보이는 캐릭터의 생동감용).
+## 1 안경 치켜올리기(악플러) / 2 딸꾹질(주정뱅이)
+@export_enum("없음", "안경 올리기", "딸꾹질") var idle_special: int = 0
+## 특수 몸짓 하나의 전체 길이(초)
+@export var special_duration: float = 1.0
+## 안경 올리기: 왼손이 가는 자리(리그 좌표 — 안경 코받침 근처)와 손 각도(도)
+@export var glasses_hand_pos: Vector2 = Vector2(15, -27)
+@export var glasses_hand_deg: float = -60.0
+## 안경을 밀어 올릴 때 손이 더 올라가는 거리(px), 머리가 들리는 정도(px)·젖혀지는 각도(도)
+@export var glasses_push: float = 3.0
+@export var glasses_push_lift: float = 1.5
+@export var glasses_push_deg: float = -4.0
+## 딸꾹질: 횟수, 머리가 튀는 높이(px)·젖혀지는 각도(도), 머리 위에 뜨는 글자(비우면 안 뜸)
+@export var hiccup_count: int = 2
+@export var hiccup_hop: float = 4.0
+@export var hiccup_deg: float = -9.0
+@export var hiccup_text: String = "딸꾹!"
 ## 기본공격 예비동작에서 손이 돌아가는 각도(도) — 반시계 방향(무기가 뒤로 넘어간다)
 @export var attack_raise_deg: float = 100.0
 ## 기본공격에서 손이 내려찍히는 각도(도) — 시계 방향
@@ -211,6 +231,9 @@ extends Node2D
 @export var land_crouch_depth: float = 7.0
 ## 고개를 아래로 숙이는 각도(도) — 방어·피격 움찔과 같은 방향(양수 = 숙임)
 @export var land_crouch_head_deg: float = 10.0
+## 착지 경직 동안 몸 전체가 눌리는 정도(x 넓적, y 납작) — 주저앉는 박자에 맞춰 눌렸다가 일어설 때 펴진다(2026-09-26 사용자 요청).
+## 착지 순간의 짧은 스쿼시(land_squash)보다 약하지만 경직 내내 유지돼서 "쿵 주저앉았다"로 보인다
+@export var land_lag_squash: Vector2 = Vector2(1.15, 0.86)
 
 ## --- 피격 움찔 자세 (2026-09-25) ---
 ## 맞은 순간 배를 맞은 것처럼 **상체를 앞으로 숙이고(ㄱ자) 엉덩이는 뒤로 빼고 두 손은 앞으로 모은다.**
@@ -252,6 +275,10 @@ extends Node2D
 @export var head_turn_anchors: Array[Vector3] = []
 ## 그림이 원래 **왼쪽**을 보고 그려졌는지(0번 포함, 그림 수 + 1칸). 왼쪽을 보는 그림은 좌우로 뒤집어 쓴다
 @export var head_turn_faces_left: Array[bool] = []
+## 머리가 도는 **도중에만** 몸통에 끼울 그림들 — 평소와 머리가 정면일 때는 Body 원래 그림(정면 몸통) 그대로고,
+## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
+## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
+@export var body_turn_textures: Array[Texture2D] = []
 ## 방향을 바꿀 때도 머리가 위 그림들을 넘기며 돈다(2026-09-26 시험) — 몸은 예전처럼 바로 뒤집히고,
 ## 머리가 옛 방향 쪽 측면1 -> ... -> 정면 -> ... -> 새 방향 옆모습으로 따라 돌아온다. 끄면 머리도 몸과 같이 탁 뒤집힌다
 @export var head_turn_on_face: bool = false
@@ -551,6 +578,8 @@ var _fall_blend: float = 0.0
 var _squash: Vector2 = Vector2.ONE
 ## 스쿼시/스트레치가 진행 중인지 (원래 크기로 완전히 돌아오면 꺼진다)
 var _squashing: bool = false
+# 스쿼시 중 발바닥을 제자리에 두려고 리그 y에 더해 둔 값
+var _squash_lift: float = 0.0
 ## 직전 프레임에 바닥에 있었는지 (착지 순간 감지용)
 var _was_on_floor: bool = true
 ## 자전거를 탄(보이는) 정도 0~1. set_riding으로 목표를 정하고 서서히 오간다
@@ -613,6 +642,10 @@ var _bike_mounted_pos: Vector2
 var _idle_time: float = 0.0
 ## 머리 긁는 동작에 남은 시간(초). 0보다 크면 긁는 중이다
 var _scratch_time: float = 0.0
+# 특수 idle 몸짓(안경 올리기·딸꾹질) 남은 시간, 이번에 띄운 딸꾹 수, 왼손 원래 그리는 순서
+var _special_time: float = 0.0
+var _hiccups_fired: int = 0
+var _hand_l_rest_z: int = 0
 ## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
@@ -709,6 +742,10 @@ var _action_face_on: bool = false
 var _knocked_out: bool = false
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
+# 몸통 돌리기용 — 원래 몸통 그림·배율, 그림별 "바닥 가운데" 위치(캔버스 가운데 기준, 한 번 재서 기억)
+var _body_rest_texture: Texture2D
+var _body_rest_scale: Vector2
+var _body_anchor_cache: Dictionary = {}
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
 
@@ -723,6 +760,11 @@ func _ready() -> void:
 	if _head:
 		_head_rest_texture = _head.texture
 		_head_rest_scale = _head.scale
+	if _body:
+		_body_rest_texture = _body.texture
+		_body_rest_scale = _body.scale
+	if _hand_l:
+		_hand_l_rest_z = _hand_l.z_index
 	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
 	if _bike:
 		_bike_mounted_pos = _bike.position
@@ -816,8 +858,13 @@ func _process(delta: float) -> void:
 		_idle_time = 0.0
 		_scratch_time = 0.0
 		_end_lookback()
+		_end_special()
 	elif _scratch_time > 0.0:
 		_scratch_time = maxf(_scratch_time - delta, 0.0)
+	elif _special_time > 0.0:
+		_special_time = maxf(_special_time - delta, 0.0)
+		if is_zero_approx(_special_time):
+			_end_special()
 	elif _lookback_time > 0.0:
 		_lookback_time = maxf(_lookback_time - delta, 0.0)
 		if is_zero_approx(_lookback_time):
@@ -826,8 +873,10 @@ func _process(delta: float) -> void:
 		_idle_time += delta
 		if _idle_time >= idle_motion_delay:
 			_idle_time = 0.0
-			# 머리 긁기 / 뒤돌아보기 중 하나를 랜덤으로 고른다
-			if randf() < 0.5:
+			# 특수 몸짓이 있으면 셋 중 하나, 없으면 머리 긁기 / 뒤돌아보기 중 하나를 랜덤으로 고른다
+			if idle_special != 0 and randf() < 0.34:
+				_start_special()
+			elif randf() < 0.5:
 				_scratch_time = scratch_duration
 			elif _head:
 				_lookback_time = lookback_duration
@@ -849,6 +898,11 @@ func _process(delta: float) -> void:
 	# 튄 크기는 시간이 지나며 원래(1,1)로 돌아온다
 	if _squashing and not _squash.is_equal_approx(Vector2.ONE):
 		_squash = _squash.move_toward(Vector2.ONE, delta * squash_recover_speed)
+	# 착지 경직 중엔 주저앉는 정도만큼 계속 납작하게 누른다 — 착지 순간 스쿼시가 더 세면 그게 풀릴 때까지 그쪽을 따른다
+	if _crouch_time > 0.0 and _crouch_len > 0.0:
+		var hold: Vector2 = Vector2.ONE.lerp(land_lag_squash, _land_crouch_amount())
+		_squash = Vector2(maxf(_squash.x, hold.x), minf(_squash.y, hold.y))
+		_squashing = true
 
 	# 자전거 타기 — 목표(_ride_target)로 서서히 오가며, 뒤에서 슬라이드해 들어오고 페이드된다
 	if _bike:
@@ -990,6 +1044,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _scratch_time > 0.0:
 		_pose_scratch()
 
+	# 캐릭터별 특수 idle 몸짓(안경 올리기·딸꾹질) — 다른 자세 위에 더하거나 왼손만 쓴다
+	if _special_time > 0.0:
+		_pose_special()
+
 	# 두 손으로 무기를 잡는 자세 (악플러 키보드) — 공격이 끝난 뒤에도 블렌드가 남아 있으므로
 	# 스윙 안이 아니라 여기서 매 프레임 적용한다. 왼손만 건드리므로 오른손 동작과 안 겹친다
 	if attack_two_handed and _grip_blend > 0.001:
@@ -1103,6 +1161,12 @@ func _apply_pose(speed_ratio: float) -> void:
 			_squashing = false
 		else:
 			scale = Vector2(_squash.x * sgn, _squash.y)
+	# 발바닥(squash_pivot_y)이 제자리에 남게 리그를 위아래로 보정한다 — 위치를 통째로 덮지 않고
+	# 지난번에 더한 만큼 빼고 새로 더한다(수플렉스처럼 리그 위치를 잠깐 쓰는 스킬과 안 싸우게)
+	var lift: float = squash_pivot_y * (1.0 - scale.y) if _squashing else 0.0
+	if not is_equal_approx(lift, _squash_lift):
+		position.y += lift - _squash_lift
+		_squash_lift = lift
 
 	_apply_spin_turn()
 
@@ -2272,6 +2336,107 @@ func _pose_gun() -> void:
 		_gun.position = grip + gun_forward_offset
 		_gun.rotation = 0.0
 
+## 특수 idle 몸짓을 시작한다
+func _start_special() -> void:
+	_special_time = special_duration
+	_hiccups_fired = 0
+
+## 특수 idle 몸짓을 끝낸다 — 앞으로 끌어낸 왼손 그리는 순서를 되돌린다
+func _end_special() -> void:
+	_special_time = 0.0
+	if _hand_l:
+		_hand_l.z_index = _hand_l_rest_z
+
+## 특수 idle 몸짓을 지금 바로 한다(훈련장 테스트 버튼용). 몸짓이 없는 캐릭터면 false
+func play_special() -> bool:
+	if idle_special == 0:
+		return false
+	_end_lookback()
+	_scratch_time = 0.0
+	_idle_time = 0.0
+	_start_special()
+	return true
+
+func _pose_special() -> void:
+	var elapsed: float = special_duration - _special_time
+	var progress: float = elapsed / maxf(special_duration, 0.001)
+	match idle_special:
+		1:
+			_pose_glasses_push(progress)
+		2:
+			_pose_hiccup(elapsed)
+
+## 안경 치켜올리기 — 왼손이 코받침으로 올라가(0~30%) 쓱 밀어 올리고(35~55%) 잠깐 머물다(~75%) 내려온다.
+## 왼손은 원래 머리 뒤에 그려지므로 올라가 있는 동안만 머리 앞으로 끌어낸다
+func _pose_glasses_push(progress: float) -> void:
+	if _hand_l == null:
+		return
+	var reach: float
+	if progress < 0.3:
+		var p: float = progress / 0.3
+		reach = 1.0 - (1.0 - p) * (1.0 - p)
+	elif progress < 0.75:
+		reach = 1.0
+	else:
+		var p2: float = (progress - 0.75) / 0.25
+		reach = 1.0 - p2 * p2 * (3.0 - 2.0 * p2)
+	var push: float = sin(PI * clampf((progress - 0.35) / 0.2, 0.0, 1.0))
+	_hand_l.position = _hand_l.position.lerp(glasses_hand_pos + Vector2(0.0, -glasses_push * push), reach)
+	_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(glasses_hand_deg), reach)
+	_hand_l.z_index = 3 if reach > 0.05 else _hand_l_rest_z
+	if _head:
+		_head.position.y -= glasses_push_lift * push
+		_head.rotation += deg_to_rad(glasses_push_deg) * push
+
+## 딸꾹질 — 몸짓 시간 안에 hiccup_count번, 딸꾹할 때마다 머리가 톡 튀며 젖혀지고 몸·손도 살짝 따라 뜬다.
+## 딸꾹할 때마다 머리 위에 글자를 띄운다
+func _pose_hiccup(elapsed: float) -> void:
+	var count: int = maxi(hiccup_count, 1)
+	var pulse: float = 0.0
+	for k in count:
+		var at: float = special_duration * (0.12 + 0.72 * float(k) / count)
+		var local: float = (elapsed - at) / 0.28
+		if local >= 0.0 and k >= _hiccups_fired:
+			_hiccups_fired = k + 1
+			_spawn_hiccup_text()
+		if local >= 0.0 and local < 1.0:
+			# 순식간에 튀고(앞 20%) 천천히 내려앉는다
+			var v: float = local / 0.2 if local < 0.2 else 1.0 - (local - 0.2) / 0.8
+			pulse = maxf(pulse, v)
+	if pulse <= 0.0:
+		return
+	if _head:
+		_head.position.y -= hiccup_hop * pulse
+		_head.rotation += deg_to_rad(hiccup_deg) * pulse
+	if _body:
+		_body.position.y -= hiccup_hop * 0.4 * pulse
+	for hand in [_hand_l, _hand_r]:
+		if hand:
+			hand.position.y -= hiccup_hop * 0.5 * pulse
+
+## 머리 위에 "딸꾹!"을 띄워 올렸다가 흐리게 사라지게 한다 — 리그가 좌우로 뒤집혀도 글자는 안 뒤집히게 top_level로 둔다
+func _spawn_hiccup_text() -> void:
+	if hiccup_text.is_empty() or _head == null or Engine.is_editor_hint():
+		return
+	var label := Label.new()
+	label.text = hiccup_text
+	label.top_level = true
+	label.z_index = 60
+	label.add_theme_font_override("font", load("res://fonts/Jua-Regular.ttf"))
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	label.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.04))
+	label.add_theme_constant_override("outline_size", 6)
+	add_child(label)
+	label.reset_size()
+	var start: Vector2 = _head.global_position + Vector2(8.0 * signf(scale.x), -44.0) - label.size * 0.5
+	label.global_position = start
+	var tween := label.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "global_position", start + Vector2(0.0, -18.0), 0.65).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.35)
+	tween.chain().tween_callback(label.queue_free)
+
 ## 왼손을 머리로 올려 긁는 idle 동작 — 올리기(0~25%) → 긁기(25~75%) → 내리기(75~100%).
 ## reach는 "얼마나 머리에 닿은 자세인지"(0=제자리, 1=머리에 손이 닿음)
 func _pose_scratch() -> void:
@@ -2310,6 +2475,52 @@ func _is_turn_texture(tex: Texture2D) -> bool:
 func _set_head_frame(frame: int, dir: float) -> void:
 	var tex: Texture2D = _head_rest_texture if frame == 0 else head_turn_textures[frame - 1]
 	_set_head_image(tex, head_turn_anchors[frame], head_turn_faces_left[frame], dir)
+	_set_body_frame(frame, dir)
+
+## 머리 단계(frame, 0 = 옆 ~ 머리 그림 수 = 정면)에 맞춰 몸통 그림을 바꿔 끼운다.
+## 머리가 옆(0)이거나 정면(마지막)이면 원래 몸통(정면), 그 사이 단계에만 body_turn_textures를 나눠 끼운다 —
+## 사이 단계 수와 그림 수가 달라도 내림 비율로 맞춘다(머리 측면1·2 -> 3/4, 측면3 -> 거의 정면).
+## 몸통 그림은 전부 오른쪽을 보고 그려져 있어 dir(반대쪽이면 -1)만큼 뒤집고, **바닥 가운데**가 원래 자리에 오게 위치를 더한다
+func _set_body_frame(head_frame: int, dir: float) -> void:
+	if _body == null or body_turn_textures.is_empty() or _body_rest_texture == null:
+		return
+	var nh: int = maxi(head_turn_textures.size(), 1)
+	var tex: Texture2D = _body_rest_texture
+	if head_frame > 0 and head_frame < nh:
+		var middle: int = maxi(nh - 1, 1)
+		var i: int = clampi(int(floor(float(head_frame - 1) * body_turn_textures.size() / middle)), 0, body_turn_textures.size() - 1)
+		tex = body_turn_textures[i]
+	var sx: float = absf(_body_rest_scale.x)
+	var sy: float = _body_rest_scale.y
+	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
+	var here: Vector2 = _body_anchor_of(tex)
+	_body.texture = tex
+	_body.scale = Vector2(sx * dir, sy)
+	_body.position += Vector2((rest_anchor.x - here.x * dir) * sx, (rest_anchor.y - here.y) * sy)
+	_turn_applied = true
+
+## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다
+func _body_anchor_of(tex: Texture2D) -> Vector2:
+	if tex == null:
+		return Vector2.ZERO
+	if _body_anchor_cache.has(tex):
+		return _body_anchor_cache[tex]
+	var anchor := Vector2.ZERO
+	var img: Image = tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		var used: Rect2i = img.get_used_rect()
+		anchor = Vector2(used.position.x + used.size.x * 0.5 - img.get_width() * 0.5, used.end.y - img.get_height() * 0.5)
+	_body_anchor_cache[tex] = anchor
+	return anchor
+
+## 몸통을 원래 그림·배율로 되돌린다(위치는 매 프레임 _apply_pose가 제자리로 다시 잡는다)
+func _clear_body_frame() -> void:
+	if _body == null or _body_rest_texture == null or body_turn_textures.is_empty():
+		return
+	_body.texture = _body_rest_texture
+	_body.scale = _body_rest_scale
 
 ## 머리를 그림 한 장(tex, 머리 공 here, 왼쪽을 보는지 faces_left)으로 바꿔 끼운다 — _set_head_frame과 뒤통수가 같이 쓴다
 func _set_head_image(tex: Texture2D, here: Vector3, faces_left: bool, dir: float) -> void:
@@ -2341,6 +2552,7 @@ func _clear_head_frame() -> void:
 	if _is_turn_texture(_head.texture):
 		_head.texture = _head_rest_texture
 		_head.scale = _head_rest_scale
+	_clear_body_frame()
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,

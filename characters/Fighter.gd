@@ -66,13 +66,15 @@ const DEFAULT_BLOCKED_ATTACK_LOCK: float = 3.0
 const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
 
 ## --- 착지 먼지 (전 캐릭터 공용) ---
-## 이 높이(px) 이상에서 떨어져 착지하면 발밑에 먼지가 퍼진다.
-## **높이로 적는 이유:** 점프력·중력을 바꿔도 "이만큼 떨어지면 난다"가 그대로 유지된다.
-## **음수(기본 -1)면 "이단 점프 최고 높이"를 점프력·중력에서 그때그때 계산해 쓴다**(2026-09-25 사용자 요청 —
-## 점프 값이 나중에 또 바뀌어도 기준이 따라가게). 지금 값(-478/-519, 중력 1150)이면 약 216px.
-## 양수를 주면 그 높이로 고정되고, 0이면 안 난다. **착지 경직이 걸린 착지는 이 기준과 상관없이 항상 먼지가 난다**
+## **모든 착지**에서 발 양옆으로 먼지 뭉치가 나가고, 크기는 떨어진 높이에 비례한다(2026-09-26 사용자 요청).
+## land_dust_height = **기본 크기(세기 1)가 되는 높이(px)** — 이보다 낮게 떨어지면 작게, 높으면 크게.
+## **높이로 적는 이유:** 점프력·중력을 바꿔도 "이만큼 떨어지면 이 크기"가 그대로 유지된다.
+## **음수(기본 -1)면 "이단 점프 최고 높이"를 점프력·중력에서 그때그때 계산해 쓴다** — 지금 값(-478/-519, 중력 1150)이면 약 216px.
+## 0이면 안 난다(착지 경직이 걸린 착지만 난다). **착지 경직이 걸린 착지는 최소 기본 크기로 난다**
 const DEFAULT_LAND_DUST_HEIGHT: float = -1.0
 static var land_dust_height: float = DEFAULT_LAND_DUST_HEIGHT
+## 이보다 낮게 떨어진 착지(px)는 먼지가 안 난다 — 턱을 살짝 내려오거나 발판 끝을 걸어 내려올 때까지 매번 나면 지저분하다
+static var land_dust_min_height: float = 20.0
 ## 착지 경직(2026-09-25) — 이 높이(px) 이상에서 떨어져 착지하면 무릎을 굽힌 채 LANDING_LAG_TIME 동안 아무것도 못 한다.
 ## 점프(특히 이단 점프) 연타를 막으려는 것. 이단 점프 최고 높이(약 216px)보다 조금 낮게 잡았다 —
 ## 한 번 점프(약 103px)와 두 번째 점프를 바로 이어 누른 이단 점프(약 150px)는 안 걸린다.
@@ -474,16 +476,16 @@ func _on_landed(fall_speed: float, launched: bool = false) -> void:
 		var visual: Node = get_node_or_null("Visual")
 		if visual and visual.has_method("play_land_crouch"):
 			visual.play_land_crouch(landing_lag_time)
-	# 착지 먼지 — 착지 경직이 걸렸으면 무조건, 아니면 기준 높이 이상에서 떨어졌을 때
+	# 착지 먼지 — **모든 착지**에서 떨어진 높이에 비례한 크기로(2026-09-26 사용자 요청). 높이 = 속도² / (2 x 중력)
 	var dust_height: float = _land_dust_height()
 	if dust_height <= 0.0 and not lagged:
 		return
-	# "이만큼 떨어지면 난다"를 속도로 환산한다 — v = sqrt(2 x 중력 x 높이)
-	var threshold: float = sqrt(2.0 * _fall_gravity() * maxf(dust_height, 1.0))
-	if fall_speed < threshold and not lagged:
+	var fallen: float = fall_speed * fall_speed / (2.0 * maxf(_fall_gravity(), 1.0))
+	if fallen < land_dust_min_height and not lagged:
 		return
-	# 경직으로 나는 먼지는 기준보다 낮게 떨어졌어도 최소 세기(1)로 퍼뜨린다
-	_spawn_land_dust(maxf(fall_speed / threshold, 1.0))
+	var power: float = fallen / maxf(dust_height, 1.0)
+	# 경직이 걸린 착지는 기준보다 낮게 떨어졌어도 최소 기본 크기(1)로 퍼뜨린다
+	_spawn_land_dust(maxf(power, 1.0) if lagged else power)
 
 ## 착지 먼지가 나는 높이(px). land_dust_height가 음수면 이단 점프 최고 높이를 계산해 쓴다.
 ## 올라갈 때는 기본 중력만 받으므로(떨어질 때만 배수가 붙는다) 높이 = 속도² / (2 x 중력)을 점프마다 더한다
