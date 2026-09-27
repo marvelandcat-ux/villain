@@ -114,8 +114,9 @@ func _draw_state_text(knob_a: float) -> void:
 	if font == null:
 		return
 	var w: float = maxf(size.x - lean, 1.0)
-	# 덩이가 왼쪽에 있으면 글자는 오른쪽에, 반대면 왼쪽에
-	var center_ratio: float = (knob_a + knob_ratio + 1.0) * 0.5 if knob_a < 0.5 else knob_a * 0.5
+	# 덩이가 왼쪽(켜짐)이면 글자는 오른쪽 빈 곳에, 덩이가 오른쪽(꺼짐)이면 왼쪽 빈 곳에 적는다.
+	# **_t로 판단한다** — knob_a로 보면 꺼짐(0.45)도 0.5보다 작아서 글자가 덩이 위에 겹쳐 찍혔다
+	var center_ratio: float = (knob_a + knob_ratio + 1.0) * 0.5 if _t > 0.5 else knob_a * 0.5
 	var y: float = size.y * 0.5
 	var pos := Vector2(_edge_x(y) + center_ratio * w, y)
 	var text_size_px: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size)

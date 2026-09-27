@@ -176,6 +176,12 @@ const ROOM_PRESET_SECTION := "room_presets"
 ## 창 모드에서 고를 수 있는 해상도 (전부 16:9라 검은 여백 없이 꽉 채워짐)
 const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 const DEFAULT_MASTER_VOLUME := 1.0
+## 볼륨은 **세 갈래**다(2026-09-27) — 전체 / 음악 / 효과음.
+## 엔진 버스는 Master 하나뿐이라, 시작할 때 Music·Sfx 버스를 만들어 Master 밑에 달아준다.
+## 소리를 내는 노드는 자기 bus를 "Music"이나 "Sfx"로 지정하면 그 슬라이더를 따른다
+const AUDIO_BUSES := ["Music", "Sfx"]
+const DEFAULT_MUSIC_VOLUME := 1.0
+const DEFAULT_SFX_VOLUME := 1.0
 
 ## (임시) **내보낸 빌드에서는 소리를 전부 끈다.** 아직 효과음·배경음악이 정리 전이라
 ## 발표·제출용 빌드에서 아무 소리도 안 나게 하려는 것이다. **에디터에서는 그대로 들린다** —
@@ -188,6 +194,8 @@ const MUTE_IN_BUILD := true
 var is_fullscreen: bool = false
 var resolution_index: int = 0
 var master_volume: float = DEFAULT_MASTER_VOLUME
+var music_volume: float = DEFAULT_MUSIC_VOLUME
+var sfx_volume: float = DEFAULT_SFX_VOLUME
 ## 대사를 넘기는 법("스페이스 또는 클릭")을 **한 번이라도 본 적 있는지**.
 ## 처음 하는 사람에게만 알려주고 그 뒤로는 화면을 깨끗하게 두려는 것이다(2026-09-16 멘토 피드백).
 ## 세션이 아니라 저장 파일(user://settings.cfg)에 남긴다 — 껐다 켤 때마다 다시 배우라고 할 이유가 없고,
@@ -202,6 +210,7 @@ var _portrait_rect_size: Dictionary = {}
 
 func _ready() -> void:
 	_load_env()
+	_ensure_audio_buses()
 	_load_settings()
 	_apply_build_mute()
 	_load_portrait_frames()
@@ -277,6 +286,8 @@ func _load_settings() -> void:
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
+	set_music_volume(config.get_value("audio", "music_volume", music_volume))
+	set_sfx_volume(config.get_value("audio", "sfx_volume", sfx_volume))
 	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
 	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 
@@ -370,6 +381,23 @@ func mark_dialogue_hint_seen() -> void:
 func is_audio_muted() -> bool:
 	return MUTE_IN_BUILD and not OS.has_feature("editor")
 
+## Music·Sfx 버스를 만들어 Master 밑에 단다. 이미 있으면(버스 레이아웃 파일을 나중에 만들면) 그냥 넘어간다
+func _ensure_audio_buses() -> void:
+	for bus_name in AUDIO_BUSES:
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			continue
+		var index: int = AudioServer.bus_count
+		AudioServer.add_bus(index)
+		AudioServer.set_bus_name(index, bus_name)
+		AudioServer.set_bus_send(index, "Master")
+
+## 버스 하나의 볼륨을 0~1로 맞춘다. **0이면 db가 -inf라 완전히 무음**이 된다
+func _set_bus_volume(bus_name: String, volume: float) -> void:
+	var index := AudioServer.get_bus_index(bus_name)
+	if index < 0:
+		return
+	AudioServer.set_bus_volume_db(index, linear_to_db(volume))
+
 ## Master 버스 음소거를 지금 상태에 맞춘다
 func _apply_build_mute() -> void:
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), is_audio_muted())
@@ -382,6 +410,18 @@ func set_master_volume(volume: float) -> void:
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(master_volume))
 	_apply_build_mute()   # 볼륨을 만져도 빌드에서는 계속 꺼진 채로 둔다
 	_save_setting("audio", "master_volume", master_volume)
+
+## 배경음악 볼륨 (Music 버스). 전체 볼륨과 곱해져서 들린다 — Music이 Master 밑에 달려 있기 때문
+func set_music_volume(volume: float) -> void:
+	music_volume = clampf(volume, 0.0, 1.0)
+	_set_bus_volume("Music", music_volume)
+	_save_setting("audio", "music_volume", music_volume)
+
+## 효과음 볼륨 (Sfx 버스)
+func set_sfx_volume(volume: float) -> void:
+	sfx_volume = clampf(volume, 0.0, 1.0)
+	_set_bus_volume("Sfx", sfx_volume)
+	_save_setting("audio", "sfx_volume", sfx_volume)
 
 ## PortraitFrames.tscn을 인스턴스해서 각 캐릭터 프레임 안 "Portrait" 노드의 텍스처와,
 ## 그 노드가 프레임(200x180) 안에서 차지하는 네모(위치+크기)를 읽어둔다.

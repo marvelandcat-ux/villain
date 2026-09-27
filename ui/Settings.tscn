@@ -1,8 +1,17 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3 uid="uid://dpjixyav50oqt"]
 
-[ext_resource type="Script" path="res://ui/Settings.gd" id="1"]
+[ext_resource type="Script" uid="uid://bsjqihhx8kc08" path="res://ui/Settings.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://h8rcws1tktkj" path="res://sprite/도감/캐릭터도감뒷배경.png" id="2_bg"]
+[ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="3_blur"]
+[ext_resource type="Script" path="res://ui/FanTile.gd" id="4_fantile"]
+[ext_resource type="Script" path="res://ui/SlantToggle.gd" id="5_toggle"]
+[ext_resource type="Script" path="res://ui/SlantSlider.gd" id="6_slider"]
 
-[node name="Settings" type="Control"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
+shader = ExtResource("3_blur")
+shader_parameter/blur_amount = 0.0
+
+[node name="Settings" type="Control" unique_id=1480383688]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Scrim" type="ColorRect" parent="."]
+[node name="Scrim" type="ColorRect" parent="." unique_id=103265692]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,7 +29,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.03, 0.02, 0.05, 0.55)
 
-[node name="Card" type="Control" parent="."]
+[node name="Card" type="Control" parent="." unique_id=1789952491]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,3 +37,376 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+
+[node name="Background" type="ColorRect" parent="Card" unique_id=1202893303]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.06, 0.05, 0.09, 1)
+
+[node name="BackgroundImage" type="TextureRect" parent="Card" unique_id=488811182]
+material = SubResource("ShaderMaterial_bgblur")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BackgroundScrim" type="ColorRect" parent="Card" unique_id=1301215354]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.04, 0.03, 0.07, 0.3)
+
+[node name="BackButton" type="Button" parent="Card"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 1.0
+offset_right = 67.0
+offset_bottom = 67.0
+pivot_offset = Vector2(33, 33)
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+text = "◀"
+flat = true
+
+[node name="TitleLabel" type="Label" parent="Card"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 4.0
+offset_right = 581.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
+theme_override_font_sizes/font_size = 52
+text = "설정"
+vertical_alignment = 1
+
+[node name="GraphicsTab" type="Button" parent="Card"]
+layout_mode = 0
+offset_left = 296.0
+offset_top = 150.0
+offset_right = 556.0
+offset_bottom = 214.0
+mouse_default_cursor_shape = 2
+flat = true
+script = ExtResource("4_fantile")
+lean = 46.0
+display_text = "그래픽"
+display_font_size = 30
+plain_outline = true
+
+[node name="AudioTab" type="Button" parent="Card"]
+layout_mode = 0
+offset_left = 510.0
+offset_top = 150.0
+offset_right = 770.0
+offset_bottom = 214.0
+mouse_default_cursor_shape = 2
+flat = true
+script = ExtResource("4_fantile")
+lean = 46.0
+display_text = "오디오"
+display_font_size = 30
+plain_outline = true
+
+[node name="ControlsTab" type="Button" parent="Card"]
+layout_mode = 0
+offset_left = 724.0
+offset_top = 150.0
+offset_right = 984.0
+offset_bottom = 214.0
+mouse_default_cursor_shape = 2
+flat = true
+script = ExtResource("4_fantile")
+lean = 46.0
+display_text = "조작"
+display_font_size = 30
+plain_outline = true
+
+[node name="GraphicsPanel" type="Control" parent="Card"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FullscreenLabel" type="Label" parent="Card/GraphicsPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 288.0
+offset_right = 550.0
+offset_bottom = 344.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "전체화면"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="FullscreenToggle" type="Button" parent="Card/GraphicsPanel"]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 288.0
+offset_right = 830.0
+offset_bottom = 344.0
+mouse_default_cursor_shape = 2
+flat = true
+script = ExtResource("5_toggle")
+lean = 38.0
+
+[node name="ResolutionLabel" type="Label" parent="Card/GraphicsPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 368.0
+offset_right = 550.0
+offset_bottom = 424.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "해상도"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ResolutionBox" type="Button" parent="Card/GraphicsPanel"]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 368.0
+offset_right = 924.0
+offset_bottom = 424.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 26
+text = "1280 x 720"
+
+[node name="ResolutionArrow" type="Button" parent="Card/GraphicsPanel"]
+layout_mode = 0
+offset_left = 924.0
+offset_top = 368.0
+offset_right = 980.0
+offset_bottom = 424.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 24
+text = "∨"
+
+[node name="ResolutionList" type="Control" parent="Card/GraphicsPanel"]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 424.0
+offset_right = 924.0
+offset_bottom = 556.0
+mouse_filter = 2
+
+[node name="AudioPanel" type="Control" parent="Card"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MasterLabel" type="Label" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 288.0
+offset_right = 550.0
+offset_bottom = 344.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "전체 볼륨"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="MasterSlider" type="Control" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 293.0
+offset_right = 1000.0
+offset_bottom = 339.0
+script = ExtResource("6_slider")
+lean = 46.0
+value = 0.85
+
+[node name="MasterPercent" type="Label" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 1018.0
+offset_top = 293.0
+offset_right = 1128.0
+offset_bottom = 339.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 24
+text = "85%"
+vertical_alignment = 1
+
+[node name="MusicLabel" type="Label" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 368.0
+offset_right = 550.0
+offset_bottom = 424.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "음악 볼륨"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="MusicSlider" type="Control" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 373.0
+offset_right = 1000.0
+offset_bottom = 419.0
+script = ExtResource("6_slider")
+lean = 46.0
+value = 0.0
+
+[node name="MusicPercent" type="Label" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 1018.0
+offset_top = 373.0
+offset_right = 1128.0
+offset_bottom = 419.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 24
+text = "0%"
+vertical_alignment = 1
+
+[node name="SfxLabel" type="Label" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 448.0
+offset_right = 550.0
+offset_bottom = 504.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "효과음 볼륨"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SfxSlider" type="Control" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 453.0
+offset_right = 1000.0
+offset_bottom = 499.0
+script = ExtResource("6_slider")
+lean = 46.0
+value = 0.35
+
+[node name="SfxPercent" type="Label" parent="Card/AudioPanel"]
+layout_mode = 0
+offset_left = 1018.0
+offset_top = 453.0
+offset_right = 1128.0
+offset_bottom = 499.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 24
+text = "35%"
+vertical_alignment = 1
+
+[node name="MutedLabel" type="Label" parent="Card/AudioPanel"]
+visible = false
+layout_mode = 0
+offset_left = 580.0
+offset_top = 528.0
+offset_right = 1000.0
+offset_bottom = 568.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 20
+text = "이 빌드는 소리가 꺼져 있습니다"
+
+[node name="ControlsPanel" type="Control" parent="Card"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Hint" type="Label" parent="Card/ControlsPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 244.0
+offset_right = 980.0
+offset_bottom = 276.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 20
+text = "바꿀 키를 누른 뒤 새 키를 입력하세요 (ESC로 취소)"
+horizontal_alignment = 1
+
+[node name="P1Header" type="Label" parent="Card/ControlsPanel"]
+layout_mode = 0
+offset_left = 330.0
+offset_top = 284.0
+offset_right = 610.0
+offset_bottom = 314.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "1P"
+
+[node name="P1Column" type="Control" parent="Card/ControlsPanel"]
+layout_mode = 0
+offset_left = 330.0
+offset_top = 318.0
+offset_right = 596.0
+offset_bottom = 558.0
+mouse_filter = 2
+
+[node name="P2Header" type="Label" parent="Card/ControlsPanel"]
+layout_mode = 0
+offset_left = 670.0
+offset_top = 284.0
+offset_right = 950.0
+offset_bottom = 314.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "2P"
+
+[node name="P2Column" type="Control" parent="Card/ControlsPanel"]
+layout_mode = 0
+offset_left = 670.0
+offset_top = 318.0
+offset_right = 936.0
+offset_bottom = 558.0
+mouse_filter = 2
+
+[node name="ResetButton" type="Button" parent="Card/ControlsPanel"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 566.0
+offset_right = 740.0
+offset_bottom = 602.0
+mouse_default_cursor_shape = 2
+text = "조작키 초기화"
+
+[node name="CloseButton" type="Button" parent="Card"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 620.0
+offset_right = 980.0
+offset_bottom = 682.0
+pivot_offset = Vector2(340, 31)
+mouse_default_cursor_shape = 2
+flat = true
+script = ExtResource("4_fantile")
+lean = 50.0
+display_text = "닫기 (ESC)"
+display_font_size = 28
+plain_outline = true
