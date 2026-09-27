@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="CharacterStats" format=3]
+[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://dnd7xm11cy3xf"]
 
 [ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/cutin/IljinCutIn.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://vy8fuud4m8ky" path="res://ui/cutin/IljinCutIn.tscn" id="2"]
 
 [resource]
 script = ExtResource("1")

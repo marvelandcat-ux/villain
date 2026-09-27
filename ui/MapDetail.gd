@@ -11,6 +11,15 @@ extends Control
 
 const MAP_PREVIEW := preload("res://ui/MapPreview.gd")
 
+@export_group("맵 이름")
+## 왼쪽 위 뒤로가기 화살표 옆에 뜨는 맵 이름 자리 — 캐릭터 상세의 이름표와 같은 자리다
+@export var title_rect: Rect2 = Rect2(77.0, 4.0, 504.0, 76.0):
+	set(value):
+		title_rect = value
+		_relayout()
+@export var title_font_size: int = 52
+@export var title_color: Color = Color(0.96, 0.93, 0.98, 1.0)
+
 @export_group("맵 외형 칸")
 ## 평행사변형이 놓이는 자리와 크기 (화면 좌표)
 @export var art_rect: Rect2 = Rect2(120.0, 104.0, 1040.0, 356.0):
@@ -36,7 +45,7 @@ const MAP_PREVIEW := preload("res://ui/MapPreview.gd")
 @export_range(0.0, 1.0, 0.05) var art_crop_anchor: float = 1.0
 
 @export_group("설명 칸")
-@export var desc_rect: Rect2 = Rect2(120.0, 508.0, 1040.0, 150.0):
+@export var desc_rect: Rect2 = Rect2(120.0, 492.0, 1040.0, 186.0):
 	set(value):
 		desc_rect = value
 		_relayout()
@@ -47,7 +56,9 @@ const MAP_PREVIEW := preload("res://ui/MapPreview.gd")
 	set(value):
 		desc_padding = value
 		_relayout()
-## 맵 이름 글자 크기 / 설명 글자 크기
+## 설명 칸 맨 윗줄에 늘 붙는 고정 문구 (맵 이름은 왼쪽 위로 올라갔다)
+@export var desc_header_text: String = "상세설명"
+## 설명 칸 머리글 글자 크기 / 설명 글자 크기
 @export var name_font_size: int = 30
 @export var body_font_size: int = 20
 @export var name_color: Color = Color(1.0, 1.0, 1.0, 1.0)
@@ -62,6 +73,7 @@ var _art_cache: Dictionary = {}
 
 ## 칸 두 개는 **코드로 만든다** — 씬에 미리 놓아두려면 FanTile 스크립트를 ext_resource로 물려야 하는데,
 ## 도감 씬은 목록 칸도 전부 코드로 만들고 있어서 방식을 맞췄다
+var _title_label: Label = null
 var _art: FanTile = null
 var _panel: Panel = null
 var _name_label: Label = null
@@ -80,6 +92,11 @@ func _build_nodes() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
+	_title_label = Label.new()
+	_title_label.name = "Title"
+	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(_title_label)
 	_art = FanTile.new()
 	_art.name = "Art"
 	add_child(_art)
@@ -101,7 +118,8 @@ func open(key: String, path: String) -> void:
 	_key = key
 	visible = true
 	_relayout()
-	_name_label.text = key
+	_title_label.text = key
+	_name_label.text = desc_header_text
 	var desc: String = str(GameState.MAP_DESCRIPTIONS.get(key, ""))
 	_body_label.text = desc if desc != "" else empty_text
 	_art.portrait_texture = null
@@ -116,6 +134,11 @@ func close() -> void:
 func _relayout() -> void:
 	if not is_node_ready() or _art == null or not is_instance_valid(_art):
 		return
+	if _title_label:
+		_title_label.position = title_rect.position
+		_title_label.size = title_rect.size
+		_title_label.add_theme_font_size_override("font_size", title_font_size)
+		_title_label.add_theme_color_override("font_color", title_color)
 	if _art:
 		_art.position = art_rect.position
 		_art.size = art_rect.size

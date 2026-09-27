@@ -1,10 +1,9 @@
-[gd_resource type="Resource" script_class="CharacterStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://65eks1wdtdf5"]
 
-[ext_resource type="Script" path="res://stats/CharacterStats.gd" id="1"]
+[ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 character_name = "지하철 아저씨"
 max_hp = 95
 move_speed = 472.5
-attack_multiplier = 1.0
