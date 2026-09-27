@@ -124,7 +124,8 @@ func _draw() -> void:
 		draw_polyline(pts + PackedVector2Array([pts[0]]), out_col, 2.0)
 		var col := hot
 		col.a = fade
-		draw_colored_polygon(pts, col)
+		# 사라지며 폭이 0이 되면 다각형 분할이 실패하므로 분할 없이 그린다
+		draw_primitive(pts, PackedColorArray([col, col, col, col]), PackedVector2Array())
 
 	# ① 가운데 번쩍 — 앞 절반에서만
 	if t < 0.55:

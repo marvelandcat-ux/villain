@@ -55,6 +55,7 @@
     - `ClashBand.full_balance`(>1)까지 채움(사선이라 1.0에선 구석에 진 색이 남음) — `balance`는 -1~2, `push_a`는 -1~1로 자름. `solid` 전환 시 `_solid_half_len`으로 길게 그려 모양 유지
 - **⚠️ 띠를 화면 한가운데(`band_center_ratio` 0.5)에 두면 대치 그림을 가린다**(지금 위쪽 0.22)
 - `ClashBand`는 노드 없이 `_draw()`로. 스파크는 가로로 뻗고 세로만 뒤집는 지그재그(아무 방향이면 나뭇가지처럼 흩어짐)
+  - 두 덩어리는 경계선 마디마다 **가로 띠 조각 `draw_primitive`** 로 칠하고 경계선 x는 `±pad`로 자른다(2026-09-27). 다각형 하나로 그리던 때는 한쪽이 크게 밀려 경계선이 띠 끝 밖으로 나가면 "triangulation failed"가 매 프레임 쏟아졌다 — AI 강화로 연타 대결이 잦아지며 디버거 오류가 폭증한 원인
 - **대치 자세 중 리그 `process_mode`를 ALWAYS로**(paused라 `BodyRig._process`가 멈춤), 끝나면 INHERIT
 - **`BodyRig._pose_clash()` 기울기에 `facing` 부호를 곱할 것**(회전*크기 순이라 안 곱하면 왼쪽 캐릭터가 뒤로 넘어감)
 
@@ -64,6 +65,8 @@
 - 이동을 가로채는 스킬: `Fighter.movement_override`에 자신 등록 + `get_move_velocity_x()`/`after_physics(fighter, delta)` 구현(`DashSkill.gd`)
   - 돌진 바람 줄 `skills/ChargeWind.gd`(`DashSkill.wind_lines`): **맵에 붙여 시전자를 따라다니게** — 캐릭터 자식이면 좌우 반전에 뒤집혀 반대로 흐름. 일찍 끝나면 `_end_dash()`가 `stop()`
   - 금쪽이 자전거 속도 = 이동속도 x `dash_speed_multiplier` — 금쪽이 씬 `Skill1`에서 **1.7**(2026-09-26 사용자 요청으로 2.5 -> 2.1 -> 1.7, 스크립트 기본 2.5). `dash_duration` 0.9초는 그대로라 거리도 약 850 -> 578px로 같이 줄었다. `DashSkill`은 금쪽이만 씀
+  - **상대를 들이받아도 자기 피해 없음**(`enemy_hit_self_damage` 0, 2026-09-28) — 튕겨 나오기만 한다. 0이면 `take_damage(0)` 대신 넉백·경직만 직접 준다(0 피해로 부르면 번쩍임·아픈 표정·콤보 수가 들어감). 벽 자해(`self_damage_on_wall`)는 그대로
+  - **들이받으면 자전거가 세 조각으로 부서져 바닥에 남는다**(`wreck_on_enemy_hit`, `combat/BikeWreck.gd`, 2026-09-28 사용자 요청): 조각 그림 `sprite/축법소년/자전거_조각_뒷바퀴/앞바퀴/몸체.png`는 원본 `자전거.png`를 바퀴 둘레 원(반지름 270)으로 잘라 만든 **같은 캔버스** 그림이라 자전거 자리에 그대로 겹쳐 시작한다(자전거 그림을 바꾸면 조각도 다시 만들 것). 조각은 튀어 올라 돌다가 되튀고 미끄러져 멈춘 뒤 라운드 끝까지 남는다(맵에 붙임, z -1). 타던 자전거는 `BodyRig.break_bike()`로 즉시 감추고, 다음 돌진엔 새 자전거가 나온다
 - `Fighter.is_feared`/`apply_fear(duration)`(`FearSkill.gd`): 이동은 되고 스킬·기본공격 전부 무시, `set_tint`로 표시
 - `Hitbox.pull_to_source`/`pull_strength`: 고정 넉백 대신 공격자 쪽으로 끌어당김(`VacuumSkill`)
 - `skills/AoeAttack.gd`: 자신 중심 원형 범위 공격, `slow_multiplier`/`slow_duration`으로 둔화(`apply_temp_multiplier`)
@@ -219,16 +222,18 @@
 - 마우스 던지기/줄 당기기(악플러): `play_cast_motion(젖히는, 돌아오는)`, `set_reeling(true/false)`(`_reel_blend`). **`cast_windup_offset`의 y를 -6보다 위로 올리지 말 것**(얼굴에 마우스가 얹힘). `cast_hides_held_item`은 악플러만
 - **피격 움찔 `BodyRig.play_hit_flinch()`**(전원): 넉백 있는 피격이면 `Fighter._play_hit_reaction()`이 호출(BodyRig 없으면 옛 기울기). 전부 **다른 자세 위에 더하기**, 바라보는 쪽 기준. 밀림 방향은 Fighter가 넉백 x 부호 x facing으로 넘김. 구르기·슈퍼아머 중엔 없음
   - **그림만 움직이고 실제 위치·판정은 그대로** — 물리로 띄우면 금쪽이 1·2타 3타 확정이 깨짐
-- **머리 돌리기 그림**(지금 금쪽이만): 머리를 측면·정면·뒤통수 그림으로 갈아끼워 돈다. 세 곳에서 쓴다 — ① idle 뒤돌아보기(`_pose_lookback`) ② 방향 전환 ③ 회전 타격. `_set_head_frame(frame, dir)` / `_set_head_image()` / `_clear_head_frame()`
+- **머리 돌리기 그림**(금쪽이·악플러): 머리를 측면·정면·뒤통수 그림으로 갈아끼워 돈다. 세 곳에서 쓴다 — ① idle 뒤돌아보기(`_pose_lookback`) ② 방향 전환 ③ 회전 타격. `_set_head_frame(frame, dir)` / `_set_head_image()` / `_clear_head_frame()`
   - 그림 **장수는 자유**: `head_turn_textures`(측면1→…→**마지막 장이 정면**)에 끼우고 기준점·방향 칸을 +1씩 늘리면 단계(그림 n장 → 2n+1)가 알아서 늘어난다. 지금 측면1·측면2·측면3·정면
   - **방향 전환** `head_turn_on_face`(끄면 예전처럼 탁 뒤집힘): **고개 먼저, 몸은 나중(사용자 결정)** — `face_turn_duration` 앞 절반은 몸이 옛 방향인 채 머리가 정면까지 돌고, **머리가 정면인 순간 몸을 뒤집고** 뒤 절반에 새 방향 옆모습까지. 그동안 손·발이 몸 가운데로 모였다 벌어짐(`face_turn_limb_gather`, 위치만 좁힘). **옛 방향은 그림뿐이고 `Fighter.facing`은 즉시 바뀌므로** 공격·스킬·방어·피격이 시작되면 `_face_turn_blocked()`로 즉시 끝내고 몸을 새 방향에 맞춘다. 걷는 동안 매 프레임 불리는 `_end_lookback()`이 도는 그림을 안 지우게 막아 둠
   - **회전 타격** `spin_uses_head_turn`(머리 그림 있으면 켬): 몸을 cos로 얇게 누르는 대신 앞 반 바퀴는 머리 그림(정면 순간 몸 뒤집힘), 뒤 반 바퀴는 `spin_back_flip`에서 몸이 다시 앞으로 뒤집히고 그 앞뒤 `spin_back_show` 동안 **뒤통수 `head_back_texture`/`head_back_anchor`**(`축법소년 뒷머리.png`, 대칭이라 안 뒤집음). 뒤집히는 순간 앞뒤 `spin_gather_width` 동안 손·발·사탕을 모음. **`spin_back_flip + spin_back_show` < `spin_strike`** 여야 후려칠 때 얼굴이 보인다. 판정 시각은 불변. 머리 그림 없는 캐릭터는 예전 종이 뒤집기
   - export `head_turn_textures` / `head_turn_anchors`(0번 = 원래 옆모습, 각 **머리 공의 (중심x, 중심y, 지름)** 그림 픽셀) / `head_turn_faces_left`
   - ⚠️ 앵커는 프로펠러·턱 기준이면 흔들림 → **머리 공만** 잴 것(알파 1/4 축소 후 bbox 높이 22% 사각형 열림 연산, 무게중심·`2sqrt(넓이/pi)`). 그림 바꾸면 재측정
+  - **악플러(2026-09-28)**: `sprite/악플러/몸/악플러 측면 1~3.png`(전부 왼쪽을 봄) + 정면은 선택창 초상화 `악플러정면머리.png`를 같이 씀. 앵커는 같은 열림 연산으로 잰 값, 방향 전환(`head_turn_on_face`)도 켬. 회전 타격·뒤통수는 없음(악플러는 회전 타격 안 함). 몸통 돌리기는 `악플러 몸 측면 2/3.png`(오른쪽을 봄) — 캔버스(887x887)·그린 크기가 원래 몸통(344x270)과 달라 **`body_turn_match_height`**(보이는 영역 높이를 원래 몸통에 맞춤)를 켰다
   - 금쪽이 그림 `sprite/축법소년/`: 측면2 파일명이 `축법소년 픅면 2.png`(오타 그대로). 측면1·2·3은 왼쪽을 봄(뒤집어 씀). 뒤통수 그림도 `_is_turn_texture()`에 포함(안 넣으면 다른 표정으로 착각해 멈춤)
   - **몸통도 같이 돈다(2026-09-26, 금쪽이만)** — 머리만 돌고 몸통은 그대로라 "몸이 이상하다"는 지적으로. **평소 몸통은 정면 그대로**(사용자 결정 — 옆모습 몸통을 평소 몸통으로 써 봤다가 되돌림, `금쪽이 몸 측면.png`은 지금 안 씀). 머리가 **도는 도중에만** `body_turn_textures` = [`금쪽이 몸 측면 2.png`(3/4), `금쪾이 몸 측면3.png`(거의 정면 — 파일명 "쪾" 오타 그대로)]를 끼운다
     - `_set_head_frame()`이 `_set_body_frame(frame, dir)`도 부른다 — 머리가 옆(0)·정면(마지막)이면 원래 정면 몸통, 그 사이 단계만 그림을 내림 비율로 나눠 끼움(머리 측면1·2 -> 3/4, 측면3 -> 거의 정면). 뒤통수 순간·그 밖엔 원래 몸통(`_clear_head_frame()` -> `_clear_body_frame()`)
-    - 몸통 그림은 전부 **오른쪽을 보고 원래 몸통과 같은 캔버스(1536x1024)** 여야 한다 — 배율은 그대로 쓰고 `_body_anchor_of()`가 불투명 영역의 **바닥 가운데**를 한 번 재서 그 점이 원래 자리에 오게 위치를 더한다(반대쪽이면 dir로 뒤집음)
+    - 몸통 그림은 전부 **오른쪽을 보고** 그린다. 원래 몸통과 같은 캔버스면 배율 그대로(금쪽이), 캔버스·크기가 다르면 `body_turn_match_height`로 높이를 맞춘다(악플러). `_body_anchor_of()`가 보이는 영역의 **바닥 가운데**를 한 번 재서 그 점이 원래 자리에 오게 위치를 더한다(반대쪽이면 dir로 뒤집음)
+    - 영역은 `_opaque_rect_of()`가 **알파 절반 이상만** 4px 간격으로 잰다(리그 공용 static 캐시). `Image.get_used_rect()`는 알파 1/255 점 하나에도 늘어나서 악플러 몸 측면 3이 120px 크게 재져 떠 보였다
     - 도는 도중 손이 몸 앞에 모이는 건(`face_turn_limb_gather`) 그대로다
   - 평소 얼굴일 때만 돔(다른 표정 들어오면 양보), Fighter 있을 때만. 위치는 앞선 자세 오프셋 유지 + 제자리 차이만 더함
 - **대치 자세 `fight_stance`**(사용자 결정으로 꺼짐, 기능만 있음): `HandRHold` 복사 직전에 더하기만, 공격 출발 자세에서 대치 오프셋을 빼둘 것(안 빼면 두 번 더해져 튐)
@@ -237,9 +242,10 @@
   - 눈 재는 법: 흰자 덩어리를 찾고 거기서 바깥으로 검은 테두리가 끝나는 곳까지 = 눈 테두리 상자, `eye_size`는 그보다 가로 ~15·세로 ~18px 넉넉히(금쪽이 값과 같은 규칙). 흰자가 거의 없는 가는 눈(여자친구·경찰)은 눈으로 보고 잡았다. 감으면 위 눈꺼풀 양끝이 조금 남아 속눈썹처럼 보인다
   - 층간소음은 동그란 코가 눈 테두리 오른쪽 아래를 덮고 있어 감을 때 코 윗부분이 조금 가려진다(게임 크기에선 1~2px)
   - 칠하기는 세로 띠 `draw_primitive`(다각형 하나로 만들면 분할 실패 에러)
+- **⚠️ `_draw()`로 모양이 줄어드는(폭·높이가 0이 될 수 있는) 사각형·가시는 `draw_colored_polygon` 말고 `draw_primitive`로** — 다각형 분할이 실패하면 "Invalid polygon data, triangulation failed"가 매 프레임 쏟아진다(EyeBlink·ClashBand·LaunchTrail 가시·JumpWind·HitSpark 마름모·LensGlint에서 겪음). **이 오류는 `--headless`에선 안 나온다**(그리기를 안 함) — 창을 띄워 확인할 것
 - **눈이 안 보이는 캐릭터의 생동감(2026-09-26 사용자 요청)** — 셋 다 기본 얼굴 텍스처일 때만, 부모에 `play_attack_swing` 없으면(잔상) 안 함. `Head`의 자식, 좌표·크기는 머리 그림 픽셀
   - **렌즈 반짝임 `characters/LensGlint.gd`**(@tool, unshaded라 어두운 맵에서도 번쩍): 악플러·캣맘·지하철. 가끔(`interval_*`) 사선 빛줄기가 렌즈 타원(`lens_size`) 안을 훑고 지나감(세로 띠 조각으로 잘라 칠함). `blink_now()`가 있어 훈련장 "눈 깜빡임" 버튼으로도 나온다. 에디터에선 렌즈 범위가 하늘색 선으로 보이고 `preview`로 빛줄기 미리보기
-    - **악플러는 렌즈가 흰색이라 흰 빛이 안 보여** 진한 하늘색 `glint_color` + 굵은 줄기(`band_width` 0.3)·느린 훑기(`sweep_time` 0.45) + 모서리 반짝 별(`sparkle_size` 150, 테두리도 별 크기 비례) — 2026-09-27 "더 잘 보이게" 요청으로 키움
+    - **악플러는 렌즈가 흰색이라 흰 빛이 안 보여** 굵은 줄기(`band_width` 0.3)·느린 훑기(`sweep_time` 0.45) + 모서리 반짝 별(`sparkle_size` 150, 테두리도 별 크기 비례, 2026-09-27 "더 잘 보이게"). 2026-09-28 "하얀색 느낌"으로 **흰 `glint_color` + 옅은 하늘색 테두리(`band_edge_color`/`band_edge_width`)** — 흰 빛만으론 흰 렌즈에 묻혀서 둘레를 두른다
     - 렌즈 재는 법: 악플러 흰 덩어리 / 캣맘 진한 하늘색(빨강 낮은 픽셀 — 두건의 옅은 하늘색과 구분) / 지하철 검정 덩어리를 **열림 연산으로 외곽선 떼고**(안경다리는 눈으로 빼고) 그 bbox. `lens_size`는 렌즈 테두리 안쪽으로 조금 작게
   - **소용돌이 회전 `characters/SwirlEye.gd`**(@tool): 주정뱅이. 그림의 소용돌이를 흰 원(`eye_size`, 눈 테두리 **안쪽**)으로 덮고 코드로 그린 나선(`turns`/`spiral_radius`/`line_width`)을 `spin_speed`로 돌린다. 몇 초마다 빨라짐(`surge`). 흰 원·나선은 조명을 받는다(머리와 같은 밝기)
   - **특수 idle 몸짓 `BodyRig.idle_special`**: 1 안경 올리기(악플러) / 2 딸꾹질(주정뱅이). 가만히 있으면 머리 긁기·뒤돌아보기와 셋 중 하나로 랜덤(`_start_special`/`_pose_special`/`_end_special`, 움직이면 즉시 취소)
@@ -249,7 +255,7 @@
 - **피격 표정** `hurt_head_texture`(`play_hurt_face()`). 그림 없으면 스킵, 여백 다르면 `hurt_head_scale`. (HP 낮을 때 지친 표정은 2026-09-26 삭제됨)
   - 잠깐 표정 우선순위 **피격 > 토하기**, 그 아래 기본 머리 **액션 > 취함 > 지침 > 맨정신**(`_apply_base_head()`, 취함>지침은 사용자 결정 — 술 스택 정보라). `set_action_face`/`set_drunk_head`는 미뤘다가 `_restore_head()`로 복귀
   - `Fighter._update_hp_face()`는 `take_damage`/`heal`/`ring_out` **세 군데 전부**에서 호출(하나 빠지면 회복 후에도 지쳐 보임)
-  - 악플러 기본 머리는 공용 `sprite/body/악플러대가리.png`(`sprite/악플러/` 아님)
+  - 악플러 기본 머리는 `sprite/악플러/몸/악플러대가리.png`(2026-09-28 사용자가 `sprite/body/`에서 옮김 — **옮기며 uid가 새로 붙어** 리그 `ext_resource` 경로·uid를 같이 고쳤다. 파일을 탐색기에서 옮기면 참조가 깨지니 Godot 파일시스템 창에서 옮길 것)
   - ⚠️ 그림이 `.godot/imported/*.ctex` 캐시에만 있고 원본이 없던 적 있음(`축법소년 머리.png`) → `.ctex`(offset 56부터 WebP)에서 추출, `.import` 두면 uid 유지
 - 술 마시기(주정뱅이 스킬1) `play_drink_motion()`: 공격 다음에 덮어씀(겹치면 마시기 이김), 머리 회전도 매 프레임 0 리셋 후 덮어씀
   - 술병 `JujeongbaengiRig.tscn`의 `HandRHold/Bottle` 제자리 position/rotation은 이미 붓는 자세 — **바꿨다 되돌렸으니 다시 건드리지 말 것**(그래서 `drink_hand_deg` 0)
@@ -368,6 +374,7 @@
   - TODO: 메뉴 글꼴 미정(기본 폰트) — 정하면 `Text` 5개에 `theme_override_fonts/font`
 - `Illust*`와 `Background*`를 트리 순서 **index로 짝지어** 교대(나타날 때 `restart()`). **일러스트 추가 시 배경도 같이 추가**(짝 없으면 빈 화면)
 - **주의: 씬 첫 프레임 delta가 크게 튐** — 시간 누적 연출엔 `minf(delta, 0.05)`
+- **해상도**(설정 화면, `GameState.RESOLUTIONS` 1280x720/1920x1080/2560x1440, 게임 기준 화면은 1280x720 + `canvas_items` 늘이기 — 배치 숫자는 전부 1280x720 기준): **기본값 1920x1080**(`resolution_index` 1 + `project.godot` `window_width/height_override`, 2026-09-28 — 저장 파일이 없는 첫 실행도 `_load_settings()`가 적용). 이미 저장한 사람은 그 값 유지. `_apply_window_size()`가 **모니터 전체 크기**와 비교해 안 들어가면 한 칸씩 내린다. 작업표시줄 영역을 넘는 크기(모니터와 같은 크기)는 **테두리 없는 창**으로 꽉 채운다(2026-09-28 — 예전엔 작업표시줄 뺀 영역과 비교해 1080 모니터에서 1920x1080을 못 골랐다). ⚠️ 에디터에서 "Embed Game on Play"로 실행하면 창 크기가 안 바뀐다 — 내보낸 빌드나 embed 끄고 확인
 
 ### 메인 메뉴 일러스트(파츠 분리)
 

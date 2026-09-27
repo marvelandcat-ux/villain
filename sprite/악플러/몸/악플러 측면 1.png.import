@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://geyrw4kw4lq1"
-path="res://.godot/imported/악플러대가리.png-698787b110844cae970167cac4c137a3.ctex"
+uid="uid://v3d726ba5ia5"
+path="res://.godot/imported/악플러 측면 1.png-1d2f22f6c4f33c0f28b2fc9cd0c678b2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/body/악플러대가리.png"
-dest_files=["res://.godot/imported/악플러대가리.png-698787b110844cae970167cac4c137a3.ctex"]
+source_file="res://sprite/악플러/몸/악플러 측면 1.png"
+dest_files=["res://.godot/imported/악플러 측면 1.png-1d2f22f6c4f33c0f28b2fc9cd0c678b2.ctex"]
 
 [params]
 
