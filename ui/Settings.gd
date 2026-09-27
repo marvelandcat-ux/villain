@@ -7,82 +7,62 @@ extends Control
 ##
 ## (2026-09-27 개편) 러프대로 **도감과 같은 틀**로 바꿨다 —
 ## 왼쪽 위에 ◀ + "설정", 그 아래 사선 탭 3개(그래픽/오디오/조작), 맨 아래 넓은 사선 "닫기".
-## 칸은 전부 평행사변형(FanTile)이고, 전체화면은 빨간 덩이가 미끄러져 들어오는 스위치(SlantToggle)다.
 ##
-## **화면은 씬이 아니라 코드로 만든다** — 칸 자리를 아래 상수 한 군데에서만 고치면 되고,
-## 도감(CharacterDex)이 목록 칸을 코드로 만드는 방식과 같다
+## **칸은 전부 씬(ui/Settings.tscn)에 진짜 노드로 놓여 있다.** 에디터에서 그냥 집어서 끌면 옮겨지고,
+## 손잡이로 늘리면 커진다. 이 스크립트는 자리를 정하지 않고 **동작만 붙인다** —
+## `@tool`이라 에디터에서도 그대로 그려지므로 보면서 맞출 수 있다.
+##
+## 코드가 만드는 건 두 가지뿐이다(손으로 놓기엔 개수가 많아서):
+##  - 조작 탭의 키 줄 16개 → `P1Column` / `P2Column` 안에 채운다. **그 두 칸을 끌면 통째로 따라온다**
+##  - 해상도 펼침 목록 → `ResolutionList` 안에 채운다. 그 칸을 끌면 목록이 따라온다
 
 ## 닫힐 때(슬라이드 연출이 끝난 뒤) 알린다. 부르는 쪽(MainMenu)이 포커스를 되돌리는 데 쓴다
+signal closed
+
 ## 에디터에는 오토로드(GameState) 인스턴스가 없다 — const(RESOLUTIONS)만 이걸로 읽고,
 ## 나머지 값(지금 볼륨·전체화면 여부)은 에디터용 예시값으로 대신한다
 const GAME_STATE := preload("res://GameState.gd")
 
-signal closed
-
 @export var open_time: float = 0.35
 @export var close_time: float = 0.25
 
-## --- 색 (도감 탭과 같은 값) ---
-const TAB_COLOR := Color(0.09, 0.07, 0.13, 0.82)
-const TAB_COLOR_ON := Color(0.72, 0.18, 0.28, 0.95)
-const TEXT_COLOR := Color(0.86, 0.82, 0.92, 1.0)
-const TEXT_COLOR_ON := Color(1.0, 1.0, 1.0, 1.0)
-const OUTLINE_COLOR := Color(0.62, 0.58, 0.72, 0.85)
-const PANEL_COLOR := Color(0.13, 0.11, 0.17, 0.85)
-
 ## **에디터에서만 쓰는 미리보기 탭.** 게임에는 아무 영향이 없다 —
 ## 에디터는 늘 그래픽 탭만 그려서 오디오·조작 칸 자리를 눈으로 잡을 수가 없었다
-@export_enum("그래픽", "오디오", "조작") var editor_preview_tab: int = 0
+@export_enum("그래픽", "오디오", "조작") var editor_preview_tab: int = 0:
+	set(value):
+		editor_preview_tab = value
+		if Engine.is_editor_hint() and is_node_ready():
+			_show_tab(_editor_tab_name())
 
-@export_group("칸 자리")
-## **여기 값만 바꾸면 화면 배치가 전부 따라 움직인다.**
-## 씬(ui/Settings.tscn)에서 루트 Settings 노드를 고르면 인스펙터에 그대로 뜬다.
-##
-## 첫 번째 탭의 자리와 크기. 두 번째·세 번째 탭은 여기서 자동으로 계산된다
-@export var tab_rect: Rect2 = Rect2(296.0, 150.0, 260.0, 64.0)
-## 탭 기울기(px). **탭끼리 이만큼 겹쳐 놓아야 대각선 변이 맞물린다** — 값을 키우면 더 많이 눕고 더 겹친다
-@export var tab_lean: float = 46.0
-## 항목 이름("전체화면" 등)이 놓이는 첫 줄 자리. 글자는 오른쪽 정렬이라 오른쪽 끝이 기준이다
-@export var label_rect: Rect2 = Rect2(300.0, 288.0, 250.0, 56.0)
-## 값 칸(스위치·막대)이 시작하는 x
-@export var control_x: float = 580.0
-## 줄 사이 세로 간격(px)
-@export var row_step: float = 80.0
-## 맨 아래 닫기 단추 자리
-@export var close_rect: Rect2 = Rect2(300.0, 620.0, 680.0, 62.0)
-
-@export_group("닫기 단추 커서 반응")
-## 커서를 올렸을 때 커지는 배수와 걸리는 시간(초)
+@export_group("모양")
+## 탭·닫기 칸의 평소 색과 골랐을 때(빨강) 색 — 도감 탭과 같은 값이다
+@export var tab_color: Color = Color(0.09, 0.07, 0.13, 0.82)
+@export var tab_color_on: Color = Color(0.72, 0.18, 0.28, 0.95)
+@export var text_color: Color = Color(0.86, 0.82, 0.92, 1.0)
+@export var text_color_on: Color = Color(1.0, 1.0, 1.0, 1.0)
+@export var outline_color: Color = Color(0.62, 0.58, 0.72, 0.85)
+@export var panel_color: Color = Color(0.13, 0.11, 0.17, 0.85)
+## 닫기 단추에 커서를 올렸을 때 커지는 배수와 걸리는 시간(초)
 @export var close_hover_scale: float = 1.06
 @export var close_hover_time: float = 0.12
 
-@export_group("조작 탭")
-## 1P 칸이 시작하는 자리(안내문 아래 첫 줄)와 2P 칸까지의 가로 간격
-@export var controls_origin: Vector2 = Vector2(330.0, 318.0)
-@export var controls_column_gap: float = 340.0
-## 키 한 줄의 세로 간격(px)과 이름칸/키칸 너비
-@export var controls_row_step: float = 30.0
-@export var controls_name_width: float = 110.0
-@export var controls_key_width: float = 150.0
-## "조작키 초기화" 단추 자리
-@export var controls_reset_rect: Rect2 = Rect2(540.0, 556.0, 200.0, 36.0)
+@export_group("방향키 조작")
+## 꾹 눌렀을 때 — 처음 한 번 옮기고 이만큼 쉬었다가, 그 뒤로 이 간격으로 촤라락 넘어간다.
+## 도감(CharacterDex)에 쓴 값과 같다
+@export var key_repeat_delay: float = 0.35
+@export var key_repeat_interval: float = 0.08
+## 방향키 커서가 탭 위에 있을 때 그 탭 테두리에 칠할 색·굵기
+@export var tab_cursor_color: Color = Color(1.0, 0.86, 0.9, 1.0)
+@export var tab_cursor_width: float = 4.0
+## 커서 테두리(FocusRing)가 칸보다 이만큼 바깥으로 나간다
+@export var focus_ring_pad: float = 5.0
 
-@export_group("볼륨 막대")
-## 사선 볼륨 막대의 너비·높이·기울기 (오디오 탭 세 줄이 전부 이 값을 쓴다)
-@export var volume_bar_width: float = 420.0
-@export var volume_bar_height: float = 46.0
-@export var volume_bar_lean: float = 46.0
-
-@export_group("해상도 칸")
-## **해상도만 네모 칸이다**(2026-09-27 러프) — 평행사변형으로는 목록이 안 예뻐서 그냥 네모로 갔다.
-## 아래 네 값이 해상도 줄의 전부다. 씬(ui/Settings.tscn)에서 루트 Settings 노드를 고르면
-## 인스펙터 "해상도 칸" 항목에 그대로 뜨니 숫자만 바꾸면 자리가 옮겨진다
-@export var resolution_label_rect: Rect2 = Rect2(300.0, 368.0, 250.0, 56.0)
-## 닫혀 있을 때의 칸 전체(글자 칸 + 오른쪽 ∨ 단추를 합친 크기)
-@export var resolution_rect: Rect2 = Rect2(580.0, 368.0, 400.0, 56.0)
-## 오른쪽 ∨ 단추의 너비(px)
-@export var resolution_arrow_width: float = 56.0
-## 펼쳤을 때 아래로 깔리는 목록 한 줄의 높이(px)
+@export_group("코드가 채우는 칸")
+## 조작 탭 키 줄 한 칸의 높이와, 이름칸/키칸 너비 (P1Column·P2Column 안에서 쓰인다)
+@export var key_row_height: float = 30.0
+@export var key_name_width: float = 110.0
+@export var key_button_width: float = 150.0
+## 해상도 펼침 목록 한 줄의 높이 (ResolutionList 안에서 쓰인다)
 @export var resolution_row_height: float = 44.0
 
 const ACTION_LABELS := {
@@ -90,184 +70,206 @@ const ACTION_LABELS := {
 	"basic_attack": "기본공격", "skill_1": "스킬1", "skill_2": "스킬2", "ultimate": "궁극기",
 }
 const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate"]
+## 사선 칸(토글·볼륨 막대)의 평소 테두리 — 커서가 떠나면 이 값으로 되돌린다
+const SLANT_OUTLINE_COLOR := Color(0.15, 0.13, 0.19, 1.0)
+const SLANT_OUTLINE_WIDTH := 3.0
 
 @onready var _card: Control = $Card
 @onready var _scrim: ColorRect = $Scrim
+@onready var _tabs: Dictionary = {
+	"graphics": $Card/GraphicsTab,
+	"audio": $Card/AudioTab,
+	"controls": $Card/ControlsTab,
+}
+@onready var _panels: Dictionary = {
+	"graphics": $Card/GraphicsPanel,
+	"audio": $Card/AudioPanel,
+	"controls": $Card/ControlsPanel,
+}
+@onready var _close_button: FanTile = $Card/CloseButton
+@onready var _fullscreen_toggle: SlantToggle = $Card/GraphicsPanel/FullscreenToggle
+@onready var _resolution_box: Button = $Card/GraphicsPanel/ResolutionBox
+@onready var _resolution_arrow: Button = $Card/GraphicsPanel/ResolutionArrow
+@onready var _resolution_list: Control = $Card/GraphicsPanel/ResolutionList
+@onready var _sliders: Dictionary = {
+	"master": $Card/AudioPanel/MasterSlider,
+	"music": $Card/AudioPanel/MusicSlider,
+	"sfx": $Card/AudioPanel/SfxSlider,
+}
+@onready var _percents: Dictionary = {
+	"master": $Card/AudioPanel/MasterPercent,
+	"music": $Card/AudioPanel/MusicPercent,
+	"sfx": $Card/AudioPanel/SfxPercent,
+}
 
-var _tabs: Dictionary = {}     # {이름: FanTile}
-var _panels: Dictionary = {}   # {이름: Control}
+@onready var _focus_ring: Panel = $Card/FocusRing
+@onready var _reset_button: Button = $Card/ControlsPanel/ResetButton
+
 var _mode: String = "graphics"
-
-var _fullscreen_toggle: SlantToggle = null
-var _resolution_main: Button = null
-var _resolution_arrow: Button = null
-var _resolution_list: Control = null
-var _volume_sliders: Dictionary = {}   # {"master"/"music"/"sfx": SlantSlider}
-var _volume_labels: Dictionary = {}    # {줄 번호: 퍼센트 Label}
 var _key_buttons: Dictionary = {}
 ## 지금 새 키 입력을 기다리는 액션. 빈 문자열이면 대기 중이 아님
 var _listening_action: String = ""
 
+## 방향키 커서 — "tabs"(탭 줄) / "items"(탭 내용) / "close"(닫기)
+var _focus_area: String = "tabs"
+var _row: int = 0
+var _col: int = 0
+## 해상도 목록이 펼쳐져 있을 때 목록 안에서의 커서
+var _res_row: int = 0
+## 꾹 누르기 반복용 — 지금 누르고 있는 방향과 다음 반복까지 남은 시간
+var _held_step: int = 0
+var _repeat_left: float = 0.0
+
 var _scrim_target_alpha: float = 0.55
 ## 연출 진행 시간(초). 음수면 연출 중이 아니다
 var _anim_time: float = -1.0
-## 에디터에서 마지막으로 그린 인스펙터 값들의 도장
-var _editor_stamp: String = ""
 var _opening: bool = true
 
 func _ready() -> void:
-	_build()
-	_show_tab(_mode)
+	_style_tabs()
+	_style_resolution_buttons()
+	_fill_key_rows()
+	_fill_resolution_list()
+	_setup_values()
+	_setup_nav()
+	_connect_signals()
 	_scrim_target_alpha = _scrim.color.a
 	if Engine.is_editor_hint():
 		# 에디터에서는 미끄러지는 연출 없이 제자리에 그려야 자리를 눈으로 잡을 수 있다
 		_show_tab(_editor_tab_name())
 		_apply_slide(1.0)
-		_editor_stamp = _stamp()
-		set_process(true)
 		return
+	_show_tab("graphics")
 	_opening = true
 	_anim_time = 0.0
 	_apply_slide(0.0)
 
-## 에디터에서 인스펙터 값이 바뀌었는지 보는 도장.
-## **내보낸 값을 코드로 전부 훑어서 만든다** — 손으로 적는 방식이면 새 값을 추가할 때
-## 여기 빠뜨려서 "인스펙터에서 바꿔도 안 먹는" 일이 생긴다(도감에서 실제로 겪었다)
-func _stamp() -> String:
-	var parts: PackedStringArray = PackedStringArray()
-	for prop in get_property_list():
-		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE and prop.usage & PROPERTY_USAGE_EDITOR:
-			parts.append("%s=%s" % [prop.name, str(get(prop.name))])
-	return "|".join(parts)
-
-## 에디터 미리보기 탭 번호를 이름으로 바꾼다
 func _editor_tab_name() -> String:
 	match editor_preview_tab:
 		1: return "audio"
 		2: return "controls"
 		_: return "graphics"
 
-## 칸을 전부 지우고 다시 만든다 (에디터에서 값이 바뀔 때만 쓴다)
-func _rebuild() -> void:
-	for child in _card.get_children():
-		# 씬에 놓아둔 배경 세 장은 그대로 두고, 코드로 만든 칸만 지운다
-		if child.name in ["Background", "BackgroundImage", "BackgroundScrim"]:
-			continue
-		_card.remove_child(child)
-		child.queue_free()
-	_tabs.clear()
-	_panels.clear()
-	_volume_sliders.clear()
-	_volume_labels.clear()
+# ---------------------------------------------------------------- 모양 입히기
+
+## 씬에 놓인 사선 칸(탭 3개 + 닫기)에 색과 테두리를 입힌다. **자리는 안 건드린다**
+func _style_tabs() -> void:
+	for tile in [_tabs["graphics"], _tabs["audio"], _tabs["controls"], _close_button]:
+		# **글자는 칸 안의 Text Label이 그린다** — 씬에서 그 Label만 따로 끌어 옮길 수 있게 하려고
+		# FanTile 자체의 글자는 비워둔다(안 비우면 두 글자가 겹쳐 찍힌다)
+		tile.display_text = ""
+		tile.fill_color = tab_color
+		tile.backdrop_color = tab_color
+		tile.name_band_ratio = 0.0
+		tile.name_text = ""
+		tile.plain_outline = true
+		tile.plain_outline_color = outline_color
+		tile.plain_outline_width = 2.0
+
+## 해상도 칸은 러프대로 **네모**다 — 평행사변형으로는 펼침 목록이 안 예뻐서 그냥 네모로 갔다
+func _style_box_button(button: Button) -> void:
+	button.add_theme_color_override("font_color", text_color)
+	button.add_theme_color_override("font_hover_color", text_color_on)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = tab_color_on if state == "hover" else panel_color
+		style.border_color = outline_color
+		style.border_width_left = 2
+		style.border_width_top = 2
+		style.border_width_right = 2
+		style.border_width_bottom = 2
+		button.add_theme_stylebox_override(state, style)
+
+func _style_resolution_buttons() -> void:
+	_style_box_button(_resolution_box)
+	_style_box_button(_resolution_arrow)
+
+# ---------------------------------------------------------------- 코드가 채우는 칸
+
+## 조작 탭 키 줄을 P1Column / P2Column 안에 채운다.
+## **두 칸을 에디터에서 끌면 줄이 통째로 따라온다** — 줄 자리가 칸 기준 상대 좌표라서
+func _fill_key_rows() -> void:
 	_key_buttons.clear()
-	_build()
-	_show_tab(_editor_tab_name() if Engine.is_editor_hint() else _mode)
-	_apply_slide(1.0)
+	var columns := {"p1_": $Card/ControlsPanel/P1Column, "p2_": $Card/ControlsPanel/P2Column}
+	for prefix in columns:
+		var column: Control = columns[prefix]
+		for child in column.get_children():
+			column.remove_child(child)
+			child.queue_free()
+		for i in range(ROWS.size()):
+			var suffix: String = str(ROWS[i])
+			var y: float = key_row_height * float(i)
+			var label := Label.new()
+			label.text = str(ACTION_LABELS[suffix])
+			label.position = Vector2(0.0, y)
+			label.size = Vector2(key_name_width, key_row_height)
+			label.add_theme_font_size_override("font_size", 20)
+			label.add_theme_color_override("font_color", text_color)
+			column.add_child(label)
 
-# ---------------------------------------------------------------- 화면 만들기
+			var button := Button.new()
+			button.position = Vector2(key_name_width + 6.0, y)
+			button.size = Vector2(key_button_width, key_row_height)
+			button.text = _key_display_text(str(prefix) + suffix)
+			button.add_theme_font_size_override("font_size", 18)
+			button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			if not Engine.is_editor_hint():
+				button.pressed.connect(_on_rebind_pressed.bind(str(prefix) + suffix, button))
+			column.add_child(button)
+			_key_buttons[str(prefix) + suffix] = button
 
-func _build() -> void:
-	_card.add_child(_make_back_button())
-	_card.add_child(_make_title())
-	var names := [["graphics", "그래픽"], ["audio", "오디오"], ["controls", "조작"]]
-	for i in range(names.size()):
-		var tab := _make_tab(str(names[i][1]), i)
-		tab.pressed.connect(_show_tab.bind(str(names[i][0])))
-		_tabs[str(names[i][0])] = tab
-		_card.add_child(tab)
-	_panels["graphics"] = _build_graphics_panel()
-	_panels["audio"] = _build_audio_panel()
-	_panels["controls"] = _build_controls_panel()
-	for key in _panels:
-		_card.add_child(_panels[key])
-	var close := _make_slant(close_rect, 50.0, "닫기 (ESC)", 28)
-	close.pressed.connect(_on_back_pressed)
-	_add_hover_pop(close)
-	_card.add_child(close)
+## 해상도 펼침 목록을 ResolutionList 안에 채운다. 그 칸을 끌면 목록이 따라온다
+func _fill_resolution_list() -> void:
+	for child in _resolution_list.get_children():
+		_resolution_list.remove_child(child)
+		child.queue_free()
+	for i in range(GAME_STATE.RESOLUTIONS.size()):
+		var item: Vector2i = GAME_STATE.RESOLUTIONS[i]
+		var row := Button.new()
+		row.text = "%d x %d" % [item.x, item.y]
+		row.position = Vector2(0.0, resolution_row_height * float(i))
+		row.size = Vector2(_resolution_list.size.x, resolution_row_height)
+		row.add_theme_font_size_override("font_size", 22)
+		row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		_style_box_button(row)
+		if not Engine.is_editor_hint():
+			row.pressed.connect(_on_resolution_chosen.bind(i))
+			row.mouse_entered.connect(_on_resolution_row_hovered.bind(i))
+		row.focus_mode = Control.FOCUS_NONE
+		_resolution_list.add_child(row)
+	_resolution_list.visible = false
 
-func _make_back_button() -> Button:
-	var back := Button.new()
-	back.text = "◀"
-	back.flat = true
-	back.position = Vector2(1.0, 1.0)
-	back.size = Vector2(66.0, 66.0)
-	back.pivot_offset = back.size * 0.5
-	back.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	back.add_theme_font_size_override("font_size", 40)
-	back.add_theme_color_override("font_color", TEXT_COLOR)
-	back.add_theme_color_override("font_hover_color", TEXT_COLOR_ON)
-	back.pressed.connect(_on_back_pressed)
-	return back
+# ---------------------------------------------------------------- 값 채우기·연결
 
-func _make_title() -> Label:
-	var title := Label.new()
-	title.text = "설정"
-	title.position = Vector2(77.0, 4.0)
-	title.size = Vector2(504.0, 76.0)
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 52)
-	title.add_theme_color_override("font_color", Color(0.96, 0.93, 0.98, 1.0))
-	return title
+func _setup_values() -> void:
+	_fullscreen_toggle.set_on_instant(_now_fullscreen())
+	_refresh_resolution_box()
+	for key in _sliders:
+		var slider: SlantSlider = _sliders[key]
+		slider.value = _now_volume(str(key))
+		_update_percent(str(key), slider.value)
+	# 빌드에서는 소리를 통째로 꺼 뒀다(GameState.MUTE_IN_BUILD) — 헛돌게 두면 고장난 줄 아니까 못 만지게 한다
+	var muted: bool = _now_muted()
+	for key in _sliders:
+		(_sliders[key] as SlantSlider).editable = not muted
+	$Card/AudioPanel/MutedLabel.visible = muted
 
-## 사선 탭 하나. 옆 탭과 기울기만큼 겹쳐 놓아야 대각선 변이 딱 맞물린다
-func _make_tab(text: String, index: int) -> FanTile:
-	var pitch: float = tab_rect.size.x - tab_lean
-	var rect := Rect2(tab_rect.position + Vector2(pitch * float(index), 0.0), tab_rect.size)
-	return _make_slant(rect, tab_lean, text, 30)
-
-## 평행사변형 칸 하나를 만든다 (탭·닫기·해상도 칸이 전부 이걸 쓴다)
-func _make_slant(rect: Rect2, lean: float, text: String, font_size: int) -> FanTile:
-	var tile := FanTile.new()
-	tile.position = rect.position
-	tile.size = rect.size
-	tile.lean = lean
-	tile.fill_color = TAB_COLOR
-	tile.backdrop_color = TAB_COLOR
-	tile.name_band_ratio = 0.0
-	tile.name_text = ""
-	tile.display_text = text
-	tile.display_font_size = font_size
-	tile.plain_outline = true
-	tile.plain_outline_color = OUTLINE_COLOR
-	tile.plain_outline_width = 2.0
-	tile.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	return tile
-
-## 커서를 올리면 **살짝 커지면서 빨개진다** (닫기 단추).
-## 가운데를 축으로 커지게 pivot을 가운데로 옮긴다 — 안 그러면 왼쪽 위를 축으로 커져서 자리가 밀린다
-func _add_hover_pop(tile: FanTile) -> void:
-	tile.pivot_offset = tile.size * 0.5
-	tile.mouse_entered.connect(_on_hover_changed.bind(tile, true))
-	tile.mouse_exited.connect(_on_hover_changed.bind(tile, false))
-
-func _on_hover_changed(tile: FanTile, hovering: bool) -> void:
-	if not is_instance_valid(tile):
+func _connect_signals() -> void:
+	if Engine.is_editor_hint():
 		return
-	tile.fill_color = TAB_COLOR_ON if hovering else TAB_COLOR
-	tile.backdrop_color = tile.fill_color
-	var target: float = close_hover_scale if hovering else 1.0
-	var tween := create_tween()
-	tween.tween_property(tile, "scale", Vector2(target, target), close_hover_time).set_trans(Tween.TRANS_QUAD)
-
-func _make_label(text: String, rect: Rect2) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.position = rect.position
-	label.size = rect.size
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 26)
-	label.add_theme_color_override("font_color", TEXT_COLOR)
-	return label
-
-## 항목 한 줄의 라벨/칸 자리 (index 0부터 아래로 ROW_STEP씩 내려간다)
-func _row_label_rect(index: int) -> Rect2:
-	return Rect2(label_rect.position + Vector2(0.0, row_step * float(index)), label_rect.size)
-
-func _row_control_rect(index: int, width: float) -> Rect2:
-	return Rect2(Vector2(control_x, label_rect.position.y + row_step * float(index)),
-		Vector2(width, label_rect.size.y))
-
+	$Card/BackButton.pressed.connect(_on_back_pressed)
+	_close_button.pressed.connect(_on_back_pressed)
+	_close_button.mouse_entered.connect(_on_hover_changed.bind(true))
+	_close_button.mouse_exited.connect(_on_hover_changed.bind(false))
+	for key in _tabs:
+		(_tabs[key] as FanTile).pressed.connect(_on_tab_pressed.bind(str(key)))
+	_fullscreen_toggle.state_changed.connect(_on_fullscreen_toggled)
+	_resolution_box.pressed.connect(_toggle_resolution_list)
+	_resolution_arrow.pressed.connect(_toggle_resolution_list)
+	(_sliders["master"] as SlantSlider).value_changed.connect(_on_volume_changed.bind("master"))
+	(_sliders["music"] as SlantSlider).value_changed.connect(_on_volume_changed.bind("music"))
+	(_sliders["sfx"] as SlantSlider).value_changed.connect(_on_volume_changed.bind("sfx"))
+	$Card/ControlsPanel/ResetButton.pressed.connect(_on_reset_pressed)
 
 # ---------------------------------------------------------------- 에디터 대비
 ## 에디터에는 오토로드(GameState)가 없어서 부르면 placeholder 오류가 난다.
@@ -296,226 +298,58 @@ func _now_volume(kind: String) -> float:
 
 # ---------------------------------------------------------------- 그래픽
 
-func _build_graphics_panel() -> Control:
-	var panel := Control.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	panel.add_child(_make_label("전체화면", _row_label_rect(0)))
-	_fullscreen_toggle = SlantToggle.new()
-	var toggle_rect: Rect2 = _row_control_rect(0, 250.0)
-	_fullscreen_toggle.position = toggle_rect.position
-	_fullscreen_toggle.size = toggle_rect.size
-	_fullscreen_toggle.outline_color = OUTLINE_COLOR
-	_fullscreen_toggle.base_color = PANEL_COLOR
-	_fullscreen_toggle.state_changed.connect(_on_fullscreen_toggled)
-	panel.add_child(_fullscreen_toggle)
-
-	panel.add_child(_make_label("해상도", resolution_label_rect))
-	_build_resolution_box(panel)
-
-	_fullscreen_toggle.set_on_instant(_now_fullscreen())
-	_refresh_resolution_box()
-	return panel
-
 func _on_fullscreen_toggled(enabled: bool) -> void:
-	if not Engine.is_editor_hint():
-		GameState.set_fullscreen(enabled)
+	GameState.set_fullscreen(enabled)
 	_refresh_resolution_box()
 
-## 해상도 칸을 만든다 — **네모 한 줄 + 오른쪽 끝에 ∨ 단추**, 누르면 그 아래로 목록이 깔린다.
-## 목록은 화면 위에 뜨는 팝업이 아니라 이 화면 안에 그대로 붙는다(러프 그대로)
-func _build_resolution_box(panel: Control) -> void:
-	var body_width: float = maxf(resolution_rect.size.x - resolution_arrow_width, 40.0)
-	_resolution_main = _make_box_button("", Rect2(resolution_rect.position, Vector2(body_width, resolution_rect.size.y)), 26)
-	_resolution_main.pressed.connect(_toggle_resolution_list)
-	panel.add_child(_resolution_main)
-
-	_resolution_arrow = _make_box_button("∨",
-		Rect2(resolution_rect.position + Vector2(body_width, 0.0),
-			Vector2(resolution_arrow_width, resolution_rect.size.y)), 24)
-	_resolution_arrow.pressed.connect(_toggle_resolution_list)
-	panel.add_child(_resolution_arrow)
-
-	_resolution_list = Control.new()
-	_resolution_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_resolution_list.visible = false
-	panel.add_child(_resolution_list)
-	for i in range(GAME_STATE.RESOLUTIONS.size()):
-		var item: Vector2i = GAME_STATE.RESOLUTIONS[i]
-		var row := _make_box_button("%d x %d" % [item.x, item.y],
-			Rect2(resolution_rect.position + Vector2(0.0, resolution_rect.size.y + resolution_row_height * float(i)),
-				Vector2(body_width, resolution_row_height)), 22)
-		row.pressed.connect(_on_resolution_chosen.bind(i))
-		_resolution_list.add_child(row)
-	_refresh_resolution_box()
-
-## 네모 칸 단추 하나 (해상도 줄 전용 — 나머지 칸은 전부 평행사변형이다)
-func _make_box_button(text: String, rect: Rect2, font_size: int) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.position = rect.position
-	button.size = rect.size
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.add_theme_font_size_override("font_size", font_size)
-	button.add_theme_color_override("font_color", TEXT_COLOR)
-	button.add_theme_color_override("font_hover_color", TEXT_COLOR_ON)
-	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = TAB_COLOR_ON if state == "hover" else PANEL_COLOR
-		style.border_color = OUTLINE_COLOR
-		style.border_width_left = 2
-		style.border_width_top = 2
-		style.border_width_right = 2
-		style.border_width_bottom = 2
-		button.add_theme_stylebox_override(state, style)
-	return button
+## 해상도 칸 글자를 지금 값으로 맞춘다. 전체화면일 땐 바꿔도 의미가 없어서 눌리지 않게 흐려둔다
+func _refresh_resolution_box() -> void:
+	var current: Vector2i = GAME_STATE.RESOLUTIONS[_now_resolution_index()]
+	_resolution_box.text = "%d x %d" % [current.x, current.y]
+	var off: bool = _now_fullscreen()
+	_resolution_box.disabled = off
+	_resolution_arrow.disabled = off
+	_resolution_box.modulate.a = 0.45 if off else 1.0
+	_resolution_arrow.modulate.a = 0.45 if off else 1.0
+	if off:
+		_resolution_list.visible = false
+		_resolution_arrow.text = "∨"
 
 func _toggle_resolution_list() -> void:
 	if _now_fullscreen():
 		return
 	_resolution_list.visible = not _resolution_list.visible
 	_resolution_arrow.text = "∧" if _resolution_list.visible else "∨"
+	if _resolution_list.visible:
+		# 펼치는 순간 커서를 지금 쓰는 해상도에 올려 둔다
+		_res_row = _now_resolution_index()
+	_refresh_cursor()
 
 func _on_resolution_chosen(index: int) -> void:
-	if not Engine.is_editor_hint():
-		GameState.set_resolution(index)
+	GameState.set_resolution(index)
 	_resolution_list.visible = false
 	_resolution_arrow.text = "∨"
 	_refresh_resolution_box()
+	_refresh_cursor()
 
-## 해상도 칸 글자를 지금 값으로 맞춘다. 전체화면일 땐 바꿔도 의미가 없어서 눌리지 않게 흐려둔다
-func _refresh_resolution_box() -> void:
-	if _resolution_main == null:
-		return
-	var current: Vector2i = GAME_STATE.RESOLUTIONS[_now_resolution_index()]
-	_resolution_main.text = "%d x %d" % [current.x, current.y]
-	var off: bool = _now_fullscreen()
-	_resolution_main.disabled = off
-	_resolution_arrow.disabled = off
-	_resolution_main.modulate.a = 0.45 if off else 1.0
-	_resolution_arrow.modulate.a = 0.45 if off else 1.0
-	if off:
-		_resolution_list.visible = false
-		_resolution_arrow.text = "∨"
+func _on_resolution_row_hovered(index: int) -> void:
+	_res_row = index
+	_refresh_cursor()
 
 # ---------------------------------------------------------------- 오디오
 
-func _build_audio_panel() -> Control:
-	var panel := Control.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# 전체 / 음악 / 효과음 세 줄. 전체 볼륨은 Master라 나머지 둘에 같이 곱해진다
-	_volume_sliders["master"] = _add_volume_row(panel, 0, "전체 볼륨", _now_volume("master"), _on_master_volume)
-	_volume_sliders["music"] = _add_volume_row(panel, 1, "음악 볼륨", _now_volume("music"), _on_music_volume)
-	_volume_sliders["sfx"] = _add_volume_row(panel, 2, "효과음 볼륨", _now_volume("sfx"), _on_sfx_volume)
-	# 빌드에서는 소리를 통째로 꺼 뒀다(GameState.MUTE_IN_BUILD) — 헛돌게 두면 고장난 줄 아니까 못 만지게 한다
-	if _now_muted():
-		for key in _volume_sliders:
-			(_volume_sliders[key] as SlantSlider).editable = false
-		var muted := Label.new()
-		muted.text = "이 빌드는 소리가 꺼져 있습니다"
-		muted.position = Vector2(control_x, label_rect.position.y + row_step * 3.0)
-		muted.size = Vector2(volume_bar_width, 40.0)
-		muted.add_theme_font_size_override("font_size", 20)
-		muted.add_theme_color_override("font_color", TEXT_COLOR)
-		panel.add_child(muted)
-	return panel
+func _on_volume_changed(value: float, kind: String) -> void:
+	match kind:
+		"master": GameState.set_master_volume(value)
+		"music": GameState.set_music_volume(value)
+		_: GameState.set_sfx_volume(value)
+	_update_percent(kind, value)
 
-## 볼륨 한 줄(라벨 + 사선 막대 + 퍼센트)을 만들어 붙이고 막대를 돌려준다
-func _add_volume_row(panel: Control, index: int, text: String, start_value: float, on_change: Callable) -> SlantSlider:
-	panel.add_child(_make_label(text, _row_label_rect(index)))
-	var rect: Rect2 = _row_control_rect(index, volume_bar_width)
-	var slider := SlantSlider.new()
-	slider.position = rect.position
-	slider.size = Vector2(rect.size.x, volume_bar_height)
-	slider.lean = volume_bar_lean
-	slider.value = start_value
-	slider.value_changed.connect(on_change)
-	panel.add_child(slider)
-
-	var percent := Label.new()
-	percent.name = "Percent%d" % index
-	percent.position = rect.position + Vector2(rect.size.x + 18.0, 0.0)
-	percent.size = Vector2(110.0, volume_bar_height)
-	percent.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	percent.add_theme_font_size_override("font_size", 24)
-	percent.add_theme_color_override("font_color", TEXT_COLOR)
-	percent.text = "%d%%" % round(start_value * 100.0)
-	panel.add_child(percent)
-	_volume_labels[index] = percent
-	return slider
-
-func _on_master_volume(value: float) -> void:
-	if not Engine.is_editor_hint():
-		GameState.set_master_volume(value)
-	_update_percent(0, value)
-
-func _on_music_volume(value: float) -> void:
-	if not Engine.is_editor_hint():
-		GameState.set_music_volume(value)
-	_update_percent(1, value)
-
-func _on_sfx_volume(value: float) -> void:
-	if not Engine.is_editor_hint():
-		GameState.set_sfx_volume(value)
-	_update_percent(2, value)
-
-func _update_percent(index: int, value: float) -> void:
-	if _volume_labels.has(index):
-		(_volume_labels[index] as Label).text = "%d%%" % round(value * 100.0)
+func _update_percent(kind: String, value: float) -> void:
+	if _percents.has(kind):
+		(_percents[kind] as Label).text = "%d%%" % round(value * 100.0)
 
 # ---------------------------------------------------------------- 조작
-
-func _build_controls_panel() -> Control:
-	var panel := Control.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var hint := Label.new()
-	hint.text = "바꿀 키를 누른 뒤 새 키를 입력하세요 (ESC로 취소)"
-	hint.position = Vector2(300.0, 244.0)
-	hint.size = Vector2(680.0, 32.0)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 20)
-	hint.add_theme_color_override("font_color", TEXT_COLOR)
-	panel.add_child(hint)
-
-	for column in range(2):
-		var prefix: String = "p1_" if column == 0 else "p2_"
-		var header := Label.new()
-		header.text = "1P" if column == 0 else "2P"
-		header.position = Vector2(controls_origin.x + controls_column_gap * float(column), controls_origin.y - 34.0)
-		header.size = Vector2(280.0, 30.0)
-		header.add_theme_font_size_override("font_size", 24)
-		header.add_theme_color_override("font_color", TEXT_COLOR_ON)
-		panel.add_child(header)
-		for i in range(ROWS.size()):
-			var suffix: String = str(ROWS[i])
-			var y: float = controls_origin.y + controls_row_step * float(i)
-			var label := Label.new()
-			label.text = str(ACTION_LABELS[suffix])
-			label.position = Vector2(controls_origin.x + controls_column_gap * float(column), y)
-			label.size = Vector2(controls_name_width, 30.0)
-			label.add_theme_font_size_override("font_size", 20)
-			label.add_theme_color_override("font_color", TEXT_COLOR)
-			panel.add_child(label)
-
-			var button := Button.new()
-			button.position = Vector2(controls_origin.x + controls_name_width + 6.0 + controls_column_gap * float(column), y)
-			button.size = Vector2(controls_key_width, 30.0)
-			button.text = _key_display_text(prefix + suffix)
-			button.add_theme_font_size_override("font_size", 18)
-			button.pressed.connect(_on_rebind_pressed.bind(prefix + suffix, button))
-			panel.add_child(button)
-			_key_buttons[prefix + suffix] = button
-
-	var reset := Button.new()
-	reset.text = "조작키 초기화"
-	reset.position = controls_reset_rect.position
-	reset.size = controls_reset_rect.size
-	reset.pressed.connect(_on_reset_pressed)
-	panel.add_child(reset)
-	return panel
 
 func _key_display_text(action: String) -> String:
 	var events := InputMap.action_get_events(action)
@@ -530,8 +364,6 @@ func _on_rebind_pressed(action: String, button: Button) -> void:
 	button.text = "키 입력..."
 
 func _on_reset_pressed() -> void:
-	if Engine.is_editor_hint():
-		return
 	GameState.reset_keybindings()
 	for action in _key_buttons.keys():
 		_key_buttons[action].text = _key_display_text(action)
@@ -540,15 +372,45 @@ func _on_reset_pressed() -> void:
 
 ## 고른 탭만 빨갛게 하고, 그 탭의 내용만 보여준다
 func _show_tab(tab_name: String) -> void:
+	if _mode != tab_name:
+		# 다른 탭으로 넘어가면 안쪽 커서는 첫 줄로 되돌린다 — 줄 수가 탭마다 달라서
+		_row = 0
+		_col = 0
 	_mode = tab_name
+	if tab_name != "graphics" and _resolution_list.visible:
+		# 펼쳐 둔 채 탭을 넘기면 커서 테두리만 그 자리에 남아 떠 있는다 — 같이 접는다
+		_resolution_list.visible = false
+		_resolution_arrow.text = "∨"
 	for key in _panels:
-		_panels[key].visible = (key == tab_name)
+		(_panels[key] as Control).visible = (key == tab_name)
 	for key in _tabs:
 		var tile: FanTile = _tabs[key]
 		var on: bool = key == tab_name
-		tile.fill_color = TAB_COLOR_ON if on else TAB_COLOR
+		tile.fill_color = tab_color_on if on else tab_color
 		tile.backdrop_color = tile.fill_color
 		tile.selected = on
+		var text: Label = tile.get_node_or_null("Text")
+		if text:
+			text.add_theme_color_override("font_color", text_color_on if on else text_color)
+	_refresh_cursor()
+
+## 마우스로 탭을 눌렀을 때 — 방향키 커서도 탭 줄로 따라 올라온다.
+## 안 그러면 화면 아래쪽에 커서 테두리가 남아 있어서 지금 어디를 고르고 있는지 헷갈린다
+func _on_tab_pressed(tab_name: String) -> void:
+	_focus_area = "tabs"
+	_show_tab(tab_name)
+
+## 커서를 올리면 **살짝 커지면서 빨개진다** (닫기 단추).
+## 씬에서 pivot_offset을 칸 가운데로 잡아 뒀다 — 안 그러면 왼쪽 위를 축으로 커져서 자리가 밀린다
+func _on_hover_changed(hovering: bool) -> void:
+	if hovering:
+		_focus_area = "close"
+		_refresh_cursor()
+	_close_button.fill_color = tab_color_on if hovering else tab_color
+	_close_button.backdrop_color = _close_button.fill_color
+	var target: float = close_hover_scale if hovering else 1.0
+	var tween := create_tween()
+	tween.tween_property(_close_button, "scale", Vector2(target, target), close_hover_time).set_trans(Tween.TRANS_QUAD)
 
 ## u=0이면 화면 위로 완전히 벗어난 상태, u=1이면 제자리
 func _apply_slide(u: float) -> void:
@@ -559,11 +421,8 @@ func _apply_slide(u: float) -> void:
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
-		var now: String = _stamp()
-		if now != _editor_stamp:
-			_editor_stamp = now
-			_rebuild()
 		return
+	_update_key_repeat(delta)
 	if _anim_time < 0.0:
 		return
 	var duration: float = open_time if _opening else close_time
@@ -580,8 +439,6 @@ func _process(delta: float) -> void:
 
 ## 닫는 연출을 시작한다. 이미 닫는 중이면 두 번 눌러도 무시한다
 func _on_back_pressed() -> void:
-	if Engine.is_editor_hint():
-		return
 	if _anim_time >= 0.0 and not _opening:
 		return
 	_opening = false
@@ -589,9 +446,7 @@ func _on_back_pressed() -> void:
 
 ## 재배정 대기 중일 때만 키 입력을 가로챈다. ESC면 취소하고 기존 키로 되돌린다
 func _unhandled_key_input(event: InputEvent) -> void:
-	if Engine.is_editor_hint():
-		return
-	if _listening_action == "" or not event.pressed or event.is_echo():
+	if Engine.is_editor_hint() or _listening_action == "" or not event.pressed or event.is_echo():
 		return
 	var action := _listening_action
 	var button: Button = _key_buttons[action]
@@ -603,11 +458,246 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if Engine.is_editor_hint():
-		return
-	if _listening_action != "":
+	if Engine.is_editor_hint() or _listening_action != "":
 		return
 	if event.is_action_pressed("ui_cancel"):
 		# **먹었다는 표시를 닫기 전에 해야 한다** — 뒤쪽 메인 메뉴의 ESC가 같이 먹는 걸 막는다
 		get_viewport().set_input_as_handled()
+		if _resolution_list.visible:
+			# 목록이 펼쳐져 있으면 목록만 접는다 — 설정창까지 같이 닫히면 답답하다
+			_toggle_resolution_list()
+			return
 		_on_back_pressed()
+		return
+	if event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
+		_activate()
+
+# ---------------------------------------------------------------- 방향키 조작
+## 도감(CharacterDex)에 쓴 것과 같은 방식이다 — **고도 기본 포커스 이동을 안 쓰고 커서를 직접 옮긴다.**
+## 기본 포커스를 쓰면 사선 칸·볼륨 막대처럼 직접 그린 것들이 방향키를 서로 뺏어가서 어디로 갈지 예측이 안 된다.
+## 그래서 모든 칸의 focus_mode를 꺼 두고 여기 한 곳에서만 처리한다.
+##
+## 커서 자리는 세 군데다 — 탭 줄("tabs") / 탭 내용("items") / 닫기("close").
+## 내용은 줄(row)과 칸(col)로 센다. 조작 탭만 한 줄에 1P·2P 두 칸이고 나머지는 한 칸씩이다
+
+## 방향키로 오갈 칸들을 정리한다. 한 줄이 곧 위아래 한 칸, 줄 안의 원소가 좌우 한 칸이다
+func _rows_of(tab_name: String) -> Array:
+	match tab_name:
+		"graphics":
+			return [[_fullscreen_toggle], [_resolution_box]]
+		"audio":
+			return [[_sliders["master"]], [_sliders["music"]], [_sliders["sfx"]]]
+		_:
+			var rows: Array = []
+			for action in ROWS:
+				var p1: Button = _key_buttons.get("p1_" + str(action))
+				var p2: Button = _key_buttons.get("p2_" + str(action))
+				if p1 != null and p2 != null:
+					rows.append([p1, p2])
+			rows.append([_reset_button])
+			return rows
+
+## 모든 칸의 기본 포커스를 끄고, 마우스를 올리면 방향키 커서도 따라오게 묶는다.
+## **키 줄을 다 채운 뒤에 불러야 한다** — 조작 탭 칸은 코드가 만들기 때문
+func _setup_nav() -> void:
+	for tab_name in ["graphics", "audio", "controls"]:
+		var rows: Array = _rows_of(str(tab_name))
+		for r in range(rows.size()):
+			var row: Array = rows[r]
+			for c in range(row.size()):
+				var item: Control = row[c]
+				if item == null:
+					continue
+				item.focus_mode = Control.FOCUS_NONE
+				if not Engine.is_editor_hint():
+					item.mouse_entered.connect(_on_item_hovered.bind(str(tab_name), r, c))
+	_resolution_arrow.focus_mode = Control.FOCUS_NONE
+	for tile in [_tabs["graphics"], _tabs["audio"], _tabs["controls"], _close_button]:
+		(tile as Control).focus_mode = Control.FOCUS_NONE
+	_focus_ring.visible = false
+
+func _on_item_hovered(tab_name: String, r: int, c: int) -> void:
+	if _mode != tab_name:
+		return
+	_focus_area = "items"
+	_row = r
+	_col = c
+	_refresh_cursor()
+
+## 지금 커서가 올라가 있는 칸
+func _current_item() -> Control:
+	var rows: Array = _rows_of(_mode)
+	if rows.is_empty():
+		return null
+	var row: Array = rows[clampi(_row, 0, rows.size() - 1)]
+	if row.is_empty():
+		return null
+	return row[clampi(_col, 0, row.size() - 1)] as Control
+
+## 방향키를 꾹 누르고 있으면 촤라락 넘어간다 — 처음 한 번, 한 박자 쉬고, 그 뒤로 빠르게 반복
+func _update_key_repeat(delta: float) -> void:
+	# 키 재배정을 기다리는 중이면 방향키도 "새 키"로 받아야 한다 — 커서를 움직이면 안 된다.
+	# 닫히는 연출 중에도 멈춘다
+	if _listening_action != "" or (_anim_time >= 0.0 and not _opening):
+		_held_step = 0
+		return
+	var step: int = 0
+	if Input.is_action_pressed("ui_right"):
+		step = 1
+	elif Input.is_action_pressed("ui_left"):
+		step = -1
+	elif Input.is_action_pressed("ui_down"):
+		step = 100
+	elif Input.is_action_pressed("ui_up"):
+		step = -100
+	if step == 0:
+		_held_step = 0
+		return
+	if step != _held_step:
+		# 방금 누른 순간 — 한 번 옮기고 첫 반복까지 쉰다
+		_held_step = step
+		_repeat_left = key_repeat_delay
+		_move_cursor(step)
+		return
+	_repeat_left -= delta
+	if _repeat_left <= 0.0:
+		_repeat_left = key_repeat_interval
+		_move_cursor(step)
+
+## 방향키 하나를 처리한다. 100 / -100이 아래·위다 (칸 수와 안 겹치는 값)
+func _move_cursor(step: int) -> void:
+	# 해상도 목록이 펼쳐져 있으면 방향키는 목록 안에서만 돈다. **꾹 누르면 여기가 촤라락 넘어간다**
+	if _resolution_list.visible:
+		if absi(step) == 100:
+			var count: int = _resolution_list.get_child_count()
+			if count > 0:
+				_res_row = wrapi(_res_row + (1 if step > 0 else -1), 0, count)
+				_refresh_cursor()
+		return
+	if _focus_area == "tabs":
+		if step == 100:
+			_focus_area = "items"
+			_row = 0
+			_col = 0
+			_refresh_cursor()
+		elif absi(step) == 1:
+			var order: Array = ["graphics", "audio", "controls"]
+			var at: int = maxi(order.find(_mode), 0)
+			_show_tab(str(order[wrapi(at + step, 0, order.size())]))
+		return
+	if _focus_area == "close":
+		if step == -100:
+			_focus_area = "items"
+			var last: Array = _rows_of(_mode)
+			_row = maxi(last.size() - 1, 0)
+			_col = 0
+			_refresh_cursor()
+		return
+	var rows: Array = _rows_of(_mode)
+	if rows.is_empty():
+		return
+	_row = clampi(_row, 0, rows.size() - 1)
+	if step == -100:
+		if _row == 0:
+			_focus_area = "tabs"   # 첫 줄에서 위 -> 탭 줄로 올라간다
+		else:
+			_row -= 1
+	elif step == 100:
+		if _row >= rows.size() - 1:
+			_focus_area = "close"   # 마지막 줄에서 아래 -> 닫기로 내려간다
+		else:
+			_row += 1
+	else:
+		var row: Array = rows[_row]
+		if row.size() > 1:
+			_col = clampi(_col + step, 0, row.size() - 1)
+		else:
+			_adjust_value(row[0] as Control, step)
+	var now: Array = rows[clampi(_row, 0, rows.size() - 1)]
+	_col = clampi(_col, 0, maxi(now.size() - 1, 0))
+	_refresh_cursor()
+
+## 줄에 칸이 하나뿐이면 좌우 방향키는 "값 바꾸기"로 쓴다 — 토글은 켜고/끄고, 볼륨은 한 칸씩
+func _adjust_value(item: Control, step: int) -> void:
+	if item is SlantToggle:
+		var toggle: SlantToggle = item
+		var want: bool = step > 0
+		if toggle.is_on != want:
+			toggle.is_on = want
+			toggle.state_changed.emit(want)
+		return
+	if item is SlantSlider:
+		var slider: SlantSlider = item
+		if not slider.editable:
+			return
+		var value: float = clampf(slider.value + maxf(slider.step, 0.05) * float(step), 0.0, 1.0)
+		if is_equal_approx(value, slider.value):
+			return
+		slider.value = value
+		slider.value_changed.emit(value)
+
+## 확인키(엔터·스페이스)
+func _activate() -> void:
+	if _resolution_list.visible:
+		_on_resolution_chosen(_res_row)
+		return
+	if _focus_area == "tabs":
+		_focus_area = "items"
+		_row = 0
+		_col = 0
+		_refresh_cursor()
+		return
+	if _focus_area == "close":
+		_on_back_pressed()
+		return
+	var item: Control = _current_item()
+	if item == null:
+		return
+	if item == _resolution_box:
+		_toggle_resolution_list()
+		return
+	if item is Button:
+		# 토글·키 칸·초기화는 전부 Button이라 눌린 척만 해 주면 원래 동작이 그대로 돈다
+		(item as Button).pressed.emit()
+
+## 커서를 화면에 그린다 —
+##  - 탭 줄에 있으면 그 탭 테두리를 밝게 한다 (사선 칸이라 네모 테두리를 두르면 모서리가 어긋난다)
+##  - 그 밖에는 FocusRing을 그 칸 위로 옮긴다
+func _refresh_cursor() -> void:
+	if _focus_ring == null:
+		return
+	var on_tabs: bool = _focus_area == "tabs"
+	for key in _tabs:
+		var tile: FanTile = _tabs[key]
+		var here: bool = on_tabs and str(key) == _mode
+		tile.plain_outline_color = tab_cursor_color if here else outline_color
+		tile.plain_outline_width = tab_cursor_width if here else 2.0
+	var target: Control = null
+	if _resolution_list.visible and _mode == "graphics":
+		var count: int = _resolution_list.get_child_count()
+		if count > 0:
+			_res_row = clampi(_res_row, 0, count - 1)
+			target = _resolution_list.get_child(_res_row) as Control
+	elif _focus_area == "close":
+		target = _close_button
+	elif _focus_area == "items":
+		target = _current_item()
+	# 사선 칸(전체화면 토글·볼륨 막대)은 네모 테두리를 두르면 모서리가 어긋난다 —
+	# 그래서 네모 커서 대신 **그 칸 제 테두리를 밝게** 해서 지금 여기라고 알린다
+	for slant in [_fullscreen_toggle, _sliders["master"], _sliders["music"], _sliders["sfx"]]:
+		var lit: bool = slant == target
+		slant.outline_color = tab_cursor_color if lit else SLANT_OUTLINE_COLOR
+		slant.outline_width = tab_cursor_width if lit else SLANT_OUTLINE_WIDTH
+		(slant as Control).queue_redraw()
+	if target is SlantToggle or target is SlantSlider:
+		_focus_ring.visible = false
+		return
+	if target == null or not is_instance_valid(target):
+		_focus_ring.visible = false
+		return
+	_focus_ring.visible = true
+	# 칸이 패널·세로줄 안에 들어 있을 수도 있어서 화면 좌표로 재고 Card 기준으로 되돌린다
+	var rect: Rect2 = target.get_global_rect()
+	_focus_ring.position = _card.get_global_transform().affine_inverse() * rect.position - Vector2(focus_ring_pad, focus_ring_pad)
+	_focus_ring.size = rect.size + Vector2(focus_ring_pad, focus_ring_pad) * 2.0

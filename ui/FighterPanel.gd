@@ -6,17 +6,6 @@ extends HBoxContainer
 ## bind()로 Fighter를 지정하면 이후 슬롯들이 알아서 갱신된다
 @onready var _character_box: ColorRect = $CharacterBox
 @onready var _character_image: TextureRect = $CharacterBox/CharacterImage
-@onready var _name_stamp: Panel = $CharacterBox/NameStamp
-@onready var _name_label: Label = $CharacterBox/NameStamp/NameLabel
-
-## NameStamp 기본(P1) 배치 — CharacterBox(70x70) 왼쪽 아래 모서리를 가로지른다
-const CHARACTER_BOX_SIZE := 70.0
-const STAMP_WIDTH := 95.0
-const STAMP_POSITION := Vector2(-47.5, 59.0)
-const STAMP_ROTATION_DEG := 26.0
-## 빨간 테두리 안쪽 실사용 폭(테두리 3px x2 + 여백) — 이보다 글자가 넓어지면 가로로만 눌러서 맞춘다
-const STAMP_LABEL_MAX_WIDTH := 82.0
-const STAMP_LABEL_FONT_SIZE := 14
 @onready var _hp_row: HBoxContainer = $BarsVBox/HPRow
 @onready var _hp_bar_wrap: Control = $BarsVBox/HPRow/HPBarSlot/HPBarWrap
 @onready var _hp_bar: ProgressBar = $BarsVBox/HPRow/HPBarSlot/HPBarWrap/HPBar
@@ -36,8 +25,6 @@ var fighter: Fighter
 ## player_index는 쿨타임 슬롯에 띄울 조작 키를 찾는 데 쓴다 (1이면 p1_skill_1 …)
 func bind(target_fighter: Fighter, mirrored: bool = false, player_index: int = 1) -> void:
 	fighter = target_fighter
-	_name_label.text = fighter.stats.character_name
-	_fit_stamp_label()
 	_apply_portrait(fighter.stats.character_name)
 	_hp_bar.max_value = fighter.stats.max_hp
 	_hp_bar.value = fighter.current_hp
@@ -47,29 +34,7 @@ func bind(target_fighter: Fighter, mirrored: bool = false, player_index: int = 1
 		move_child(_character_box, get_child_count() - 1)
 		for row in [_hp_row, _skill_row]:
 			row.alignment = BoxContainer.ALIGNMENT_END
-	_apply_stamp_mirror(mirrored)
 	_apply_hp_bar_mirror(mirrored)
-
-## 이름이 길면("층간소음 청년" 등) 도장의 빨간 테두리 밖으로 삐져나온다. 폰트 크기(세로 길이)는
-## STAMP_LABEL_FONT_SIZE로 고정해두고, 넘치는 만큼만 가로로 눌러서(scale.x) 테두리 폭에 맞춘다
-func _fit_stamp_label() -> void:
-	_name_label.add_theme_font_size_override("font_size", STAMP_LABEL_FONT_SIZE)
-	var font: Font = _name_label.get_theme_default_font()
-	var text_width: float = font.get_string_size(_name_label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, STAMP_LABEL_FONT_SIZE).x
-	var scale_x: float = 1.0 if text_width <= STAMP_LABEL_MAX_WIDTH else STAMP_LABEL_MAX_WIDTH / text_width
-	_name_label.pivot_offset = _name_label.size / 2.0
-	_name_label.scale = Vector2(scale_x, 1.0)
-
-## mirrored(P2)면 도장을 CharacterBox 오른쪽 아래 모서리로 좌우 반전해서 붙인다.
-## scale.x를 뒤집는 대신 위치를 박스 너비(70) 기준으로 반사하고 회전 부호만 뒤집는다 —
-## 그래야 글자 자체는 뒤집히지 않고 그대로 읽히면서 기울어지는 방향만 반대가 된다
-func _apply_stamp_mirror(mirrored: bool) -> void:
-	if mirrored:
-		_name_stamp.position = Vector2(CHARACTER_BOX_SIZE - STAMP_POSITION.x - STAMP_WIDTH, STAMP_POSITION.y)
-		_name_stamp.rotation_degrees = -STAMP_ROTATION_DEG
-	else:
-		_name_stamp.position = STAMP_POSITION
-		_name_stamp.rotation_degrees = STAMP_ROTATION_DEG
 
 ## ProgressBar는 항상 왼쪽부터 차서 오른쪽부터 닳는다. mirrored(P2, 화면 오른쪽)는 캐릭터가
 ## 화면 가운데를 보고 있으니 체력도 화면 가운데 쪽(왼쪽)부터 닳아야 자연스럽다 — 그래서 HPBarWrap을
@@ -96,7 +61,8 @@ func _bind_skill_slots(player_index: int) -> void:
 		_skill_slots[i].bind(skills[i], hint, fallback_color)
 
 ## 초상화 그림이 있는 캐릭터면 CharacterBox를 그림으로 채운다(없으면 흰 칸 그대로 비워둠).
-## 이름은 항상 CharacterBox 왼쪽 아래 모서리를 가로지르는 빨간 테두리 도장(NameStamp)에 표시된다
+## **이름표(빨간 테두리 도장)는 2026-09-28에 뺐다** — HUD가 화면 아래로 내려가면서 화면 밖으로 삐져나왔고,
+## 어차피 초상화만으로 누가 누군지 알 수 있어서 지웠다
 func _apply_portrait(character_name: String) -> void:
 	if not GameState.has_portrait(character_name):
 		_character_image.texture = null

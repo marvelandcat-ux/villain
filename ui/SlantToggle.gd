@@ -17,13 +17,14 @@ signal state_changed(on: bool)
 	set(value):
 		lean = value
 		queue_redraw()
-## 안 채워진 바탕색과 테두리
-@export var base_color: Color = Color(0.13, 0.11, 0.17, 0.85):
+## 덩이가 없는 쪽(켜짐/꺼짐 글자가 적히는 곳)의 바탕색과 테두리.
+## **러프 그대로 흰색이다** — 처음엔 그림판의 흰 바탕을 "투명"으로 잘못 읽어서 어둡게 칠했었다
+@export var base_color: Color = Color(0.95, 0.94, 0.97, 1.0):
 	set(value):
 		base_color = value
 		queue_redraw()
-@export var outline_color: Color = Color(0.62, 0.58, 0.72, 0.85)
-@export var outline_width: float = 2.0
+@export var outline_color: Color = Color(0.15, 0.13, 0.19, 1.0)
+@export var outline_width: float = 3.0
 ## 켰을 때 차오르는 색 / 껐을 때 남는 색
 @export var on_color: Color = Color(0.83, 0.22, 0.31, 1.0)
 @export var off_color: Color = Color(0.58, 0.58, 0.63, 1.0)
@@ -35,7 +36,8 @@ signal state_changed(on: bool)
 @export var on_text: String = "켜짐"
 @export var off_text: String = "꺼짐"
 @export var text_size: int = 18
-@export var text_color: Color = Color(0.86, 0.82, 0.92, 1.0)
+## 바탕이 흰색이라 글자는 어둡게 쓴다
+@export var text_color: Color = Color(0.22, 0.19, 0.27, 1.0)
 
 ## 지금 켜져 있는지
 var is_on: bool = false:
