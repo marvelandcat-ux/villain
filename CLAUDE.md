@@ -86,7 +86,8 @@
   - **유선 시작점은 리그의 실제 오른손**(`BodyRig.get_hand_position()` = `HandRHold`)
   - 뒤쪽이 포물선으로 처짐(`throw_drop_after` 이후 `throw_gravity`; 1이면 직선). **실효 사거리는 `max_range`가 아니라 중력이 정함**(손이 지면에서 27px뿐) — 늘리려면 중력↓ 또는 `throw_drop_after`↑
   - `throw_stop_on_ground`: 지면·발판에 닿으면 끝(안 그러면 땅에 박혀 미끄러짐). 착지는 선분 레이캐스트로 **법선이 위인 면만**(벽 통과 — 맵마다 사거리 일정), `fighters` 제외. 거리 판정은 시간이 아닌 **x 이동 거리**(손이 따라 움직여서)
-  - 잡기 판정은 `STATE_FLY` 전체(처지는 구간 포함), **되감기(`STATE_RETURN`) 중엔 없음**(의도), 잡기를 착지보다 먼저 봄. 빗나가면 손으로 되감김(`throw_return_speed` ≈ `throw_speed` x 1.5; ≤0이면 즉시 `_release()`). 끌어오기가 길면 `reel_speed`↑. 옛 실측값은 현재 값과 안 맞음(재측정 필요)
+  - 잡기 판정은 `STATE_FLY` 전체(처지는 구간 포함), **되감기(`STATE_RETURN`) 중엔 없음**(의도), 잡기를 착지보다 먼저 봄. 빗나가면 손으로 되감김(`throw_return_speed` ≈ `throw_speed` x 1.5; ≤0이면 즉시 `_release()`). 끌어오기가 길면 `reel_speed`↑
+  - **던지는 속도 2026-09-27 1.6배**(사용자 요청): `throw_speed` 500 -> 800, 되감기 800 -> 1280, 사거리 유지하려고 `throw_gravity` 900 -> 2304(= x1.6²). **속도를 바꾸면 중력은 배수의 제곱으로 같이** — 안 그러면 사거리가 늘어난다. 끌어오기 `reel_speed`는 그대로. 옛 실측값은 현재 값과 안 맞음(재측정 필요)
   - 젖히기(`throw_windup`)와 날아가기는 같은 식(`_draw_throw()`)이라 유선 길이가 안 튐. 팔은 `BodyRig.play_cast_motion(젖히는 시간, 돌아오는 시간)` — **젖히는 시간 = `throw_windup`**. 잡은 뒤 `set_reeling(true)`, `_release`/`_exit_tree`에서 끔
   - 크기 `mouse_length`/`coil_width`는 **`MouseGrab.new()` 후 `setup()` 전에 대입**(setup에서 그림 생성)
 - `Fighter.vault_jump`(지하철 아저씨): 기본공격 없음, 점프 시 `_play_vault_effect()` 회전 연출
@@ -117,10 +118,17 @@
 ## 조작 / AI
 
 - `controllers/PlayerController.gd`: 입력 → 부모 Fighter. `player_index`(1/2)로 `p1_*`/`p2_*`
-- `controllers/AIController.gd`: 거리로 접근/유지/후퇴/공격. Fighter는 사람/AI 구분 없음(`move()`·`use_skill_1()` 공용)
-  - `skill_2`에 `projectile_scene` 또는 `beam_scene`이 있으면 원거리 → `ranged_distance` 유지(스킬 구성만 봄)
-  - 대시·방어도 씀. 대시는 조건 맞으면 매 프레임 호출(쿨은 `Fighter.dash()`가 막음). 방어는 AI가 "켤까"만, 유지·해제·쿨은 Fighter. `ClaudeAIController`의 `guard_bias`로 성향별 배수
-  - 기믹(열차) 중엔 방어 안 함(`_hazard_active()`)
+- `controllers/AIController.gd`: **규칙 기반**(학습 아님). 2026-09-27 사용자 요청으로 전면 강화 — 판단 순서: 기믹 피하기 -> 상대 공격 읽기(`_update_threat`) -> 왕관 -> 발판 길찾기 -> 거리 싸움 -> 스킬. Fighter는 사람/AI 구분 없음(`move()`·`use_skill_1()` 공용)
+  - **공격 읽기:** 상대 기본공격 `_swinging`·돌진(`movement_override` + 빠른 속도)·날아오는 `Projectile`(도달 0.35초 안)·상대 소유 판정을 `reaction_time`(0.09초) 늦게 알아채 한 번 대응 — `guard_react_chance`로 방어, 못 하면 투사체·돌진은 점프, 근접은 대시(뒤가 막히면 상대를 뚫고 등 뒤로). 예전의 "가까우면 확률로 방어"는 없앴다
+  - **거리 싸움:** 사거리는 기본공격 `range + 28`로 자동. 콤보 중엔 밀려난 상대를 따라가며 계속 누름(휘두르는 중 입력은 예약돼 맞으면 다음 타). **상대가 방어 중이거나 내 공격이 잠겼으면 치지 않고** 상대 사거리 바로 밖에서 기다림. 상대 빈틈(`_target_vulnerable`: 경직·착지 경직·공격 잠김·헛손질 쿨)이면 대시로 파고듦. 가끔 사거리 밖에서 멈칫해 헛손질 유도(`bait_chance`)
+  - **원거리 캐릭터**(`skill_2`에 `projectile_scene`/`beam_scene`)는 그 스킬이 준비됐을 때만 `ranged_distance` 유지, 아니면 근접으로 싸운다
+  - **스킬:** `_want_skill()`이 스킬 스크립트 이름(`get_global_name()`)별로 사거리·높이·방어 여부를 따져 맞을 때만 씀(사거리는 스킬 export에서 읽음). **새 스킬을 만들면 여기에 한 줄 추가**(없으면 "250px 안에서 가끔"). 맵 스킬(내리찍기)은 상대 바로 위 공중에서
+  - **발판 길찾기:** 맵의 StaticBody2D 직사각형 충돌을 1초마다 모아(`_refresh_platforms`, 부서진 발판 제외) 발판 그래프를 만들고, 상대(또는 왕관)가 선 발판까지 가장 적게 갈아타는 길의 다음 발판으로 간다. 오를 수 있는 높이는 `Fighter` 점프 값으로 계산(1단+2단, 스프링 좌석이면 튕김+2단). 원웨이는 밑에서 뚫고, 막힌 발판은 옆에서 뛰고, 내려갈 땐 `drop_through_platform()`. **스프링 좌석 위에선 점프를 누르지 않는다**(튕김 속도를 덮어씀)
+    - **기울어진 충돌(놀이터 왼쪽 미끄럼틀)은 발판 목록에 없다** — 그 밑에 끼이면(가려는데 가로 속도 0, 벽 아님) `_update_stuck`/`_run_detour`가 머리 위가 뚫린 곳(`_head_clear`, 어깨 너비 광선 3줄 — 한 줄이면 판 모서리를 놓침)까지 물러나 곧게 이단 점프하고, **이단 점프 정점에서야** 원래 방향으로 간다. 놀이터 P1 스폰(-560, 240)이 바로 그 밑이다
+    - 발 높이로 오가는 방해물은 `"ai_jump_over"` 그룹 + `ai_obstacle_position()`(지금 그네 `maps/Swing.gd`)으로 알리면 AI가 다가갈 때 뛰어넘는다(`_jump_obstacles`, 콤보 중엔 안 함)
+  - 열차가 오는 중엔 피난처를 벗어나는 회피(대시·점프)를 안 하고 피난처에 선 뒤에만 방어한다 — 상대 고양이를 피하려다 의자에서 떨어져 열차에 맞았었다. 피난처 위에서 상대가 코앞이면 제자리에서 때린다
+  - **검증(2026-09-27, 옛 AI와 같은 캐릭터 미러전, 편의점·지하철·놀이터 x 8캐릭터 x 좌우 = 48판):** 1차 38승 9패 1무 -> 열차 회피·끼임 탈출·그네 넘기 수정 뒤 **47승 1패**(평균 남은 체력 차 +59%p). 놀이터에서 꼭대기 왕관까지 올라감 확인. 옛 AI는 git 이력(`controllers/AIController.gd`, 2026-09-27 이전)
+  - 기믹(열차) 중엔 방어 안 함(`_hazard_active()`). `ClaudeAIController`의 `guard_bias`는 방어 확률 배수로 그대로 쓰임
   - ⚠️ `Fighter.move()`/`dash()`가 `facing`도 바꿈 → 후퇴·뒤로 대시 직후 `fighter.facing`을 강제로 되돌릴 것(안 하면 투사체가 반대로 나감)
 - 조작키 — `project.godot` InputMap:
 
@@ -136,7 +144,6 @@
 | 대시 | A A / D D | ← ← / → → | (전용 액션 없음 — 이동키 두 번) |
 | 방어 | S | ↓ | `p1_down` / `p2_down` 누르는 순간 발동 (1초 무적 / 쿨 5초) |
 
-  - TODO: `Stage.gd`는 P2에 여전히 `ClaudeAIController`를 붙임 — 실제 2P 사람 조작은 `_spawn_fighter(..., is_ai=false)` 분기(모드 선택) 필요
   - **이단 점프**: `Fighter.jump()`가 `is_on_floor()`로 지상/공중 구분. `max_air_jumps`·`air_jump_velocity`·`gravity`·`jump_velocity`는 **static var**(훈련장에서 바로 변경). 공중 점프는 `velocity.y`를 덮어씀. `_air_jumps_left`는 `move_and_slide()` **뒤에** 채울 것(앞이면 한 프레임 늦음)
   - 점프력은 `DEFAULT_JUMP_VELOCITY`/`DEFAULT_AIR_JUMP_VELOCITY`(지금 이단 점프 전체 ≈ 216px). 높이 = 속도²/(2x중력). **점프·중력을 바꾸면 맵 발판 사다리(층 간격)가 끊기므로 맵 높이를 같이 확인**(놀이터·지하철 의자·공사현장)
   - 이동속도는 `stats/*.tres`의 `move_speed`
@@ -232,7 +239,7 @@
   - 칠하기는 세로 띠 `draw_primitive`(다각형 하나로 만들면 분할 실패 에러)
 - **눈이 안 보이는 캐릭터의 생동감(2026-09-26 사용자 요청)** — 셋 다 기본 얼굴 텍스처일 때만, 부모에 `play_attack_swing` 없으면(잔상) 안 함. `Head`의 자식, 좌표·크기는 머리 그림 픽셀
   - **렌즈 반짝임 `characters/LensGlint.gd`**(@tool, unshaded라 어두운 맵에서도 번쩍): 악플러·캣맘·지하철. 가끔(`interval_*`) 사선 빛줄기가 렌즈 타원(`lens_size`) 안을 훑고 지나감(세로 띠 조각으로 잘라 칠함). `blink_now()`가 있어 훈련장 "눈 깜빡임" 버튼으로도 나온다. 에디터에선 렌즈 범위가 하늘색 선으로 보이고 `preview`로 빛줄기 미리보기
-    - **악플러는 렌즈가 흰색이라 흰 빛이 안 보여** `glint_color` 옅은 하늘색 + 모서리 반짝 별(`sparkle_size` 80, `sparkle_at`)
+    - **악플러는 렌즈가 흰색이라 흰 빛이 안 보여** 진한 하늘색 `glint_color` + 굵은 줄기(`band_width` 0.3)·느린 훑기(`sweep_time` 0.45) + 모서리 반짝 별(`sparkle_size` 150, 테두리도 별 크기 비례) — 2026-09-27 "더 잘 보이게" 요청으로 키움
     - 렌즈 재는 법: 악플러 흰 덩어리 / 캣맘 진한 하늘색(빨강 낮은 픽셀 — 두건의 옅은 하늘색과 구분) / 지하철 검정 덩어리를 **열림 연산으로 외곽선 떼고**(안경다리는 눈으로 빼고) 그 bbox. `lens_size`는 렌즈 테두리 안쪽으로 조금 작게
   - **소용돌이 회전 `characters/SwirlEye.gd`**(@tool): 주정뱅이. 그림의 소용돌이를 흰 원(`eye_size`, 눈 테두리 **안쪽**)으로 덮고 코드로 그린 나선(`turns`/`spiral_radius`/`line_width`)을 `spin_speed`로 돌린다. 몇 초마다 빨라짐(`surge`). 흰 원·나선은 조명을 받는다(머리와 같은 밝기)
   - **특수 idle 몸짓 `BodyRig.idle_special`**: 1 안경 올리기(악플러) / 2 딸꾹질(주정뱅이). 가만히 있으면 머리 긁기·뒤돌아보기와 셋 중 하나로 랜덤(`_start_special`/`_pose_special`/`_end_special`, 움직이면 즉시 취소)
@@ -389,11 +396,12 @@
 
 ### 방 설정
 
-- `ui/RoomSettings.tscn`: 위 빠른 프리셋 `PresetA`("표준" 2선승·2분) / `PresetB`("장기전" 3선승·무제한) + `PresetMore`("프리셋" = 저장/불러오기 전용). 아래 `Card` 2열 — 왼쪽 `RoundRow`/`TimeRow`/`CooldownRow`(`[◀ 값 ▶]` 스테퍼), 오른쪽 `ClashRow`/`GuardRow`/`DashRow`(ON/OFF 토글) + 요약 한 줄
-  - `_on_next_pressed()` -> `GameState.rounds_to_win`/`time_limit_seconds`/`cooldown_multiplier`/`clash_minigame_enabled`/`guard_enabled`/`dash_enabled`
+- `ui/RoomSettings.tscn`: 위 빠른 프리셋 `PresetA`("표준" 2선승·2분) / `PresetB`("장기전" 3선승·무제한) + `PresetMore`("프리셋" = 저장/불러오기 전용). 아래 `Card` 2열 — 왼쪽 `RoundRow`/`TimeRow`/`CooldownRow`(`[◀ 값 ▶]` 스테퍼), 오른쪽 `ClashRow`/`GuardRow`/`DashRow`(ON/OFF 토글), 그 아래 카드 폭 전체 `OpponentRow`("상대 (P2)" 사람/컴퓨터 — 2026-09-27, 넣느라 줄 높이 98 -> 84) + 요약 한 줄
+  - `_on_next_pressed()` -> `GameState.rounds_to_win`/`time_limit_seconds`/`cooldown_multiplier`/`clash_minigame_enabled`/`guard_enabled`/`dash_enabled`/`vs_ai`
+  - **컴퓨터 대전(`GameState.vs_ai`)**: 켜면 `Stage`가 pvp에서도 P2에 **규칙 AI `AIController`**를 붙인다(API 비용 없는 쪽 — 사용자 결정, 난이도 선택 없음). 스토리는 그대로 `ClaudeAIController`. P2 키 표시 숨김(`FighterPanel`)·캐릭터 선택 안내 "P2(컴퓨터)"도 이 값을 본다. 방 설정은 지난번 고른 값을 기억(다른 항목은 매번 기본값)
   - 라운드 ◀▶는 `wrapi(값, 1, MAX_ROUNDS+1)`로 1<->40 순환(TimeRow와 같은 방식). 직접 입력값은 클램프만(순환시키면 직관과 어긋남)
   - `RoundRow`/`CooldownRow`의 `Value`는 `LineEdit` — `text_submitted`/`focus_exited`에서 커밋, `is_valid_int()` 아니면 이전 값. 쿨타임 칸은 "숫자%" 표시, `trim_suffix("%")` 후 파싱
-  - 프리셋: `PopupMenu` id 0 "현재 설정 저장..." -> `_show_save_preset_dialog()`(코드로 만든 오버레이) -> `GameState.save_room_preset(이름, data)` -> `user://settings.cfg` `[room_presets]`(6값: `rounds`/`time_index`/`cooldown_percent`/`clash_enabled`/`guard_enabled`/`dash_enabled`). 저장분은 `SAVED_PRESET_ID_BASE`(1)부터 나열, `_apply_saved_preset()`. 같은 이름 덮어씀. **삭제 UI 없음(TODO)**
+  - 프리셋: `PopupMenu` id 0 "현재 설정 저장..." -> `_show_save_preset_dialog()`(코드로 만든 오버레이) -> `GameState.save_room_preset(이름, data)` -> `user://settings.cfg` `[room_presets]`(7값: `rounds`/`time_index`/`cooldown_percent`/`clash_enabled`/`guard_enabled`/`dash_enabled`/`vs_ai`). 저장분은 `SAVED_PRESET_ID_BASE`(1)부터 나열, `_apply_saved_preset()`. 같은 이름 덮어씀. **삭제 UI 없음(TODO)**
   - 버튼 연결은 `.tscn` `[connection]`이 아니라 `_ready()` 코드로. 배경은 메인 메뉴와 같은 그림+흐림 셰이더. 뒤로가기는 왼쪽 아래 `flat` 글자("뒤로가기 (ESC)", 캐릭터·맵 선택과 통일)
 - **쿨타임 배율은 `Skill.effective_cooldown()` 한 곳에서 곱한다.** 예외로 챙긴 곳: `ComboMeleeAttack._effective_miss_cooldown()`, `RageBuffSkill._execute()` 즉시 클램프(`fighter.basic_attack.effective_cooldown()`), `LivingShadowSkill.use()` — **`cooldown`을 직접 읽는 경로를 새로 만들면 배율이 안 먹는다**
 - 연타 미니게임 off: `SkillClashManager.request()` 맨 앞에서 `on_win.call()` 즉시 발동. 가드/대시 off: `Fighter.can_guard()`/`can_dash()` 맨 앞 — Player·AI 컨트롤러 둘 다 이걸 거치므로 한 곳으로 충분
@@ -458,7 +466,7 @@
 - 모든 화면 ESC(`ui_cancel`)로 한 단계 뒤로. 스토리 장면·대전 중엔 일시정지 화면(거기 "메인메뉴로")
 - **라운드제:** `Stage._process()`가 KO/시간 초과(HP 높은 쪽 승, 동률 무승부) 감지 -> `_end_round(p1_won, is_draw)`. 승수는 `GameState.p1_round_wins`/`p2_round_wins`(오토로드라 유지). 미달이면 `MatchResult.show_round_result()` 후 `reload_current_scene()`, 도달이면 `show_result()`/`show_draw()`(스토리 승리는 위 `story_next_scene` 경로)
 - `CombatHUD`: `TimerFrame` > `TimerBox` > `TimerLabel` + `RoundLabel`, `Stage`가 `update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신(HUD는 표시만). 시간 제한 0이면 `TimerFrame` 숨김, 10초 이하 빨강
-- `maps/Stage.gd`가 `_ready()`에서 `GameState` 캐릭터를 `PlayerSpawn1/2`에 생성. P1 `PlayerController`, P2는 story면 `ClaudeAIController`, pvp면 `PlayerController`. 새 맵 필수 요소: 바닥·벽(or 링아웃 공간)·`PlayerSpawn1/2`·`Camera2D`(`maps/CameraRig.gd`)·`CombatHUD`
+- `maps/Stage.gd`가 `_ready()`에서 `GameState` 캐릭터를 `PlayerSpawn1/2`에 생성. P1 `PlayerController`, P2는 story면 `ClaudeAIController`, pvp면 `PlayerController`(방 설정 "상대: 컴퓨터"면 `AIController`). 새 맵 필수 요소: 바닥·벽(or 링아웃 공간)·`PlayerSpawn1/2`·`Camera2D`(`maps/CameraRig.gd`)·`CombatHUD`
 - 승패는 `died` 시그널이 아니라 `_process()`에서 양쪽 `current_hp`를 한 번에 판정(시그널 순서로 동시 KO 승자가 임의로 갈리던 버그) — 양쪽 0이면 `show_draw()`. 링아웃은 `Stage.ring_out_y` 아래(벽 없는 맵에서만 의미)
 - 히트 이펙트: `Fighter._flash_hit()` + `Hitbox`가 `combat/HitSpark.tscn` 스폰
   - `_draw()` 세 겹(번쩍 + 넉백 방향 마름모 섬광 + 방향 쪽 불꽃, `direction_bias`). 세기 = 데미지 / `Hitbox.SPARK_POWER_DAMAGE`, 세기 1.5 이상이면 충격파 고리. 방어에 막히면 파랗게 작게
@@ -597,7 +605,7 @@
   - ⚠️ Area2D 맵 기믹에서 `gravity` 변수명 금지(내장 프로퍼티와 충돌 → 컴파일 에러, `fall_gravity` 사용). `priority`·`monitoring`·`linear_damp`·`angular_damp`도 피할 것
   - 떨어진 왕관은 `_fall()`이 손으로 계산 — **발판은 통과해 항상 지면까지**
   - 획득 컷인 `ui/CrownCutIn.tscn`은 `cutin_once`면 라운드 첫 획득에만
-  - AI: `AIController._try_take_crown()`은 바닥의 왕관만 쟁탈(`crown_max_height` 위는 무시 — 없으면 밑에서 서성임). 발판 경로 탐색이 없어 AI전 첫 왕관은 항상 플레이어 몫
+  - AI: `AIController._try_take_crown()`이 `crown_interest_range` 안의 왕관을 발판 길찾기로 올라가 줍는다(2026-09-27 — 예전엔 바닥 왕관만). 상대가 코앞이면 싸움 먼저
 - **`maps/SandPit.gd` — 모래사장**: 안에 있는 동안 `set_modifier("move_speed_multiplier", 노드 id, slow_multiplier)`, 벗어나면 `clear_modifier`(다른 둔화와 안 지움). 왕은 면역
   - 판정은 발치 높이에만 — 점프하면 바로 벗어난다(걸어서 느리게 vs 뛰어넘기 선택이 의도)
   - 폭을 바꿀 때 미끄럼틀·스프링 시소·스폰 지점과 안 겹치는지(스폰이 모래 밖에서 시작) 같이 확인
@@ -723,7 +731,7 @@ res://
 - **엔진은 4.7.2로 통일**(`project.godot` `config/features` = `"4.7"`). 버전이 섞이면 이 줄(+ 옆 `run/main_scene`)이 매번 머지 충돌 — 팀원 전원 4.7.2
   - 경고 `ext_resource, invalid UID`(그림 재임포트 후 흔함) → 씬 uid를 `.import`의 `uid=` 값으로 고칠 것
 - **코드 수정 후 헤드리스 에러 확인은 기본적으로 하지 않는다(사용자 요청).** 사용자가 "실행해서 확인해줘"라고 할 때만
-- Godot 실행 파일(PC마다 다름). **이 PC: `C:\Users\bitba\Downloads\Godot_v4.7.2-stable_win64.exe (1)\Godot_v4.7.2-stable_win64_console.exe`** — 공백·괄호가 있어 PowerShell에선 `& "<경로>" ...`. 다른 PC는 `D:\10인준완\Godot\engine\` 아래였음(4.6 시절). 못 찾으면 `Godot*4.7*win64*console*.exe` 검색
+- Godot 실행 파일(PC마다 다름). **이 PC: `C:\Users\bitba\Desktop\임시 더미\Godot_v4.7.2-stable_win64.exe (1)\Godot_v4.7.2-stable_win64_console.exe`**(2026-09-27 Downloads에서 옮겨짐) — 공백·괄호가 있어 PowerShell에선 `& "<경로>" ...`. 다른 PC는 `D:\10인준완\Godot\engine\` 아래였음(4.6 시절). 못 찾으면 `Godot*4.7*win64*console*.exe` 검색
   - 예: `& "<경로>" --headless --path "C:\Users\bitba\Documents\GitHub\villain" "res://maps/SubwayPlatform.tscn" --fixed-fps 60 --quit-after 1100`
 - ⚠️ `--editor --quit-after`로는 파싱 에러를 다 못 잡는다(실제로 겪음: 선언 빠진 변수가 통과했다가 게임에서 캐릭터 고르는 순간 크래시). **바꾼 스크립트가 실제로 쓰이는 씬을 헤드리스로 띄워야 확실**
   - `extends Node` 임시 스크립트를 `.tscn`으로 감싸 `GameState`에 캐릭터를 넣고 맵을 붙이는 방식이 빠르다

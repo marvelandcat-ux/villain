@@ -129,6 +129,9 @@ var clash_minigame_enabled: bool = true
 var guard_enabled: bool = true
 ## 꺼두면 방향키 두 번을 눌러도 대시(Fighter.can_dash())가 아예 안 나간다(RoomSettings에서 설정)
 var dash_enabled: bool = true
+## 켜면 대전 모드(pvp)의 P2를 컴퓨터(규칙 기반 AIController)가 조종한다(RoomSettings "상대" 줄, 2026-09-27).
+## 스토리 모드는 이 값과 상관없이 항상 P2가 AI(ClaudeAIController)다
+var vs_ai: bool = false
 
 ## .env 파일에서 불러온 Claude API 키. ClaudeAIController가 P2 AI 판단에 사용한다.
 ## .env는 git에 커밋하지 않는 로컬 파일이라(.env.example 참고) 파일이 없으면 빈 문자열로 남는다

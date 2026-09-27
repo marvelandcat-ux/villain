@@ -78,7 +78,8 @@ func _ready() -> void:
 	add_child(SkillClashManager.new())
 	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false, 1)
 	# 로컬 대전(pvp)은 P2도 사람이 직접 조작하고, 스토리 모드는 정해진 상대를 AI가 조작한다
-	var p2_is_ai: bool = GameState.game_mode == "story"
+	# 대전 모드도 방 설정에서 "상대: 컴퓨터"를 골랐으면 P2를 AI가 조종한다
+	var p2_is_ai: bool = GameState.game_mode == "story" or GameState.vs_ai
 	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", p2_is_ai, 2)
 	# 컨트롤러가 붙자마자 바로 얼려서, 아래 await로 프레임이 넘어가는 순간에도
 	# 입력을 못 받게 한다 (여기서 안 얼리면 그 한 프레임 동안 is_active 기본값(true)이라
@@ -306,7 +307,11 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	if spawn:
 		fighter.global_position = spawn.global_position
 	if is_ai:
-		fighter.add_child(ClaudeAIController.new())
+		# 스토리는 Claude API가 전략을 얹는 AI, 대전 모드 컴퓨터 상대는 규칙 기반 AI만(사용자 결정 — API 비용 없음)
+		if GameState.game_mode == "story":
+			fighter.add_child(ClaudeAIController.new())
+		else:
+			fighter.add_child(AIController.new())
 	else:
 		var controller := PlayerController.new()
 		controller.player_index = player_index

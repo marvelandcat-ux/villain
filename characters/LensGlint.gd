@@ -120,7 +120,8 @@ func _draw_sparkle(p: float) -> void:
 		pts.append(c + Vector2(cos(ang), sin(ang)) * r)
 	var outline := pts.duplicate()
 	outline.append(pts[0])
-	draw_polyline(outline, Color(0.05, 0.04, 0.04, 0.9), 8.0)
+	# 테두리 굵기도 별 크기에 비례(고정 8px이면 머리 배율 0.05에선 화면에 안 보인다)
+	draw_polyline(outline, Color(0.05, 0.04, 0.04, 0.9), maxf(8.0, s * 0.14))
 	draw_colored_polygon(pts, Color(glint_color, 1.0))
 
 ## 렌즈 타원 안에서 u = x/a + slant·y/b 가 [center - w, center + w]인 사선 띠를 세로 조각으로 칠한다

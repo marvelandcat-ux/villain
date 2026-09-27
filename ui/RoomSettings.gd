@@ -2,11 +2,11 @@ class_name RoomSettings
 extends Control
 
 ## 로컬 대전 방 만들기 — 선취 라운드 수(1~40), 라운드 시간제한, 전역 쿨타임 배율(10~200%),
-## 스킬 클래시(연타 미니게임)·가드·대시 on/off를 정하고 캐릭터 선택으로 넘어간다.
+## 스킬 클래시(연타 미니게임)·가드·대시 on/off, 상대(P2) 사람/컴퓨터를 정하고 캐릭터 선택으로 넘어간다.
 ##
 ## 2026-09-15 개편: 위쪽엔 빠른 프리셋 버튼 2개("표준"/"장기전") + "프리셋" 저장·불러오기 메뉴,
 ## 아래엔 카드 하나 안에 왼쪽(라운드/제한시간/쿨타임)·오른쪽(연타/가드/대시) 2열로
-## 여섯 항목을 나열한다.
+## 여섯 항목을 나열한다. 그 아래 카드 폭 전체를 쓰는 "상대 (P2)" 줄(사람/컴퓨터)이 있다(2026-09-27).
 ##
 ## **라운드·쿨타임은 ◀▶ 스테퍼뿐 아니라 값 칸(LineEdit)을 눌러 숫자를 직접 타이핑해도 된다**
 ## — Enter를 누르거나 칸 밖을 클릭하면 값이 확정되고, 잘못된 값(숫자가 아님)은 이전 값으로 되돌아간다.
@@ -42,6 +42,7 @@ const SAVED_PRESET_ID_BASE := 1
 @onready var _clash_toggle: Button = $Card/ClashRow/Toggle
 @onready var _guard_toggle: Button = $Card/GuardRow/Toggle
 @onready var _dash_toggle: Button = $Card/DashRow/Toggle
+@onready var _opponent_toggle: Button = $Card/OpponentRow/Toggle
 @onready var _summary: Label = $Summary
 
 var _rounds: int = 2
@@ -50,6 +51,8 @@ var _cooldown_percent: int = 100
 var _clash_enabled: bool = true
 var _guard_enabled: bool = true
 var _dash_enabled: bool = true
+## true면 P2를 컴퓨터가 조종한다 — 지난번 고른 값을 기억해 둔다(매번 다시 누르지 않게)
+var _vs_ai: bool = GameState.vs_ai
 
 func _ready() -> void:
 	$Card/RoundRow/Prev.pressed.connect(func(): _change_rounds(-1))
@@ -65,6 +68,7 @@ func _ready() -> void:
 	_clash_toggle.pressed.connect(_on_clash_toggle_pressed)
 	_guard_toggle.pressed.connect(_on_guard_toggle_pressed)
 	_dash_toggle.pressed.connect(_on_dash_toggle_pressed)
+	_opponent_toggle.pressed.connect(_on_opponent_toggle_pressed)
 	$PresetA.pressed.connect(func(): _apply_preset(2, 2))
 	$PresetB.pressed.connect(func(): _apply_preset(3, 0))
 	$PresetMore.pressed.connect(_on_more_presets_pressed)
@@ -117,6 +121,10 @@ func _on_dash_toggle_pressed() -> void:
 	_dash_enabled = not _dash_enabled
 	_refresh()
 
+func _on_opponent_toggle_pressed() -> void:
+	_vs_ai = not _vs_ai
+	_refresh()
+
 ## 라운드 수 + 시간 인덱스를 한 번에 정한다
 func _apply_preset(rounds: int, time_index: int) -> void:
 	_rounds = clampi(rounds, MIN_ROUNDS, MAX_ROUNDS)
@@ -155,6 +163,7 @@ func _apply_saved_preset(data: Dictionary) -> void:
 	_clash_enabled = bool(data.get("clash_enabled", _clash_enabled))
 	_guard_enabled = bool(data.get("guard_enabled", _guard_enabled))
 	_dash_enabled = bool(data.get("dash_enabled", _dash_enabled))
+	_vs_ai = bool(data.get("vs_ai", _vs_ai))
 	_refresh()
 
 ## 지금 화면의 여섯 값을 이름 붙여 저장할 수 있는 작은 입력창을 띄운다(MapSelect의 팝업과 같은 방식으로 코드로 직접 만든다)
@@ -240,6 +249,7 @@ func _save_current_as_preset(preset_name: String) -> void:
 		"clash_enabled": _clash_enabled,
 		"guard_enabled": _guard_enabled,
 		"dash_enabled": _dash_enabled,
+		"vs_ai": _vs_ai,
 	})
 
 ## 화면의 숫자·토글·요약을 지금 값에 맞춘다
@@ -251,17 +261,21 @@ func _refresh() -> void:
 	_set_toggle(_clash_toggle, _clash_enabled)
 	_set_toggle(_guard_toggle, _guard_enabled)
 	_set_toggle(_dash_toggle, _dash_enabled)
+	_set_toggle(_opponent_toggle, not _vs_ai, "사람", "컴퓨터")
+	# 사람/컴퓨터는 켜고 끄는 게 아니라 고르는 것이라 빨강(꺼짐) 대신 하늘색/주황으로 칠한다
+	_tint_toggle(_opponent_toggle, Color(0.3, 0.5, 0.8, 0.45) if not _vs_ai else Color(0.75, 0.45, 0.2, 0.45),
+			Color(0.6, 0.8, 1.0, 1) if not _vs_ai else Color(1.0, 0.75, 0.45, 1))
 	var clash_text: String = "켬" if _clash_enabled else "끔"
 	var guard_text: String = "켬" if _guard_enabled else "끔"
 	var dash_text: String = "켬" if _dash_enabled else "끔"
 	var time_summary: String = "시간 무제한" if _time_index == 0 else "한 라운드 %s" % time_name
-	_summary.text = "%d선승 / %s / 쿨타임 %d%% / 연타 %s / 가드 %s / 대시 %s" % [
-		_rounds, time_summary, _cooldown_percent, clash_text, guard_text, dash_text
+	_summary.text = "%d선승 / %s / 쿨타임 %d%% / 연타 %s / 가드 %s / 대시 %s / 상대 %s" % [
+		_rounds, time_summary, _cooldown_percent, clash_text, guard_text, dash_text, "컴퓨터" if _vs_ai else "사람"
 	]
 
-## on/off 상태에 따라 토글 버튼 글자·색을 초록/빨강으로 바꾼다
-func _set_toggle(toggle: Button, enabled: bool) -> void:
-	toggle.text = "ON" if enabled else "OFF"
+## on/off 상태에 따라 토글 버튼 글자·색을 초록/빨강으로 바꾼다(글자는 기본 ON/OFF, 상대 줄은 사람/컴퓨터)
+func _set_toggle(toggle: Button, enabled: bool, on_text: String = "ON", off_text: String = "OFF") -> void:
+	toggle.text = on_text if enabled else off_text
 	toggle.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.08, 1))
 	toggle.add_theme_constant_override("outline_size", 4)
 	var style := StyleBoxFlat.new()
@@ -284,6 +298,14 @@ func _set_toggle(toggle: Button, enabled: bool) -> void:
 	toggle.add_theme_stylebox_override("pressed", style)
 	toggle.add_theme_stylebox_override("focus", style)
 
+## 토글 버튼 네 가지 상태 모양의 배경·테두리 색만 바꾼다(_set_toggle 뒤에 부른다)
+func _tint_toggle(toggle: Button, bg: Color, border: Color) -> void:
+	var style := toggle.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	style.bg_color = bg
+	style.border_color = border
+	for state in ["normal", "hover", "pressed", "focus"]:
+		toggle.add_theme_stylebox_override(state, style)
+
 func _on_next_pressed() -> void:
 	GameState.rounds_to_win = _rounds
 	GameState.time_limit_seconds = int(TIME_OPTIONS[_time_index][1])
@@ -291,6 +313,7 @@ func _on_next_pressed() -> void:
 	GameState.clash_minigame_enabled = _clash_enabled
 	GameState.guard_enabled = _guard_enabled
 	GameState.dash_enabled = _dash_enabled
+	GameState.vs_ai = _vs_ai
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
 

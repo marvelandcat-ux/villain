@@ -164,7 +164,7 @@ func _on_confirm_pressed() -> void:
 	if _picking_p1:
 		GameState.p1_character_path = path
 		_picking_p1 = false
-		_status_label.text = "P1: %s 확정! P2(AI) 캐릭터를 선택하세요" % _pending_character
+		_status_label.text = "P1: %s 확정! %s 캐릭터를 선택하세요" % [_pending_character, "P2(컴퓨터)" if GameState.vs_ai else "P2"]
 		_pending_character = ""
 		_confirm_button.disabled = true
 		_update_highlight()

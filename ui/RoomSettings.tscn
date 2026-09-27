@@ -203,7 +203,7 @@ layout_mode = 0
 offset_left = 110.0
 offset_top = 130.0
 offset_right = 1170.0
-offset_bottom = 504.0
+offset_bottom = 548.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
 [node name="RoundRow" type="Panel" parent="Card"]
@@ -211,14 +211,14 @@ layout_mode = 0
 offset_left = 20.0
 offset_top = 20.0
 offset_right = 520.0
-offset_bottom = 118.0
+offset_bottom = 104.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="Label" type="Label" parent="Card/RoundRow"]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 330.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -232,7 +232,7 @@ vertical_alignment = 1
 layout_mode = 0
 offset_left = 344.0
 offset_right = 380.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -243,9 +243,9 @@ text = "◀"
 [node name="Value" type="LineEdit" parent="Card/RoundRow"]
 layout_mode = 0
 offset_left = 380.0
-offset_top = 22.0
+offset_top = 15.0
 offset_right = 448.0
-offset_bottom = 76.0
+offset_bottom = 69.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
 theme_override_constants/outline_size = 4
@@ -262,7 +262,7 @@ select_all_on_focus = true
 layout_mode = 0
 offset_left = 448.0
 offset_right = 484.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -273,16 +273,16 @@ text = "▶"
 [node name="TimeRow" type="Panel" parent="Card"]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 138.0
+offset_top = 118.0
 offset_right = 520.0
-offset_bottom = 236.0
+offset_bottom = 202.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="Label" type="Label" parent="Card/TimeRow"]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 330.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -296,7 +296,7 @@ vertical_alignment = 1
 layout_mode = 0
 offset_left = 344.0
 offset_right = 380.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -308,7 +308,7 @@ text = "◀"
 layout_mode = 0
 offset_left = 380.0
 offset_right = 448.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -323,7 +323,7 @@ vertical_alignment = 1
 layout_mode = 0
 offset_left = 448.0
 offset_right = 484.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -334,16 +334,16 @@ text = "▶"
 [node name="CooldownRow" type="Panel" parent="Card"]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 256.0
+offset_top = 216.0
 offset_right = 520.0
-offset_bottom = 354.0
+offset_bottom = 300.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="Label" type="Label" parent="Card/CooldownRow"]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 330.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -357,7 +357,7 @@ vertical_alignment = 1
 layout_mode = 0
 offset_left = 344.0
 offset_right = 380.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -368,9 +368,9 @@ text = "◀"
 [node name="Value" type="LineEdit" parent="Card/CooldownRow"]
 layout_mode = 0
 offset_left = 380.0
-offset_top = 22.0
+offset_top = 15.0
 offset_right = 448.0
-offset_bottom = 76.0
+offset_bottom = 69.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
 theme_override_constants/outline_size = 4
@@ -387,7 +387,7 @@ select_all_on_focus = true
 layout_mode = 0
 offset_left = 448.0
 offset_right = 484.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 flat = true
 theme_override_colors/font_color = Color(0.8, 0.74, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -400,14 +400,14 @@ layout_mode = 0
 offset_left = 540.0
 offset_top = 20.0
 offset_right = 1040.0
-offset_bottom = 118.0
+offset_bottom = 104.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="Label" type="Label" parent="Card/ClashRow"]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 330.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -420,9 +420,9 @@ vertical_alignment = 1
 [node name="Toggle" type="Button" parent="Card/ClashRow"]
 layout_mode = 0
 offset_left = 374.0
-offset_top = 22.0
+offset_top = 15.0
 offset_right = 484.0
-offset_bottom = 76.0
+offset_bottom = 69.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 22
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -432,16 +432,16 @@ text = "ON"
 [node name="GuardRow" type="Panel" parent="Card"]
 layout_mode = 0
 offset_left = 540.0
-offset_top = 138.0
+offset_top = 118.0
 offset_right = 1040.0
-offset_bottom = 236.0
+offset_bottom = 202.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="Label" type="Label" parent="Card/GuardRow"]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 330.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -454,9 +454,9 @@ vertical_alignment = 1
 [node name="Toggle" type="Button" parent="Card/GuardRow"]
 layout_mode = 0
 offset_left = 374.0
-offset_top = 22.0
+offset_top = 15.0
 offset_right = 484.0
-offset_bottom = 76.0
+offset_bottom = 69.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 22
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -466,16 +466,16 @@ text = "ON"
 [node name="DashRow" type="Panel" parent="Card"]
 layout_mode = 0
 offset_left = 540.0
-offset_top = 256.0
+offset_top = 216.0
 offset_right = 1040.0
-offset_bottom = 354.0
+offset_bottom = 300.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_row")
 
 [node name="Label" type="Label" parent="Card/DashRow"]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 330.0
-offset_bottom = 98.0
+offset_bottom = 84.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
@@ -488,36 +488,84 @@ vertical_alignment = 1
 [node name="Toggle" type="Button" parent="Card/DashRow"]
 layout_mode = 0
 offset_left = 374.0
-offset_top = 22.0
+offset_top = 15.0
 offset_right = 484.0
-offset_bottom = 76.0
+offset_bottom = 69.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 22
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 text = "ON"
 
+[node name="OpponentRow" type="Panel" parent="Card"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 314.0
+offset_right = 1040.0
+offset_bottom = 398.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Label" type="Label" parent="Card/OpponentRow"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 330.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.88, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 24
+text = "상대 (P2)"
+vertical_alignment = 1
+
+[node name="Hint" type="Label" parent="Card/OpponentRow"]
+layout_mode = 0
+offset_left = 330.0
+offset_right = 850.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.75, 0.7, 0.85, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+text = "컴퓨터를 고르면 P2 캐릭터를 AI가 조종해요"
+vertical_alignment = 1
+
+[node name="Toggle" type="Button" parent="Card/OpponentRow"]
+layout_mode = 0
+offset_left = 864.0
+offset_top = 15.0
+offset_right = 1004.0
+offset_bottom = 69.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+text = "사람"
+
 [node name="Summary" type="Label" parent="."]
 layout_mode = 0
-offset_top = 520.0
+offset_top = 558.0
 offset_right = 1280.0
-offset_bottom = 552.0
+offset_bottom = 590.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.95, 0.9, 1, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 1)
 theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 18
-text = "2선승 / 시간 무제한 / 쿨타임 100% / 연타 켬 / 가드 켬 / 대시 켬"
+text = "2선승 / 시간 무제한 / 쿨타임 100% / 연타 켬 / 가드 켬 / 대시 켬 / 상대 사람"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="NextButton" type="Button" parent="."]
 layout_mode = 0
 offset_left = 450.0
-offset_top = 568.0
+offset_top = 600.0
 offset_right = 830.0
-offset_bottom = 620.0
+offset_bottom = 652.0
 theme_override_colors/font_color = Color(1, 0.97, 0.98, 1)
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 28
