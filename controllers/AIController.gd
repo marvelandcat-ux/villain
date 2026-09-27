@@ -836,12 +836,6 @@ func _want_skill(skill: Skill) -> bool:
 			return level and open and d < float(skill.get("range")) * 0.85
 		"TteokbokkiUltimate":
 			return level and d > 40.0 and d < 350.0
-		"LivingShadowSkill":
-			var shadow = skill.get("_shadow")
-			if shadow != null and is_instance_valid(shadow):
-				# 그림자가 나보다 상대에게 훨씬 가까우면 자리를 바꿔 파고든다
-				return absf((shadow as Node2D).global_position.x - target.global_position.x) + 80.0 < d
-			return level and d > 120.0 and d < 420.0
 		"BackSuplexSkill":
 			return level and target.can_be_grabbed() and d < float(skill.get("fallback_grab_range")) + 15.0
 		"CigaretteSmokeSkill":

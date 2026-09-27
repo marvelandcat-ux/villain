@@ -59,9 +59,11 @@ text = "아무 키나 누르세요"
 horizontal_alignment = 1
 
 [node name="Bgm" type="AudioStreamPlayer" parent="." unique_id=478838400]
+bus = "Music"
 stream = ExtResource("2_bgm")
 
 [node name="Click" type="AudioStreamPlayer" parent="." unique_id=182654859]
+bus = "Sfx"
 stream = ExtResource("3_click")
 
 [node name="Fade" type="ColorRect" parent="." unique_id=128557759]

@@ -8,7 +8,7 @@
 size = Vector2(960, 40)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
-size = Vector2(40, 400)
+size = Vector2(40, 1600)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_obstacle"]
 size = Vector2(50, 45)
@@ -27,22 +27,24 @@ color = Color(0.55, 0.45, 0.3, 1)
 polygon = PackedVector2Array(-480, -20, 480, -20, 480, 20, -480, 20)
 
 [node name="LeftWall" type="StaticBody2D" parent="."]
-position = Vector2(-480, 100)
+position = Vector2(-480, -500)
 
 [node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="LeftWallVisual" type="Polygon2D" parent="LeftWall"]
+position = Vector2(0, 600)
 color = Color(0.35, 0.55, 0.35, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 
 [node name="RightWall" type="StaticBody2D" parent="."]
-position = Vector2(480, 100)
+position = Vector2(480, -500)
 
 [node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="RightWallVisual" type="Polygon2D" parent="RightWall"]
+position = Vector2(0, 600)
 color = Color(0.35, 0.55, 0.35, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 

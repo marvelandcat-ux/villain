@@ -448,6 +448,57 @@ extends Node2D
 ## 뿌린 뒤 손이 제자리로 돌아오기 시작하는 지점(뿌리는 구간 중 앞 몇 %가 실제로 뻗는 동작인지)
 @export var cast_snap_ratio: float = 0.4
 
+## --- 돌 던지기 (주인공 스토리 스킬2): 야구 투구처럼 크게 던진다 ---
+## 마우스 던지기(cast)와 **완전히 별개**다. 마우스 던지기는 오른손만 움직이는 짧은 동작이고,
+## 이쪽은 몸통·머리·양손·두 발이 전부 움직이는 큰 동작이다.
+##
+## 동작은 네 자세를 이어 붙여 만든다 (러프 4컷 그대로):
+##   ① 셋업   — 돌 든 오른손을 몸 뒤로, 왼손은 앞으로, 몸은 똑바로. **여기서 앞발을 한 발 내딛는다**
+##   ② 젖힘   — 오른손을 뒤 위로 치켜들고 몸을 뒤로 젖힌다
+##   ③ 뿌림   — 손이 머리 위를 넘어오며 몸이 앞으로 쏟아진다. **이 지점에서 돌이 손을 떠난다**
+##   ④ 마무리 — 뻗은 손이 몸 앞으로 내려오고 왼손은 몸쪽으로 당겨진다
+## 아래 ratio 넷이 각 자세가 오는 시점(전체 동작 중 몇 %)이다
+@export var throw_setup_ratio: float = 0.20
+@export var throw_windup_ratio: float = 0.48
+@export var throw_release_ratio: float = 0.62
+@export var throw_follow_ratio: float = 0.80
+## 각 자세에서 오른손이 가는 위치(리그 원점 기준, +x가 앞)
+@export var throw_setup_hand: Vector2 = Vector2(-18, 2)
+@export var throw_windup_hand: Vector2 = Vector2(-24, -24)
+@export var throw_release_hand: Vector2 = Vector2(12, -30)
+@export var throw_follow_hand: Vector2 = Vector2(26, 8)
+## 각 자세에서 손목이 꺾이는 각도(도)
+@export var throw_setup_deg: float = -25.0
+@export var throw_windup_deg: float = -75.0
+@export var throw_release_deg: float = 35.0
+@export var throw_follow_deg: float = 70.0
+## 왼손 — 던지기 전엔 앞으로 내밀어 겨누고(반대쪽 균형), 던진 뒤엔 몸쪽으로 당겨진다.
+## 둘 다 제자리 기준 상대값이다
+@export var throw_hand_l_front: Vector2 = Vector2(16, -6)
+@export var throw_hand_l_pull: Vector2 = Vector2(-10, 4)
+## 몸통 기울기(도) — 음수가 뒤로 젖힘, 양수가 앞으로 쏟아짐
+@export var throw_body_windup_deg: float = -18.0
+@export var throw_body_release_deg: float = 34.0
+## 머리가 몸통 기울기를 따라가는 정도(0~1)
+@export var throw_head_follow: float = 0.65
+## --- 몸 숙이기 ---
+## 기울기(회전)만으로는 "숙였다"가 잘 안 읽힌다. 뿌리는 순간부터 허리를 굽히듯
+## 몸통과 머리를 이만큼 아래로 내려앉히고, 머리는 앞으로도 조금 내민다 (px)
+@export var throw_body_crouch: float = 17.0
+@export var throw_head_dip: float = 14.0
+@export var throw_head_lead: float = 11.0
+## **이 동작의 핵심** — 앞발이 제자리보다 이만큼 앞으로 나가 디딘다(px).
+## 한 번 디디면 throw_foot_hold_ratio까지 그 자리에 못박혀 움직이지 않는다
+@export var throw_step_foot: float = 14.0
+## 발을 옮기는 동안만 살짝 드는 높이(px). 다 디딘 뒤엔 바닥에 붙어 있는다
+@export var throw_step_lift: float = 6.0
+## 뒷발이 뒤로 밀리는 거리(px) — 버티는 발이라 조금만 움직인다
+@export var throw_back_foot: float = -4.0
+## 디딘 발이 제자리로 돌아가기 시작하는 시점(전체 동작 중 몇 %)
+@export var throw_foot_hold_ratio: float = 0.9
+## 던지는 동안 손에 원래 들고 있던 물건(주인공 경봉)을 숨긴다
+@export var throw_hides_held_item: bool = true
+
 ## --- 유선 마우스 끌어당기기: 두 손으로 줄을 잡고 박자에 맞춰 몸쪽으로 당긴다 ---
 ## 줄을 잡은 오른손의 기준 위치(리그 원점 기준) — 앞으로 내밀어 줄을 쥔 자세
 @export var reel_hand_offset: Vector2 = Vector2(24, -6)
@@ -687,6 +738,13 @@ var _cast_time: float = 0.0
 var _cast_duration: float = 0.34
 ## 전체 던지기 동작 중 "뒤로 젖히는" 구간의 비율 (play_cast_motion이 두 시간에서 계산한다)
 var _cast_windup_ratio: float = 0.4
+## 돌 던지기 동작에 남은 시간(초). 0보다 크면 던지는 중이다 (마우스 던지기 _cast_time과 별개)
+var _throw_time: float = 0.0
+var _throw_duration: float = 0.5
+## 던지는 동안 손에 쥐여주는 그림(돌). set_throw_item이 처음 부를 때 만들어진다
+var _throw_item: Sprite2D = null
+## 지금 던지기 때문에 손에 든 물건을 숨겨놓은 상태인지 (다시 보여줄 때만 손대려고 기억해둔다)
+var _held_hidden_by_throw: bool = false
 ## 줄을 당기는 자세 세기 0~1. set_reeling으로 목표를 정하고 서서히 오간다
 var _reel_blend: float = 0.0
 var _reel_target: float = 0.0
@@ -834,6 +892,8 @@ func _process(delta: float) -> void:
 			rotation = 0.0   # 내리꽂기가 끝나면 뒤로/앞으로 기울였던 몸을 원래대로
 	if _cast_time > 0.0:
 		_cast_time = maxf(_cast_time - delta, 0.0)
+	if _throw_time > 0.0:
+		_throw_time = maxf(_throw_time - delta, 0.0)
 	# 줄 당기는 자세는 목표로 서서히 오가고, 당기는 박자는 그 자세일 때만 진행된다
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
@@ -856,7 +916,7 @@ func _process(delta: float) -> void:
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
 	# idle_gestures를 끄면 여기서 바로 false가 되어 아래 "취소" 가지로 빠진다 — 모션이 아예 안 나온다
-	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
+	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -1044,6 +1104,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _cast_time > 0.0:
 		_pose_cast()
 
+	# 돌을 던지는 중이면 양손·몸통·머리·두 발을 전부 던지기 자세로 덮어쓴다 (마우스 던지기보다 큰 동작이라 나중에 적용)
+	if _throw_time > 0.0:
+		_pose_throw()
+
 	# 가만히 있을 때는 왼손으로 머리를 긁는다 (idle 생동감). 왼손만 건드려서 다른 동작과 안 겹친다
 	if _scratch_time > 0.0:
 		_pose_scratch()
@@ -1132,6 +1196,16 @@ func _apply_pose(speed_ratio: float) -> void:
 			if _attack_time > 0.0 or _drink_time > 0.0 or _grab_time > 0.0:
 				hide_cast = false
 			_hand_r_hold.visible = not (hide_cast or hide_gun)
+		# 돌을 던지는 동안엔 **원래 들고 있던 물건(경봉)만** 숨긴다.
+		# HandRHold 자체를 끄면 그 자식으로 붙인 돌까지 같이 사라지므로 자식별로 끄고 켠다
+		var throwing: bool = throw_hides_held_item and _throw_time > 0.0
+		if throwing or _held_hidden_by_throw:
+			_held_hidden_by_throw = throwing
+			for child in _hand_r_hold.get_children():
+				if child != _throw_item:
+					child.visible = not throwing
+			if throwing:
+				_hand_r_hold.visible = true
 	# 클래시 주먹 러시 중엔 손에 든 물건을 숨긴다 — 잔상은 손만 복사하므로 물건만 덩그러니 따라다니면 어색하다
 	if _hand_r_hold:
 		if _clash_blend > 0.5:
@@ -2126,6 +2200,130 @@ func _pose_cast() -> void:
 			deg = lerpf(cast_release_deg, 0.0, f)
 	_hand_r.position = pos
 	_hand_r.rotation = deg_to_rad(deg)
+
+## 돌 던지기 동작 시작 — 전체 길이(초)를 받는다. 돌이 손을 떠나는 시점은 throw_release_ratio 지점이라,
+## 부르는 쪽(StoneThrowSkill)은 `duration * throw_release_ratio`만큼 기다렸다가 돌을 만들면 손과 맞는다
+func play_throw_motion(duration: float) -> void:
+	_throw_duration = maxf(duration, 0.05)
+	_throw_time = _throw_duration
+
+## 던지는 동안 손에 쥐여줄 그림(돌 등)을 넣는다. 손에 원래 들고 있던 물건(경봉)은 그동안 자동으로 숨는다
+func set_throw_item(texture: Texture2D, item_scale: float = 0.02) -> void:
+	if _hand_r_hold == null or texture == null:
+		return
+	if _throw_item == null:
+		_throw_item = Sprite2D.new()
+		_throw_item.name = "ThrowItem"
+		_hand_r_hold.add_child(_throw_item)
+	_throw_item.texture = texture
+	_throw_item.scale = Vector2(item_scale, item_scale)
+	_throw_item.visible = true
+
+## 손에 쥔 던질 물건을 치운다 — 돌이 손을 떠나는 순간에 부른다
+func clear_throw_item() -> void:
+	if _throw_item:
+		_throw_item.visible = false
+
+## 0~1을 부드럽게 만든다 (시작·끝이 느리고 가운데가 빠른 곡선)
+func _ease01(t: float) -> float:
+	var c: float = clampf(t, 0.0, 1.0)
+	return c * c * (3.0 - 2.0 * c)
+
+## 돌 던지기 자세 — 러프 4컷(셋업 → 젖힘 → 뿌림 → 마무리)을 이어 붙인다.
+## 오른손·왼손·몸통·머리·두 발을 전부 건드리는 큰 동작이다
+func _pose_throw() -> void:
+	if _hand_r == null:
+		return
+	var rest_r: Vector2 = _rest_positions[_hand_r]
+	var p: float = 1.0 - _throw_time / _throw_duration
+	var hand: Vector2
+	var deg: float
+	var body_deg: float
+	if p < throw_setup_ratio:
+		# ① 셋업 — 돌 든 손을 몸 뒤로 가져간다
+		var t: float = _ease01(p / maxf(throw_setup_ratio, 0.001))
+		hand = rest_r.lerp(throw_setup_hand, t)
+		deg = lerpf(0.0, throw_setup_deg, t)
+		body_deg = 0.0
+	elif p < throw_windup_ratio:
+		# ② 젖힘 — 손을 뒤 위로 치켜들고 몸을 뒤로 젖힌다
+		var t: float = _ease01((p - throw_setup_ratio) / maxf(throw_windup_ratio - throw_setup_ratio, 0.001))
+		hand = throw_setup_hand.lerp(throw_windup_hand, t)
+		deg = lerpf(throw_setup_deg, throw_windup_deg, t)
+		body_deg = lerpf(0.0, throw_body_windup_deg, t)
+	elif p < throw_release_ratio:
+		# ③ 뿌림 — 가장 짧은 구간이라 제일 빨라 보인다. t를 제곱해서 뒤로 갈수록 확 넘어오게 한다
+		var t: float = clampf((p - throw_windup_ratio) / maxf(throw_release_ratio - throw_windup_ratio, 0.001), 0.0, 1.0)
+		hand = throw_windup_hand.lerp(throw_release_hand, t * t)
+		deg = lerpf(throw_windup_deg, throw_release_deg, t * t)
+		body_deg = lerpf(throw_body_windup_deg, throw_body_release_deg, t)
+	elif p < throw_follow_ratio:
+		# ④ 마무리 — 뻗은 손이 몸 앞으로 내려온다
+		var t: float = _ease01((p - throw_release_ratio) / maxf(throw_follow_ratio - throw_release_ratio, 0.001))
+		hand = throw_release_hand.lerp(throw_follow_hand, t)
+		deg = lerpf(throw_release_deg, throw_follow_deg, t)
+		body_deg = throw_body_release_deg
+	else:
+		# 제자리로 — 몸통 기울기도 같이 풀린다
+		var t: float = _ease01((p - throw_follow_ratio) / maxf(1.0 - throw_follow_ratio, 0.001))
+		hand = throw_follow_hand.lerp(rest_r, t)
+		deg = lerpf(throw_follow_deg, 0.0, t)
+		body_deg = lerpf(throw_body_release_deg, 0.0, t)
+	_hand_r.position = hand
+	_hand_r.rotation = deg_to_rad(deg)
+	_pose_throw_hand_l(p)
+	# 몸통·머리 기울기. 머리는 몸통을 따라가되 덜 돈다.
+	# 여기에 더해 뿌리는 순간부터 허리를 굽혀(crouch) 몸을 실제로 낮춘다
+	var crouch: float = _throw_crouch(p)
+	if _body:
+		_body.rotation = deg_to_rad(body_deg)
+		_body.position.y += throw_body_crouch * crouch
+	if _head:
+		_head.rotation += deg_to_rad(body_deg) * throw_head_follow
+		_head.position += Vector2(throw_head_lead * crouch, throw_head_dip * crouch)
+	_pose_throw_feet(p)
+
+## 허리를 굽힌 정도 0~1 — 젖힘이 끝나는 지점부터 차오르고, 디딘 발이 풀릴 때 같이 풀린다
+func _throw_crouch(p: float) -> float:
+	if p < throw_windup_ratio:
+		return 0.0
+	if p < throw_release_ratio:
+		return clampf((p - throw_windup_ratio) / maxf(throw_release_ratio - throw_windup_ratio, 0.001), 0.0, 1.0)
+	if p < throw_foot_hold_ratio:
+		return 1.0
+	return 1.0 - _ease01((p - throw_foot_hold_ratio) / maxf(1.0 - throw_foot_hold_ratio, 0.001))
+
+## 왼손 — 던지기 전엔 앞으로 내밀어 겨누고, 돌이 떠난 뒤엔 몸쪽으로 당긴다 (오른팔의 반대 균형)
+func _pose_throw_hand_l(p: float) -> void:
+	if _hand_l == null:
+		return
+	var rest_l: Vector2 = _rest_positions[_hand_l]
+	var target: Vector2 = throw_hand_l_front if p < throw_release_ratio else throw_hand_l_pull
+	# 동작 앞머리에서 들어갔다가 맨 끝에서 빠진다
+	var blend: float = _ease01(p / maxf(throw_setup_ratio, 0.001))
+	if p > throw_follow_ratio:
+		blend = 1.0 - _ease01((p - throw_follow_ratio) / maxf(1.0 - throw_follow_ratio, 0.001))
+	_hand_l.position = rest_l.lerp(rest_l + target, blend)
+
+## 두 발 — **앞발이 한 발 앞으로 나가 디딘 뒤 동작이 끝날 때까지 그 자리에 못박힌다.**
+## 이게 이 동작에서 제일 중요한 부분이다(사용자 지정). 뒷발은 버티는 발이라 조금만 뒤로 밀린다
+func _pose_throw_feet(p: float) -> void:
+	var step: float
+	if p < throw_windup_ratio:
+		# ①→② 사이에 내딛는다
+		step = _ease01(p / maxf(throw_windup_ratio, 0.001))
+	elif p < throw_foot_hold_ratio:
+		step = 1.0   # 디딘 채로 정지 — 여기서 발이 흔들리면 동작이 가벼워 보인다
+	else:
+		step = 1.0 - _ease01((p - throw_foot_hold_ratio) / maxf(1.0 - throw_foot_hold_ratio, 0.001))
+	# 발을 옮기는 동안만 살짝 들린다. 다 디딘 뒤(p >= throw_windup_ratio)엔 sin(PI)=0이라 바닥에 붙는다
+	var lift: float = sin(clampf(p / maxf(throw_windup_ratio, 0.001), 0.0, 1.0) * PI) * throw_step_lift
+	if _foot_r:
+		_foot_r.position = _rest_positions[_foot_r] + Vector2(throw_step_foot * step, -lift)
+		_foot_r.rotation = deg_to_rad(-10.0) * step
+	if _foot_l:
+		_foot_l.position = _rest_positions[_foot_l] + Vector2(throw_back_foot * step, 0.0)
+		_foot_l.rotation = deg_to_rad(8.0) * step
 
 ## 줄 당기기 자세 — 두 손으로 줄을 잡고 박자에 맞춰 몸쪽으로 당겼다 놓는다.
 ## 걷기·던지기 자세에서 _reel_blend만큼 섞으므로 켜지고 꺼질 때 툭 끊기지 않는다

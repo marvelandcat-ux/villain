@@ -26,7 +26,7 @@ size = Vector2(192, 27)
 size = Vector2(1120, 40)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
-size = Vector2(40, 900)
+size = Vector2(40, 1600)
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_unshaded"]
 light_mode = 1
@@ -352,22 +352,24 @@ position = Vector2(0, 320)
 shape = SubResource("RectangleShape2D_ground")
 
 [node name="LeftWall" type="StaticBody2D" parent="." unique_id=1327186163]
-position = Vector2(-560, 0)
+position = Vector2(-560, -480)
 
 [node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall" unique_id=185000157]
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="LeftWallVisual" type="Polygon2D" parent="LeftWall" unique_id=2133989360]
+position = Vector2(0, 480)
 color = Color(0.08, 0.08, 0.11, 1)
 polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
 
 [node name="RightWall" type="StaticBody2D" parent="." unique_id=357687867]
-position = Vector2(560, 0)
+position = Vector2(560, -480)
 
 [node name="RightWallCollision" type="CollisionShape2D" parent="RightWall" unique_id=798577670]
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="RightWallVisual" type="Polygon2D" parent="RightWall" unique_id=1803689358]
+position = Vector2(0, 480)
 color = Color(0.08, 0.08, 0.11, 1)
 polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
 

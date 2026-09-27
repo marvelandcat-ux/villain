@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://skills/Skill.gd" id="6"]
 [ext_resource type="PackedScene" path="res://characters/police/PoliceRig.tscn" id="7"]
 [ext_resource type="Script" path="res://skills/BodySuplexSkill.gd" id="8_suplex"]
+[ext_resource type="Script" path="res://skills/StoneThrowSkill.gd" id="9_stone"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -60,8 +61,11 @@ damage = 16
 super_armor = true
 
 [node name="Skill2" type="Node" parent="."]
-script = ExtResource("6")
+script = ExtResource("9_stone")
 cooldown = 8.0
+skill_name = "돌 던지기"
+description = "발밑의 돌을 주워 앞으로 던진다. 자전거로 돌진해 오는 상대에게 맞으면 그 자리에서 자전거가 멈춘다. 돌진 중이 아니어도 맞으면 피해를 입는다."
+damage = 6
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")

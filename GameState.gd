@@ -10,7 +10,6 @@ const CHARACTERS := {
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
-	"헬스장 빌런": "res://characters/gymbro/GymBro.tscn",  # 폴더·씬 이름은 예전 이름(헬스장 죽돌이=GymBro) 그대로고 표시 이름만 바꿨다. 기본공격·스킬1(LivingShadowSkill)·스킬2(BackSuplexSkill)는 구현됨, 궁극기만 아직 빈 Skill.gd 기본값(오픈 이슈)
 	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
@@ -37,7 +36,6 @@ const CHARACTER_COLORS := {
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
-	"헬스장 빌런": Color(0.55, 0.6, 0.65),
 	"일진": Color(0.25, 0.3, 0.5),
 	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
 }
@@ -74,18 +72,33 @@ const PORTRAIT_FRAMES_PATH := "res://ui/PortraitFrames.tscn"
 const PORTRAIT_FRAME_SIZE := Vector2(200, 180)
 
 ## 선택 가능한 맵 (표시 이름 -> 씬 경로)
+## **2026-09-25: 최종 맵을 다섯으로 줄였다**(사용자 결정) — 지하철역 / 놀이터 / 악플러의 집 / 헬스장 / 번화가.
+## 2026-09-26에 헬스장·번화가도 배경 그림으로 만들어 다섯 개가 다 고를 수 있게 됐다.
+##
+## **여기엔 실제로 고를 수 있는 맵만 둔다.** MapSelect가 이 경로를 그대로 불러서 미리보기를 띄우기 때문에
+## 빈 경로를 섞으면 맵 선택 화면이 깨진다. 아직 없는 맵은 아래 DEX_MAPS에만 있다.
+##
+## 목록에서 뺀 맵들(편의점 앞·PC방·학교 옥상·아파트 단지 놀이터·층간소음 아파트·지하철 선로·공사현장)은
+## **씬 파일은 maps/에 그대로 남아 있다** — 되살리려면 여기에 다시 적기만 하면 된다
 const MAPS := {
-	"편의점 앞": "res://maps/ConvenienceStore.tscn",
-	"PC방": "res://maps/PcBang.tscn",
-	"학교 옥상 (링아웃)": "res://maps/SchoolRooftop.tscn",
-	"지하철 승강장 (열차)": "res://maps/SubwayPlatform.tscn",
-	"아파트 단지 놀이터": "res://maps/ApartmentPlayground.tscn",
-	"악플러의 방(쓰레기집)": "res://maps/TrashRoom.tscn",
-	"층간소음 아파트": "res://maps/NoisyApartment.tscn",
+	"지하철역": "res://maps/SubwayPlatform.tscn",
 	"놀이터": "res://maps/Playground.tscn",
-	"지하철 선로": "res://maps/SubwayTrack.tscn",
-	"공사현장 (내리찍기)": "res://maps/CollapsingApartment.tscn",
+	"악플러의 집": "res://maps/TrashRoom.tscn",
+	"헬스장": "res://maps/Gym.tscn",
+	"번화가": "res://maps/Downtown.tscn",
 }
+
+## 도감 맵 탭에 보여줄 목록 — 만들 예정인 맵까지 넣은 최종 5종이다.
+## 경로가 비어 있으면 아직 안 만든 맵이라는 뜻이다(STORY_EPISODES의 빈 scene과 같은 규칙).
+## 다 만들면 그 줄의 경로를 채우고 위 MAPS에도 같이 옮겨 적으면 된다
+const DEX_MAPS := {
+	"지하철역": "res://maps/SubwayPlatform.tscn",
+	"놀이터": "res://maps/Playground.tscn",
+	"악플러의 집": "res://maps/TrashRoom.tscn",
+	"헬스장": "res://maps/Gym.tscn",
+	"번화가": "res://maps/Downtown.tscn",
+}
+
 
 ## 스토리 에피소드 목록 — **일시정지 화면의 스토리 목록이 이 순서 그대로 쓴다.**
 ## `scene`이 비어 있으면 아직 안 만든 자리(고를 수 없음)다. 새 이야기를 만들면 그 줄의 scene만 채우면 된다.
@@ -98,6 +111,16 @@ const STORY_EPISODES := [
 	{"id": "ep5", "name": "에피소드 5", "scene": ""},
 	{"id": "ep6", "name": "에피소드 6", "scene": ""},
 ]
+
+## 도감 맵 상세 화면에 뜨는 맵 설명. 아직 안 쓴 맵은 여기 없으면 "아직 설명을 적지 않은 맵입니다"가 뜬다.
+## 조작법이 아니라 **그 맵에서 무슨 일이 벌어지는지**를 적는다
+const MAP_DESCRIPTIONS := {
+	"지하철역": "가만히 서 있으면 안 되는 승강장. 30초쯤마다 열차가 들이닥치는데, 경고등이 깜빡이기 시작하면 5초 안에 양쪽 벤치 위로 올라가야 한다. 늦으면 가드도 소용없이 깔린 채로 반대편까지 실려 간다. 안전한 자리가 벤치 두 개뿐이라 싸움이 저절로 그 위로 몰린다.",
+	"놀이터": "구름 발판 꼭대기에 왕관이 놓여 있다. 주운 쪽은 발이 빨라지고 주먹도 매워지지만 한 대만 맞아도 머리에서 튕겨 나가니, 훔치고 달아나고 다시 빼앗는 싸움이 된다. 정자 양옆 모래밭은 걸어서 지나면 발이 푹푹 빠지고(왕만 멀쩡하다), 한가운데 그네는 쉬지 않고 오가다 닿는 쪽을 팅 하고 튕겨낸다. 스프링 시소는 밟는 순간 솟구친다.",
+	"악플러의 집": "쓰레기가 발목까지 쌓인 방. 12초쯤마다 형광등이 두어 번 깜빡이더니 방이 통째로 어두워진다. 안 보일 뿐 판정은 그대로라 깜깜한 채로 계속 맞는다. 그동안 빛이라고는 책상 모니터뿐이다. 발판이 세 단으로 걸쳐 있어서 위아래로 도망칠 길은 많은 편.",
+	"헬스장": "밤늦은 헬스장 1층. 기구는 전부 배경이고 실제로는 아무 장치도 없는 맨바닥이다. 올라설 발판도 피할 구석도 없어서 처음부터 끝까지 정면으로 붙어야 한다. 맵이 도와주지 않는 만큼 실력 차가 그대로 드러난다.",
+	"번화가": "쓰레기봉투가 산처럼 쌓인 24시 상가 앞 거리. 여기도 장치 없는 평지라 맵이 싸움에 끼어들 일이 없다. 배경만 시끄럽고 승부는 가장 단순해지는 곳.",
+}
 
 var p1_character_path: String = CHARACTERS.values()[0]
 var p2_character_path: String = CHARACTERS.values()[1]
@@ -116,8 +139,9 @@ var current_story_id: String = ""
 var story_cleared: PackedStringArray = PackedStringArray()
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
-## 0이면 시간 제한 없음
-var time_limit_seconds: int = 0
+## 한 라운드 제한 시간(초). 0이면 시간 제한 없음.
+## 기본 2분 — 방 설정에서 고르면 그 값으로 덮어쓴다
+var time_limit_seconds: int = 120
 var p1_round_wins: int = 0
 var p2_round_wins: int = 0
 
@@ -152,6 +176,12 @@ const ROOM_PRESET_SECTION := "room_presets"
 ## 창 모드에서 고를 수 있는 해상도 (전부 16:9라 검은 여백 없이 꽉 채워짐)
 const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 const DEFAULT_MASTER_VOLUME := 1.0
+## 볼륨은 **세 갈래**다(2026-09-27) — 전체 / 음악 / 효과음.
+## 엔진 버스는 Master 하나뿐이라, 시작할 때 Music·Sfx 버스를 만들어 Master 밑에 달아준다.
+## 소리를 내는 노드는 자기 bus를 "Music"이나 "Sfx"로 지정하면 그 슬라이더를 따른다
+const AUDIO_BUSES := ["Music", "Sfx"]
+const DEFAULT_MUSIC_VOLUME := 1.0
+const DEFAULT_SFX_VOLUME := 1.0
 
 ## (임시) **내보낸 빌드에서는 소리를 전부 끈다.** 아직 효과음·배경음악이 정리 전이라
 ## 발표·제출용 빌드에서 아무 소리도 안 나게 하려는 것이다. **에디터에서는 그대로 들린다** —
@@ -165,6 +195,8 @@ var is_fullscreen: bool = false
 ## 기본 1920x1080(RESOLUTIONS 1번, 2026-09-28 사용자 요청) — 설정을 한 번도 안 바꾼 새 PC에서 처음 켜면 이 크기
 var resolution_index: int = 1
 var master_volume: float = DEFAULT_MASTER_VOLUME
+var music_volume: float = DEFAULT_MUSIC_VOLUME
+var sfx_volume: float = DEFAULT_SFX_VOLUME
 ## 대사를 넘기는 법("스페이스 또는 클릭")을 **한 번이라도 본 적 있는지**.
 ## 처음 하는 사람에게만 알려주고 그 뒤로는 화면을 깨끗하게 두려는 것이다(2026-09-16 멘토 피드백).
 ## 세션이 아니라 저장 파일(user://settings.cfg)에 남긴다 — 껐다 켤 때마다 다시 배우라고 할 이유가 없고,
@@ -179,6 +211,7 @@ var _portrait_rect_size: Dictionary = {}
 
 func _ready() -> void:
 	_load_env()
+	_ensure_audio_buses()
 	_load_settings()
 	_apply_build_mute()
 	_load_portrait_frames()
@@ -256,6 +289,8 @@ func _load_settings() -> void:
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
+	set_music_volume(config.get_value("audio", "music_volume", music_volume))
+	set_sfx_volume(config.get_value("audio", "sfx_volume", sfx_volume))
 	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
 	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 
@@ -361,6 +396,23 @@ func mark_dialogue_hint_seen() -> void:
 func is_audio_muted() -> bool:
 	return MUTE_IN_BUILD and not OS.has_feature("editor")
 
+## Music·Sfx 버스를 만들어 Master 밑에 단다. 이미 있으면(버스 레이아웃 파일을 나중에 만들면) 그냥 넘어간다
+func _ensure_audio_buses() -> void:
+	for bus_name in AUDIO_BUSES:
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			continue
+		var index: int = AudioServer.bus_count
+		AudioServer.add_bus(index)
+		AudioServer.set_bus_name(index, bus_name)
+		AudioServer.set_bus_send(index, "Master")
+
+## 버스 하나의 볼륨을 0~1로 맞춘다. **0이면 db가 -inf라 완전히 무음**이 된다
+func _set_bus_volume(bus_name: String, volume: float) -> void:
+	var index := AudioServer.get_bus_index(bus_name)
+	if index < 0:
+		return
+	AudioServer.set_bus_volume_db(index, linear_to_db(volume))
+
 ## Master 버스 음소거를 지금 상태에 맞춘다
 func _apply_build_mute() -> void:
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), is_audio_muted())
@@ -373,6 +425,18 @@ func set_master_volume(volume: float) -> void:
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(master_volume))
 	_apply_build_mute()   # 볼륨을 만져도 빌드에서는 계속 꺼진 채로 둔다
 	_save_setting("audio", "master_volume", master_volume)
+
+## 배경음악 볼륨 (Music 버스). 전체 볼륨과 곱해져서 들린다 — Music이 Master 밑에 달려 있기 때문
+func set_music_volume(volume: float) -> void:
+	music_volume = clampf(volume, 0.0, 1.0)
+	_set_bus_volume("Music", music_volume)
+	_save_setting("audio", "music_volume", music_volume)
+
+## 효과음 볼륨 (Sfx 버스)
+func set_sfx_volume(volume: float) -> void:
+	sfx_volume = clampf(volume, 0.0, 1.0)
+	_set_bus_volume("Sfx", sfx_volume)
+	_save_setting("audio", "sfx_volume", sfx_volume)
 
 ## PortraitFrames.tscn을 인스턴스해서 각 캐릭터 프레임 안 "Portrait" 노드의 텍스처와,
 ## 그 노드가 프레임(200x180) 안에서 차지하는 네모(위치+크기)를 읽어둔다.

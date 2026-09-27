@@ -50,3 +50,4 @@ color = Color(1, 0.75, 0.1, 1)
 polygon = PackedVector2Array(0, -16, 16, 0, 0, 16, -16, 0)
 
 [node name="Music" type="AudioStreamPlayer" parent="."]
+bus = "Sfx"

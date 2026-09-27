@@ -60,7 +60,7 @@ centered = false
 [node name="DialogueBox" parent="." unique_id=402268652 instance=ExtResource("3")]
 layout_mode = 1
 speaker = "나레이션"
-lines = PackedStringArray("(목격 장소로 도착한 주인공)", "(파일에 적힌 대로 비비탄 총을 난사하며 브레이크 없는 자전거를 탄 꼬마를 발견한다.)", "@enter Hero 0.35", "주인공|얘 꼬마야, 자전거 탈 때는 헬멧도 쓰고 자전거에 브레이크도 달아야 한단다.", "그리고 비비탄 총을 그렇게 난사하고 다니면 사람들이 다칠수도 있어.", "@hide Hero 0.25", "@enter Kid 0.35", "꼬마|어쩌라고요! 도망쳐~", "@exit Kid 0.4 420", "나레이션|자전거로 빠르게 도망치는 꼬마", "@enter Hero 0.3", "주인공|거기 서!!")
+lines = PackedStringArray("(목격 장소로 도착한 주인공)", "(파일에 적힌 대로 비비탄 총을 난사하며 브레이크 없는 자전거를 탄 꼬마를 발견한다.)", "@enter Hero 0.35", "주인공|얘 꼬마야, 자전거 탈 때는 헬멧도 쓰고 자전거에 브레이크도 달아야 한단다.", "그리고 비비탄 총을 그렇게 난사하고 다니면 사람들이 다칠수도 있어.", "@hide Hero 0.25", "@enter Kid 0.35", "아이|어쩌라고요! 도망쳐~", "@exit Kid 0.4 420", "나레이션|자전거로 빠르게 도망치는 꼬마", "@enter Hero 0.3", "주인공|거기 서!!")
 
 [node name="Fade" type="ColorRect" parent="." unique_id=87778684]
 layout_mode = 1

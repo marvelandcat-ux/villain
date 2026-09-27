@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cxghyjgbprtpt"
-path="res://.godot/imported/헬스장 빌런.png-21acf36f6aeca5432baba9f2933838e3.ctex"
+uid="uid://jqm7eig71qmv"
+path="res://.godot/imported/던지는돌1.png-dde9217ee86d4161a3845edee26e4f90.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/도감/전신/헬스장 빌런.png"
-dest_files=["res://.godot/imported/헬스장 빌런.png-21acf36f6aeca5432baba9f2933838e3.ctex"]
+source_file="res://sprite/storymode/경찰서/던지는돌1.png"
+dest_files=["res://.godot/imported/던지는돌1.png-dde9217ee86d4161a3845edee26e4f90.ctex"]
 
 [params]
 

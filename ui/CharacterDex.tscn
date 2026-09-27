@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://h8rcws1tktkj" path="res://sprite/도감/캐릭터도감뒷배경.png" id="4_bg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="5_blur"]
 [ext_resource type="Script" uid="uid://q0bqrjipxb7n" path="res://ui/CharacterDetail.gd" id="6_detail"]
+[ext_resource type="Script" path="res://ui/MapDetail.gd" id="9_mapdetail"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("3_outline")
@@ -65,14 +66,16 @@ grow_vertical = 2
 script = ExtResource("1")
 slant_texture = ExtResource("2_slant")
 outline_material = SubResource("ShaderMaterial_outline")
+tile_row_offset = 0.0
+tiles_per_row_map = 3
+editor_preview_tab = 0
 portrait_overrides = {
 "고양이 아주머니": Rect2(0.11445783, 0.019021738, 0.8795181, 0.7798913),
+"금쪽이": Rect2(0.090361446, 0.019021738, 0.8795181, 0.7798913),
 "악플러": Rect2(0.13253012, 0.019021738, 0.8795181, 0.7798913),
 "일진": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
 "지하철 아저씨": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
-"금쪽이": Rect2(0.090361446, 0.019021738, 0.8795181, 0.7798913),
-"층간소음 청년": Rect2(0.12650603, 0.019021738, 0.8795181, 0.7798913),
-"헬스장 빌런": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913)
+"층간소음 청년": Rect2(0.12650603, 0.019021738, 0.8795181, 0.7798913)
 }
 portrait_area = Rect2(0.09638554, 0.019021738, 0.8795181, 0.7798913)
 
@@ -483,15 +486,6 @@ offset_bottom = 294.0
 mouse_filter = 2
 color = Color(0.3, 1, 0.45, 0.16)
 
-[node name="헬스장 빌런" type="ColorRect" parent="PortraitGuide" unique_id=415310028]
-layout_mode = 0
-offset_left = 896.0
-offset_top = 6.9999995
-offset_right = 1042.0
-offset_bottom = 294.0
-mouse_filter = 2
-color = Color(0.3, 1, 0.45, 0.16)
-
 [node name="일진" type="ColorRect" parent="PortraitGuide" unique_id=1880679022]
 layout_mode = 0
 offset_left = 1042.0
@@ -500,3 +494,14 @@ offset_right = 1188.0
 offset_bottom = 294.0
 mouse_filter = 2
 color = Color(0.3, 1, 0.45, 0.16)
+
+[node name="MapDetail" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_mapdetail")

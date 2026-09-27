@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cfalyo6rdo3ev" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/로고바꾼경찰서.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://bwqvcp7axe2hn" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+
+[node name="StoryScene12" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.55
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("Room/Hero")])
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Room" type="Node2D" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="Room"]
+scale = Vector2(0.883978, 0.883978)
+texture = ExtResource("2")
+centered = false
+
+[node name="Hero" type="Sprite2D" parent="Room"]
+position = Vector2(354.4, 33)
+scale = Vector2(0.613, 0.613)
+texture = ExtResource("3")
+centered = false
+
+[node name="DialogueBox" parent="." instance=ExtResource("4")]
+layout_mode = 1
+speaker = "주인공"
+lines = PackedStringArray("@enter Room/Hero 0.35", "경범죄처벌법 제3조 제1항 제20호, 음주소란에 해당합니다. 10만 원 이하의 벌금이나 구류, 과료 처분입니다.")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

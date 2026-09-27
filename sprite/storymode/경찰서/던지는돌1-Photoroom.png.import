@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7n35daamlwbg"
-path="res://.godot/imported/헬스장죽돌이머리.png-8a6c656347a31d02dc5cf5cfe7c3626d.ctex"
+uid="uid://cgtpa788i235d"
+path="res://.godot/imported/던지는돌1-Photoroom.png-7af27f100c04cc9a7c93af9fdea6cdb4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/gymbro/헬스장죽돌이머리.png"
-dest_files=["res://.godot/imported/헬스장죽돌이머리.png-8a6c656347a31d02dc5cf5cfe7c3626d.ctex"]
+source_file="res://sprite/storymode/경찰서/던지는돌1-Photoroom.png"
+dest_files=["res://.godot/imported/던지는돌1-Photoroom.png-7af27f100c04cc9a7c93af9fdea6cdb4.ctex"]
 
 [params]
 

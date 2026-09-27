@@ -59,7 +59,7 @@ centered = false
 [node name="DialogueBox" parent="." instance=ExtResource("3")]
 layout_mode = 1
 speaker = "나레이션"
-lines = PackedStringArray("(주인공의 기지 발휘로 돌맹이를 던져 자전거를 멈추고 꼬마를 잡았다.)", "@enter Hero 0.35", "주인공|아저씨랑 경찰서 좀 가자꾸나", "@hide Hero 0.25", "@enter Kid 0.35", "꼬마|으아앙~~")
+lines = PackedStringArray("(주인공의 기지 발휘로 돌맹이를 던져 자전거를 멈추고 꼬마를 잡았다.)", "@enter Hero 0.35", "주인공|아저씨랑 경찰서 좀 가자꾸나", "@hide Hero 0.25", "@enter Kid 0.35", "아이|으아앙~~")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

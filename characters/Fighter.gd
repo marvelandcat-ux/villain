@@ -618,14 +618,6 @@ func apply_fear(duration: float, from_ultimate: bool = false) -> void:
 	set_tint("fear", Color(0.75, 0.75, 1.0), duration)
 	_after(duration, func(): is_feared = false)
 
-## 링아웃(낙사)으로 즉시 패배 처리한다
-func ring_out() -> void:
-	if current_hp <= 0:
-		return
-	current_hp = 0
-	health_changed.emit(current_hp, stats.max_hp)
-	died.emit()
-
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
 func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))

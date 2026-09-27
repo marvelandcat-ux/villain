@@ -18,6 +18,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.55
+next_scene = "res://ui/story/StoryScene12.tscn"
 clears_story = true
 dialogue = NodePath("DialogueBox")
 reveal = Array[NodePath]([NodePath("DialogueBox")])
@@ -92,7 +93,7 @@ texture = ExtResource("7")
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
 speaker = "주인공"
-lines = PackedStringArray("@enter Room/Hero 0.35", "자 꼬마야 니가 잘못한 걸 이야기하고 앞으로 어떻게 할 건지도 이야기 해, 그럼 보내주마. 안그러면 부모님 모셔와야 할거야", "@hide Room/Hero 0.25", "@enter Room/Kid 0.35", "꼬마|앞으로는 자전거에 브레이크도 달고 헬멧도 쓸게요. 그리고 비비탄 총도 사람한테 안 쏠게요 ㅠㅠ.", "@hide Room/Kid 0.25", "@enter Room/Hero 0.35", "주인공|그래 이번만 특별히 보내줄게, 하지만 다음은 없단다.", "@hide Room/Hero 0.25", "@enter Room/Kid 0.35", "꼬마|네 ㅠ", "@exit Room/Kid 0.5 420", "나레이션|(경찰서를 떠나는 꼬마)", "@enter Room/Hero 0.35", "주인공|하...첫 사건부터 힘든걸....", "@show CaseFile 0.4", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
+lines = PackedStringArray("@enter Room/Hero 0.35", "자 꼬마야 니가 잘못한 걸 이야기하고 앞으로 어떻게 할 건지도 이야기 해, 그럼 보내주마. 안그러면 부모님 모셔와야 할거야", "@hide Room/Hero 0.25", "@enter Room/Kid 0.35", "아이|앞으로는 자전거에 브레이크도 달고 헬멧도 쓸게요. 그리고 비비탄 총도 사람한테 안 쏠게요 ㅠㅠ.", "@hide Room/Kid 0.25", "@enter Room/Hero 0.35", "주인공|그래 이번만 특별히 보내줄게, 하지만 다음은 없단다.", "@hide Room/Hero 0.25", "@enter Room/Kid 0.35", "아이|네 ㅠ", "@exit Room/Kid 0.5 420", "나레이션|(경찰서를 떠나는 꼬마)", "@enter Room/Hero 0.35", "주인공|하...첫 사건부터 힘든걸....", "@show CaseFile 0.4", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

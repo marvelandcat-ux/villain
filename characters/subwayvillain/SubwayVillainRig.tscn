@@ -9,7 +9,6 @@
 [ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
-position = Vector2(264, 124)
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")
