@@ -41,10 +41,18 @@ const GAME_STATE := preload("res://GameState.gd")
 @export var text_color: Color = Color(0.86, 0.82, 0.92, 1.0)
 @export var text_color_on: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export var outline_color: Color = Color(0.62, 0.58, 0.72, 0.85)
+## 해상도 칸·전체화면 토글·볼륨 막대의 테두리 색 (커서가 안 올라가 있을 때)
+@export var field_outline_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export var panel_color: Color = Color(0.13, 0.11, 0.17, 0.85)
-## 닫기 단추에 커서를 올렸을 때 커지는 배수와 걸리는 시간(초)
-@export var close_hover_scale: float = 1.06
+## 커서를 올렸을 때 커지는 배수와 걸리는 시간(초).
+## **닫기만 배수가 작다** — 폭이 680이라 도감 칸과 같은 1.14를 주면 한 번에 95px이 불어나서 너무 요란하다.
+## 1.05면 늘어나는 픽셀 수가 도감 칸과 비슷해진다
+@export var close_hover_scale: float = 1.05
 @export var close_hover_time: float = 0.12
+@export var back_hover_scale: float = 1.18
+## 탭(그래픽·오디오·조작)이 커지는 배수와 따라붙는 속도. 도감 칸처럼 lerp로 스르륵 커진다
+@export var tab_hover_scale: float = 1.05
+@export var tab_hover_speed: float = 14.0
 
 @export_group("방향키 조작")
 ## 꾹 눌렀을 때 — 처음 한 번 옮기고 이만큼 쉬었다가, 그 뒤로 이 간격으로 촤라락 넘어간다.
@@ -54,6 +62,10 @@ const GAME_STATE := preload("res://GameState.gd")
 ## 방향키 커서가 탭 위에 있을 때 그 탭 테두리에 칠할 색·굵기
 @export var tab_cursor_color: Color = Color(1.0, 0.86, 0.9, 1.0)
 @export var tab_cursor_width: float = 4.0
+## 사선 칸(전체화면 토글·볼륨 막대)에 커서가 올라갔을 때 테두리 색·굵기.
+## **네모 칸에 씌우는 FocusRing과 같은 분홍색이다** — 커서 색이 자리마다 다르면 지금 어디인지 헷갈린다
+@export var slant_cursor_color: Color = Color(0.95, 0.38, 0.48, 1.0)
+@export var slant_cursor_width: float = 5.0
 ## 커서 테두리(FocusRing)가 칸보다 이만큼 바깥으로 나간다
 @export var focus_ring_pad: float = 5.0
 
@@ -70,8 +82,7 @@ const ACTION_LABELS := {
 	"basic_attack": "기본공격", "skill_1": "스킬1", "skill_2": "스킬2", "ultimate": "궁극기",
 }
 const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate"]
-## 사선 칸(토글·볼륨 막대)의 평소 테두리 — 커서가 떠나면 이 값으로 되돌린다
-const SLANT_OUTLINE_COLOR := Color(0.15, 0.13, 0.19, 1.0)
+## 사선 칸(토글·볼륨 막대)의 평소 테두리 굵기 — 커서가 떠나면 이 값으로 되돌린다
 const SLANT_OUTLINE_WIDTH := 3.0
 
 @onready var _card: Control = $Card
@@ -119,6 +130,9 @@ var _res_row: int = 0
 ## 꾹 누르기 반복용 — 지금 누르고 있는 방향과 다음 반복까지 남은 시간
 var _held_step: int = 0
 var _repeat_left: float = 0.0
+
+## 지금 맨 앞으로 올려 둔 탭 (커진 탭이 옆 탭에 가리지 않게)
+var _front_tab: FanTile = null
 
 var _scrim_target_alpha: float = 0.55
 ## 연출 진행 시간(초). 음수면 연출 중이 아니다
@@ -173,7 +187,7 @@ func _style_box_button(button: Button) -> void:
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var style := StyleBoxFlat.new()
 		style.bg_color = tab_color_on if state == "hover" else panel_color
-		style.border_color = outline_color
+		style.border_color = field_outline_color
 		style.border_width_left = 2
 		style.border_width_top = 2
 		style.border_width_right = 2
@@ -258,6 +272,8 @@ func _connect_signals() -> void:
 	if Engine.is_editor_hint():
 		return
 	$Card/BackButton.pressed.connect(_on_back_pressed)
+	$Card/BackButton.mouse_entered.connect(_on_back_hover.bind(true))
+	$Card/BackButton.mouse_exited.connect(_on_back_hover.bind(false))
 	_close_button.pressed.connect(_on_back_pressed)
 	_close_button.mouse_entered.connect(_on_hover_changed.bind(true))
 	_close_button.mouse_exited.connect(_on_hover_changed.bind(false))
@@ -403,14 +419,44 @@ func _on_tab_pressed(tab_name: String) -> void:
 ## 커서를 올리면 **살짝 커지면서 빨개진다** (닫기 단추).
 ## 씬에서 pivot_offset을 칸 가운데로 잡아 뒀다 — 안 그러면 왼쪽 위를 축으로 커져서 자리가 밀린다
 func _on_hover_changed(hovering: bool) -> void:
-	if hovering:
+	if hovering and not _sliding():
 		_focus_area = "close"
 		_refresh_cursor()
 	_close_button.fill_color = tab_color_on if hovering else tab_color
 	_close_button.backdrop_color = _close_button.fill_color
 	var target: float = close_hover_scale if hovering else 1.0
 	var tween := create_tween()
-	tween.tween_property(_close_button, "scale", Vector2(target, target), close_hover_time).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(_close_button, "scale", Vector2(target, target), close_hover_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+## 탭도 커서가 올라가면 살짝 부풀린다 (도감 칸과 같은 방식 — 트윈 말고 매 프레임 lerp).
+## 마우스를 올렸을 때, 그리고 **방향키 커서가 탭 줄에 있을 때** 그 탭이 커진다.
+## 커진 탭이 옆 탭 밑으로 깔리면 어색해서 맨 앞으로 올려 준다
+func _update_tab_hover(delta: float) -> void:
+	var t: float = clampf(tab_hover_speed * delta, 0.0, 1.0)
+	var front: FanTile = null
+	for key in _tabs:
+		var tile: FanTile = _tabs[key]
+		# 크기가 뒤늦게 잡히는 경우가 있어 매번 중심을 다시 잡아준다
+		tile.pivot_offset = tile.size * 0.5
+		var on: bool = tile.is_hovered() or (_focus_area == "tabs" and str(key) == _mode)
+		if on:
+			front = tile
+		tile.scale = tile.scale.lerp(Vector2.ONE * (tab_hover_scale if on else 1.0), t)
+	# **커진 탭을 맨 앞으로 올린다.** 탭은 씬에 놓인 순서(그래픽→오디오→조작)대로 겹쳐 그려져서,
+	# 그냥 두면 그래픽·오디오가 커져도 오른쪽 탭 밑에 깔려 밝은 테두리 한 변이 통째로 가려진다.
+	# 조작(마지막 탭)만 멀쩡해 보였던 게 그 때문이다
+	if front != null and front != _front_tab:
+		_front_tab = front
+		front.move_to_front()
+
+## 왼쪽 위 ◀ — 커서가 올라가고 내려갈 때 살짝 부풀렸다 되돌린다 (도감과 같은 연출).
+## 크기가 뒤늦게 잡히는 경우가 있어 들어올 때마다 중심을 다시 잡아준다
+func _on_back_hover(entered: bool) -> void:
+	var back: Button = $Card/BackButton
+	back.pivot_offset = back.size * 0.5
+	var goal: Vector2 = Vector2.ONE * (back_hover_scale if entered else 1.0)
+	var tw: Tween = create_tween()
+	tw.tween_property(back, "scale", goal, close_hover_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 ## u=0이면 화면 위로 완전히 벗어난 상태, u=1이면 제자리
 func _apply_slide(u: float) -> void:
@@ -423,6 +469,7 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	_update_key_repeat(delta)
+	_update_tab_hover(delta)
 	if _anim_time < 0.0:
 		return
 	var duration: float = open_time if _opening else close_time
@@ -518,12 +565,19 @@ func _setup_nav() -> void:
 	_focus_ring.visible = false
 
 func _on_item_hovered(tab_name: String, r: int, c: int) -> void:
-	if _mode != tab_name:
+	if _mode != tab_name or _sliding():
 		return
 	_focus_area = "items"
 	_row = r
 	_col = c
 	_refresh_cursor()
+
+## 창이 위에서 내려오는(또는 올라가는) 연출 중인지.
+## **연출 중에는 마우스가 올라왔다는 신호를 무시한다** — 카드가 움직이는 동안 칸들이
+## 가만히 있는 마우스 밑을 차례로 스쳐 지나가면서 mouse_entered가 떠 버린다.
+## 그래서 설정을 열자마자 커서 테두리가 엉뚱하게 닫기에 가 있었다
+func _sliding() -> bool:
+	return _anim_time >= 0.0
 
 ## 지금 커서가 올라가 있는 칸
 func _current_item() -> Control:
@@ -683,14 +737,17 @@ func _refresh_cursor() -> void:
 		target = _close_button
 	elif _focus_area == "items":
 		target = _current_item()
-	# 사선 칸(전체화면 토글·볼륨 막대)은 네모 테두리를 두르면 모서리가 어긋난다 —
-	# 그래서 네모 커서 대신 **그 칸 제 테두리를 밝게** 해서 지금 여기라고 알린다
+	# 닫기도 사선 칸이라 네모 커서를 씌우면 모서리가 어긋난다 — 탭처럼 **제 테두리를 밝게** 한다
+	var close_lit: bool = target == _close_button
+	_close_button.plain_outline_color = tab_cursor_color if close_lit else outline_color
+	_close_button.plain_outline_width = tab_cursor_width if close_lit else 2.0
+	# 전체화면 토글·볼륨 막대도 같은 이유로 제 테두리를 밝힌다
 	for slant in [_fullscreen_toggle, _sliders["master"], _sliders["music"], _sliders["sfx"]]:
 		var lit: bool = slant == target
-		slant.outline_color = tab_cursor_color if lit else SLANT_OUTLINE_COLOR
-		slant.outline_width = tab_cursor_width if lit else SLANT_OUTLINE_WIDTH
+		slant.outline_color = slant_cursor_color if lit else field_outline_color
+		slant.outline_width = slant_cursor_width if lit else SLANT_OUTLINE_WIDTH
 		(slant as Control).queue_redraw()
-	if target is SlantToggle or target is SlantSlider:
+	if close_lit or target is SlantToggle or target is SlantSlider:
 		_focus_ring.visible = false
 		return
 	if target == null or not is_instance_valid(target):
