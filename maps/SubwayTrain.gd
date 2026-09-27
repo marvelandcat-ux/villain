@@ -37,6 +37,8 @@ extends Node2D
 @export var arrival_music: AudioStream
 
 ## --- 객실 창문 불빛 ---
+## 창문 불빛·벽에 비치는 빛기둥을 켤지 — **2026-09-26 사용자 요청("어색하다")으로 꺼 뒀다.** 켜면 아래 값대로 다시 나온다
+@export var window_lights: bool = false
 ## 창문 빛의 세기 (0이면 안 켜진다). 그림에 이미 세게 구워져 있으니 여기서 줄여 쓰면 된다
 @export var window_glow: float = 1.0
 ## 형광등이 미세하게 떨리는 폭 (0이면 일정하게 켜져 있다)
@@ -62,9 +64,10 @@ extends Node2D
 ## 열차 한가운데 창문은 곧게 서고, 앞뒤 끝으로 갈수록 바깥으로 눕는다 —
 ## 빛이 열차에서 퍼져나가는 것처럼 보이게 하는 값. 0이면 전부 곧게 선다
 @export var beam_tilt: float = 0.35
-## 빛기둥 색 — 맵의 CanvasModulate(0.88, 0.9, 0.96)가 더하기 빛에도 곱해지므로 그만큼 미리 나눠둔 값.
+## 빛기둥 색 — 맵의 CanvasModulate(0.55, 0.58, 0.7)가 더하기 빛에도 곱해져서
 ## 통과하고 나면 (0.55, 0.45, 0.25) 호박색이 더해진다. 맵 조명을 바꾸면 "원하는 최종색 / 맵 조명"으로 다시 잡을 것
-@export var beam_color: Color = Color(0.625, 0.496, 0.263)
+## (2026-09-11~26엔 맵을 밝혀 두느라 (0.625, 0.496, 0.263)으로 나눠 뒀다가, 맵을 다시 어둡게 하며 원래 값으로 되돌렸다)
+@export var beam_color: Color = Color(1.0, 0.769, 0.361)
 
 ## --- 화면 진동 (2026-09-12) ---
 ## 경고등이 켜져 있는 동안 바닥이 낮게 울리는 세기(0~1). 화면 최대 흔들림 12px에 곱해진다
@@ -128,10 +131,12 @@ func _ready() -> void:
 	hitbox.repeat_interval = hit_interval
 	_music.stream = arrival_music
 	_set_hitbox_active(false)
-	_build_window_beams()
+	if window_lights:
+		_build_window_beams()
 	_park_body()
 	_warning_light.visible = false
 	if _window_light:
+		_window_light.visible = window_lights
 		_window_light.modulate.a = window_glow
 
 ## 경고등이 켜졌거나(곧 도착) 실제로 지나가는 중이면 위험하다고 알린다 — AIController가 이걸 보고 피신을 시작한다
@@ -257,7 +262,7 @@ func _shape_beam(beam: Polygon2D, rect: Rect2, up: bool, length: float) -> void:
 ## 어디가 창문인지는 그림(열차창문빛.png)에 이미 구워져 있고 가산 블렌드로 얹히므로, 여기서는 세기만 조절한다.
 ## 주기가 다른 두 sin을 곱해서 규칙적인 깜빡임으로 안 보이게 한다
 func _update_window_light(delta: float) -> void:
-	if _window_light == null:
+	if _window_light == null or not window_lights:
 		return
 	_glow_phase += delta * window_flicker_speed
 	var wobble: float = sin(_glow_phase) * sin(_glow_phase * 0.37 + 1.3)

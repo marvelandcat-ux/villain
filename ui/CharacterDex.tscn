@@ -71,7 +71,7 @@ tiles_per_row_map = 3
 editor_preview_tab = 0
 portrait_overrides = {
 "고양이 아주머니": Rect2(0.11445783, 0.019021738, 0.8795181, 0.7798913),
-"버릇없는 아이": Rect2(0.090361446, 0.019021738, 0.8795181, 0.7798913),
+"금쪽이": Rect2(0.090361446, 0.019021738, 0.8795181, 0.7798913),
 "악플러": Rect2(0.13253012, 0.019021738, 0.8795181, 0.7798913),
 "일진": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
 "지하철 아저씨": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
@@ -286,7 +286,7 @@ offset_right = 581.0
 offset_bottom = 80.0
 theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
 theme_override_font_sizes/font_size = 52
-text = "버릇없는 아이"
+text = "금쪽이"
 vertical_alignment = 1
 
 [node name="SkillList" type="Control" parent="Detail" unique_id=490491231]
@@ -432,7 +432,7 @@ theme_override_colors/font_color = Color(0.4, 1, 0.55, 0.9)
 theme_override_font_sizes/font_size = 13
 text = "↓ 초록 네모를 끌면 그 캐릭터의 자리만 바뀝니다 (게임에선 안 보임)"
 
-[node name="버릇없는 아이" type="ColorRect" parent="PortraitGuide" unique_id=1139534627]
+[node name="금쪽이" type="ColorRect" parent="PortraitGuide" unique_id=1139534627]
 layout_mode = 0
 offset_left = 15.0
 offset_top = 6.9999995

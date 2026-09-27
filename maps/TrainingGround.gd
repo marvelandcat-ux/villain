@@ -42,10 +42,22 @@ var _gravity_slider: HSlider
 var _jump_slider: HSlider
 var _speed_slider: HSlider
 var _dummy_hp_label: Label
+var _collision_legend: RichTextLabel
+var _time_label: Label
+var _time_slider: HSlider
+## 동작 테스트 버튼 결과(눈 깜빡임이 없는 캐릭터 안내 등)
+var _motion_note: Label
+
+## 충돌 영역(히트박스·허트박스·몸·발판) 보기 — 패널 체크박스로 켜고 끈다
+## (타입을 안 붙인 이유: Node2D로 두면 스크립트에만 있는 `enabled`를 못 찾아 파싱 에러가 난다)
+var _collision_view
 
 func _ready() -> void:
 	# 훈련장에서도 궁극기 컷인을 확인할 수 있게 같이 심는다
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
+	_collision_view = preload("res://maps/CollisionDebugView.gd").new()
+	_collision_view.name = "CollisionDebugView"
+	add_child(_collision_view)
 	_build_ui()
 	_spawn_character(GameState.p1_character_path)
 	_spawn_dummy()
@@ -162,6 +174,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
+## 훈련장을 나갈 때 게임 속도를 원래대로 — 안 되돌리면 메인 메뉴·대전까지 느린 채로 간다
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
+
 # ------------------------------------------------------------------
 # UI — 게임 화면이 아니라 값 조절용 도구라서 씬에 배치하지 않고 코드로 만든다
 # ------------------------------------------------------------------
@@ -206,12 +222,49 @@ func _build_ui() -> void:
 	box.add_child(_speed_label)
 	_speed_slider = _add_slider(box, 0.2, 3.0, 0.05, _speed_scale, _on_speed_changed)
 
+	# 게임 전체 속도(Engine.time_scale) — 동작을 느리게 뜯어보려고 0.25배까지 낮춘다
+	_time_label = Label.new()
+	box.add_child(_time_label)
+	_time_slider = _add_slider(box, 0.25, 2.0, 0.25, Engine.time_scale, _on_time_scale_changed)
+
+	box.add_child(HSeparator.new())
+
+	# 가만히 있을 때 나오는 동작을 기다리지 않고 바로 해 본다(가만히 서 있어야 이어진다 — 움직이면 끊긴다)
+	var motion_title := Label.new()
+	motion_title.text = "동작 테스트 (가만히 선 채로)"
+	box.add_child(motion_title)
+	var motion_row := HBoxContainer.new()
+	box.add_child(motion_row)
+	for entry in [["머리 긁기", _on_scratch_pressed], ["뒤돌아보기", _on_lookback_pressed], ["눈 깜빡임", _on_blink_pressed], ["특수 몸짓", _on_special_pressed]]:
+		var button := Button.new()
+		button.text = entry[0]
+		button.pressed.connect(entry[1])
+		motion_row.add_child(button)
+	_motion_note = Label.new()
+	box.add_child(_motion_note)
+
 	box.add_child(HSeparator.new())
 
 	_readout_label = Label.new()
 	box.add_child(_readout_label)
 
 	box.add_child(HSeparator.new())
+
+	var collision_toggle := CheckBox.new()
+	collision_toggle.text = "충돌 영역 보기"
+	collision_toggle.toggled.connect(_on_collision_toggled)
+	box.add_child(collision_toggle)
+
+	_collision_legend = RichTextLabel.new()
+	_collision_legend.bbcode_enabled = true
+	_collision_legend.fit_content = true
+	_collision_legend.scroll_active = false
+	_collision_legend.text = (
+		"[color=#ff3333]히트박스(때리는 곳)[/color]   [color=#33ff59]허트박스(맞는 곳)[/color]\n"
+		+ "[color=#4d99ff]몸 충돌[/color]   [color=#d9d9d9]벽·바닥[/color]   "
+		+ "[color=#ffcc33]발판(아래서 통과)[/color]   [color=#cc66ff]기타 영역[/color]")
+	_collision_legend.visible = false
+	box.add_child(_collision_legend)
 
 	var respawn_button := Button.new()
 	respawn_button.text = "제자리로 되돌리기"
@@ -247,6 +300,12 @@ func _add_slider(parent: VBoxContainer, min_value: float, max_value: float, step
 	parent.add_child(slider)
 	return slider
 
+func _on_collision_toggled(pressed: bool) -> void:
+	_collision_view.enabled = pressed
+	_collision_legend.visible = pressed
+	# 체크박스가 포커스를 쥐고 있으면 스페이스·엔터가 체크를 다시 뒤집는다
+	get_viewport().gui_release_focus()
+
 func _on_character_selected(index: int) -> void:
 	GameState.p1_character_path = GameState.training_characters().values()[index]
 	_spawn_character(GameState.p1_character_path)
@@ -262,6 +321,37 @@ func _on_speed_changed(value: float) -> void:
 	_speed_scale = value
 	_apply_speed_scale()
 
+func _on_time_scale_changed(value: float) -> void:
+	Engine.time_scale = value
+
+## 테스트 버튼 공통 — 캐릭터 몸(BodyRig)을 찾아 그 동작을 부른다. 버튼이 포커스를 쥐고 있으면
+## 스페이스·엔터가 버튼을 다시 누르므로 포커스를 놓는다
+func _play_motion(method: String) -> void:
+	get_viewport().gui_release_focus()
+	_motion_note.text = ""
+	if not (_fighter and is_instance_valid(_fighter)):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual == null or not visual.has_method(method):
+		_motion_note.text = "이 캐릭터는 그 동작이 없어요"
+		return
+	var result = visual.call(method)
+	if result is bool and not result:
+		_motion_note.text = "이 캐릭터는 특수 몸짓이 없어요" if method == "play_special" else "이 캐릭터는 눈 깜빡임(렌즈 반짝임)이 아직 없어요"
+
+## 캐릭터별 특수 idle 몸짓(악플러 안경 올리기, 주정뱅이 딸꾹질)
+func _on_special_pressed() -> void:
+	_play_motion("play_special")
+
+func _on_scratch_pressed() -> void:
+	_play_motion("play_scratch")
+
+func _on_lookback_pressed() -> void:
+	_play_motion("play_lookback")
+
+func _on_blink_pressed() -> void:
+	_play_motion("play_blink")
+
 func _on_reset_pressed() -> void:
 	Fighter.gravity = Fighter.DEFAULT_GRAVITY
 	Fighter.jump_velocity = Fighter.DEFAULT_JUMP_VELOCITY
@@ -271,6 +361,8 @@ func _on_reset_pressed() -> void:
 	_gravity_slider.set_value_no_signal(Fighter.DEFAULT_GRAVITY)
 	_jump_slider.set_value_no_signal(-Fighter.DEFAULT_JUMP_VELOCITY)
 	_speed_slider.set_value_no_signal(1.0)
+	Engine.time_scale = 1.0
+	_time_slider.set_value_no_signal(1.0)
 
 func _update_readout() -> void:
 	var speed: float = 0.0
@@ -281,6 +373,7 @@ func _update_readout() -> void:
 	_gravity_label.text = "중력: %d" % int(Fighter.gravity)
 	_jump_label.text = "점프력: %d (실제 값 %d)" % [int(-Fighter.jump_velocity), int(Fighter.jump_velocity)]
 	_speed_label.text = "이동속도 배수: %.2f  →  %d px/s" % [_speed_scale, int(move_speed)]
+	_time_label.text = "게임 속도: %.2f배" % Engine.time_scale
 	_readout_label.text = "현재 속도: %d px/s\n마지막 점프 — 높이 %d px / 체공 %.2f초 / 이동 %d px" % [
 		int(speed), int(_last_height), _last_air_time, int(_last_distance)]
 	if _dummy and is_instance_valid(_dummy):

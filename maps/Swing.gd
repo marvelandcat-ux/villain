@@ -67,6 +67,12 @@ var _cooldowns: Dictionary = {}
 
 func _ready() -> void:
 	_seat_prev = _seat.global_position
+	# AI가 지나갈 때 뛰어넘을 장애물로 알린다(AIController._jump_obstacles가 ai_obstacle_position()을 본다)
+	add_to_group("ai_jump_over")
+
+## AI용 — 지금 좌석(튕겨내는 판정) 위치
+func ai_obstacle_position() -> Vector2:
+	return _seat.global_position
 
 func _physics_process(delta: float) -> void:
 	_time += delta

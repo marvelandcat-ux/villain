@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cl4fbnqk2ko4l"
-path="res://.godot/imported/버릇없는 아이.png-1efa51af509f467927a11860bac6799c.ctex"
+uid="uid://cq6qul3q8s17d"
+path="res://.godot/imported/금쪾이 몸 측면3.png-49c33abed7ccd6ee2e50061049640394.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/도감/전신/버릇없는 아이.png"
-dest_files=["res://.godot/imported/버릇없는 아이.png-1efa51af509f467927a11860bac6799c.ctex"]
+source_file="res://sprite/축법소년/금쪾이 몸 측면3.png"
+dest_files=["res://.godot/imported/금쪾이 몸 측면3.png-49c33abed7ccd6ee2e50061049640394.ctex"]
 
 [params]
 

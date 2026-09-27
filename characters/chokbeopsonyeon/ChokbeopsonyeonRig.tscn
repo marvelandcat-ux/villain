@@ -9,13 +9,19 @@
 [ext_resource type="Texture2D" uid="uid://c3rrljta7b1s3" path="res://sprite/축법소년/달리는 축법소년 표정.png" id="7_dashface"]
 [ext_resource type="Texture2D" uid="uid://gk66bpxkxs4d" path="res://sprite/축법소년/축법소년 다치다.png" id="8_hurtface"]
 [ext_resource type="Texture2D" uid="uid://c6k234qtqgk5a" path="res://sprite/축법소년/막대 사탕.png" id="9_candy"]
-[ext_resource type="Texture2D" uid="uid://vx1uoqskg6c8" path="res://sprite/축법소년/힘든 축법소년.png" id="10_wearyface"]
 [ext_resource type="Texture2D" path="res://sprite/축법소년/잼민이 처치표정.png" id="11_koface"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 측면1.png" id="98_turn1"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 픅면 2.png" id="97_turn2"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 측면3.png" id="95_turn25"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 정면.png" id="96_turn3"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 뒷머리.png" id="94_back"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/금쪽이 몸 측면 2.png" id="92_body_turn1"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/금쪾이 몸 측면3.png" id="91_body_turn2"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 action_head_texture = ExtResource("7_dashface")
 action_head_scale = Vector2(0.052, 0.052)
-weary_head_texture = ExtResource("10_wearyface")
 hurt_head_texture = ExtResource("8_hurtface")
 ko_head_texture = ExtResource("11_koface")
 attack_raise_deg = -20.0
@@ -26,6 +32,15 @@ attack_duration = 0.35
 spin_strike = 0.72
 lunge_step_foot = 36.0
 attack_thrust = true
+attack_snap = true
+attack_smear = true
+head_turn_textures = Array[Texture2D]([ExtResource("98_turn1"), ExtResource("97_turn2"), ExtResource("95_turn25"), ExtResource("96_turn3")])
+head_turn_anchors = Array[Vector3]([Vector3(767, 591, 762), Vector3(632, 785, 913), Vector3(637, 797, 884), Vector3(632, 767, 861), Vector3(625, 713, 928)])
+head_turn_faces_left = Array[bool]([false, true, true, true, false])
+head_turn_on_face = true
+head_back_texture = ExtResource("94_back")
+head_back_anchor = Vector3(625, 747, 863)
+body_turn_textures = Array[Texture2D]([ExtResource("92_body_turn1"), ExtResource("91_body_turn2")])
 gun_hides_held_item = true
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
@@ -61,6 +76,11 @@ texture = ExtResource("9_candy")
 position = Vector2(1.5, -32.6)
 scale = Vector2(0.055, 0.055)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(219, 76.5)
+script = ExtResource("99_blink")
+eye_size = Vector2(206, 176)
 
 [node name="Gun" type="Sprite2D" parent="." index="8" unique_id=2130215053]
 visible = false

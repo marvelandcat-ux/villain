@@ -80,10 +80,11 @@ func _apply_hp_bar_mirror(mirrored: bool) -> void:
 	_hp_bar_wrap.scale.x = -1.0 if mirrored else 1.0
 
 ## 스킬1/스킬2/궁극기 슬롯에 각각의 Skill과 조작 키를 물려준다.
-## 스토리 모드의 P2는 AI가 조작하므로 키 표시를 지운다 (사람이 누르는 키가 아니라서 헷갈린다)
+## 스토리 모드·컴퓨터 대전의 P2는 AI가 조작하므로 키 표시를 지운다 (사람이 누르는 키가 아니라서 헷갈린다)
 func _bind_skill_slots(player_index: int) -> void:
 	var fallback_color: Color = GameState.CHARACTER_COLORS.get(fighter.stats.character_name, GameState.DEFAULT_COLOR)
-	var show_keys: bool = not (player_index == 2 and GameState.game_mode == "story")
+	var p2_is_ai: bool = GameState.game_mode == "story" or GameState.vs_ai
+	var show_keys: bool = not (player_index == 2 and p2_is_ai)
 	var skills: Array[Skill] = [fighter.skill_1, fighter.skill_2, fighter.skill_ultimate]
 	var actions: Array[String] = [
 		"p%d_skill_1" % player_index,

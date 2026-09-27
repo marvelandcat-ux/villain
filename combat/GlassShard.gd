@@ -17,8 +17,16 @@ extends Node2D
 @export var ground_probe: float = 2000.0
 ## 파편 그림 후보 — 스폰할 때 이 중 하나를 무작위로 골라 쓴다 (비어 있으면 씬에 지정된 기본 그림을 그대로 둔다)
 @export var textures: Array[Texture2D] = []
+## 파편 그림에 곱하는 색 — 그림이 밝은 형광 초록이라, 같은 맵 조명을 받아도 주변(의자·바닥)보다 빛나 보였다(2026-09-26 사용자 요청).
+## 전체를 어둡게 누르고 초록을 조금 더 눌러 주변 톤에 맞춘다. (1, 1, 1)이면 그림 그대로
+@export var tint: Color = Color(0.65, 0.55, 0.65)
 
 @onready var _piece: Sprite2D = get_node_or_null("Piece")
+
+func _ready() -> void:
+	# 사라질 때 트윈이 이 노드의 modulate(투명도)를 쓰므로, 색은 조각 스프라이트 쪽에 건다
+	if _piece != null:
+		_piece.modulate = tint
 
 ## 명중 지점에서 파편을 떨어뜨린다. Hitbox가 add_child 직후 호출한다
 func setup(spawn_pos: Vector2) -> void:

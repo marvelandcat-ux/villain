@@ -66,14 +66,27 @@ const DEFAULT_BLOCKED_ATTACK_LOCK: float = 3.0
 const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
 
 ## --- 착지 먼지 (전 캐릭터 공용) ---
-## 이 높이(px) 이상에서 떨어져 착지하면 발밑에 먼지가 퍼진다.
-## **높이로 적는 이유:** 점프력·중력을 바꿔도 "이만큼 떨어지면 난다"가 그대로 유지된다.
-## 기본값 200은 이단 점프 높이(-478/-519 기준 약 216px)를 조금 밑돌게 잡은 값이라(점프력이 바뀔 때마다 같이 맞출 것)
-## **이단 점프에서 그냥 떨어지면 난다**(사용자 지정). 0으로 두면 안 난다
-const DEFAULT_LAND_DUST_HEIGHT: float = 200.0
+## **모든 착지**에서 발 양옆으로 먼지 뭉치가 나가고, 크기는 떨어진 높이에 비례한다(2026-09-26 사용자 요청).
+## land_dust_height = **기본 크기(세기 1)가 되는 높이(px)** — 이보다 낮게 떨어지면 작게, 높으면 크게.
+## **높이로 적는 이유:** 점프력·중력을 바꿔도 "이만큼 떨어지면 이 크기"가 그대로 유지된다.
+## **음수(기본 -1)면 "이단 점프 최고 높이"를 점프력·중력에서 그때그때 계산해 쓴다** — 지금 값(-478/-519, 중력 1150)이면 약 216px.
+## 0이면 안 난다(착지 경직이 걸린 착지만 난다). **착지 경직이 걸린 착지는 최소 기본 크기로 난다**
+const DEFAULT_LAND_DUST_HEIGHT: float = -1.0
 static var land_dust_height: float = DEFAULT_LAND_DUST_HEIGHT
+## 이보다 낮게 떨어진 착지(px)는 먼지가 안 난다 — 턱을 살짝 내려오거나 발판 끝을 걸어 내려올 때까지 매번 나면 지저분하다
+static var land_dust_min_height: float = 20.0
+## 착지 경직(2026-09-25) — 이 높이(px) 이상에서 떨어져 착지하면 무릎을 굽힌 채 LANDING_LAG_TIME 동안 아무것도 못 한다.
+## 점프(특히 이단 점프) 연타를 막으려는 것. 이단 점프 최고 높이(약 216px)보다 조금 낮게 잡았다 —
+## 한 번 점프(약 103px)와 두 번째 점프를 바로 이어 누른 이단 점프(약 150px)는 안 걸린다.
+## 0이면 꺼진다. 맞아서 날아가다 떨어진 착지는 안 걸린다
+const DEFAULT_LANDING_LAG_HEIGHT: float = 180.0
+static var landing_lag_height: float = DEFAULT_LANDING_LAG_HEIGHT
+## 착지 경직 시간(초) — 2026-09-26 사용자 요청으로 0.5 -> 0.3
+static var landing_lag_time: float = 0.3
 ## 착지 먼지 이펙트 (그림 없이 _draw()로 그린다)
 const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
+## 점프할 때 발밑에 남는 바람 줄기 (그림 없이 _draw()로 그린다)
+const JUMP_WIND_SCRIPT := preload("res://combat/JumpWind.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
@@ -83,6 +96,12 @@ const DROP_THROUGH_DURATION: float = 0.35
 ## 실시간으로 바꿔볼 수 있게 static var로 두었다 — 값이 확정되면 위 DEFAULT_ 상수에 옮겨 적으면 된다.
 ## 점프력은 위쪽이 음수라서 -350처럼 음수 값이다
 static var gravity: float = DEFAULT_GRAVITY
+## 떨어질 때(꼭대기를 지나 아래로 내려갈 때)만 중력에 곱하는 배수(2026-09-25) — 올라갈 때는 그대로라
+## 점프 높이는 안 바뀌고, 내려올 때만 툭 떨어져 둥둥 떠 보이지 않는다(대난투·브롤할라식).
+## 1이면 예전과 같다. **맞아서 날아가는 중(경직)에는 안 곱한다** — 콤보 마무리의 날아가는 궤적을 맞춰 둔 값이라서
+## (1.6으로 넣었다가 "떨어질 때 너무 세다"는 사용자 요청으로 1.0 — 올라갈 때와 같게 — 으로 되돌렸다)
+const DEFAULT_FALL_GRAVITY_MULTIPLIER: float = 1.0
+static var fall_gravity_multiplier: float = DEFAULT_FALL_GRAVITY_MULTIPLIER
 static var jump_velocity: float = DEFAULT_JUMP_VELOCITY
 static var air_jump_velocity: float = DEFAULT_AIR_JUMP_VELOCITY
 ## 바닥에서 뛴 뒤 공중에서 추가로 뛸 수 있는 횟수. 1이면 이단 점프, 0이면 예전처럼 바닥에서만 점프
@@ -174,6 +193,8 @@ var _busy_time: float = 0.0
 var _hitstun_time: float = 0.0
 ## 넉백을 받고 아직 착지하지 않았는지 — 이 동안엔 move()가 가로 속도를 덮어쓰지 않고 날아가던 힘을 유지한다
 var _launch_momentum: bool = false
+## 남은 착지 경직(초) — 0보다 크면 이동·점프·대시·방어·공격·스킬이 전부 막힌다
+var _landing_lag: float = 0.0
 ## 지금까지 연속으로 맞은 콤보 수와, 콤보가 유지되는 남은 시간
 var _combo_count: int = 0
 var _combo_timer: float = 0.0
@@ -332,7 +353,6 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	else:
 		velocity += knockback
 	health_changed.emit(current_hp, stats.max_hp)
-	_update_hp_face()
 	# 실제로 깎였을 때만 — 가드로 전부 막았으면 "맞았다"고 치지 않는다
 	if reduced_amount > 0:
 		# 처치 연출이 "마지막으로 맞은 반대쪽(=넉백 방향)"으로 날려보낼 때 쓴다.
@@ -357,6 +377,16 @@ func _play_hit_reaction(knockback: Vector2, amount: int) -> void:
 	# 이미 굴러가는 중이면 기울기를 얹지 않는다 — 매 프레임 도는 각도와 트윈이 서로 각도를 뺏어
 	# 덜덜 떨린다. 구르기가 끝나면 일어서는 트윈이 알아서 각도를 정리한다
 	if _tumble_left > 0.0:
+		return
+	# 조각 몸(BodyRig)이면 몸 전체를 뒤로 기울이는 대신 "배를 맞은" 움찔 자세를 쓴다(2026-09-25 사용자 요청) —
+	# 상체를 앞으로 숙이고 엉덩이를 빼고 두 손을 앞으로 모은다. 세기는 0.6에서 시작해 데미지 1당 0.05씩(잽 3 = 0.75, 7 = 0.95)
+	if visual.has_method("play_hit_flinch"):
+		# 그림이 밀리는 쪽 = 넉백 방향을 리그 기준으로 바꾼 것(리그는 왼쪽을 볼 때 좌우가 뒤집혀 있다).
+		# 수평 넉백이 없으면 뒤로 민다
+		var push_dir: float = -1.0
+		if not is_zero_approx(knockback.x):
+			push_dir = signf(knockback.x) * (1.0 if facing >= 0.0 else -1.0)
+		visual.play_hit_flinch(clampf(0.6 + amount * 0.05, 0.6, 1.0), push_dir)
 		return
 	var dir: float = signf(knockback.x)
 	if dir == 0.0:
@@ -423,24 +453,47 @@ func _play_hurt_face() -> void:
 	if visual and visual.has_method("play_hurt_face"):
 		visual.play_hurt_face()
 
-## 남은 HP 비율을 몸에 알려준다 — HP가 얼마 안 남으면 지친 얼굴로 바뀐다.
-## 그 표정이 없는 캐릭터나 임시 사각형 비주얼이면 그냥 넘어간다. HP가 바뀔 때마다 부른다
-func _update_hp_face() -> void:
-	var visual: Node = get_node_or_null("Visual")
-	if visual and visual.has_method("update_hp_ratio"):
-		var max_hp: int = stats.max_hp if stats else 0
-		visual.update_hp_ratio(float(current_hp) / float(max_hp) if max_hp > 0 else 1.0)
-
 ## 바닥에 닿은 순간 — 충분히 높은 데서 떨어졌으면 발밑에 먼지를 퍼뜨린다.
 ## fall_speed는 **move_and_slide()가 0으로 지우기 전의** 낙하 속도(아래로 떨어지는 중이면 양수)
-func _on_landed(fall_speed: float) -> void:
-	if land_dust_height <= 0.0 or fall_speed <= 0.0:
+## 떨어질 때 실제로 받는 중력 — "이 높이에서 떨어지면 속도가 얼마"를 거꾸로 계산할 때 쓴다(착지 경직·착지 먼지).
+## 떨어질 때만 중력이 세지므로 기본 중력으로 계산하면 같은 높이에서도 기준을 넘어버린다
+func _fall_gravity() -> float:
+	return gravity * fall_gravity_multiplier
+
+## launched: 맞아서 날아가던 중에 떨어졌는지 — 그럴 땐 착지 경직을 안 건다(콤보를 맞고 떨어졌는데 또 굳으면 너무 가혹하다)
+func _on_landed(fall_speed: float, launched: bool = false) -> void:
+	if fall_speed <= 0.0:
 		return
-	# "이만큼 떨어지면 난다"를 속도로 환산한다 — v = sqrt(2 x 중력 x 높이)
-	var threshold: float = sqrt(2.0 * gravity * land_dust_height)
-	if fall_speed < threshold:
+	# 착지 경직 — 떨어진 높이로만 판단한다(이단 점프를 썼는지는 안 본다 — 사용자 결정).
+	# 스킬이 이동을 쥐고 있는 착지(내리찍기 등)는 그 스킬이 알아서 하므로 건너뛴다
+	var lagged: bool = false
+	if landing_lag_height > 0.0 and not launched and movement_override == null \
+			and fall_speed >= sqrt(2.0 * _fall_gravity() * landing_lag_height):
+		lagged = true
+		_landing_lag = landing_lag_time
+		velocity.x = 0.0
+		_dash_time = 0.0
+		var visual: Node = get_node_or_null("Visual")
+		if visual and visual.has_method("play_land_crouch"):
+			visual.play_land_crouch(landing_lag_time)
+	# 착지 먼지 — **모든 착지**에서 떨어진 높이에 비례한 크기로(2026-09-26 사용자 요청). 높이 = 속도² / (2 x 중력)
+	var dust_height: float = _land_dust_height()
+	if dust_height <= 0.0 and not lagged:
 		return
-	_spawn_land_dust(fall_speed / threshold)
+	var fallen: float = fall_speed * fall_speed / (2.0 * maxf(_fall_gravity(), 1.0))
+	if fallen < land_dust_min_height and not lagged:
+		return
+	var power: float = fallen / maxf(dust_height, 1.0)
+	# 경직이 걸린 착지는 기준보다 낮게 떨어졌어도 최소 기본 크기(1)로 퍼뜨린다
+	_spawn_land_dust(maxf(power, 1.0) if lagged else power)
+
+## 착지 먼지가 나는 높이(px). land_dust_height가 음수면 이단 점프 최고 높이를 계산해 쓴다.
+## 올라갈 때는 기본 중력만 받으므로(떨어질 때만 배수가 붙는다) 높이 = 속도² / (2 x 중력)을 점프마다 더한다
+func _land_dust_height() -> float:
+	if land_dust_height >= 0.0:
+		return land_dust_height
+	return (jump_velocity * jump_velocity + max_air_jumps * air_jump_velocity * air_jump_velocity) \
+		/ (2.0 * maxf(gravity, 1.0))
 
 ## 발밑에 먼지를 띄운다. power가 1이면 기준 높이에서 떨어진 것, 크면 더 세게 퍼진다.
 ## **맵에 붙인다** — 캐릭터의 자식으로 달면 좌우 반전에 같이 뒤집히고 캐릭터가 사라질 때 잘린다
@@ -453,6 +506,17 @@ func _spawn_land_dust(power: float) -> void:
 	# 캡슐 반지름 20 + 절반 30 = 발바닥이 원점에서 30px 아래
 	dust.global_position = global_position + Vector2(0.0, 30.0)
 	dust.setup(power)
+
+## 점프하는 순간 발밑에 바람 줄기를 남긴다 — 방향은 지금 속도(가로 이동 + 방금 넣은 점프 속도)라 대각선으로 뛰면 비스듬하다.
+## 착지 먼지와 같은 이유로 **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 뒤집히고 따라 움직인다 — 이건 뛴 자리에 남아야 한다)
+func _spawn_jump_wind(air: bool) -> void:
+	var map: Node = get_parent()
+	if map == null:
+		return
+	var wind := JUMP_WIND_SCRIPT.new()
+	map.add_child(wind)
+	wind.global_position = global_position + Vector2(0.0, 30.0)
+	wind.setup(velocity, air)
 
 ## 맞았을 때 캐릭터 그림을 잠깐 빨갛게 물들이는 피격 이펙트
 func _flash_hit() -> void:
@@ -467,7 +531,6 @@ func _flash_hit() -> void:
 func heal(amount: int) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
-	_update_hp_face()
 
 ## 여러 상태이상 색조가 겹쳐도 서로 안 지우도록 관리하는 저장소. {id: Color} — 화면에는 가장 최근 것이 보이고,
 ## 그게 풀리면 그 전에 걸려있던 것으로 되돌아간다 (전부 사라지면 원래 색)
@@ -567,7 +630,7 @@ func can_guard() -> bool:
 		return false
 	if _guard_cooldown_left > 0.0 or _guard_time > 0.0:
 		return false
-	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null
+	return _hitstun_time <= 0.0 and not is_grabbed and _dash_time <= 0.0 and movement_override == null and _landing_lag <= 0.0
 
 ## 아래 키를 **누른 순간** 호출한다 — guard_duration(1.0초) 동안 보호막이 켜지고
 ## 그 사이에 들어오는 공격은 전부 무효가 된다. 실제로 켜졌으면 true.
@@ -626,7 +689,7 @@ func can_dash() -> bool:
 		return false
 	if _dash_cooldown_left > 0.0 or _dash_time > 0.0:
 		return false
-	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null
+	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null and _landing_lag <= 0.0
 
 ## 방향키를 두 번 눌렀을 때 그 방향으로 짧게 미끄러진다. 실제로 나갔으면 true.
 ## 스킬이 아니라 기본 조작이라 스킬 클래시·is_busy()와 무관하게 동작한다
@@ -701,6 +764,10 @@ func move(direction: float) -> void:
 	if is_guarding:
 		velocity.x = 0.0
 		return
+	# 착지 경직 중엔 제자리에 굳는다 — 방향도 안 바뀐다
+	if _landing_lag > 0.0:
+		velocity.x = 0.0
+		return
 	if direction != 0.0:
 		facing = signf(direction)
 	var target_x: float = direction * stats.move_speed * move_speed_multiplier
@@ -720,15 +787,17 @@ func move(direction: float) -> void:
 ## 이단 점프는 지금까지의 낙하 속도를 무시하고 속도를 새로 덮어써서, 떨어지는 중에 눌러도 제대로 뜬다
 func jump() -> void:
 	# 경직 중엔 점프로 넉백을 못 벗어난다. 방어 중에도 못 뛴다(1.2초를 버티기로 한 대가)
-	if _hitstun_time > 0.0 or is_grabbed or is_guarding:
+	if _hitstun_time > 0.0 or is_grabbed or is_guarding or _landing_lag > 0.0:
 		return
-	if is_on_floor():
+	var air: bool = not is_on_floor()
+	if not air:
 		velocity.y = jump_velocity * jump_multiplier
 	elif _air_jumps_left > 0:
 		_air_jumps_left -= 1
 		velocity.y = air_jump_velocity * jump_multiplier
 	else:
 		return
+	_spawn_jump_wind(air)
 	if vault_jump:
 		_play_vault_effect()
 	# 점프하는 순간 몸이 세로로 늘어나는 연출 (그 메서드가 있는 비주얼만)
@@ -742,6 +811,8 @@ func jump() -> void:
 ## 충돌 레이어를 통째로 끄지 않고 add_collision_exception_with()로 그 발판 하나만 예외 처리하는 이유:
 ## 레이어를 끄면 같은 레이어인 진짜 지면·벽까지 같이 통과해버려서 맵 밖으로 떨어진다
 func drop_through_platform() -> bool:
+	if _landing_lag > 0.0:
+		return false
 	var platform: PhysicsBody2D = get_one_way_floor()
 	if platform == null:
 		return false
@@ -789,7 +860,21 @@ func _play_vault_effect() -> void:
 
 ## 지금 스킬 모션 중이라 다른 행동을 못 하는 상태인지
 func is_busy() -> bool:
-	return _busy_time > 0.0 or _hitstun_time > 0.0
+	return _busy_time > 0.0 or _hitstun_time > 0.0 or _landing_lag > 0.0
+
+## 착지 경직 중인지 (높은 데서 떨어져 무릎을 굽히고 굳은 동안)
+func is_landing_lagged() -> bool:
+	return _landing_lag > 0.0
+
+## 착지 경직을 그 자리에서 푼다 — 착지하자마자 튕겨 나가는 기믹(스프링 시소)이 부른다.
+## 안 풀면 경직을 단 채로 날아가서 공중에서 0.5초 동안 조작을 못 한다
+func cancel_landing_lag() -> void:
+	if _landing_lag <= 0.0:
+		return
+	_landing_lag = 0.0
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("play_land_crouch"):
+		visual.play_land_crouch(0.0)
 
 ## duration초 동안 다른 스킬·기본공격 입력을 막는다 (모션이 겹쳐 나오지 않게). 이동은 계속 가능하다.
 ## 더 긴 잠금이 이미 걸려 있으면 짧은 걸로 줄어들지 않게 둘 중 큰 값을 쓴다
@@ -965,6 +1050,8 @@ func apply_physics(delta: float) -> void:
 		var g: float = gravity
 		if _hitstun_time > 0.0:
 			g *= HIT_LAUNCH_GRAVITY_SCALE
+		elif velocity.y > 0.0:
+			g *= fall_gravity_multiplier
 		velocity.y += g * delta
 	# 방어 — 정해진 시간이 지나면 저절로 꺼지고 그때부터 쿨타임이 돈다.
 	# 켜져 있는 동안엔 제자리에 버틴다(이동·점프·공격은 각 함수에서 막는다)
@@ -1012,6 +1099,10 @@ func apply_physics(delta: float) -> void:
 	if has_super_armor() and velocity.y < 0.0:
 		velocity.y = 0.0
 	var fall_speed: float = velocity.y
+	# 아래에서 착지하면 _launch_momentum이 지워지므로 날아가던 중이었는지는 미리 기억해 둔다
+	var was_launched: bool = _launch_momentum or _hitstun_time > 0.0
+	if _landing_lag > 0.0:
+		_landing_lag = maxf(_landing_lag - delta, 0.0)
 	move_and_slide()
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)
 	if is_on_floor():
@@ -1019,7 +1110,7 @@ func apply_physics(delta: float) -> void:
 		_launch_momentum = false
 	# 공중에 있다가 이번 프레임에 바닥에 닿았으면 = 착지
 	if is_on_floor() and not _was_on_floor:
-		_on_landed(fall_speed)
+		_on_landed(fall_speed, was_launched)
 	_was_on_floor = is_on_floor()
 	if movement_override:
 		movement_override.after_physics(self, delta)

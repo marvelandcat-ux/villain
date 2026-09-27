@@ -20,11 +20,14 @@ extends Node2D
 ## 걸을 때 발끝이 위로 들리는 최대 각도(도)
 @export var foot_swing_deg: float = 36.0
 ## 발이 제자리에서 앞뒤로 움직이는 거리(px) — 클수록 보폭이 커지고 앞발/뒷발이 뚜렷하게 바뀐다
-@export var foot_stride: float = 15.0
+@export var foot_stride: float = 11.0
+## 걸을 때 앞으로 옮겨지는 발이 들리는 높이(px). 바닥을 디딘 발은 안 뜬다 — 한 발씩 들었다 놓는 걸음(2026-09-25).
+## 0이면 예전처럼 두 발이 바닥에 붙은 채 미끄러진다
+@export var foot_step_lift: float = 5.0
 ## 몸이 들썩이는 높이(px)
 @export var body_bob: float = 4.0
 ## 손이 앞뒤로 흔들리는 거리(px)
-@export var hand_swing: float = 12.0
+@export var hand_swing: float = 7.0
 ## 가만히 서 있을 때 몸/머리/손이 위아래로 미묘하게 숨쉬는 폭(px). 걷기 시작하면 서서히 사라진다
 @export var breathe_amount: float = 2.6
 ## 숨쉬기 속도(라디안/초) — 낮을수록 느긋하게 숨쉰다
@@ -51,6 +54,9 @@ extends Node2D
 @export var land_squash: Vector2 = Vector2(1.33, 0.75)
 ## 스쿼시/스트레치가 원래 크기(1,1)로 돌아오는 속도 (클수록 빨리 복구)
 @export var squash_recover_speed: float = 2.5
+## 스쿼시·스트레치의 기준점(리그 기준 y, 발바닥) — 몸 중심 기준으로 누르면 발이 바닥에서 뜨므로
+## 이 높이가 제자리에 남도록 리그를 위아래로 보정한다(2026-09-26). 캡슐 반지름 20 + 절반 30 = 발바닥 +30
+@export var squash_pivot_y: float = 30.0
 
 ## --- 자전거 타기 (촉법소년 돌진) ---
 ## 자전거가 "탄 위치"에서 이만큼 떨어진 곳(캐릭터 뒤쪽)에서 슬라이드해 들어온다. x가 음수면 진행 반대쪽(뒤)
@@ -127,6 +133,23 @@ extends Node2D
 @export var scratch_amount: float = 3.0
 ## 뒤돌아보는 동작 하나의 전체 길이(초) — 돌아보기 → 잠깐 정지 → 다시 앞으로
 @export var lookback_duration: float = 1.2
+## 캐릭터별 특수 idle 몸짓 — 머리 긁기·뒤돌아보기와 번갈아 랜덤으로 나온다(2026-09-26 사용자 요청, 눈이 안 보이는 캐릭터의 생동감용).
+## 1 안경 치켜올리기(악플러) / 2 딸꾹질(주정뱅이)
+@export_enum("없음", "안경 올리기", "딸꾹질") var idle_special: int = 0
+## 특수 몸짓 하나의 전체 길이(초)
+@export var special_duration: float = 1.0
+## 안경 올리기: 왼손이 가는 자리(리그 좌표 — 안경 코받침 근처)와 손 각도(도)
+@export var glasses_hand_pos: Vector2 = Vector2(15, -27)
+@export var glasses_hand_deg: float = -60.0
+## 안경을 밀어 올릴 때 손이 더 올라가는 거리(px), 머리가 들리는 정도(px)·젖혀지는 각도(도)
+@export var glasses_push: float = 3.0
+@export var glasses_push_lift: float = 1.5
+@export var glasses_push_deg: float = -4.0
+## 딸꾹질: 횟수, 머리가 튀는 높이(px)·젖혀지는 각도(도), 머리 위에 뜨는 글자(비우면 안 뜸)
+@export var hiccup_count: int = 2
+@export var hiccup_hop: float = 4.0
+@export var hiccup_deg: float = -9.0
+@export var hiccup_text: String = "딸꾹!"
 ## 기본공격 예비동작에서 손이 돌아가는 각도(도) — 반시계 방향(무기가 뒤로 넘어간다)
 @export var attack_raise_deg: float = 100.0
 ## 기본공격에서 손이 내려찍히는 각도(도) — 시계 방향
@@ -174,6 +197,108 @@ extends Node2D
 @export var thrust3_raise_offset: Vector2 = Vector2(-26, -22)
 @export var thrust3_slam_offset: Vector2 = Vector2(16, 6)
 
+## --- 격투게임식 끊어 치기 (2026-09-25) ---
+## 켜면 기본공격 자세가 부드럽게 흐르지 않고 **"멈칫 -> 휙 -> 버팀 -> 툭"** 으로 끊긴다.
+## 예비동작 자세에 빨리 도달해 잠깐 멈추고, 후려치기는 짧게 끝내 뻗은 자세로 버티다가, 마지막에 확 제자리로 돌아온다.
+## 판정 시각(40% 지점)은 그대로라 콤보 타이밍은 안 바뀐다. 기본 꺼짐(다른 캐릭터 영향 없음)
+@export var attack_snap: bool = false
+## 예비동작 구간(0~40%) 중 이 비율 안에 감기 자세가 완성되고, 나머지는 그 자세로 멈춰 있다
+@export_range(0.1, 1.0, 0.05) var snap_windup_reach: float = 0.55
+## 후려치기 구간(40~62%) 중 이 비율 안에 다 뻗는다 — 작을수록 빠르게 튀어나간다
+@export_range(0.1, 1.0, 0.05) var snap_strike_reach: float = 0.45
+## 복귀 구간(62~100%) 중 이 비율 동안은 뻗은 자세로 버티고, 남은 시간에 확 돌아온다
+@export_range(0.0, 0.95, 0.05) var snap_recovery_hold: float = 0.6
+
+## --- 대치 자세 (2026-09-25) ---
+## 켜면 평소에 두 손을 가슴 앞으로 조금 내밀고 있는다(격투게임 대기 자세). 걷기·공격 자세 위에 **더해지므로**
+## 공격도 이 자세에서 출발해 이 자세로 돌아온다. 손을 따로 쓰는 동작(마시기·총·잡기·던지기·방어·돌진·자전거·클래시·머리 긁기) 중엔 풀린다.
+## 기본 꺼짐(다른 캐릭터 영향 없음)
+@export var fight_stance: bool = false
+## 제자리에서 더 옮기는 거리(px, +x가 바라보는 쪽, -y가 위)
+@export var stance_hand_r_offset: Vector2 = Vector2(5, -9)
+@export var stance_hand_l_offset: Vector2 = Vector2(36, -6)
+## 더 돌리는 각도(도). 음수면 손에 든 물건이 위로 선다
+@export var stance_hand_r_deg: float = -10.0
+@export var stance_hand_l_deg: float = 15.0
+## 자세가 켜지고 풀리는 속도(1/초)
+@export var stance_blend_speed: float = 8.0
+
+## --- 착지 경직 자세 (2026-09-25) ---
+## 높은 데서 떨어져 착지 경직이 걸렸을 때(`Fighter.landing_lag_*`) 쪼그려 굳은 자세.
+## 다리 파츠가 없어서 **발은 제자리에 두고 몸통·머리·손만 발 쪽으로 내려** 몸과 다리가 가까워지게 한다
+## (처음엔 두 발을 벌려 비틀었는데 "다리 각도가 이상하다"고 해서 뺐다 — 2026-09-25 사용자 요청)
+## 몸이 내려가는 깊이(px)
+@export var land_crouch_depth: float = 7.0
+## 고개를 아래로 숙이는 각도(도) — 방어·피격 움찔과 같은 방향(양수 = 숙임)
+@export var land_crouch_head_deg: float = 10.0
+## 착지 경직 동안 몸 전체가 눌리는 정도(x 넓적, y 납작) — 주저앉는 박자에 맞춰 눌렸다가 일어설 때 펴진다(2026-09-26 사용자 요청).
+## 착지 순간의 짧은 스쿼시(land_squash)보다 약하지만 경직 내내 유지돼서 "쿵 주저앉았다"로 보인다
+@export var land_lag_squash: Vector2 = Vector2(1.15, 0.86)
+
+## --- 피격 움찔 자세 (2026-09-25) ---
+## 맞은 순간 배를 맞은 것처럼 **상체를 앞으로 숙이고(ㄱ자) 엉덩이는 뒤로 빼고 두 손은 앞으로 모은다.**
+## 모든 오프셋은 바라보는 쪽 기준(+x가 앞)이다. 조각의 로컬 좌표라 좌우 반전은 저절로 맞는다
+## 전체 시간(초) — 앞 15%에 확 숙이고, 40%까지 버티다가, 나머지 동안 펴진다
+@export var hit_flinch_duration: float = 0.32
+## 몸통이 앞으로 숙는 각도(도) — 몸통 한가운데를 축으로 돌아서 위는 앞으로, 아래(엉덩이)는 뒤로 간다
+@export var hit_flinch_lean_deg: float = 16.0
+## 몸통을 뒤로 더 빼는 거리(px) — 엉덩이가 뒤로 빠진 느낌을 키운다
+@export var hit_flinch_hip_back: float = 4.0
+## 머리가 숙여진 상체를 따라 앞·아래로 가는 거리(px)와 숙이는 각도(도)
+@export var hit_flinch_head_offset: Vector2 = Vector2(5, 4)
+@export var hit_flinch_head_deg: float = 12.0
+## 두 손이 앞으로 모이는 거리(px). 왼손은 몸 뒤에 있어서 더 많이 나온다
+@export var hit_flinch_hand_r_offset: Vector2 = Vector2(8, 4)
+@export var hit_flinch_hand_l_offset: Vector2 = Vector2(24, 3)
+## 맞는 순간 몸 전체(발 포함)가 잠깐 떠오르는 높이(px). **그림만 뜨고 실제 위치·판정은 그대로**라
+## 콤보(1·2타 팝업 0으로 지상에 붙잡아 두는 것)가 깨지지 않는다. 움찔 시간의 앞 30%에 올라가 60%에 내려앉는다
+@export var hit_flinch_hop: float = 10.0
+## 맞는 순간 몸 전체(발 포함)가 넉백 쪽으로 휙 밀렸다 돌아오는 거리(px). **그림만 밀리고 실제 위치·판정은 그대로**라
+## 콤보 간격이 안 바뀐다(2026-09-25 사용자 요청 "뒤로 밀려나는 느낌")
+@export var hit_flinch_push: float = 8.0
+## 움찔할 때 두 발이 꺾이는 각도(도) — 양수면 발끝이 아래로 떨어진다(공중 자세와 같은 방향)
+@export var hit_flinch_foot_deg: float = 25.0
+## 엉덩이를 따라 두 발이 뒤로 빠지는 거리(px)
+@export var hit_flinch_foot_back: float = 3.0
+
+## --- 뒤돌아보기 때 머리 돌리기 (2026-09-25) ---
+## 가만히 있다 나오는 뒤돌아보기(idle)에서 머리가 옆 -> 측면1 -> 측면2 -> 정면 -> 측면2 -> 측면1 -> 반대쪽 옆으로 돌았다가
+## 같은 길로 돌아온다. 비워 두면(기본) 예전처럼 머리 가로 크기를 뒤집어 돌아본다.
+## 평소 얼굴(Head의 처음 그림)일 때만 쓴다 — 다른 표정은 옆모습 그림뿐이라서.
+## (처음엔 방향을 바꿀 때 돌게 만들었다가 사용자 요청으로 뒤돌아보기로 옮겼다 — 방향 전환은 예전처럼 탁 뒤집힌다)
+## 돌아가는 그림들 — 옆에서 조금 돈 것부터 차례로, **마지막 장이 정면**이다(예: [측면1, 측면2, 측면3, 정면]).
+## 장수는 몇 장이든 된다 — 뒤돌아보기가 장수에 맞춰 단계를 나눈다
+@export var head_turn_textures: Array[Texture2D] = []
+## 그림마다 머리 공(두개골)의 (중심 x, 중심 y, 지름) — 그림 픽셀. 프로펠러·챙·코·혀를 뺀 둥근 머리만 잰 값이다.
+## **0번은 Head의 원래 옆모습**, 1번부터 head_turn_textures 순서다(그림 수 + 1칸). 머리 공 중심이 같은 자리, 지름이 같은 크기가 되도록
+## 배율·위치를 계산한다. 그림을 바꾸면 다시 잴 것(처음엔 구슬 x·턱 끝 y로 맞췄는데 각도마다 중심이 흔들렸다)
+@export var head_turn_anchors: Array[Vector3] = []
+## 그림이 원래 **왼쪽**을 보고 그려졌는지(0번 포함, 그림 수 + 1칸). 왼쪽을 보는 그림은 좌우로 뒤집어 쓴다
+@export var head_turn_faces_left: Array[bool] = []
+## 머리가 도는 **도중에만** 몸통에 끼울 그림들 — 평소와 머리가 정면일 때는 Body 원래 그림(정면 몸통) 그대로고,
+## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
+## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
+@export var body_turn_textures: Array[Texture2D] = []
+## 방향을 바꿀 때도 머리가 위 그림들을 넘기며 돈다(2026-09-26 시험) — 몸은 예전처럼 바로 뒤집히고,
+## 머리가 옛 방향 쪽 측면1 -> ... -> 정면 -> ... -> 새 방향 옆모습으로 따라 돌아온다. 끄면 머리도 몸과 같이 탁 뒤집힌다
+@export var head_turn_on_face: bool = false
+## 방향 전환 때 머리가 다 돌아오는 데 걸리는 시간(초). 짧을수록 휙, 길수록 그림 한 장 한 장이 보인다.
+## 몸은 이 시간의 절반(머리가 정면에 온 순간)에 뒤집힌다 — 그 전까지는 옛 방향을 본 채 움직인다
+@export var face_turn_duration: float = 0.22
+## 몸이 뒤집히는 순간 손·발을 몸 가운데로 얼마나 모으는지(0 = 안 모음, 1 = 한가운데까지). 앞뒤로 서서히 모였다 벌어진다
+@export_range(0.0, 1.0) var face_turn_limb_gather: float = 0.7
+
+## --- 휘두르기 잔상 (2026-09-25) ---
+## 켜면 후려치는 동안 오른손과 손에 든 물건이 지나간 자리에 옅은 잔상이 남는다(스미어).
+## 잔상은 월드에 고정돼 그 자리에서 흐려진다. 기본 꺼짐
+@export var attack_smear: bool = false
+## 잔상이 사라지기까지 걸리는 시간(초)
+@export var smear_life: float = 0.12
+## 잔상 처음 투명도
+@export_range(0.0, 1.0, 0.05) var smear_alpha: float = 0.45
+## 프레임 사이에 끼워 넣는 잔상 수 — 휘두르기가 몇 프레임밖에 안 돼서, 안 채우면 뚝뚝 끊긴 도장처럼 보인다
+@export var smear_fill: int = 2
+
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
 ## 켜면 그 타에서 손 스윙 대신 앞발이 뻗어나가고, 팔은 균형 잡는 동작만 한다
@@ -208,6 +333,21 @@ extends Node2D
 ## **판정 시각 = spin_duration x spin_end x 이 값** 이라 ComboMeleeAttack.finisher_windup을 여기에 맞출 것(0.55 x 0.62 x 0.72 = 0.25).
 ## 판정이 잡히는 데 1~2프레임 걸려서 0.85처럼 크게 주면 몸이 거의 다 돌아온 뒤에 맞아 "돌고 나서"로 보인다
 @export_range(0.5, 1.0, 0.01) var spin_strike: float = 0.72
+## 머리 돌리기 그림(head_turn_textures)이 있으면 몸을 얇게 누르는 대신 **방향 전환과 같은 방식**으로 돈다(2026-09-26):
+## 앞 반 바퀴는 머리가 측면1 -> ... -> 정면 -> ... -> 반대쪽 옆으로 돌고 정면인 순간 몸이 뒤집힌다,
+## 뒤 반 바퀴는 뒤통수 그림이 없어서 머리는 옆모습 그대로, spin_back_flip에서 몸이 다시 뒤집힌다. 뒤집힐 때마다 손·발이 가운데로 모인다.
+## 끄거나 머리 그림이 없으면 예전처럼 몸 전체를 얇게 눌렀다 편다
+@export var spin_uses_head_turn: bool = true
+## 뒤 반 바퀴에서 몸이 다시 앞으로 뒤집히는 시점(한 바퀴 대비 비율). **spin_strike보다 작아야** 사탕을 휘두를 때 몸이 앞을 본다
+@export_range(0.5, 1.0, 0.01) var spin_back_flip: float = 0.64
+## 몸이 뒤집히는 순간 앞뒤로 손·발을 모으는 구간 폭(한 바퀴 대비 비율). spin_strike - spin_back_flip보다 작아야 휘두를 때 팔이 안 움츠러든다
+@export_range(0.01, 0.25, 0.01) var spin_gather_width: float = 0.08
+## 뒤통수 그림 — 있으면 뒤 반 바퀴에서 몸이 뒤집히는 순간(spin_back_flip) 앞뒤로 머리가 뒤통수를 보인다(옆 -> 뒤통수 -> 옆)
+@export var head_back_texture: Texture2D
+## 뒤통수 그림의 머리 공 (중심 x, 중심 y, 지름) — head_turn_anchors와 같은 방법으로 잰 그림 픽셀
+@export var head_back_anchor: Vector3 = Vector3.ZERO
+## 뒤통수를 보여주는 구간 반폭(한 바퀴 대비 비율) — spin_back_flip 앞뒤로 이만큼. **spin_back_flip + 이 값이 spin_strike보다 작아야** 때릴 때 얼굴(옆모습)이 보인다
+@export_range(0.01, 0.2, 0.01) var spin_back_show: float = 0.07
 
 ## --- 파고들 때 내딛기 ---
 ## 콤보가 앞으로 파고드는 동안(ComboMeleeAttack.combo_lunge) 앞발이 먼저 나가고 뒷발이 따라붙는다.
@@ -450,12 +590,6 @@ extends Node2D
 ## 액션 표정일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
 @export var action_head_scale: Vector2 = Vector2.ZERO
 
-## HP가 얼마 안 남았을 때 이 얼굴(지친 표정)로 계속 유지한다. 비어 있으면 안 바꾼다.
-## 잠깐 바뀌는 표정(피격 등)과 달리 **HP가 회복될 때까지 계속 걸려 있는 상태 표정**이다
-@export var weary_head_texture: Texture2D
-## 지친 얼굴일 때 머리 배율. (0,0)이면 원래 머리 배율을 그대로 쓴다
-@export var weary_head_scale: Vector2 = Vector2.ZERO
-
 ## 처치당했을 때(HP 0) 바뀌는 표정 — 눈이 X로 변한 얼굴. 비워두면 표정이 안 바뀐다.
 ## 처치 연출(`Stage`가 부르는 `play_knockout`)에서만 쓴다
 @export var ko_head_texture: Texture2D
@@ -466,8 +600,6 @@ extends Node2D
 @export var ko_head_offset: Vector2 = Vector2(0, -6)
 @export var ko_hand_offset: Vector2 = Vector2(-10, 8)
 @export var ko_foot_offset: Vector2 = Vector2(-12, 6)
-## HP 비율이 이 값 이하로 떨어지면 지친 얼굴이 된다 (0.3 = 30% 이하). 회복하면 다시 원래 얼굴로 돌아온다
-@export_range(0.0, 1.0, 0.05) var weary_hp_ratio: float = 0.3
 
 @onready var _foot_l: Sprite2D = get_node_or_null("FootL")
 @onready var _foot_r: Sprite2D = get_node_or_null("FootR")
@@ -497,6 +629,8 @@ var _fall_blend: float = 0.0
 var _squash: Vector2 = Vector2.ONE
 ## 스쿼시/스트레치가 진행 중인지 (원래 크기로 완전히 돌아오면 꺼진다)
 var _squashing: bool = false
+# 스쿼시 중 발바닥을 제자리에 두려고 리그 y에 더해 둔 값
+var _squash_lift: float = 0.0
 ## 직전 프레임에 바닥에 있었는지 (착지 순간 감지용)
 var _was_on_floor: bool = true
 ## 자전거를 탄(보이는) 정도 0~1. set_riding으로 목표를 정하고 서서히 오간다
@@ -524,6 +658,31 @@ var _punch_ghosted: bool = false
 ## 주먹 잔상 — 처음 쓸 때 만들어두고 계속 재활용한다. owner를 안 줘서 씬에 저장되지 않는다
 var _ghosts: Array[Sprite2D] = []
 var _ghost_life: Array[float] = []
+## 기본공격 잔상 칸(클래시 주먹 잔상과 따로 쓴다) — 처음 쓸 때 만든다
+var _smears: Array[Sprite2D] = []
+var _smear_left: Array[float] = []
+## 잔상 원본별 직전 프레임 자세(리그 기준 변환) — 프레임 사이를 채울 때 쓴다
+var _smear_prev: Dictionary = {}
+## 끊어 치기가 출발하는 손 자세 — 앞 타가 끝나기 전에 다음 타가 나가도 손이 제자리로 툭 튀지 않게
+var _swing_from_off := Vector2.ZERO
+var _swing_from_deg: float = 0.0
+## 대치 자세가 얼마나 들어가 있는지(0~1)
+var _stance_blend: float = 0.0
+## 착지 경직 자세 남은 시간 / 전체 시간(초)
+var _crouch_time: float = 0.0
+var _crouch_len: float = 0.0
+## 피격 움찔 남은 시간 / 전체 시간(초) / 세기(0~1)
+var _flinch_time: float = 0.0
+var _flinch_len: float = 0.0
+var _flinch_power: float = 1.0
+## 이번 움찔에서 밀리는 방향 — 리그 로컬 x 부호(-1 = 바라보는 반대쪽 = 뒤)
+var _flinch_push_dir: float = -1.0
+## 뒤돌아보기 중 머리 그림을 돌리는 그림으로 바꿔 끼웠는지 — 끝날 때 평소 머리로 되돌려야 하는지 판단한다
+var _turn_applied: bool = false
+# 방향 전환 머리 돌리기 남은 시간, 직전 프레임에 바라보던 방향 부호(0 = 아직 모름), 돌기 전 방향 부호
+var _face_turn_time: float = 0.0
+var _face_sign: float = 0.0
+var _face_turn_from: float = 0.0
 ## 클래시 동안 손에 든 물건(소주병·키보드 등)을 숨겼는지 — 끝나면 다시 보여주려고 기억한다
 var _hold_hidden_by_clash: bool = false
 ## 페달 회전 각도 (계속 커짐)
@@ -534,6 +693,10 @@ var _bike_mounted_pos: Vector2
 var _idle_time: float = 0.0
 ## 머리 긁는 동작에 남은 시간(초). 0보다 크면 긁는 중이다
 var _scratch_time: float = 0.0
+# 특수 idle 몸짓(안경 올리기·딸꾹질) 남은 시간, 이번에 띄운 딸꾹 수, 왼손 원래 그리는 순서
+var _special_time: float = 0.0
+var _hiccups_fired: int = 0
+var _hand_l_rest_z: int = 0
 ## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
@@ -632,13 +795,15 @@ var _dk_getup_total: float = 0.0
 var _drunk_head_on: bool = false
 ## 지금 스킬 액션 표정 상태인지 (자전거 돌진·총 쏘기 동안 true) — 취함/맨정신보다 우선한다
 var _action_face_on: bool = false
-## 지금 HP가 얼마 안 남아 지친 얼굴 상태인지 (weary_hp_ratio 이하로 떨어지면 true)
-var _weary_on: bool = false
 ## 토하기 전 원래 머리 텍스처/배율 — 토하기가 끝나면 이걸로 되돌린다
 ## 처치 연출 중인지 — 켜지면 걷기·표정 갱신을 전부 멈추고 쓰러진 자세를 유지한다
 var _knocked_out: bool = false
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
+# 몸통 돌리기용 — 원래 몸통 그림·배율, 그림별 "바닥 가운데" 위치(캔버스 가운데 기준, 한 번 재서 기억)
+var _body_rest_texture: Texture2D
+var _body_rest_scale: Vector2
+var _body_anchor_cache: Dictionary = {}
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
 
@@ -653,6 +818,11 @@ func _ready() -> void:
 	if _head:
 		_head_rest_texture = _head.texture
 		_head_rest_scale = _head.scale
+	if _body:
+		_body_rest_texture = _body.texture
+		_body_rest_scale = _body.scale
+	if _hand_l:
+		_hand_l_rest_z = _hand_l.z_index
 	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
 	if _bike:
 		_bike_mounted_pos = _bike.position
@@ -689,6 +859,10 @@ func _process(delta: float) -> void:
 		_attack_time = maxf(_attack_time - delta, 0.0)
 	if _step_time > 0.0:
 		_step_time = maxf(_step_time - delta, 0.0)
+	if _crouch_time > 0.0:
+		_crouch_time = maxf(_crouch_time - delta, 0.0)
+	if _flinch_time > 0.0:
+		_flinch_time = maxf(_flinch_time - delta, 0.0)
 	if _drink_time > 0.0:
 		_drink_time = maxf(_drink_time - delta, 0.0)
 	if _vomit_time > 0.0:
@@ -744,8 +918,13 @@ func _process(delta: float) -> void:
 		_idle_time = 0.0
 		_scratch_time = 0.0
 		_end_lookback()
+		_end_special()
 	elif _scratch_time > 0.0:
 		_scratch_time = maxf(_scratch_time - delta, 0.0)
+	elif _special_time > 0.0:
+		_special_time = maxf(_special_time - delta, 0.0)
+		if is_zero_approx(_special_time):
+			_end_special()
 	elif _lookback_time > 0.0:
 		_lookback_time = maxf(_lookback_time - delta, 0.0)
 		if is_zero_approx(_lookback_time):
@@ -754,11 +933,22 @@ func _process(delta: float) -> void:
 		_idle_time += delta
 		if _idle_time >= idle_motion_delay:
 			_idle_time = 0.0
-			# 머리 긁기 / 뒤돌아보기 중 하나를 랜덤으로 고른다
-			if randf() < 0.5:
+			# 특수 몸짓이 있으면 셋 중 하나, 없으면 머리 긁기 / 뒤돌아보기 중 하나를 랜덤으로 고른다
+			if idle_special != 0 and randf() < 0.34:
+				_start_special()
+			elif randf() < 0.5:
 				_scratch_time = scratch_duration
 			elif _head:
 				_lookback_time = lookback_duration
+
+	# 방향 전환 머리 돌리기 — 다 돌면 평소 머리로 되돌린다.
+	# 공격·스킬 같은 동작이 시작되면 그 자리에서 끝내 몸을 새 방향으로 맞춘다(그림은 옛 방향인데 공격은 새 방향으로 나가면 안 된다)
+	if _face_turn_time > 0.0:
+		_face_turn_time = maxf(_face_turn_time - delta, 0.0)
+		if _face_turn_blocked():
+			_face_turn_time = 0.0
+		if is_zero_approx(_face_turn_time):
+			_clear_head_frame()
 
 	# 점프/착지 스쿼시&스트레치 — 착지하는 순간(공중→바닥)을 감지해 몸을 납작하게 눌렀다 편다
 	if on_floor and not _was_on_floor:
@@ -768,6 +958,11 @@ func _process(delta: float) -> void:
 	# 튄 크기는 시간이 지나며 원래(1,1)로 돌아온다
 	if _squashing and not _squash.is_equal_approx(Vector2.ONE):
 		_squash = _squash.move_toward(Vector2.ONE, delta * squash_recover_speed)
+	# 착지 경직 중엔 주저앉는 정도만큼 계속 납작하게 누른다 — 착지 순간 스쿼시가 더 세면 그게 풀릴 때까지 그쪽을 따른다
+	if _crouch_time > 0.0 and _crouch_len > 0.0:
+		var hold: Vector2 = Vector2.ONE.lerp(land_lag_squash, _land_crouch_amount())
+		_squash = Vector2(maxf(_squash.x, hold.x), minf(_squash.y, hold.y))
+		_squashing = true
 
 	# 자전거 타기 — 목표(_ride_target)로 서서히 오가며, 뒤에서 슬라이드해 들어오고 페이드된다
 	if _bike:
@@ -780,6 +975,12 @@ func _process(delta: float) -> void:
 			_pedal_phase += delta * pedal_speed
 		else:
 			_bike.visible = false
+
+	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
+	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 \
+		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 \
+		and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
+	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
 
 	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
 	_clash_blend = move_toward(_clash_blend, _clash_target, delta * clash_blend_speed)
@@ -795,6 +996,7 @@ func _process(delta: float) -> void:
 			_phase = 0.0
 
 	_apply_pose(speed_ratio)
+	_update_smear(delta)
 
 func _apply_pose(speed_ratio: float) -> void:
 	# 지난 프레임에 뒤돌기로 얇게 눌러둔 가로 크기를 먼저 되돌린다
@@ -813,8 +1015,11 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	# 앞으로 나가는 동안(swing이 양수)에만 발끝을 들고, 뒤로 밀리는 동안엔 바닥을 딛는 것처럼 눕힌다.
 	# 공중에서는 걷기 쪽이 0으로 잦아들고 대신 두 발이 함께 점프 각도로 뻗는다
-	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount)
-	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount)
+	# 들어 올리기는 "앞으로 옮겨지는 중"인 발에만 — 앞뒤 위치가 sin이라 그 변화 방향(cos)이 양수인 동안이다.
+	# 가운데를 지나며 가장 높이 뜨고 앞에 닿을 때 내려앉는다. 그동안 다른 발은 바닥을 디딘 채 뒤로 밀린다
+	var stepping: float = cos(_phase)
+	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount, maxf(stepping, 0.0) * amount)
+	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount, maxf(-stepping, 0.0) * amount)
 
 	# 발이 가장 높이 들렸을 때 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
 	var bob: float = -absf(swing) * body_bob * amount
@@ -903,6 +1108,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _scratch_time > 0.0:
 		_pose_scratch()
 
+	# 캐릭터별 특수 idle 몸짓(안경 올리기·딸꾹질) — 다른 자세 위에 더하거나 왼손만 쓴다
+	if _special_time > 0.0:
+		_pose_special()
+
 	# 두 손으로 무기를 잡는 자세 (악플러 키보드) — 공격이 끝난 뒤에도 블렌드가 남아 있으므로
 	# 스윙 안이 아니라 여기서 매 프레임 적용한다. 왼손만 건드리므로 오른손 동작과 안 겹친다
 	if attack_two_handed and _grip_blend > 0.001:
@@ -911,6 +1120,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 뒤돌아보는 중이면 몸은 그대로 두고 머리만 반대쪽을 본다
 	if _lookback_time > 0.0:
 		_pose_lookback()
+
+	# 방금 방향을 바꿨으면 머리가 그림을 넘기며 새 방향으로 따라 돈다 (뒤돌아보기보다 나중이라 우선한다)
+	if _face_turn_time > 0.0:
+		_pose_face_turn()
 
 	# 방어 중이면 두 손을 몸 앞으로 올려 막는다 (다른 자세보다 나중이라 우선한다 —
 	# 방어 중에는 이동·공격·스킬이 다 막히므로 실제로 겹칠 일도 거의 없다)
@@ -942,6 +1155,28 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 스킬 클래시 대치 자세 — 다른 모든 동작보다 우선한다(클래시 중엔 다른 동작이 나올 일이 없다)
 	if _clash_blend > 0.001:
 		_pose_clash()
+
+	# 착지 경직 — 무릎을 굽힌다(걷기·숨쉬기 위에 더한다)
+	if _crouch_time > 0.0:
+		_pose_land_crouch()
+
+	# 피격 움찔 — 상체를 앞으로 숙이고 엉덩이를 뺀다(다른 자세 위에 더한다)
+	if _flinch_time > 0.0:
+		_pose_hit_flinch()
+
+	# 방향 전환 중이면 손·발을 몸 가운데로 모았다가 벌린다(손에 든 물건이 복사해가기 전에)
+	if _face_turn_time > 0.0:
+		_pose_face_turn_limbs()
+
+	# 대치 자세 — 위에서 잡힌 손 자세에 더하기만 한다(두 손 잡기 중엔 왼손은 오른손을 따라가므로 뺀다)
+	if _stance_blend > 0.001:
+		if _hand_r:
+			_hand_r.position += stance_hand_r_offset * _stance_blend
+			_hand_r.rotation += deg_to_rad(stance_hand_r_deg) * _stance_blend
+		if _hand_l:
+			var l: float = _stance_blend * (1.0 - _grip_blend)
+			_hand_l.position += stance_hand_l_offset * l
+			_hand_l.rotation += deg_to_rad(stance_hand_l_deg) * l
 
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
@@ -1000,6 +1235,12 @@ func _apply_pose(speed_ratio: float) -> void:
 			_squashing = false
 		else:
 			scale = Vector2(_squash.x * sgn, _squash.y)
+	# 발바닥(squash_pivot_y)이 제자리에 남게 리그를 위아래로 보정한다 — 위치를 통째로 덮지 않고
+	# 지난번에 더한 만큼 빼고 새로 더한다(수플렉스처럼 리그 위치를 잠깐 쓰는 스킬과 안 싸우게)
+	var lift: float = squash_pivot_y * (1.0 - scale.y) if _squashing else 0.0
+	if not is_equal_approx(lift, _squash_lift):
+		position.y += lift - _squash_lift
+		_squash_lift = lift
 
 	_apply_spin_turn()
 
@@ -1016,6 +1257,9 @@ func _apply_spin_turn() -> void:
 		return
 	# **일정한 속도로 돈다** — 중간에 느려지면 "돌고 멈췄다가 때린다"로 보인다. 손/발은 이 회전 도중(spin_strike)에 들어간다
 	var p: float = progress / s_end
+	if spin_uses_head_turn and _can_head_turn():
+		_apply_spin_head_turn(p)
+		return
 	var turn: float = cos(p * TAU)
 	# 정확히 0이면 몸 크기가 0이 돼 자식 변환이 깨진다 — 아주 얇게만 남긴다
 	if absf(turn) < 0.04:
@@ -1024,9 +1268,40 @@ func _apply_spin_turn() -> void:
 	scale.x = _spin_base_x * turn
 	_spin_applied = true
 
+## 머리 그림으로 한 바퀴 돌기(p = 한 바퀴 진행도 0~1).
+## 0 ~ 0.5: 머리가 측면1 -> ... -> 정면 -> ... -> 옆모습(방향 전환과 같은 길), 0.25(머리 정면)에 몸이 뒤집힌다
+## 0.5 ~ : 머리는 옆모습 그대로(뒤통수 그림이 없다), spin_back_flip에 몸이 다시 앞으로 뒤집힌다
+## 몸 뒤집기는 가로 부호만 바꾸고 다음 프레임 첫머리에서 되돌린다(얇게 누르던 예전 방식과 같은 장치)
+func _apply_spin_head_turn(p: float) -> void:
+	var back_flip: float = clampf(spin_back_flip, 0.5, 0.99)
+	var mirrored: bool = p >= 0.25 and p < back_flip
+	if p < 0.5:
+		var front: int = head_turn_textures.size()
+		var shown: int = front * 2
+		var step: int = clampi(int(p / 0.5 * shown), 0, shown - 1)
+		_set_head_frame(step + 1 if step < front else shown - 1 - step, 1.0)
+	elif head_back_texture != null and head_back_anchor.z > 0.0 and absf(p - back_flip) < spin_back_show:
+		# 몸이 다시 앞으로 뒤집히는 순간 앞뒤로 뒤통수를 보인다 — 옆 -> 뒤통수 -> 옆
+		_set_head_image(head_back_texture, head_back_anchor, false, 1.0)
+	else:
+		_clear_head_frame()
+	# 뒤집히는 두 순간(0.25, back_flip) 앞뒤로 손·발을 가운데로 모은다 — 사탕(HandRHold)은 이미 손을 복사해 갔으니 같이 모은다
+	var width: float = maxf(spin_gather_width, 0.001)
+	var gather: float = maxf(1.0 - absf(p - 0.25) / width, 1.0 - absf(p - back_flip) / width)
+	if gather > 0.0:
+		var squeeze: float = 1.0 - face_turn_limb_gather * gather
+		for part in [_hand_l, _hand_r, _hand_r_hold, _foot_l, _foot_r]:
+			if part:
+				part.position.x *= squeeze
+	if mirrored:
+		_spin_base_x = scale.x
+		scale.x = -_spin_base_x
+		_spin_applied = true
+
 ## 발 하나의 자세를 잡는다.
 ## lift는 발끝을 드는 정도(0~1), slide는 제자리에서 앞뒤로 얼마나 나가 있는지(-1~1)
-func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
+## raise: 앞으로 옮겨지는 중인 정도(0~1) — foot_step_lift만큼 발을 들어 올린다
+func _pose_foot(foot: Sprite2D, lift: float, slide: float, raise: float = 0.0) -> void:
 	if foot == null:
 		return
 	# 걷기는 발끝이 위로 들리게(각도 양수 = 시계 방향이라 부호를 뒤집는다),
@@ -1034,7 +1309,7 @@ func _pose_foot(foot: Sprite2D, lift: float, slide: float) -> void:
 	foot.rotation = deg_to_rad(-foot_swing_deg * lift + jump_foot_deg * _air_blend)
 	foot.position.x = _rest_positions[foot].x + foot_stride * slide
 	# 세로 위치는 항상 제자리로 되돌린다 — 페달 동작(자전거)이 바꿔놓은 발 Y가 돌진 후에 남지 않게
-	foot.position.y = _rest_positions[foot].y
+	foot.position.y = _rest_positions[foot].y - foot_step_lift * raise
 
 ## 콤보가 앞으로 파고드는 동안 발을 내딛는다 — duration은 파고드는 시간과 같게 준다
 ## lead: 앞쪽 이 비율 동안은 발만 먼저 나가고 몸은 그 뒤에 따라온다(ComboMeleeAttack의 이동 곡선과 같은 값을 준다)
@@ -1094,6 +1369,10 @@ func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = fa
 	_spin_now = spin or (spin_hit_index >= 0 and variant == spin_hit_index)
 	_attack_time = _attack_len
 	_attack_variant = variant
+	if _hand_r and _rest_positions.has(_hand_r):
+		# 대치 자세는 공격 자세 위에 따로 더해지므로 출발 자세에서는 빼 둔다 — 안 빼면 두 번 더해져 손이 튄다
+		_swing_from_off = _hand_r.position - _rest_positions[_hand_r] - stance_hand_r_offset * _stance_blend
+		_swing_from_deg = rad_to_deg(_hand_r.rotation) - stance_hand_r_deg * _stance_blend
 
 ## 이 모션으로 휘두르면 **시작부터 몇 초 뒤에 맞는지** — 콤보가 판정을 켤 시각이다(AttackData는 이 값을 따른다).
 ## 보통 타는 내리치기 시작 지점(40%), 회전 타는 회전 도중 후려치는 지점(spin_end x spin_strike).
@@ -1121,6 +1400,9 @@ func _pose_attack_hand() -> void:
 	var slam_off: Vector2 = v["slam_off"]
 	var angle: float
 	var offset: Vector2
+	if attack_snap:
+		_snap_attack_pose(progress, raise_deg, swing_deg, raise_off, slam_off)
+		return
 	if progress < ATTACK_STRIKE_START:
 		# ① 예비동작 — 손을 감는다 (끝으로 갈수록 느려지게)
 		var p: float = 1.0 - (1.0 - progress / ATTACK_STRIKE_START) * (1.0 - progress / ATTACK_STRIKE_START)
@@ -1139,6 +1421,206 @@ func _pose_attack_hand() -> void:
 	_hand_r.rotation = deg_to_rad(angle)
 	_hand_r.position = _rest_positions[_hand_r] + offset
 	# 두 손 잡기는 스윙이 끝난 뒤에도 블렌드가 남아 있어야 하므로 _apply_pose에서 따로 부른다
+
+## 격투게임식 끊어 치기(attack_snap) — 구간 나누는 지점(40% / 62%)은 원래 스윙과 같고, 구간 안의 흐름만 다르다.
+## ① 감기: 앞 snap_windup_reach 안에 감기 자세 완성 -> 나머지는 멈칫
+## ② 후려치기: 앞 snap_strike_reach 안에 다 뻗음(감속 곡선이라 확 튀어나가 탁 멈춘다) -> 나머지는 뻗은 채
+## ③ 복귀: snap_recovery_hold 동안 뻗은 자세로 버티다가 남은 시간에 제자리로 툭
+func _snap_attack_pose(progress: float, raise_deg: float, swing_deg: float, raise_off: Vector2, slam_off: Vector2) -> void:
+	var angle: float
+	var offset: Vector2
+	if progress < ATTACK_STRIKE_START:
+		var t: float = clampf(progress / ATTACK_STRIKE_START / maxf(snap_windup_reach, 0.01), 0.0, 1.0)
+		var p: float = 1.0 - (1.0 - t) * (1.0 - t)
+		# 앞 타가 뻗은 자리에서 출발한다 — 제자리에서 출발하면 연타할 때 손이 툭 튄다
+		angle = lerpf(_swing_from_deg, -raise_deg, p)
+		offset = _swing_from_off.lerp(raise_off, p)
+	elif progress < ATTACK_STRIKE_END:
+		var t: float = clampf((progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START) / maxf(snap_strike_reach, 0.01), 0.0, 1.0)
+		var p: float = 1.0 - pow(1.0 - t, 3.0)
+		angle = lerpf(-raise_deg, swing_deg, p)
+		offset = raise_off.lerp(slam_off, p) + _swing_arc(p, raise_off, slam_off)
+	else:
+		var q: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		var t: float = clampf((q - snap_recovery_hold) / maxf(1.0 - snap_recovery_hold, 0.01), 0.0, 1.0)
+		var p: float = t * t * (3.0 - 2.0 * t)
+		angle = lerpf(swing_deg, 0.0, p)
+		offset = slam_off.lerp(Vector2.ZERO, p)
+	_hand_r.rotation = deg_to_rad(angle)
+	_hand_r.position = _rest_positions[_hand_r] + offset
+
+## 착지 경직 자세를 duration초 동안 잡는다 — Fighter가 높은 데서 떨어져 착지한 순간 부른다
+## 0 이하를 주면 자세를 그 자리에서 푼다
+func play_land_crouch(duration: float) -> void:
+	if duration <= 0.0:
+		_crouch_time = 0.0
+		return
+	_crouch_len = duration
+	_crouch_time = _crouch_len
+
+## 굽힌 정도: 착지 순간 확 주저앉고(앞 12%) -> 버티다가 -> 끝 35% 동안 일어난다
+func _land_crouch_amount() -> float:
+	var progress: float = 1.0 - _crouch_time / _crouch_len
+	if progress < 0.12:
+		var t: float = progress / 0.12
+		return 1.0 - (1.0 - t) * (1.0 - t)
+	if progress < 0.65:
+		return 1.0
+	var t2: float = (progress - 0.65) / 0.35
+	return 1.0 - t2 * t2 * (3.0 - 2.0 * t2)
+
+## 몸통·머리·손을 발 쪽으로 내린다. 발은 바닥에 붙어 있어야 하므로 안 건드린다
+func _pose_land_crouch() -> void:
+	var k: float = _land_crouch_amount()
+	var down: float = land_crouch_depth * k
+	if _body:
+		_body.position.y += down
+	if _head:
+		_head.position.y += down
+		_head.rotation += deg_to_rad(land_crouch_head_deg) * k
+	if _hand_r:
+		_hand_r.position.y += down * 0.85
+	if _hand_l:
+		_hand_l.position.y += down * 0.85
+
+## 맞은 순간 움찔 자세를 시작한다. power(0~1)가 클수록 크게 숙인다 — Fighter가 데미지로 정해 넘긴다.
+## 이미 움찔하는 중에 또 맞으면 처음부터 다시(연타를 맞을 때마다 다시 꺾인다)
+## push_dir: 그림이 밀리는 쪽(리그 로컬 x 부호) — -1이 뒤(바라보는 반대쪽), +1이 앞(등 뒤에서 맞았을 때)
+func play_hit_flinch(power: float = 1.0, push_dir: float = -1.0) -> void:
+	_flinch_len = maxf(hit_flinch_duration, 0.01)
+	_flinch_time = _flinch_len
+	_flinch_power = clampf(power, 0.0, 1.0)
+	_flinch_push_dir = -1.0 if push_dir < 0.0 else 1.0
+
+## 숙인 정도: 앞 15%에 확 숙이고 -> 40%까지 버티고 -> 나머지 동안 부드럽게 펴진다
+func _hit_flinch_amount() -> float:
+	var progress: float = 1.0 - _flinch_time / _flinch_len
+	var k: float
+	if progress < 0.15:
+		var t: float = progress / 0.15
+		k = 1.0 - (1.0 - t) * (1.0 - t)
+	elif progress < 0.4:
+		k = 1.0
+	else:
+		var t2: float = (progress - 0.4) / 0.6
+		k = 1.0 - t2 * t2 * (3.0 - 2.0 * t2)
+	return k * _flinch_power
+
+func _pose_hit_flinch() -> void:
+	var k: float = _hit_flinch_amount()
+	if _body:
+		_body.position.x -= hit_flinch_hip_back * k
+		_body.rotation += deg_to_rad(hit_flinch_lean_deg) * k
+	if _head:
+		_head.position += hit_flinch_head_offset * k
+		_head.rotation += deg_to_rad(hit_flinch_head_deg) * k
+	if _hand_r:
+		_hand_r.position += hit_flinch_hand_r_offset * k
+	if _hand_l:
+		_hand_l.position += hit_flinch_hand_l_offset * k
+	# 발도 손처럼 꺾인다 — 발끝이 아래로 떨어지고 엉덩이를 따라 뒤로 빠진다
+	for foot in [_foot_l, _foot_r]:
+		if foot:
+			foot.rotation += deg_to_rad(hit_flinch_foot_deg) * k
+			foot.position.x -= hit_flinch_foot_back * k
+	# 잠깐 떠오르기 — 숙이는 곡선과 따로, 앞 60% 동안 sin 반주기로 떴다 내려앉는다
+	var progress: float = 1.0 - _flinch_time / _flinch_len
+	var lift: float = hit_flinch_hop * _flinch_power * sin(PI * clampf(progress / 0.6, 0.0, 1.0))
+	# 밀려나기 — 숙이는 곡선(k)과 같은 박자라 확 밀렸다가 버티고 돌아온다. k에 이미 세기가 곱해져 있다
+	var push: float = hit_flinch_push * k * _flinch_push_dir
+	if lift > 0.001 or absf(push) > 0.001:
+		for part in [_body, _head, _hand_r, _hand_l, _foot_l, _foot_r]:
+			if part:
+				part.position += Vector2(push, -lift)
+
+## 잔상을 남길 구간인지 — 후려치는 동안(끊어 치기면 다 뻗을 때까지)만 남긴다
+func _smear_window() -> bool:
+	if _attack_time <= 0.0:
+		return false
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var end: float = ATTACK_STRIKE_END
+	if attack_snap:
+		end = ATTACK_STRIKE_START + (ATTACK_STRIKE_END - ATTACK_STRIKE_START) * snap_strike_reach
+	# 한 프레임 여유 — 다 뻗는 순간의 자세까지 잔상에 들어가야 궤적이 끝까지 이어진다
+	return progress >= ATTACK_STRIKE_START and progress <= end + 0.06
+
+## 잔상의 원본 — 오른손 + 손에 든 물건 중 보이는 스프라이트
+func _smear_sources() -> Array[Sprite2D]:
+	var list: Array[Sprite2D] = []
+	if _hand_r and _hand_r.visible:
+		list.append(_hand_r)
+	if _hand_r_hold and _hand_r_hold.visible:
+		for child in _hand_r_hold.get_children():
+			if child is Sprite2D and child.visible:
+				list.append(child)
+	return list
+
+## 매 프레임: 남아 있는 잔상을 흐리게 하고, 후려치는 중이면 새 잔상을 남긴다.
+## 자세 계산(_apply_pose)이 끝난 뒤에 불러야 이번 프레임 손 자리를 찍는다
+func _update_smear(delta: float) -> void:
+	for i in _smears.size():
+		if _smear_left[i] <= 0.0:
+			continue
+		_smear_left[i] -= delta
+		if _smear_left[i] <= 0.0:
+			_smears[i].visible = false
+		else:
+			_smears[i].modulate.a = smear_alpha * (_smear_left[i] / maxf(smear_life, 0.001))
+	if not attack_smear or not _smear_window():
+		_smear_prev.clear()
+		return
+	var rig_xf: Transform2D = get_global_transform()
+	var rig_inv: Transform2D = rig_xf.affine_inverse()
+	for src in _smear_sources():
+		# 리그 기준 변환으로 저장·보간한다 — 월드 변환은 왼쪽을 볼 때 배율이 음수라 보간하면 뒤집힐 수 있다
+		var now: Transform2D = rig_inv * src.get_global_transform()
+		if _smear_prev.has(src):
+			var prev: Transform2D = _smear_prev[src]
+			for k in range(1, smear_fill + 1):
+				var w: float = float(k) / float(smear_fill + 1)
+				# 앞(오래된) 쪽일수록 조금 더 빨리 사라지게 해서 끝이 가늘어지는 꼬리가 된다
+				_spawn_smear(src, rig_xf * prev.interpolate_with(now, w), 0.7 + 0.3 * w)
+		_spawn_smear(src, rig_xf * now, 1.0)
+		_smear_prev[src] = now
+
+## 잔상 하나를 월드 변환 xf 자리에 남긴다 — 가장 오래된 칸을 재활용한다
+func _spawn_smear(src: Sprite2D, xf: Transform2D, life_ratio: float) -> void:
+	if _smears.is_empty():
+		_build_smears()
+	var idx: int = 0
+	for i in _smear_left.size():
+		if _smear_left[i] < _smear_left[idx]:
+			idx = i
+	var g: Sprite2D = _smears[idx]
+	g.texture = src.texture
+	g.centered = src.centered
+	g.offset = src.offset
+	g.flip_h = src.flip_h
+	g.flip_v = src.flip_v
+	g.region_enabled = src.region_enabled
+	g.region_rect = src.region_rect
+	g.z_index = src.z_index
+	g.global_transform = xf
+	_smear_left[idx] = smear_life * life_ratio
+	g.modulate.a = smear_alpha * life_ratio
+	g.visible = true
+
+## 잔상 칸을 만든다. top_level이라 리그가 움직여도 그 자리에 남고,
+## 오른손·손에 든 물건보다 앞 순서에 끼워 진짜 손·무기 뒤에 그려진다. owner를 안 줘서 씬에 저장되지 않는다
+func _build_smears() -> void:
+	var at: int = get_child_count()
+	if _hand_r:
+		at = mini(at, _hand_r.get_index())
+	if _hand_r_hold:
+		at = mini(at, _hand_r_hold.get_index())
+	for i in 48:
+		var g := Sprite2D.new()
+		g.top_level = true
+		g.visible = false
+		add_child(g)
+		move_child(g, at + i)
+		_smears.append(g)
+		_smear_left.append(0.0)
 
 ## 스윙 타 번호(_attack_variant)에 따른 감기 각도/후리기 각도/손 경로.
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
@@ -1981,24 +2463,9 @@ func set_action_face(on: bool) -> void:
 	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
 		_apply_base_head()
 
-## HP 비율(0~1)을 알려준다 — Fighter가 HP가 바뀔 때마다 부른다.
-## weary_hp_ratio 이하면 지친 얼굴로, 회복해서 그 위로 올라가면 원래 얼굴로 돌아온다.
-## weary_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
-func update_hp_ratio(ratio: float) -> void:
-	if _head == null or weary_head_texture == null:
-		return
-	var weary: bool = ratio <= weary_hp_ratio
-	if weary == _weary_on:
-		return
-	_weary_on = weary
-	if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
-		_apply_base_head()
-
-## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 지침 > 맨정신 순 우선).
+## 현재 상태에 맞는 머리 그림·배율을 머리에 적용한다 (액션 표정 > 취함 > 맨정신 순 우선).
 ## 액션 표정이 맨 위인 이유: 스킬을 쓰는 순간만큼은 그 표정이 보여야 한다.
-## **취함이 지침보다 위다(2026-09-10, 사용자 결정)** — 주정뱅이가 둘을 동시에 가진 유일한 캐릭터인데,
-## 술 스택은 토하기 사거리를 정하는 핵심 정보라 빈사 상태에서도 취한 얼굴이 보여야 한다.
-## 그래서 지친 얼굴은 "맨정신인데 HP가 얼마 안 남았을 때"만 뜬다
+## (HP가 적을 때의 지친 얼굴은 2026-09-26 사용자 요청으로 전 캐릭터에서 뺐다)
 func _apply_base_head() -> void:
 	if _head == null or _knocked_out:
 		return
@@ -2008,9 +2475,6 @@ func _apply_base_head() -> void:
 	elif _drunk_head_on and drunk_head_texture != null:
 		_head.texture = drunk_head_texture
 		_head.scale = drunk_head_scale if drunk_head_scale != Vector2.ZERO else _head_rest_scale
-	elif _weary_on and weary_head_texture != null:
-		_head.texture = weary_head_texture
-		_head.scale = weary_head_scale if weary_head_scale != Vector2.ZERO else _head_rest_scale
 	else:
 		_head.texture = _head_rest_texture
 		_head.scale = _head_rest_scale
@@ -2070,6 +2534,107 @@ func _pose_gun() -> void:
 		_gun.position = grip + gun_forward_offset
 		_gun.rotation = 0.0
 
+## 특수 idle 몸짓을 시작한다
+func _start_special() -> void:
+	_special_time = special_duration
+	_hiccups_fired = 0
+
+## 특수 idle 몸짓을 끝낸다 — 앞으로 끌어낸 왼손 그리는 순서를 되돌린다
+func _end_special() -> void:
+	_special_time = 0.0
+	if _hand_l:
+		_hand_l.z_index = _hand_l_rest_z
+
+## 특수 idle 몸짓을 지금 바로 한다(훈련장 테스트 버튼용). 몸짓이 없는 캐릭터면 false
+func play_special() -> bool:
+	if idle_special == 0:
+		return false
+	_end_lookback()
+	_scratch_time = 0.0
+	_idle_time = 0.0
+	_start_special()
+	return true
+
+func _pose_special() -> void:
+	var elapsed: float = special_duration - _special_time
+	var progress: float = elapsed / maxf(special_duration, 0.001)
+	match idle_special:
+		1:
+			_pose_glasses_push(progress)
+		2:
+			_pose_hiccup(elapsed)
+
+## 안경 치켜올리기 — 왼손이 코받침으로 올라가(0~30%) 쓱 밀어 올리고(35~55%) 잠깐 머물다(~75%) 내려온다.
+## 왼손은 원래 머리 뒤에 그려지므로 올라가 있는 동안만 머리 앞으로 끌어낸다
+func _pose_glasses_push(progress: float) -> void:
+	if _hand_l == null:
+		return
+	var reach: float
+	if progress < 0.3:
+		var p: float = progress / 0.3
+		reach = 1.0 - (1.0 - p) * (1.0 - p)
+	elif progress < 0.75:
+		reach = 1.0
+	else:
+		var p2: float = (progress - 0.75) / 0.25
+		reach = 1.0 - p2 * p2 * (3.0 - 2.0 * p2)
+	var push: float = sin(PI * clampf((progress - 0.35) / 0.2, 0.0, 1.0))
+	_hand_l.position = _hand_l.position.lerp(glasses_hand_pos + Vector2(0.0, -glasses_push * push), reach)
+	_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(glasses_hand_deg), reach)
+	_hand_l.z_index = 3 if reach > 0.05 else _hand_l_rest_z
+	if _head:
+		_head.position.y -= glasses_push_lift * push
+		_head.rotation += deg_to_rad(glasses_push_deg) * push
+
+## 딸꾹질 — 몸짓 시간 안에 hiccup_count번, 딸꾹할 때마다 머리가 톡 튀며 젖혀지고 몸·손도 살짝 따라 뜬다.
+## 딸꾹할 때마다 머리 위에 글자를 띄운다
+func _pose_hiccup(elapsed: float) -> void:
+	var count: int = maxi(hiccup_count, 1)
+	var pulse: float = 0.0
+	for k in count:
+		var at: float = special_duration * (0.12 + 0.72 * float(k) / count)
+		var local: float = (elapsed - at) / 0.28
+		if local >= 0.0 and k >= _hiccups_fired:
+			_hiccups_fired = k + 1
+			_spawn_hiccup_text()
+		if local >= 0.0 and local < 1.0:
+			# 순식간에 튀고(앞 20%) 천천히 내려앉는다
+			var v: float = local / 0.2 if local < 0.2 else 1.0 - (local - 0.2) / 0.8
+			pulse = maxf(pulse, v)
+	if pulse <= 0.0:
+		return
+	if _head:
+		_head.position.y -= hiccup_hop * pulse
+		_head.rotation += deg_to_rad(hiccup_deg) * pulse
+	if _body:
+		_body.position.y -= hiccup_hop * 0.4 * pulse
+	for hand in [_hand_l, _hand_r]:
+		if hand:
+			hand.position.y -= hiccup_hop * 0.5 * pulse
+
+## 머리 위에 "딸꾹!"을 띄워 올렸다가 흐리게 사라지게 한다 — 리그가 좌우로 뒤집혀도 글자는 안 뒤집히게 top_level로 둔다
+func _spawn_hiccup_text() -> void:
+	if hiccup_text.is_empty() or _head == null or Engine.is_editor_hint():
+		return
+	var label := Label.new()
+	label.text = hiccup_text
+	label.top_level = true
+	label.z_index = 60
+	label.add_theme_font_override("font", load("res://fonts/Jua-Regular.ttf"))
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	label.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.04))
+	label.add_theme_constant_override("outline_size", 6)
+	add_child(label)
+	label.reset_size()
+	var start: Vector2 = _head.global_position + Vector2(8.0 * signf(scale.x), -44.0) - label.size * 0.5
+	label.global_position = start
+	var tween := label.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "global_position", start + Vector2(0.0, -18.0), 0.65).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.35)
+	tween.chain().tween_callback(label.queue_free)
+
 ## 왼손을 머리로 올려 긁는 idle 동작 — 올리기(0~25%) → 긁기(25~75%) → 내리기(75~100%).
 ## reach는 "얼마나 머리에 닿은 자세인지"(0=제자리, 1=머리에 손이 닿음)
 func _pose_scratch() -> void:
@@ -2090,20 +2655,173 @@ func _pose_scratch() -> void:
 	_hand_l.position = _rest_positions[_hand_l] + scratch_hand_offset * reach + Vector2(wiggle, 0.0)
 	_hand_l.rotation = deg_to_rad(scratch_hand_deg * reach)
 
+## 머리를 돌리는 그림으로 바꿔 끼울 준비가 됐는지 — 그림마다 기준점·방향이 다 있고(0번 옆모습 포함), 머리가 평소 얼굴(또는 이미 돌리는 중)일 때만
+func _can_head_turn() -> bool:
+	var count: int = head_turn_textures.size()
+	if _head == null or count < 1 or head_turn_anchors.size() < count + 1 or head_turn_faces_left.size() < count + 1:
+		return false
+	return _is_turn_texture(_head.texture)
+
+## 평소 얼굴이거나 머리 돌리기용 그림(측면·정면·뒤통수)인지 — 이 밖의 그림이면 다른 표정이 들어온 것이다
+func _is_turn_texture(tex: Texture2D) -> bool:
+	return tex == _head_rest_texture or head_turn_textures.has(tex) or (tex != null and tex == head_back_texture)
+
+## 머리를 돌리는 단계 그림 하나로 바꿔 끼운다. frame: 0 옆 / 1~ head_turn_textures 순서(마지막이 정면).
+## dir: 1이면 바라보는 쪽, -1이면 그 반대쪽(그림을 한 번 더 뒤집는다 = 뒤를 본다).
+## 머리 공 중심이 평소 옆모습과 같은 자리, 지름이 같은 크기가 되도록 배율·위치를 계산한다.
+## 걷기 들썩임·움찔 같은 앞선 자세 오프셋은 그대로 두고 제자리 차이만 더한다
+func _set_head_frame(frame: int, dir: float) -> void:
+	var tex: Texture2D = _head_rest_texture if frame == 0 else head_turn_textures[frame - 1]
+	_set_head_image(tex, head_turn_anchors[frame], head_turn_faces_left[frame], dir)
+	_set_body_frame(frame, dir)
+
+## 머리 단계(frame, 0 = 옆 ~ 머리 그림 수 = 정면)에 맞춰 몸통 그림을 바꿔 끼운다.
+## 머리가 옆(0)이거나 정면(마지막)이면 원래 몸통(정면), 그 사이 단계에만 body_turn_textures를 나눠 끼운다 —
+## 사이 단계 수와 그림 수가 달라도 내림 비율로 맞춘다(머리 측면1·2 -> 3/4, 측면3 -> 거의 정면).
+## 몸통 그림은 전부 오른쪽을 보고 그려져 있어 dir(반대쪽이면 -1)만큼 뒤집고, **바닥 가운데**가 원래 자리에 오게 위치를 더한다
+func _set_body_frame(head_frame: int, dir: float) -> void:
+	if _body == null or body_turn_textures.is_empty() or _body_rest_texture == null:
+		return
+	var nh: int = maxi(head_turn_textures.size(), 1)
+	var tex: Texture2D = _body_rest_texture
+	if head_frame > 0 and head_frame < nh:
+		var middle: int = maxi(nh - 1, 1)
+		var i: int = clampi(int(floor(float(head_frame - 1) * body_turn_textures.size() / middle)), 0, body_turn_textures.size() - 1)
+		tex = body_turn_textures[i]
+	var sx: float = absf(_body_rest_scale.x)
+	var sy: float = _body_rest_scale.y
+	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
+	var here: Vector2 = _body_anchor_of(tex)
+	_body.texture = tex
+	_body.scale = Vector2(sx * dir, sy)
+	_body.position += Vector2((rest_anchor.x - here.x * dir) * sx, (rest_anchor.y - here.y) * sy)
+	_turn_applied = true
+
+## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다
+func _body_anchor_of(tex: Texture2D) -> Vector2:
+	if tex == null:
+		return Vector2.ZERO
+	if _body_anchor_cache.has(tex):
+		return _body_anchor_cache[tex]
+	var anchor := Vector2.ZERO
+	var img: Image = tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		var used: Rect2i = img.get_used_rect()
+		anchor = Vector2(used.position.x + used.size.x * 0.5 - img.get_width() * 0.5, used.end.y - img.get_height() * 0.5)
+	_body_anchor_cache[tex] = anchor
+	return anchor
+
+## 몸통을 원래 그림·배율로 되돌린다(위치는 매 프레임 _apply_pose가 제자리로 다시 잡는다)
+func _clear_body_frame() -> void:
+	if _body == null or _body_rest_texture == null or body_turn_textures.is_empty():
+		return
+	_body.texture = _body_rest_texture
+	_body.scale = _body_rest_scale
+
+## 머리를 그림 한 장(tex, 머리 공 here, 왼쪽을 보는지 faces_left)으로 바꿔 끼운다 — _set_head_frame과 뒤통수가 같이 쓴다
+func _set_head_image(tex: Texture2D, here: Vector3, faces_left: bool, dir: float) -> void:
+	_turn_applied = true
+	var base: Vector3 = head_turn_anchors[0]
+	var base_size: Vector2 = _head_rest_texture.get_size()
+	var size: Vector2 = tex.get_size()
+	var ratio: float = base.z / maxf(here.z, 1.0)
+	var sx: float = absf(_head_rest_scale.x) * ratio
+	var sy: float = _head_rest_scale.y * ratio
+	var mirror: float = (-1.0 if faces_left else 1.0) * dir
+	var rest_pos: Vector2 = _rest_positions[_head]
+	# 평소 옆모습의 머리 공 중심이 리그의 어디에 있는지 — 반대쪽을 볼 땐 좌우 대칭 자리로 간다
+	var center_x: float = (rest_pos.x + (base.x - base_size.x * 0.5) * absf(_head_rest_scale.x)) * dir
+	var center_y: float = rest_pos.y + (base.y - base_size.y * 0.5) * _head_rest_scale.y
+	var target := Vector2(
+		center_x - (here.x - size.x * 0.5) * sx * mirror,
+		center_y - (here.y - size.y * 0.5) * sy)
+	_head.texture = tex
+	_head.scale = Vector2(sx * mirror, sy)
+	_head.position += target - rest_pos
+
+## 머리 돌리기로 바꿔 끼운 그림을 평소 머리로 되돌린다. 그사이 다른 표정(피격 등)이 들어왔으면 그대로 둔다
+func _clear_head_frame() -> void:
+	if not _turn_applied or _head == null:
+		return
+	_turn_applied = false
+	# 반대쪽을 볼 땐 평소 옆모습 그림을 뒤집어 쓰므로, 그림이 같아도 배율은 꼭 되돌린다
+	if _is_turn_texture(_head.texture):
+		_head.texture = _head_rest_texture
+		_head.scale = _head_rest_scale
+	_clear_body_frame()
+
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
 ## 궁극기 연출 등에서 Visual의 scale을 잠깐 늘였다 줄이는 경우가 있어서,
 ## 크기는 건드리지 않고 x의 부호만 바라보는 방향에 맞춘다
 func _face_moving_direction() -> void:
 	if not (_fighter and is_instance_valid(_fighter)):
 		return
-	var facing_x: float = absf(scale.x) * signf(_fighter.facing)
+	var facing_sign: float = signf(_fighter.facing)
+	# 방향이 뒤집힌 순간 머리 돌리기를 시작한다(처음 한 번은 원래 방향을 기억만 한다)
+	if head_turn_on_face and _face_sign != 0.0 and facing_sign != _face_sign:
+		if _face_turn_time > 0.0 and facing_sign == _face_turn_from and _face_turn_progress() < 0.5:
+			# 몸이 아직 옛 방향인 채 도로 돌아왔다 — 몸은 그대로 맞으니 머리만 제자리로 둔다
+			_face_turn_time = 0.0
+			_clear_head_frame()
+		elif _can_head_turn() and not _face_turn_blocked():
+			_face_turn_from = _face_sign
+			_face_turn_time = face_turn_duration
+	_face_sign = facing_sign
+	# 머리가 정면에 오기 전(앞 절반)엔 몸이 아직 옛 방향을 본다 — 고개가 먼저 돌고 몸이 따라간다
+	var shown_sign: float = facing_sign
+	if _face_turn_time > 0.0 and _face_turn_progress() < 0.5:
+		shown_sign = _face_turn_from
+	var facing_x: float = absf(scale.x) * shown_sign
 	if not is_equal_approx(scale.x, facing_x):
 		scale.x = facing_x
+
+## 방향 전환 진행도(0 = 막 시작, 1 = 다 돔)
+func _face_turn_progress() -> float:
+	return 1.0 - _face_turn_time / maxf(face_turn_duration, 0.001)
+
+## 방향 전환을 그 자리에서 끝내야 하는 동작 중인지 — 손·몸을 따로 쓰는 동작이 시작되면 몸을 바로 새 방향으로 맞춘다
+func _face_turn_blocked() -> bool:
+	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
+		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 \
+		or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
+
+## 방향 전환 머리 돌리기 — 앞 절반은 몸이 옛 방향인 채 머리가 측면1 -> ... -> 정면으로 돌고,
+## 머리가 정면을 본 순간 몸이 뒤집힌 뒤 뒤 절반은 새 방향에서 측면3 -> ... -> 옆모습으로 마저 돈다.
+## 몸이 뒤집히는 걸 머리가 정면인 순간에 숨긴다. 옛 방향 옆모습(첫 단계)은 뒤집기 전과 같은 그림이라 건너뛴다
+func _pose_face_turn() -> void:
+	# 도는 도중 다른 표정(피격 등)이 들어오면 그쪽에 양보하고 멈춘다
+	if not _can_head_turn():
+		_face_turn_time = 0.0
+		return
+	var front: int = head_turn_textures.size()
+	var shown: int = front * 2
+	var step: int = clampi(int(_face_turn_progress() * shown), 0, shown - 1)
+	# 그림 n장이면: 앞 절반 1, 2, ..., n(정면) / 뒤 절반 n-1, ..., 0(옆모습). 둘 다 "그때 몸이 보는 쪽" 기준이라 dir은 1
+	var frame: int = step + 1 if step < front else shown - 1 - step
+	_set_head_frame(frame, 1.0)
+
+## 방향 전환 중 손·발을 몸 가운데(x = 0)로 모았다가 벌린다 — 몸이 뒤집히는 순간(진행도 절반) 가장 많이 모인다.
+## 그림 크기는 안 건드리고 위치만 좁혀서, 종이처럼 납작해지지 않고 "몸을 돌리며 팔다리가 모인다"로 보이게 한다
+func _pose_face_turn_limbs() -> void:
+	var squeeze: float = 1.0 - face_turn_limb_gather * sin(_face_turn_progress() * PI)
+	for part in [_hand_l, _hand_r, _foot_l, _foot_r]:
+		if part:
+			part.position.x *= squeeze
 
 ## 몸은 그대로 두고 머리만 반대쪽을 돌아본다 — 머리 scale.x가 옆모습(0)을 지나 부호가 뒤집혔다가 돌아온다.
 ## 머리 세로 크기(scale.y)는 안 뒤집으므로 그게 곧 원래 크기다 — 가로를 거기에 맞춰 부호만 바꾼다
 func _pose_lookback() -> void:
 	if _head == null:
+		return
+	# 돌리는 그림이 있으면 옆 -> 측면1 -> ... -> 정면 -> ... -> 측면1 -> 반대쪽 옆으로 돈다(돌아올 땐 거꾸로).
+	# 그림이 n장이면 단계는 2n+1개 — 정면(n번)까지는 바라보는 쪽, 그 뒤로는 뒤집어서 반대쪽 그림이 된다
+	if _can_head_turn():
+		var front: int = head_turn_textures.size()
+		var steps: int = front * 2 + 1
+		var step: int = clampi(int(_lookback_reach() * steps), 0, steps - 1)
+		_set_head_frame(front - absi(step - front), 1.0 if step <= front else -1.0)
 		return
 	_head.scale.x = _head.scale.y * (1.0 - 2.0 * _lookback_reach())
 
@@ -2131,8 +2849,37 @@ func _pose_guard() -> void:
 
 ## 뒤돌아보기를 끝내고 머리를 앞 방향으로 되돌린다 (정상 종료·중단 공통).
 ## 세로 크기(scale.y)가 원래 크기이므로 가로를 거기에 양수로 맞춘다 — 끊겨도 머리가 뒤집힌 채 굳지 않는다
+## 머리 긁기를 지금 바로 한다(훈련장 테스트 버튼용). 가만히 서 있을 때만 이어진다 — 움직이면 평소처럼 바로 끊긴다
+func play_scratch() -> void:
+	_end_lookback()
+	_idle_time = 0.0
+	_scratch_time = scratch_duration
+
+## 뒤돌아보기를 지금 바로 한다(훈련장 테스트 버튼용). 가만히 서 있을 때만 이어진다
+func play_lookback() -> void:
+	if _head == null:
+		return
+	_scratch_time = 0.0
+	_idle_time = 0.0
+	_lookback_time = lookback_duration
+
+## 머리에 붙은 눈 깜빡임(EyeBlink)을 지금 바로 한 번 깜빡이게 한다(훈련장 테스트 버튼용). 눈 깜빡임이 없으면 false
+func play_blink() -> bool:
+	if _head == null:
+		return false
+	var found: bool = false
+	for child in _head.get_children():
+		if child.has_method("blink_now"):
+			child.blink_now()
+			found = true
+	return found
+
 func _end_lookback() -> void:
 	_lookback_time = 0.0
+	# 방향 전환으로 머리가 도는 중이면(걷는 중이라 여기로 매 프레임 온다) 그 그림을 지우지 않는다
+	if _face_turn_time > 0.0:
+		return
+	_clear_head_frame()
 	if _head:
 		_head.scale.x = _head.scale.y
 

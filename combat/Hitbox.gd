@@ -18,6 +18,9 @@ signal connected(victim: Node)
 ## 명중 시 이 장면을 명중 지점에 스폰한다 (주정뱅이 술병 깨진 유리 파편 등). 비어 있으면 아무것도 안 한다.
 ## 스폰된 노드에 setup(pos) 메서드가 있으면 그걸로 위치를 넘기고, 없으면 global_position만 맞춘다
 @export var debris_scene: PackedScene
+## 명중 시 타격 스파크(HitSpark)를 띄울지. 끄면 방어에 막혔을 때의 파란 스파크만 남는다 —
+## 막힌 건 "BLOCK" 글자와 함께 보여야 막았다는 게 읽혀서 그대로 둔다(2026-09-25, 금쪽이 기본공격에서 끔)
+@export var hit_spark: bool = true
 ## 명중 시 카메라를 흔드는 세기 = damage × 이 값 (0이면 안 흔든다). 데미지가 클수록 크게·오래 흔들린다
 @export var shake_per_damage: float = 0.04
 ## 맞은 상대를 위로 띄우는 힘(px/s). 음수(기본)면 데미지 비례 기본 팝업, 0이면 안 띄운다(지상 유지).
@@ -28,7 +31,9 @@ signal connected(victim: Node)
 ## 명중하는 순간 **화면 전체가** 멈추는 시간(초) = 이 값 + 데미지 x `hitstop_per_damage`(최대 `hitstop_max`).
 ## 맞은 쪽만 굳는 경직(`Fighter._hitstun_time`)과는 **다른 것**이다 — 때린 쪽·이펙트·카메라까지 같이 멈춰서
 ## 주먹이 상대를 그냥 통과하지 않고 "쿵" 하고 부딪힌 것처럼 보인다. 0으로 두면 그 히트박스는 안 멈춘다
-@export var hitstop_time: float = 0.022
+## **2026-09-25 사용자 요청으로 꺼 뒀다(0).** 이 값이 0이면 `_apply_hitstop()`이 바로 빠져나가서
+## 데미지 비례분·`AttackData.hitstop_scale`도 같이 무시된다. 다시 켜려면 0.022(예전 값)로 돌리면 된다
+@export var hitstop_time: float = 0.0
 ## 데미지 1당 더 멈추는 시간(초) — 센 공격일수록 길게 멈춘다
 @export var hitstop_per_damage: float = 0.002
 ## 아무리 세도 이 이상은 안 멈춘다(초). 너무 길면 조작이 끊긴 것처럼 느껴진다
@@ -102,7 +107,8 @@ func _try_hit(area: Area2D) -> bool:
 	if blocked:
 		_notify_blocked_by_guard()
 	_apply_hitstop()
-	_spawn_spark(area.global_position, kb, blocked)
+	if hit_spark or blocked:
+		_spawn_spark(area.global_position, kb, blocked)
 	if debris_scene != null and debris_enabled:
 		_spawn_debris(area.global_position, kb)
 	_shake_camera()

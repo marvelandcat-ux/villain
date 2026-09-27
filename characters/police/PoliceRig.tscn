@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://cc857mdf7t0p8" path="res://sprite/storymode/경찰서/경찰몸통_배경제거.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="5_baton"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=2119973844 instance=ExtResource("1_rig")]
 grab_slam_deg = -58.0
@@ -37,3 +38,8 @@ texture = ExtResource("5_baton")
 position = Vector2(0, -27.000002)
 scale = Vector2(0.045834586, 0.045551606)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(247.0, 115.0)
+script = ExtResource("99_blink")
+eye_size = Vector2(205, 128)

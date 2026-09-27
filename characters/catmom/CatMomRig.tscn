@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://bgjh3mm7rk8ly" path="res://sprite/캣/치마.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://cb50firgh23gl" path="res://sprite/캣/발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/캣/손.png" id="5_hand"]
+[ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
 
 [node name="BodyRig" unique_id=1130472802 instance=ExtResource("1_rig")]
 
@@ -28,3 +29,8 @@ texture = ExtResource("5_hand")
 position = Vector2(-1.52, -32.07)
 scale = Vector2(0.042, 0.042)
 texture = ExtResource("2_head")
+
+[node name="LensGlint" type="Node2D" parent="Head"]
+position = Vector2(274.0, 3.0)
+script = ExtResource("90_glint")
+lens_size = Vector2(200, 96)

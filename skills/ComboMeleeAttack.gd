@@ -77,10 +77,17 @@ extends MeleeAttack
 @export var launch_spin_turns: float = 0.0
 ## 날아가는 동안 뒤에 연기 꼬리를 남길지
 @export var launch_smoke: bool = false
+## 마무리 타 넉백 가로 세기에 곱하는 배수 — 3타로 더 멀리 날린다(2026-09-26 사용자 요청 "거리 1.5배", 전 캐릭터 공통). 1이면 예전과 같다.
+## **거리가 아니라 속도 배수다** — 바닥에서 미끄러지는 거리는 속도의 제곱에 비례해서, 1.5를 주면 거리가 1.8~2.1배가 됐다(실측).
+## 1.25일 때 거리 약 1.5배(금쪽이 3타 몫 194 -> 280px, 악플러 38 -> 57px)
+@export var finisher_distance_scale: float = 1.25
+## 마무리 타에 맞은 상대에게 날아가는 이펙트(충격·바람 줄기·먼지 고리, `combat/LaunchTrail.gd`)를 붙일지
+@export var finisher_trail: bool = true
 
 ## 타입을 안 붙이고 preload로 가져온다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다 (Fighter._shield, ShoulderChargeSkill의 ChargeWind와 같은 이유)
 const LAUNCH_SMOKE := preload("res://combat/LaunchSmoke.gd")
+const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 
 ## --- 드롭킥 마무리 (촉법소년 3타) ---
 ## 켜면 마무리 타가 "뛰어올라 두 발로 차고 넘어졌다 일어나는" 드롭킥이 된다.
@@ -233,8 +240,6 @@ func _launch_finisher(victim: Node) -> void:
 	var stun: float = d.hitstun if d != null else launch_stun
 	var turns: float = d.tumble_turns if d != null else launch_spin_turns
 	var smoke: bool = d.launch_smoke if d != null else launch_smoke
-	if stun <= 0.0 and turns <= 0.0 and not smoke:
-		return
 	if not (victim is Fighter) or not is_instance_valid(victim):
 		return
 	var target: Fighter = victim
@@ -244,6 +249,11 @@ func _launch_finisher(victim: Node) -> void:
 	var dir: float = 1.0
 	if is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
 		dir = signf(_fighter.facing)
+	# 날아가는 이펙트는 경직·구르기 설정과 상관없이 모든 캐릭터의 마무리 타에 붙인다
+	if finisher_trail:
+		_spawn_launch_trail(target, Vector2(dir, -0.35))
+	if stun <= 0.0 and turns <= 0.0 and not smoke:
+		return
 	if stun > 0.0:
 		target.apply_hitstun(stun)
 	if turns > 0.0 and target.has_method("play_launch_tumble"):
@@ -251,6 +261,15 @@ func _launch_finisher(victim: Node) -> void:
 		target.play_launch_tumble(turns, stun if stun > 0.0 else 0.6, dir)
 	if smoke:
 		_spawn_launch_smoke(target, maxf(stun, 0.45))
+
+## 마무리 타 이펙트(충격·바람 줄기·먼지 고리)를 **맵에** 붙인다 — 연기와 같은 이유(자식이면 좌우 반전에 뒤집힌다)
+func _spawn_launch_trail(target: Fighter, dir: Vector2) -> void:
+	var parent: Node = target.get_parent()
+	if parent == null:
+		return
+	var trail = LAUNCH_TRAIL.new()
+	parent.add_child(trail)
+	trail.setup(target, dir)
 
 ## 날아가는 사람을 따라다니며 연기를 흘리는 노드를 **맵에** 붙인다 (맞은 사람의 자식으로 달면
 ## 그 사람이 좌우로 뒤집힐 때 연기까지 뒤집힌다)
@@ -422,22 +441,24 @@ func _fire(fighter: Fighter, step: int) -> void:
 		# **예비동작이 0이어도 물리 프레임 두 번은 미룬다(2026-09-17).** 판정이 꺼진 채로 물리 계산이 한 번은
 		# 돌아야 엔진이 "겹침이 풀렸다"고 기록하고, 다시 켰을 때 area_entered가 새로 나온다.
 		# 앞 타가 맞은 순간 바로 다음 타 판정을 켜면 상대가 코앞에 그대로 겹쳐 있어도 "새로 닿았다"가 안 잡혀서
-		# 캣맘·층간소음·헬스장(windup 0)만 2타를 헛쳤다(헤드리스 실측). 한 번만 기다리면 끄는 예약이 아직 안 돌아 부족하다
+		# 캣맘·층간소음(windup 0)만 2타를 헛쳤다(헤드리스 실측). 한 번만 기다리면 끄는 예약이 아직 안 돌아 부족하다
 		await get_tree().physics_frame
 		await get_tree().physics_frame
 	# 그 사이 스윙이 끝났거나(판정됨) 캐릭터가 사라졌으면 접는다
 	# (드롭킥은 여기서 접어도 착지·일어나기는 after_physics가 끝까지 마무리한다)
 	if not is_instance_valid(fighter) or not _swinging or _resolved:
 		return
+	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
+	var push_scale: float = finisher_distance_scale if is_final else 1.0
 	if d != null:
 		hitbox.damage = fighter.compute_damage(d.damage)
-		hitbox.knockback = Vector2(d.knockback.x * fighter.facing, d.knockback.y)
+		hitbox.knockback = Vector2(d.knockback.x * fighter.facing * push_scale, d.knockback.y)
 		hitbox.pop_override = d.pop
 		hitbox.hitstop_multiplier = d.hitstop_scale
 		hitbox.shake_multiplier = d.shake_scale
 	else:
 		hitbox.damage = fighter.compute_damage(combo_damage[step])
-		hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing, combo_knockback[step].y)
+		hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing * push_scale, combo_knockback[step].y)
 		hitbox.pop_override = combo_pop[step]
 		hitbox.hitstop_multiplier = 1.0
 		hitbox.shake_multiplier = 1.0

@@ -5,14 +5,13 @@
 [ext_resource type="Texture2D" uid="uid://c776qrsfrnbvl" path="res://sprite/일진/일진의 여자친구/일진 여자친구.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://iwaygd8w4jl1" path="res://sprite/일진/일진의 여자친구/일진 여자친구의 발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://kalrb3t3jecf" path="res://sprite/일진/일진의 여자친구/아픈 일진의 여자친구.png" id="5_hurt"]
-[ext_resource type="Texture2D" uid="uid://bw2cercfuodmu" path="res://sprite/일진/일진의 여자친구/힘든 일진 여자친구.png" id="6_weary"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" instance=ExtResource("1_rig")]
 idle_gestures = false
 attack_kick_hit = 0
 attack_duration = 0.5
 hurt_head_texture = ExtResource("5_hurt")
-weary_head_texture = ExtResource("6_weary")
 
 [node name="FootL" parent="." index="0"]
 texture = ExtResource("4_foot")
@@ -29,3 +28,8 @@ texture = ExtResource("3_body")
 position = Vector2(-1.47, -32.09)
 scale = Vector2(0.0528, 0.0528)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(197.5, -36.0)
+script = ExtResource("99_blink")
+eye_size = Vector2(188, 120)

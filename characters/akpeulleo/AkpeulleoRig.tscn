@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://btx50km8m0yla" path="res://sprite/악플러/몸/악플러키보드.png" id="5_keyboard"]
 [ext_resource type="Texture2D" uid="uid://bmdvun6vy5s2m" path="res://sprite/악플러/몸/악플러 피격.png" id="6_hurtface"]
 [ext_resource type="Texture2D" uid="uid://b4j2i0yc5nom6" path="res://sprite/악플러/몸/악플러 분노.png" id="7_rageface"]
-[ext_resource type="Texture2D" uid="uid://cjmaacwrrbbkt" path="res://sprite/악플러/악플러 힘듬.png" id="8_wearyface"]
+[ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
 attack_raise_deg = 25.0
@@ -20,7 +20,8 @@ attack_swing_arc = 26.0
 cast_hides_held_item = true
 hurt_head_texture = ExtResource("6_hurtface")
 action_head_texture = ExtResource("7_rageface")
-weary_head_texture = ExtResource("8_wearyface")
+idle_special = 1
+glasses_hand_pos = Vector2(17, -25)
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")
@@ -44,3 +45,13 @@ texture = ExtResource("5_keyboard")
 position = Vector2(-3.7158074, -32.2691)
 scale = Vector2(0.04945996, 0.05222196)
 texture = ExtResource("2_head")
+
+[node name="LensGlint" type="Node2D" parent="Head"]
+position = Vector2(309.0, 69.5)
+script = ExtResource("90_glint")
+lens_size = Vector2(190, 200)
+band_width = 0.3
+trail_width = 0.1
+glint_color = Color(0.3, 0.62, 1, 0.95)
+sparkle_size = 150.0
+sweep_time = 0.45

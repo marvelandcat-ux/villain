@@ -5,10 +5,10 @@
 [ext_resource type="Texture2D" uid="uid://blx0n0rkqua6n" path="res://sprite/일진/일진 몸.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://oabuoswrp2df" path="res://sprite/일진/일진 무기.png" id="4_bag"]
 [ext_resource type="Texture2D" uid="uid://cf1t6tg65jq0h" path="res://sprite/일진/일진 아픈.png" id="5_hurt"]
-[ext_resource type="Texture2D" uid="uid://ulvntt11xpba" path="res://sprite/일진/힘든일진.png" id="6_weary"]
 [ext_resource type="Texture2D" uid="uid://cwg4fn2rm8t0f" path="res://sprite/일진/일진발.png" id="8_foot"]
 [ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="9_cig"]
 [ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smokeface"]
+[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=650163351 instance=ExtResource("1_rig")]
 attack_two_handed = true
@@ -21,8 +21,6 @@ hurt_head_texture = ExtResource("5_hurt")
 hurt_head_scale = Vector2(0.0434, 0.0434)
 action_head_texture = ExtResource("10_smokeface")
 action_head_scale = Vector2(0.0448, 0.0448)
-weary_head_texture = ExtResource("6_weary")
-weary_head_scale = Vector2(0.0439, 0.0439)
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("8_foot")
@@ -59,3 +57,8 @@ texture = ExtResource("9_cig")
 position = Vector2(-1.88, -34.05)
 scale = Vector2(0.0481, 0.0481)
 texture = ExtResource("2_head")
+
+[node name="EyeBlink" type="Node2D" parent="Head"]
+position = Vector2(252.0, 98.0)
+script = ExtResource("99_blink")
+eye_size = Vector2(246, 200)

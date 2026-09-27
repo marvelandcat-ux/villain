@@ -4,7 +4,7 @@ extends Node
 
 ## 선택 가능한 캐릭터 (표시 이름 -> 씬 경로)
 const CHARACTERS := {
-	"버릇없는 아이": "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
+	"금쪽이": "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn",
 	"악플러": "res://characters/akpeulleo/Akpeulleo.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
@@ -30,7 +30,7 @@ func training_characters() -> Dictionary:
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
 ## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
 const CHARACTER_COLORS := {
-	"버릇없는 아이": Color(0.95, 0.85, 0.2),
+	"금쪽이": Color(0.95, 0.85, 0.2),
 	"악플러": Color(0.85, 0.25, 0.25),
 	"주정뱅이": Color(0.8, 0.5, 0.2),
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
@@ -44,7 +44,7 @@ const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 ## 정면 초상화 그림이 있는 캐릭터만 등록 — CharacterSelect가 이 목록에 있으면 이미지로,
 ## 없으면(아직 그림이 없는 캐릭터) 위 CHARACTER_COLORS 색상 타일로 대신 보여준다
 const PORTRAITS := {
-	"버릇없는 아이": "res://sprite/축법소년/축법소년 정면.png",
+	"금쪽이": "res://sprite/축법소년/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
 	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
@@ -57,7 +57,7 @@ const PORTRAITS := {
 ## Fighter 없이 이 씬만 인스턴스하면 BodyRig.gd가 부모를 Fighter로 못 찾아 조용히 idle(숨쉬기)만 돈다 —
 ## 그 자체가 딱 미리보기로 쓰기 좋은 정지 동작이라 별도 처리가 필요 없다. 6명 전원 등록되어 있다
 const CHARACTER_RIGS := {
-	"버릇없는 아이": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
+	"금쪽이": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
 	"악플러": "res://characters/akpeulleo/AkpeulleoRig.tscn",
 	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
@@ -153,6 +153,9 @@ var clash_minigame_enabled: bool = true
 var guard_enabled: bool = true
 ## 꺼두면 방향키 두 번을 눌러도 대시(Fighter.can_dash())가 아예 안 나간다(RoomSettings에서 설정)
 var dash_enabled: bool = true
+## 켜면 대전 모드(pvp)의 P2를 컴퓨터(규칙 기반 AIController)가 조종한다(RoomSettings "상대" 줄, 2026-09-27).
+## 스토리 모드는 이 값과 상관없이 항상 P2가 AI(ClaudeAIController)다
+var vs_ai: bool = false
 
 ## .env 파일에서 불러온 Claude API 키. ClaudeAIController가 P2 AI 판단에 사용한다.
 ## .env는 git에 커밋하지 않는 로컬 파일이라(.env.example 참고) 파일이 없으면 빈 문자열로 남는다

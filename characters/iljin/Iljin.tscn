@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/IljinStats.tres" id="2"]
@@ -19,6 +19,10 @@
 radius = 20.0
 height = 60.0
 
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hurt"]
+radius = 20.0
+height = 94.0
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(34, 30)
 
@@ -35,7 +39,8 @@ shape = SubResource("CapsuleShape2D_body")
 script = ExtResource("5")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
-shape = SubResource("CapsuleShape2D_body")
+position = Vector2(0, -17)
+shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")

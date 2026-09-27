@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://drrr4hqebxnvq"]
 
-[ext_resource type="Texture2D" uid="uid://dm5gc2chybuoe" path="res://sprite/축법소년/축법소년 정면.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://bf3scs88bumcp" path="res://sprite/축법소년/축법소년 정면.png" id="1"]
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="3"]
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="4"]
@@ -42,7 +42,7 @@ anchors_preset = 0
 offset_right = 1320.0
 offset_bottom = 200.0
 
-[node name="버릇없는 아이" type="Panel" parent="." unique_id=2051123541]
+[node name="금쪽이" type="Panel" parent="." unique_id=2051123541]
 clip_contents = true
 layout_mode = 0
 offset_left = 10.0
@@ -50,7 +50,7 @@ offset_top = 10.0
 offset_right = 210.0
 offset_bottom = 190.0
 
-[node name="Portrait" type="TextureRect" parent="버릇없는 아이" unique_id=600064873]
+[node name="Portrait" type="TextureRect" parent="금쪽이" unique_id=600064873]
 layout_mode = 0
 offset_left = -15.0
 offset_top = -8.0
