@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cip2pp742y1uc"
-path="res://.godot/imported/자전거_조각_앞바퀴.png-ce13761b7083541ecc746d1eef4c2331.ctex"
+uid="uid://ch1dqfctg7okf"
+path="res://.godot/imported/악플러 분노 측면 1.png-616ef9c83f055d148c653d4daf8097bc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/축법소년/자전거_조각_앞바퀴.png"
-dest_files=["res://.godot/imported/자전거_조각_앞바퀴.png-ce13761b7083541ecc746d1eef4c2331.ctex"]
+source_file="res://sprite/악플러/몸/악플러 분노 측면 1.png"
+dest_files=["res://.godot/imported/악플러 분노 측면 1.png-616ef9c83f055d148c653d4daf8097bc.ctex"]
 
 [params]
 

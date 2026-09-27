@@ -186,6 +186,13 @@ func _wreck_bike(fighter: Fighter) -> void:
 		return
 	var wreck = BIKE_WRECK.new()
 	parent.add_child(wreck)
+	# 배경보다 앞·캐릭터보다 뒤에 그리려고 맵에서 가장 앞선 캐릭터 바로 앞 순서로 끼운다.
+	# z_index를 낮추는 방식은 배경이 z 0인 맵(헬스장)에서 배경 뒤로 숨어 안 보였다
+	var first: int = parent.get_child_count() - 1
+	for f in get_tree().get_nodes_in_group("fighters"):
+		if f.get_parent() == parent:
+			first = mini(first, f.get_index())
+	parent.move_child(wreck, first)
 	wreck.setup(bike, _direction)
 	if visual.has_method("break_bike"):
 		visual.break_bike()

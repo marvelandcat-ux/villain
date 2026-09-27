@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bh24vbjmy6meq"
-path="res://.godot/imported/자전거_조각_뒷바퀴.png-5e130e6457d6250f98b4275871ae0589.ctex"
+uid="uid://cqil4tpodknre"
+path="res://.godot/imported/자전거_조각_안장.png-3cac0c61dbd66ed70a78d7e8474d1cca.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/축법소년/자전거_조각_뒷바퀴.png"
-dest_files=["res://.godot/imported/자전거_조각_뒷바퀴.png-5e130e6457d6250f98b4275871ae0589.ctex"]
+source_file="res://sprite/축법소년/자전거_조각_안장.png"
+dest_files=["res://.godot/imported/자전거_조각_안장.png-3cac0c61dbd66ed70a78d7e8474d1cca.ctex"]
 
 [params]
 
