@@ -96,6 +96,10 @@ func _ready() -> void:
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 
+	# 스토리 VS 화면이 **화면을 덮어 둔 채로** 끝난다 — 캐릭터가 다 자리잡은 지금 걷어낸다.
+	# 덮어 둔 게 없으면(대전 모드) 그냥 지나간다
+	await SceneTransition.uncover()
+
 	var round_start: RoundStart = load("res://ui/RoundStart.tscn").instantiate()
 	add_child(round_start)
 	await round_start.finished

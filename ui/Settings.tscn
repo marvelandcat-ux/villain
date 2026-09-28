@@ -23,7 +23,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1rdb0"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -31,7 +31,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mi372"]
 bg_color = Color(0.72, 0.18, 0.28, 0.95)
@@ -39,7 +39,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a6vu5"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -47,7 +47,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g1mpe"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -55,7 +55,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gn2nj"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -63,7 +63,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7amd4"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -71,7 +71,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_46d88"]
 bg_color = Color(0.72, 0.18, 0.28, 0.95)
@@ -79,7 +79,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8rdk0"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -87,7 +87,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_aabdw"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -95,7 +95,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.58, 0.72, 0.85)
+border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_34yyu"]
 
@@ -287,6 +287,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="GraphicsPanel" type="Control" parent="Card" unique_id=82600255]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -317,6 +318,7 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 flat = true
 script = ExtResource("5_toggle")
+outline_color = Color(1, 1, 1, 1)
 
 [node name="ResolutionLabel" type="Label" parent="Card/GraphicsPanel" unique_id=1521197362]
 layout_mode = 0
@@ -406,6 +408,7 @@ offset_bottom = 292.0
 mouse_default_cursor_shape = 2
 script = ExtResource("6_slider")
 value = 0.85
+outline_color = Color(1, 1, 1, 1)
 
 [node name="MasterPercent" type="Label" parent="Card/AudioPanel" unique_id=1817461710]
 layout_mode = 0
@@ -439,6 +442,7 @@ offset_bottom = 395.0
 mouse_default_cursor_shape = 2
 script = ExtResource("6_slider")
 value = 0.0
+outline_color = Color(1, 1, 1, 1)
 
 [node name="MusicPercent" type="Label" parent="Card/AudioPanel" unique_id=590616147]
 layout_mode = 0
@@ -472,6 +476,7 @@ offset_bottom = 496.0
 mouse_default_cursor_shape = 2
 script = ExtResource("6_slider")
 value = 0.35
+outline_color = Color(1, 1, 1, 1)
 
 [node name="SfxPercent" type="Label" parent="Card/AudioPanel" unique_id=1072676588]
 layout_mode = 0
@@ -496,7 +501,6 @@ theme_override_font_sizes/font_size = 20
 text = "이 빌드는 소리가 꺼져 있습니다"
 
 [node name="ControlsPanel" type="Control" parent="Card" unique_id=64606535]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -508,9 +512,9 @@ mouse_filter = 2
 [node name="Hint" type="Label" parent="Card/ControlsPanel" unique_id=864891546]
 layout_mode = 0
 offset_left = 300.0
-offset_top = 244.0
+offset_top = 193.0
 offset_right = 980.0
-offset_bottom = 276.0
+offset_bottom = 225.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 20
 text = "바꿀 키를 누른 뒤 새 키를 입력하세요 (ESC로 취소)"
@@ -519,9 +523,9 @@ horizontal_alignment = 1
 [node name="P1Header" type="Label" parent="Card/ControlsPanel" unique_id=471680980]
 layout_mode = 0
 offset_left = 330.0
-offset_top = 284.0
+offset_top = 233.0
 offset_right = 610.0
-offset_bottom = 314.0
+offset_bottom = 267.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "1P"
@@ -529,17 +533,17 @@ text = "1P"
 [node name="P1Column" type="Control" parent="Card/ControlsPanel" unique_id=288456711]
 anchors_preset = 0
 offset_left = 330.0
-offset_top = 318.0
+offset_top = 274.0
 offset_right = 596.0
-offset_bottom = 558.0
+offset_bottom = 514.0
 mouse_filter = 2
 
 [node name="P2Header" type="Label" parent="Card/ControlsPanel" unique_id=1104106765]
 layout_mode = 0
 offset_left = 670.0
-offset_top = 284.0
+offset_top = 233.0
 offset_right = 950.0
-offset_bottom = 314.0
+offset_bottom = 267.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "2P"
@@ -547,17 +551,17 @@ text = "2P"
 [node name="P2Column" type="Control" parent="Card/ControlsPanel" unique_id=1472531832]
 anchors_preset = 0
 offset_left = 670.0
-offset_top = 318.0
+offset_top = 274.0
 offset_right = 936.0
-offset_bottom = 558.0
+offset_bottom = 514.0
 mouse_filter = 2
 
 [node name="ResetButton" type="Button" parent="Card/ControlsPanel" unique_id=934742503]
 layout_mode = 0
-offset_left = 540.0
-offset_top = 566.0
-offset_right = 740.0
-offset_bottom = 602.0
+offset_left = 479.0
+offset_top = 554.0
+offset_right = 795.0
+offset_bottom = 590.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "조작키 초기화"

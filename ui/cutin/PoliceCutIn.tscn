@@ -1,0 +1,100 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://ui/cutin/PoliceCutIn.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰몸통_배경제거.png" id="2_body"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰정면.png" id="3_head"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_hand"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/궁극기경찰차.png" id="5_bg"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/미란다종이.png" id="6_paper"]
+[ext_resource type="Script" path="res://ui/cutin/PoliceMouth.gd" id="7_mouth"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰정면_입다문.png" id="8_shut"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_addblue"]
+blend_mode = 1
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_addred"]
+blend_mode = 1
+
+[node name="PoliceCutIn" type="Node2D"]
+script = ExtResource("1")
+head_closed_texture = ExtResource("8_shut")
+
+[node name="BgColor" type="ColorRect" parent="."]
+offset_left = -1400.0
+offset_top = -800.0
+offset_right = 1400.0
+offset_bottom = 800.0
+mouse_filter = 2
+color = Color(0.0118, 0.0392, 0.098, 1)
+
+[node name="Bg" type="Sprite2D" parent="."]
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("5_bg")
+
+[node name="Flash" type="Node2D" parent="."]
+
+[node name="BlueWash" type="ColorRect" parent="Flash"]
+material = SubResource("CanvasItemMaterial_addblue")
+modulate = Color(1, 1, 1, 0)
+offset_left = -768.0
+offset_top = -512.0
+offset_right = 768.0
+offset_bottom = 512.0
+mouse_filter = 2
+color = Color(0.16, 0.42, 1, 1)
+
+[node name="RedWash" type="ColorRect" parent="Flash"]
+material = SubResource("CanvasItemMaterial_addred")
+modulate = Color(1, 1, 1, 0)
+offset_left = -768.0
+offset_top = -512.0
+offset_right = 768.0
+offset_bottom = 512.0
+mouse_filter = 2
+color = Color(1, 0.18, 0.22, 1)
+
+[node name="Police" type="Node2D" parent="."]
+position = Vector2(170, 40)
+
+[node name="Body" type="Sprite2D" parent="Police"]
+position = Vector2(11, 17)
+scale = Vector2(0.147, 0.168)
+texture = ExtResource("2_body")
+
+[node name="HandR" type="Sprite2D" parent="Police"]
+position = Vector2(165, 27)
+scale = Vector2(0.605, 0.605)
+texture = ExtResource("4_hand")
+
+[node name="Head" type="Sprite2D" parent="Police"]
+position = Vector2(0, -148)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("3_head")
+
+[node name="Mouth" type="Node2D" parent="Police/Head"]
+position = Vector2(-26, 200)
+script = ExtResource("7_mouth")
+
+[node name="PaperGroup" type="Node2D" parent="."]
+position = Vector2(-180, -84)
+
+[node name="PaperPlaceholder" type="Node2D" parent="PaperGroup"]
+
+[node name="Fill" type="Polygon2D" parent="PaperGroup/PaperPlaceholder"]
+polygon = PackedVector2Array(-108, 30, 108, 30, 108, 290, -108, 290)
+
+[node name="Edge" type="Line2D" parent="PaperGroup/PaperPlaceholder"]
+points = PackedVector2Array(-108, 30, 108, 30, 108, 290, -108, 290)
+closed = true
+width = 7.0
+default_color = Color(0.05, 0.05, 0.05, 1)
+joint_mode = 2
+
+[node name="Paper" type="Sprite2D" parent="PaperGroup"]
+position = Vector2(0, 178)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("6_paper")
+
+[node name="PaperHand" type="Sprite2D" parent="PaperGroup"]
+scale = Vector2(0.605, 0.605)
+texture = ExtResource("4_hand")
