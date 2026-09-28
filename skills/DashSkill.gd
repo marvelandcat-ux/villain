@@ -21,8 +21,11 @@ extends Skill
 
 ## 적을 들이받으면 적이 입는 데미지
 @export var enemy_hit_damage: int = 10
-## 적을 들이받으면 촉법소년 자신도 입는 데미지 (자전거는 브레이크가 없다)
-@export var enemy_hit_self_damage: int = 10
+## 적을 들이받으면 촉법소년 자신도 입는 데미지. **0이면 피해 없이 튕겨 나오기만 한다**(2026-09-28 사용자 요청으로 10 -> 0).
+## 벽에 박을 때의 자해(self_damage_on_wall)는 그대로다
+@export var enemy_hit_self_damage: int = 0
+## 적을 들이받으면 자전거가 세 조각으로 부서져 바닥에 남는다(combat/BikeWreck.gd, 2026-09-28). 다음 돌진 땐 새 자전거가 나온다
+@export var wreck_on_enemy_hit: bool = true
 ## 서로 튕겨나가는 넉백 — 적은 진행 방향으로, 자신은 반대로 날아간다.
 ## 이 값이 넉백의 기준값이다.
 ## 실제 넉백 = 이 값 × 진행도 배율(min~mid~max) × knockback_scale_ratio. 지금 절반 탔을 때는 0.7배
@@ -47,6 +50,7 @@ extends Skill
 ## 타입을 안 붙이고 preload로 가져온다 — 새 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다(ShoulderChargeSkill이 ChargeWind를 가져오는 것과 같은 이유)
 const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
+const BIKE_WRECK := preload("res://combat/BikeWreck.gd")
 var _wind = null
 
 var _time_left: float = 0.0
@@ -155,10 +159,43 @@ func _collide_with_enemy(fighter: Fighter, enemy: Fighter) -> void:
 	_spawn_burst(fighter, (fighter.global_position + enemy.global_position) * 0.5)
 	# 적: 돌진 방향으로 날아감
 	enemy.take_damage(enemy_hit_damage, Vector2(kb.x * _direction, kb.y))
+	if wreck_on_enemy_hit:
+		_wreck_bike(fighter)
 	# 촉법소년: 돌진 관성을 먼저 지운다 — 안 그러면 +돌진속도가 뒤로 튕기는 넉백을 상쇄해 거의 안 밀린다
 	fighter.velocity = Vector2.ZERO
-	# 반대 방향으로 튕겨나가며 자기도 피해 (브레이크 없는 픽시)
-	fighter.take_damage(enemy_hit_self_damage, Vector2(-kb.x * _direction, kb.y))
+	var self_kb := Vector2(-kb.x * _direction, kb.y)
+	if enemy_hit_self_damage > 0:
+		# 반대 방향으로 튕겨나가며 자기도 피해 (브레이크 없는 픽시)
+		fighter.take_damage(enemy_hit_self_damage, self_kb)
+	else:
+		# 피해 없이 튕겨 나오기만 — take_damage(0)은 번쩍임·아픈 표정·콤보 수까지 들어가서 넉백만 따로 준다.
+		# 경직을 안 걸면 다음 프레임 조작(move)이 가로 속도를 덮어써 튕김이 사라진다(take_damage와 같은 계산)
+		var kb_x: float = self_kb.x * Fighter.KNOCKBACK_MULTIPLIER
+		fighter.velocity = Vector2(kb_x, self_kb.y)
+		fighter._launch_momentum = true
+		fighter.apply_hitstun(clampf(absf(kb_x) / Fighter.HITSTUN_FRICTION, Fighter.HITSTUN_MIN, Fighter.HITSTUN_MAX))
+
+## 자전거를 세 조각으로 부숴 맵에 흩뿌리고, 타고 있던 자전거는 그 자리에서 감춘다
+func _wreck_bike(fighter: Fighter) -> void:
+	var visual: Node = fighter.get_node_or_null("Visual")
+	var parent: Node = fighter.get_parent()
+	if visual == null or parent == null:
+		return
+	var bike := visual.get_node_or_null("Bike") as Sprite2D
+	if bike == null:
+		return
+	var wreck = BIKE_WRECK.new()
+	parent.add_child(wreck)
+	# 배경보다 앞·캐릭터보다 뒤에 그리려고 맵에서 가장 앞선 캐릭터 바로 앞 순서로 끼운다.
+	# z_index를 낮추는 방식은 배경이 z 0인 맵(헬스장)에서 배경 뒤로 숨어 안 보였다
+	var first: int = parent.get_child_count() - 1
+	for f in get_tree().get_nodes_in_group("fighters"):
+		if f.get_parent() == parent:
+			first = mini(first, f.get_index())
+	parent.move_child(wreck, first)
+	wreck.setup(bike, _direction)
+	if visual.has_method("break_bike"):
+		visual.break_bike()
 
 ## 밖에서 돌진을 강제로 끊는다 — 주인공이 던진 돌(ThrownStone)에 맞으면 여기로 들어온다.
 ## 남은 돌진 시간·관성을 버리고 즉시 자전거에서 내린다 (급정거).

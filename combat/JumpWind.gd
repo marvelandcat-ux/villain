@@ -107,4 +107,4 @@ func _draw_streak(s: Streak, head_t: float, tail_t: float, extra: float, col: Co
 		left.append(center + normal * (w * 0.5 * bump + extra))
 		right.append(center - normal * (w * 0.5 * (2.0 - bump) + extra))
 	for j in SEGMENTS:
-		draw_colored_polygon(PackedVector2Array([left[j], left[j + 1], right[j + 1], right[j]]), col)
+		draw_primitive(PackedVector2Array([left[j], left[j + 1], right[j + 1], right[j]]), PackedColorArray([col, col, col, col]), PackedVector2Array())

@@ -39,10 +39,34 @@ extends Camera2D
 ## 흔들림이 최대(trauma 1.0)일 때 화면이 흔들리는 폭(px)
 @export var shake_max_offset: float = 12.0
 
+## **화면 픽셀이 게임 기준(1280x720)보다 몇 배 큰지** — 시야를 뷰포트 픽셀로 계산하므로, 기준보다 큰 뷰포트에 그릴 땐
+## 이 배율만큼 당겨야 같은 구도가 된다. 평소 대전은 창 늘이기(canvas_items)가 알아서 해 줘서 1. 타이틀 뒤 게임(창 해상도로 그림)만 바꾼다
+static var view_scale: float = 1.0
+## 모든 배율에 더 곱하는 당김 — 타이틀 뒤 싸움을 실제 대전보다 가까이 찍을 때(1.5). 평소 1.
+## static이라 쓰는 쪽(TitleScreen)이 끝날 때 반드시 1로 되돌릴 것
+static var zoom_boost: float = 1.0
+
 ## 현재 흔들림 세기 0~1 — 타격이 들어오면 데미지에 비례해 쌓이고, 매 프레임 감쇠한다
 var _trauma: float = 0.0
 ## 씬에 저장돼 있던 원래 배율
 var _authored_zoom: float = 1.0
+## **흐르기(팬)** — 0보다 크면 캐릭터를 따라가지 않고 맵 왼쪽 끝에서 오른쪽 끝까지 이 시간(초) 동안 천천히 흐른다.
+## 타이틀 뒤 싸움 장면이 쓴다(start_pan). 평소 대전은 0이라 예전처럼 따라간다
+var pan_time: float = 0.0
+var _pan_t: float = 0.0
+## 흐르기를 전체 거리의 몇 %에서 끝낼지(1이면 오른쪽 끝까지)
+var _pan_end: float = 1.0
+## 흐를 거리가 이보다 짧은 좁은 맵이면 흐르지 않고 가운데서 _pan_hold초 보여 주고 끝낸다
+var _pan_min_range: float = 120.0
+var _pan_hold: float = 8.0
+var _pan_static: bool = false
+## 흐르는 동안의 카메라 높이 — 바닥선이 화면 맨 아래 근처(_pan_bottom_px)에 오고 나머지는 전부 위쪽이 보이게(start_pan이 정한다)
+var _pan_y: float = 0.0
+## 흐를 때 바닥선 아래로 남겨 둘 두께(게임 기준 화면 px)
+var _pan_bottom_px: float = 36.0
+## 벽 한계선이 없는 맵에서 흐를 때 기준으로 삼는 처음 x
+var _pan_origin_x: float = 0.0
+
 ## 가장 많이 물러날 수 있는 배율. 이보다 작아지면(= 더 넓게 보면) 벽 밖이 화면에 들어온다.
 ## 벽 사이가 화면보다 넓은 맵(놀이터)에서는 1.0보다 작아지고, 좁은 맵에서는 1.0보다 커진다
 var _min_zoom: float = 1.0
@@ -52,7 +76,8 @@ var _max_zoom: float = 1.0
 func _ready() -> void:
 	# 타격 판정(Hitbox)이 찾아서 흔들 수 있도록 그룹에 등록한다
 	add_to_group("game_camera")
-	_authored_zoom = zoom.x
+	_authored_zoom = zoom.x * view_scale * zoom_boost
+	zoom = Vector2(_authored_zoom, _authored_zoom)
 	_min_zoom = _authored_zoom
 	_max_zoom = _authored_zoom * max_close_zoom
 	if not clamp_to_walls:
@@ -62,6 +87,10 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_apply_wall_limits)
 
 func _process(delta: float) -> void:
+	if pan_time > 0.0:
+		_update_pan(delta)
+		_apply_shake(delta)
+		return
 	var fighters := get_tree().get_nodes_in_group("fighters")
 	if fighters.size() >= 2:
 		var a: Vector2 = fighters[0].global_position
@@ -72,6 +101,75 @@ func _process(delta: float) -> void:
 		_update_zoom(a, b, delta)
 	_apply_shake(delta)
 
+## 흐르기를 시작한다 — 지금 배율 그대로, 맵 왼쪽 끝에서 전체 거리의 end_ratio까지 duration초 동안.
+## 흐를 거리가 min_range보다 짧은 좁은 맵이면 가운데 멈춘 채 hold초 보여 주고 끝낸다
+func start_pan(duration: float, end_ratio: float = 1.0, min_range: float = 120.0, hold: float = 8.0) -> void:
+	_pan_end = clampf(end_ratio, 0.0, 1.0)
+	_pan_min_range = min_range
+	_pan_hold = hold
+	_pan_origin_x = global_position.x
+	var span: Vector2 = _pan_span()
+	_pan_static = span.y - span.x < _pan_min_range
+	_pan_y = _pan_center_y()
+	pan_time = maxf(_pan_hold if _pan_static else duration, 0.01)
+	_pan_t = 0.0
+	_update_pan(0.0)
+	reset_smoothing()
+
+## 흐를 때 카메라 중심 높이 — 맵 바닥(`Ground`) 윗면이 화면 맨 아래에서 _pan_bottom_px 위에 오게 해서
+## 땅은 조금만, 위쪽(발판·배경)은 화면 높이만큼 다 보이게 한다(2026-09-28 사용자 요청 "땅이 너무 많이 보인다").
+## 바닥을 못 찾으면 싸울 때와 같은 가장 아래 높이
+func _pan_center_y() -> float:
+	var ground: float = _ground_top()
+	if is_nan(ground):
+		return _lowest_center_y()
+	var half_h: float = get_viewport_rect().size.y * 0.5 / maxf(zoom.y, 0.01)
+	return ground + _pan_bottom_px * view_scale / maxf(zoom.y, 0.01) - half_h
+
+## 맵의 `Ground`(바닥 StaticBody2D) 직사각형 충돌 윗면 y. 없으면 NAN
+func _ground_top() -> float:
+	var map: Node = get_parent()
+	var ground: Node = map.get_node_or_null("Ground") if map else null
+	if ground == null:
+		return NAN
+	for c in ground.get_children():
+		var cs := c as CollisionShape2D
+		if cs and cs.shape is RectangleShape2D:
+			var size: Vector2 = (cs.shape as RectangleShape2D).size * cs.global_transform.get_scale().abs()
+			return cs.global_position.y - size.y * 0.5
+	return NAN
+
+## 흐를 수 있는 카메라 중심 x 범위 (왼쪽, 오른쪽) — 화면 왼쪽 끝이 limit_left에 붙은 자리 ~ 오른쪽 끝이 limit_right에 붙은 자리.
+## 벽 한계선이 없는 맵이면 처음 자리 기준 좌우 400px
+func _pan_span() -> Vector2:
+	var half_w: float = get_viewport_rect().size.x * 0.5 / maxf(zoom.x, 0.01)
+	var left: float = _pan_origin_x - 400.0
+	var right: float = _pan_origin_x + 400.0
+	if limit_left > -1000000 and limit_right < 1000000:
+		left = float(limit_left) + half_w
+		right = float(limit_right) - half_w
+	if right < left:
+		left = (left + right) * 0.5
+		right = left
+	return Vector2(left, right)
+
+## 흐르기가 오른쪽 끝에 닿았는지
+func pan_finished() -> bool:
+	return pan_time > 0.0 and _pan_t >= pan_time
+
+## 흐르기 한 프레임 — 왼쪽 끝에서 전체 거리의 _pan_end까지. 좁은 맵이면 가운데 멈춰 있다.
+## 높이는 싸울 때 카메라가 내려가는 가장 아래(바닥이 보이는 자리)
+func _update_pan(delta: float) -> void:
+	_pan_t = minf(_pan_t + delta, pan_time)
+	var span: Vector2 = _pan_span()
+	var x: float = (span.x + span.y) * 0.5
+	if not _pan_static:
+		var k: float = _pan_t / pan_time
+		# 출발할 때만 살짝 느리게 — 도착 전에 다음 화면으로 넘어가므로 끝은 감속하지 않는다
+		k = 1.0 - cos(k * PI * 0.5)
+		x = lerpf(span.x, lerpf(span.x, span.y, _pan_end), k)
+	global_position = Vector2(x, _pan_y)
+
 ## 카메라 중심이 내려갈 수 있는 가장 아래 y.
 ## lock_ground_to_bottom이면 "지면이 화면 아래에서 ground_margin_px 위에 오는 위치"를 **지금 배율로** 계산한다 —
 ## 배율이 작을수록(멀리 볼수록) 화면 반 높이가 월드에서 길어지므로 중심을 그만큼 더 올려야 한다.
@@ -80,7 +178,7 @@ func _lowest_center_y() -> float:
 	if not lock_ground_to_bottom:
 		return max_y
 	var half_h: float = get_viewport_rect().size.y * 0.5
-	var y: float = ground_y - (half_h - ground_margin_px) / maxf(zoom.y, 0.01)
+	var y: float = ground_y - (half_h - ground_margin_px * view_scale) / maxf(zoom.y, 0.01)
 	return clampf(y, min_y, max_y)
 
 ## 두 캐릭터가 다 들어오는 배율을 구해서 부드럽게 따라간다.
@@ -93,7 +191,7 @@ func _update_zoom(a: Vector2, b: Vector2, delta: float) -> void:
 		return
 	var view: Vector2 = get_viewport_rect().size
 	var needed: Vector2 = (a - b).abs() + zoom_margin * 2.0
-	var fit: float = minf(view.x / maxf(needed.x, 1.0), view.y / maxf(needed.y, 1.0))
+	var fit: float = minf(view.x / maxf(needed.x, 1.0), view.y / maxf(needed.y, 1.0)) * zoom_boost
 	var target: float = clampf(fit, _min_zoom, _max_zoom)
 	var next: float = lerpf(zoom.x, target, clampf(zoom_speed * delta, 0.0, 1.0))
 	zoom = Vector2(next, next)
@@ -132,7 +230,7 @@ func _apply_wall_limits() -> void:
 		return
 	var view_width: float = get_viewport_rect().size.x
 	# 벽 사이가 화면에 꽉 차는 배율 = 벽 밖이 드러나기 직전, 즉 가장 많이 물러날 수 있는 한계
-	_min_zoom = view_width / span * extra_zoom
+	_min_zoom = view_width / span * extra_zoom * zoom_boost
 	# 당기는 상한은 씬에 저장된 배율과 한계 배율 중 큰 쪽을 기준으로 잡는다
 	_max_zoom = maxf(_authored_zoom, _min_zoom) * max_close_zoom
 	var clamped: float = clampf(zoom.x, _min_zoom, _max_zoom)

@@ -9,13 +9,22 @@
 [ext_resource type="Texture2D" uid="uid://31maiebxb81g" path="res://sprite/주정뱅이/몸/주정뱅이 머리 술 머금은 (2).png" id="7_drunk"]
 [ext_resource type="Texture2D" uid="uid://dyaovekhbgxoh" path="res://sprite/주정뱅이/몸/주정뱅이 피격.png" id="8_hurtface"]
 [ext_resource type="Script" path="res://characters/SwirlEye.gd" id="90_swirl"]
+[ext_resource type="Texture2D" uid="uid://b53e6h3nfkjcu" path="res://sprite/주정뱅이/몸/주정뱅이 측면1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://bvssbl7qn5pqo" path="res://sprite/주정뱅이/몸/주정뱅잉 측면2.png" id="88_turn2"]
+[ext_resource type="Texture2D" uid="uid://dvjxwrxebn475" path="res://sprite/주정뱅이/몸/주정뱅이 측면 3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="86_front"]
 
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
+head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
+head_turn_anchors = Array[Vector3]([Vector3(717, 559, 908), Vector3(745, 590, 962), Vector3(750, 601, 995), Vector3(749, 599, 969), Vector3(626, 642, 989)])
+head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_turn_on_face = true
 vomit_head_texture = ExtResource("6_vomit")
-vomit_head_scale = Vector2(0.05, 0.05)
+vomit_head_scale = Vector2(0.0526, 0.0593)
+vomit_head_offset = Vector2(3.6, 0.3)
 hurt_head_texture = ExtResource("8_hurtface")
 drunk_head_texture = ExtResource("7_drunk")
-drunk_head_scale = Vector2(0.051, 0.051)
+drunk_head_scale = Vector2(0.0513, 0.0578)
 idle_special = 2
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]

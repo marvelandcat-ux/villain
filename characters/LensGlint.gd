@@ -17,6 +17,10 @@ extends Node2D
 @export var trail_gap: float = 0.34
 ## 빛 색 — 렌즈가 흰색이면(악플러) 흰 빛이 안 보이니 옅은 하늘색으로 준다
 @export var glint_color: Color = Color(1.0, 1.0, 1.0, 0.85)
+## 빛줄기 둘레에 두르는 테두리 색·두께(렌즈 너비 대비). 투명(알파 0)이면 안 그린다.
+## **렌즈가 흰색이면(악플러) 흰 빛이 렌즈에 묻히므로** 옅은 하늘색 테두리를 둘러 흰 빛줄기가 도드라지게 한다(2026-09-28 사용자 요청 "하얀색 느낌")
+@export var band_edge_color: Color = Color(0, 0, 0, 0)
+@export var band_edge_width: float = 0.05
 ## 빛줄기가 지나갈 때 렌즈 모서리에 튀는 반짝 별(✦) 크기(머리 그림 픽셀). 0이면 안 나온다
 @export var sparkle_size: float = 0.0
 ## 반짝 별 위치(렌즈 크기 대비, 가운데 기준) — 기본은 오른쪽 위 모서리
@@ -100,6 +104,10 @@ func _draw() -> void:
 	# 줄기 중심이 렌즈 왼쪽 밖에서 오른쪽 밖으로 지나간다(기울기만큼 여유를 더 준다)
 	var reach: float = 1.0 + absf(slant) + band_width
 	var center: float = lerpf(-reach, reach, p)
+	if band_edge_color.a > 0.0:
+		_draw_band(center, band_width + band_edge_width, band_edge_color)
+		if trail_width > 0.0:
+			_draw_band(center - trail_gap, trail_width + band_edge_width, band_edge_color)
 	_draw_band(center, band_width, glint_color)
 	if trail_width > 0.0:
 		_draw_band(center - trail_gap, trail_width, Color(glint_color, glint_color.a * 0.8))
@@ -159,6 +167,6 @@ func _draw_band(center: float, w: float, col: Color) -> void:
 			bottoms.append(y1)
 		if not ok:
 			continue
-		draw_colored_polygon(PackedVector2Array([
+		draw_primitive(PackedVector2Array([
 			Vector2(xs[0] * a, tops[0] * b), Vector2(xs[1] * a, tops[1] * b),
-			Vector2(xs[1] * a, bottoms[1] * b), Vector2(xs[0] * a, bottoms[0] * b)]), col)
+			Vector2(xs[1] * a, bottoms[1] * b), Vector2(xs[0] * a, bottoms[0] * b)]), PackedColorArray([col, col, col, col]), PackedVector2Array())

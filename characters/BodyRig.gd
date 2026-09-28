@@ -279,6 +279,9 @@ extends Node2D
 ## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
 ## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
 @export var body_turn_textures: Array[Texture2D] = []
+## 켜면 몸통 그림마다 불투명 영역 **높이**를 원래 몸통과 같게 배율을 맞춘다 — 캔버스·그린 크기가 원래 몸통과 다른 그림용
+## (악플러: 원래 344x270, 측면 그림 887x887에 크게 그려짐, 2026-09-28). 금쪽이처럼 같은 캔버스로 그렸으면 끈다
+@export var body_turn_match_height: bool = false
 ## 방향을 바꿀 때도 머리가 위 그림들을 넘기며 돈다(2026-09-26 시험) — 몸은 예전처럼 바로 뒤집히고,
 ## 머리가 옛 방향 쪽 측면1 -> ... -> 정면 -> ... -> 새 방향 옆모습으로 따라 돌아온다. 끄면 머리도 몸과 같이 탁 뒤집힌다
 @export var head_turn_on_face: bool = false
@@ -800,10 +803,11 @@ var _action_face_on: bool = false
 var _knocked_out: bool = false
 var _head_rest_texture: Texture2D
 var _head_rest_scale: Vector2
-# 몸통 돌리기용 — 원래 몸통 그림·배율, 그림별 "바닥 가운데" 위치(캔버스 가운데 기준, 한 번 재서 기억)
+# 몸통 돌리기용 — 원래 몸통 그림·배율
 var _body_rest_texture: Texture2D
 var _body_rest_scale: Vector2
-var _body_anchor_cache: Dictionary = {}
+## 그림별 "확실히 보이는 영역"(Rect2) — 리그끼리 공유해 그림마다 게임 전체에서 한 번만 잰다
+static var _opaque_rect_cache: Dictionary = {}
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
 
@@ -2054,6 +2058,15 @@ func _build_ghosts() -> void:
 
 ## 자전거를 탄다/내린다 (촉법소년 돌진). 자전거 노드가 없는 캐릭터에선 아무 일도 안 한다.
 ## DashSkill이 돌진 시작에 true, 끝에 false로 부른다
+## 자전거가 부서졌다(DashSkill이 조각을 맵에 따로 띄운다) — 타던 자전거를 그 자리에서 바로 감춘다.
+## 다음에 set_riding(true)가 오면 새 자전거가 평소처럼 뒤에서 들어온다
+func break_bike() -> void:
+	if _bike == null:
+		return
+	_ride_target = 0.0
+	_ride_blend = 0.0
+	_bike.visible = false
+
 func set_riding(on: bool) -> void:
 	if _bike == null:
 		return
@@ -2692,26 +2705,60 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 	var sy: float = _body_rest_scale.y
 	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
 	var here: Vector2 = _body_anchor_of(tex)
+	# 캔버스가 다른 그림이면 불투명 영역 높이를 원래 몸통에 맞춘다(바닥 가운데 계산도 그 배율로)
+	var k: float = 1.0
+	if body_turn_match_height and tex != _body_rest_texture:
+		k = _body_height_of(_body_rest_texture) / maxf(_body_height_of(tex), 1.0)
 	_body.texture = tex
-	_body.scale = Vector2(sx * dir, sy)
-	_body.position += Vector2((rest_anchor.x - here.x * dir) * sx, (rest_anchor.y - here.y) * sy)
+	_body.scale = Vector2(sx * k * dir, sy * k)
+	_body.position += Vector2((rest_anchor.x - here.x * k * dir) * sx, (rest_anchor.y - here.y * k) * sy)
 	_turn_applied = true
 
 ## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다
 func _body_anchor_of(tex: Texture2D) -> Vector2:
 	if tex == null:
 		return Vector2.ZERO
-	if _body_anchor_cache.has(tex):
-		return _body_anchor_cache[tex]
-	var anchor := Vector2.ZERO
+	var used: Rect2 = _opaque_rect_of(tex)
+	return Vector2(used.position.x + used.size.x * 0.5 - tex.get_width() * 0.5, used.end.y - tex.get_height() * 0.5)
+
+## 몸통 그림의 불투명 영역 높이(px)
+func _body_height_of(tex: Texture2D) -> float:
+	if tex == null:
+		return 1.0
+	return maxf(_opaque_rect_of(tex).size.y, 1.0)
+
+## 그림에서 **확실히 보이는(알파 절반 이상)** 영역 — 그림마다 한 번만 잰다.
+## Image.get_used_rect()는 알파가 0만 아니면 세서, 눈에 안 보이는 점 하나(알파 1/255)에도 영역이 늘어난다
+## (악플러 몸 측면 3 맨 아래 점 하나 때문에 높이가 120px 크게 재져 몸통이 떠 보였다, 2026-09-28).
+## 4px 간격으로만 훑는다(887px 그림 기준 한 번 20만 번 -> 5만 번) — 게임 배율(~0.03)에선 오차가 안 보인다
+func _opaque_rect_of(tex: Texture2D) -> Rect2:
+	# 그림 자체가 아니라 경로로 기억한다 — static 사전에 그림을 넣어 두면 게임을 끌 때 "resources still in use" 경고가 난다
+	var key: String = tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id())
+	if _opaque_rect_cache.has(key):
+		return _opaque_rect_cache[key]
+	var rect := Rect2(Vector2.ZERO, tex.get_size())
 	var img: Image = tex.get_image()
 	if img != null:
 		if img.is_compressed():
 			img.decompress()
-		var used: Rect2i = img.get_used_rect()
-		anchor = Vector2(used.position.x + used.size.x * 0.5 - img.get_width() * 0.5, used.end.y - img.get_height() * 0.5)
-	_body_anchor_cache[tex] = anchor
-	return anchor
+		const STEP := 4
+		var w: int = img.get_width()
+		var h: int = img.get_height()
+		var min_x: int = w
+		var min_y: int = h
+		var max_x: int = -1
+		var max_y: int = -1
+		for y in range(0, h, STEP):
+			for x in range(0, w, STEP):
+				if img.get_pixel(x, y).a >= 0.5:
+					min_x = mini(min_x, x)
+					max_x = maxi(max_x, x)
+					min_y = mini(min_y, y)
+					max_y = maxi(max_y, y)
+		if max_x >= 0:
+			rect = Rect2(min_x, min_y, max_x - min_x + STEP, max_y - min_y + STEP)
+	_opaque_rect_cache[key] = rect
+	return rect
 
 ## 몸통을 원래 그림·배율로 되돌린다(위치는 매 프레임 _apply_pose가 제자리로 다시 잡는다)
 func _clear_body_frame() -> void:

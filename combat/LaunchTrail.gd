@@ -162,9 +162,10 @@ func _draw_burst(extra: float, col: Color) -> void:
 		var inner: float = 12.0 + 20.0 * out_t
 		var outer: float = inner + _spike_lengths[i] * (1.0 - t * 0.5)
 		var w: float = burst_spike_width * (1.0 - t) + extra
-		draw_colored_polygon(PackedVector2Array([
+		# draw_primitive — 사라질 때 폭(w)이 0으로 줄면 다각형 분할이 실패해 "triangulation failed"가 쏟아졌다(2026-09-28 실측)
+		draw_primitive(PackedVector2Array([
 			center + d * (inner - extra), center + d * inner * 0.9 + n * w,
-			center + d * (outer + extra), center + d * inner * 0.9 - n * w]), c)
+			center + d * (outer + extra), center + d * inner * 0.9 - n * w]), PackedColorArray([c, c, c, c]), PackedVector2Array())
 	draw_arc(center, burst_ring_radius * (0.4 + 0.9 * out_t), 0.0, TAU, 40, c, 5.0 * (1.0 - t) + 1.5 + extra * 2.0)
 
 ## ③ 먼지 고리: 날아가는 쪽에 입이 뚫린 C자 — 부풀며 옅어진다
@@ -202,4 +203,4 @@ func _draw_streaks(extra: float, col: Color) -> void:
 			left.append(center + side * (w * 0.5 * bump + extra))
 			right.append(center - side * (w * 0.5 * (2.0 - bump) + extra))
 		for j in SEGMENTS:
-			draw_colored_polygon(PackedVector2Array([left[j], left[j + 1], right[j + 1], right[j]]), c)
+			draw_primitive(PackedVector2Array([left[j], left[j + 1], right[j + 1], right[j]]), PackedColorArray([c, c, c, c]), PackedVector2Array())

@@ -200,15 +200,23 @@ func _draw_clash(w: float, pad: float, h: float) -> void:
 		var t: float = float(i) / float(BOUNDARY_STEPS)
 		edge.append(Vector2(bx + slant * (0.5 - t) + _wave_at(t), lerpf(-h, h, t)))
 
-	var left := PackedVector2Array([Vector2(-pad - off, -h)])
-	for p in edge:
-		left.append(p - Vector2(off, 0.0))
-	left.append(Vector2(-pad - off, h))
-	var right := PackedVector2Array([Vector2(pad + off, -h), Vector2(pad + off, h)])
-	for i in range(edge.size() - 1, -1, -1):
-		right.append(edge[i] + Vector2(off, 0.0))
-	draw_colored_polygon(left, color_a)
-	draw_colored_polygon(right, color_b)
+	# **두 덩어리를 경계선 마디마다 가로 띠 조각(사각형)으로 나눠 draw_primitive로 칠한다.**
+	# 예전엔 덩어리 하나를 다각형 하나로 그렸는데, 한쪽이 크게 밀려 경계선이 띠 끝(pad)보다 바깥으로 나가면
+	# 다각형이 꼬여 "Invalid polygon data, triangulation failed"가 매 프레임 쏟아졌다(AI가 연타 대결을 자주 일으키며 드러남).
+	# 경계선은 띠 안으로 잘라 두고, 조각은 삼각형 분할을 안 거치는 draw_primitive라 폭이 0이 돼도 에러가 없다
+	var cols_a := PackedColorArray([color_a, color_a, color_a, color_a])
+	var cols_b := PackedColorArray([color_b, color_b, color_b, color_b])
+	for i in edge.size() - 1:
+		var e0: Vector2 = edge[i]
+		var e1: Vector2 = edge[i + 1]
+		e0.x = clampf(e0.x, -pad, pad)
+		e1.x = clampf(e1.x, -pad, pad)
+		draw_primitive(PackedVector2Array([
+			Vector2(-pad - off, e0.y), e0 - Vector2(off, 0.0), e1 - Vector2(off, 0.0), Vector2(-pad - off, e1.y)]),
+			cols_a, PackedVector2Array())
+		draw_primitive(PackedVector2Array([
+			e0 + Vector2(off, 0.0), Vector2(pad + off, e0.y), Vector2(pad + off, e1.y), e1 + Vector2(off, 0.0)]),
+			cols_b, PackedVector2Array())
 
 	# 위아래 테두리
 	draw_line(Vector2(-pad, -h), Vector2(pad, -h), edge_color, edge_width)

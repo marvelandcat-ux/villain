@@ -192,7 +192,8 @@ const DEFAULT_SFX_VOLUME := 1.0
 const MUTE_IN_BUILD := true
 
 var is_fullscreen: bool = false
-var resolution_index: int = 0
+## 기본 1920x1080(RESOLUTIONS 1번, 2026-09-28 사용자 요청) — 설정을 한 번도 안 바꾼 새 PC에서 처음 켜면 이 크기
+var resolution_index: int = 1
 var master_volume: float = DEFAULT_MASTER_VOLUME
 var music_volume: float = DEFAULT_MUSIC_VOLUME
 var sfx_volume: float = DEFAULT_SFX_VOLUME
@@ -279,6 +280,8 @@ func _load_env() -> void:
 func _load_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(SETTINGS_PATH) != OK:
+		# 처음 켠 PC(저장 파일 없음)도 기본 해상도를 창에 적용한다 — 안 하면 프로젝트 창 크기 그대로 뜬다
+		_apply_window_size()
 		return
 	for action in DEFAULT_KEYBINDS.keys():
 		if config.has_section_key("keybinds", action):
@@ -356,17 +359,29 @@ func set_resolution(index: int) -> void:
 ## **에디터에서 실행하면 크기가 안 바뀔 수 있다.** Godot 4.4부터 게임 창을 에디터 안에 끼워서(Embed)
 ## 띄우는 게 기본이라, 그 창은 에디터가 크기를 쥐고 있어서 코드로 바꿔도 안 먹는다.
 ## 에디터 Game 탭의 "Embed Game on Play"를 끄거나, **내보낸 빌드에서 확인하면 정상 동작한다**
+##
+## **모니터와 같은 크기(1920x1080 모니터에서 1920x1080)는 테두리 없는 창으로 화면을 꽉 채운다**(2026-09-28).
+## 예전엔 작업표시줄을 뺀 영역(usable, 1080 모니터면 세로 ~1040)과 비교해서 1920x1080을 골라도
+## "안 들어간다"며 1280x720으로 내려갔다. 이제 모니터 전체 크기와 비교하고, 작업표시줄 영역을 넘는 크기면
+## 제목표시줄을 떼고(borderless) 모니터에 딱 맞춰 띄운다
 func _apply_window_size() -> void:
 	var window := get_window()
-	var usable: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
-	var target: Vector2i = RESOLUTIONS[resolution_index]
-	# 화면에 안 들어가면 들어가는 것 중 가장 큰 걸로 내려간다
+	var screen: int = window.current_screen
+	var usable: Rect2i = DisplayServer.screen_get_usable_rect(screen)
+	var full := Rect2i(DisplayServer.screen_get_position(screen), DisplayServer.screen_get_size(screen))
+	var target: Vector2i = RESOLUTIONS[0]
+	# 모니터에 안 들어가면 들어가는 것 중 가장 큰 걸로 내려간다
 	for i in range(resolution_index, -1, -1):
-		if RESOLUTIONS[i].x <= usable.size.x and RESOLUTIONS[i].y <= usable.size.y:
+		if RESOLUTIONS[i].x <= full.size.x and RESOLUTIONS[i].y <= full.size.y:
 			target = RESOLUTIONS[i]
 			break
+	var fills_screen: bool = target.x > usable.size.x or target.y > usable.size.y
+	window.borderless = fills_screen
 	window.size = target
-	window.position = usable.position + (usable.size - target) / 2
+	if fills_screen:
+		window.position = full.position + Vector2i(Vector2(full.size - target) * 0.5)
+	else:
+		window.position = usable.position + Vector2i(Vector2(usable.size - target) * 0.5)
 
 ## 대사 넘기는 법을 방금 처음 봤다고 기록한다 (ContinueIndicator가 첫 입력에서 부른다).
 ## 이미 본 적 있으면 아무 일도 안 한다 — 누를 때마다 파일을 다시 쓸 이유가 없다
