@@ -20,7 +20,7 @@ FILL_UNDER = 7      # 채움을 테두리 밑으로 이만큼 넓혀 이음매 �
 GLOW_RADIUS = 16
 # 선이 서로 붙어 홀짝 판정이 틀리는 곳 — 원본 그림 좌표(x, y)를 찍으면 그 덩어리를 강제로 칠한다/비운다
 FORCE_FILL = [(945, 707)]    # '이'의 ㅣ(사용자 지적 2026-09-28)
-FORCE_EMPTY = []
+FORCE_EMPTY = [(818, 667)]   # '이'의 ㅇ 가운데 구멍(사용자 지적 2026-09-29)
 
 src = Image.open(SRC).convert("RGBA")
 bx0, by0, bx1, by1 = src.getchannel("A").getbbox()

@@ -65,6 +65,11 @@ extends Control
 @export_range(0.0, 1.0, 0.05) var ai_dodge_chance: float = 0.35
 ## 스킬 조건이 맞을 때 실제로 쓸 확률(대전 AI 0.6)
 @export_range(0.0, 1.0, 0.05) var ai_skill_chance: float = 0.8
+## 타이틀 싸움에서만 스킬 쿨타임 배율(GameState.cooldown_multiplier) — 작을수록 스킬을 자주 쓴다. 타이틀을 떠나면 원래 값으로
+@export_range(0.05, 1.0, 0.05) var ai_cooldown_scale: float = 0.35
+
+## 타이틀에 들어오기 전 쿨타임 배율(음수 = 아직 안 바꿈)
+var _saved_cooldown: float = -1.0
 
 @onready var _prompt: Label = $Center/VBox/PromptLabel
 @onready var _fade: ColorRect = $Fade
@@ -116,9 +121,16 @@ func _notification(what: int) -> void:
 func _exit_tree() -> void:
 	_bgm.stop()
 	_click.stop()
+	_restore_cooldown()
 	# 카메라 공용 배율을 원래대로 — 안 되돌리면 실제 대전 카메라까지 당겨진다
 	CameraRig.view_scale = 1.0
 	CameraRig.zoom_boost = 1.0
+
+## 타이틀에서 줄여 둔 스킬 쿨타임 배율을 원래대로(실제 대전에 새지 않게)
+func _restore_cooldown() -> void:
+	if _saved_cooldown >= 0.0:
+		GameState.cooldown_multiplier = _saved_cooldown
+		_saved_cooldown = -1.0
 
 ## 맵 하나·캐릭터 둘을 랜덤으로 뽑아 AI끼리 싸우는 맵을 뒤에 띄운다
 func _start_arena() -> void:
@@ -130,6 +142,9 @@ func _start_arena() -> void:
 	var chars: Array = GameState.CHARACTERS.values()
 	chars.shuffle()
 	GameState.game_mode = "attract"
+	if _saved_cooldown < 0.0:
+		_saved_cooldown = GameState.cooldown_multiplier
+	GameState.cooldown_multiplier = ai_cooldown_scale
 	GameState.selected_map_path = maps.pick_random()
 	GameState.p1_character_path = chars[0]
 	GameState.p2_character_path = chars[1 % chars.size()]
@@ -265,6 +280,7 @@ func _process(delta: float) -> void:
 	if t >= 1.0:
 		# 구경 모드 표시를 지운다 — 메뉴에서 모드를 고르면 다시 정해지지만, 남아 있으면 헷갈린다
 		GameState.game_mode = "pvp"
+		_restore_cooldown()
 		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:

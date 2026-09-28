@@ -54,6 +54,9 @@ extends Node
 @export var showcase_kite_time: Vector2 = Vector2(0.5, 1.1)
 ## 화면 가장자리에서 이만큼(px) 안쪽을 넘어가지 않으려 한다
 @export var showcase_screen_margin: float = 70.0
+## 준비된 스킬을 조건이 안 맞아 이만큼(초) 못 쓰고 있으면 상대가 showcase_skill_range 안일 때 그냥 쓴다(스킬 보여주기 우선)
+@export var showcase_skill_patience: float = 1.2
+@export var showcase_skill_range: float = 450.0
 ## 거리를 벌리는 동안 이단 점프·대시를 하는 간격(초, 최소~최대 랜덤)
 @export var showcase_hop_interval: Vector2 = Vector2(0.6, 1.4)
 @export var showcase_dash_interval: Vector2 = Vector2(0.7, 1.6)
@@ -111,6 +114,8 @@ var _show_air_age: float = 0.0
 var _show_cross: float = 0.0
 ## 이번에 다가가서 평타 콤보를 시작했는지 — 콤보가 끝나면(3타 또는 헛침) 빠진다
 var _show_combo: bool = false
+## 슬롯별(스킬1·스킬2·궁) 준비된 채 못 쓰고 기다린 시간
+var _show_skill_wait: Array = [0.0, 0.0, 0.0]
 
 @onready var fighter: Fighter = get_parent()
 
@@ -819,7 +824,10 @@ func _showcase_movement(delta: float) -> void:
 			fighter.facing = dir
 			if dist <= _melee_reach and dy < 45.0:
 				var ba: Skill = fighter.basic_attack
-				if ba and ba.can_use() and not fighter.is_basic_attack_locked() and not target.is_guarding:
+				# 스킬 위주(사용자 요청) — 쓸 스킬이 남아 있으면 평타는 참고 빠져서 스킬을 쓴다
+				if _any_skill_ready():
+					_end_engage()
+				elif ba and ba.can_use() and not fighter.is_basic_attack_locked() and not target.is_guarding:
 					fighter.use_basic_attack()
 					_show_combo = true
 				else:
@@ -870,6 +878,13 @@ func _showcase_movement(delta: float) -> void:
 	if _show_timer <= 0.0:
 		_show_engage = true
 		_show_timer = showcase_engage_time
+
+## 스킬1·스킬2·궁 중 지금 쓸 수 있는 게 하나라도 있는지
+func _any_skill_ready() -> bool:
+	for skill in [fighter.skill_1, fighter.skill_2, fighter.skill_ultimate]:
+		if skill and skill.can_use():
+			return true
+	return false
 
 ## 지금 카메라에 보이는 월드 영역(카메라가 없으면 빈 Rect2)
 func _view_rect() -> Rect2:
@@ -928,10 +943,20 @@ func _decide_skills(delta: float) -> void:
 	var slots: Array = [[fighter.skill_1, 1], [fighter.skill_2, 2], [fighter.skill_ultimate, 3]]
 	for pair in slots:
 		var skill: Skill = pair[0]
-		if skill == null or not skill.can_use() or not _want_skill(skill):
+		var slot: int = pair[1] - 1
+		if skill == null or not skill.can_use():
+			_show_skill_wait[slot] = 0.0
+			continue
+		var want: bool = _want_skill(skill)
+		if showcase and not want:
+			# 구경 모드 — 조건이 안 맞아도 오래 못 썼으면 상대가 적당히 가까울 때 그냥 쓴다
+			_show_skill_wait[slot] += skill_think_interval
+			want = _show_skill_wait[slot] >= showcase_skill_patience and _target_distance() < showcase_skill_range
+		if not want:
 			continue
 		if randf() >= skill_commit_chance:
 			continue
+		_show_skill_wait[slot] = 0.0
 		if not is_zero_approx(dir):
 			fighter.facing = dir
 		match pair[1]:
