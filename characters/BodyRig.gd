@@ -2732,8 +2732,10 @@ func _body_height_of(tex: Texture2D) -> float:
 ## (악플러 몸 측면 3 맨 아래 점 하나 때문에 높이가 120px 크게 재져 몸통이 떠 보였다, 2026-09-28).
 ## 4px 간격으로만 훑는다(887px 그림 기준 한 번 20만 번 -> 5만 번) — 게임 배율(~0.03)에선 오차가 안 보인다
 func _opaque_rect_of(tex: Texture2D) -> Rect2:
-	if _opaque_rect_cache.has(tex):
-		return _opaque_rect_cache[tex]
+	# 그림 자체가 아니라 경로로 기억한다 — static 사전에 그림을 넣어 두면 게임을 끌 때 "resources still in use" 경고가 난다
+	var key: String = tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id())
+	if _opaque_rect_cache.has(key):
+		return _opaque_rect_cache[key]
 	var rect := Rect2(Vector2.ZERO, tex.get_size())
 	var img: Image = tex.get_image()
 	if img != null:
@@ -2755,7 +2757,7 @@ func _opaque_rect_of(tex: Texture2D) -> Rect2:
 					max_y = maxi(max_y, y)
 		if max_x >= 0:
 			rect = Rect2(min_x, min_y, max_x - min_x + STEP, max_y - min_y + STEP)
-	_opaque_rect_cache[tex] = rect
+	_opaque_rect_cache[key] = rect
 	return rect
 
 ## 몸통을 원래 그림·배율로 되돌린다(위치는 매 프레임 _apply_pose가 제자리로 다시 잡는다)

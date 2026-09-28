@@ -49,6 +49,7 @@ position = Vector2(-27, 4)
 
 [node name="Keyboard" type="Sprite2D" parent="HandRHold" index="0" unique_id=378244792]
 position = Vector2(-14, -14)
+z_index = 1
 rotation = 0.7853982
 scale = Vector2(0.0221, 0.0221)
 texture = ExtResource("5_keyboard")

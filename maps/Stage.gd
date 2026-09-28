@@ -63,8 +63,16 @@ var _countdown_active: bool = true
 ## 이번 라운드 남은 시간 (GameState.time_limit_seconds가 0이면 시간 제한 없음)
 var _round_time_left: float = 0.0
 var _combat_hud: CombatHUD
+## **타이틀 구경 모드**(`GameState.game_mode == "attract"`, 2026-09-28) — 타이틀 화면 뒤에서 AI 둘이 싸우는 장면.
+## 두 캐릭터 모두 AI, 체력바·카운트다운·일시정지·연타 대결·궁극기 컷인 없음(화면을 멈추거나 UI를 띄우므로),
+## 판이 끝나도 결과 화면·재시작을 하지 않는다 — 카메라를 흘리고 새 조합으로 바꾸는 건 TitleScreen이 한다
+var _attract: bool = false
 
 func _ready() -> void:
+	_attract = GameState.game_mode == "attract"
+	if _attract:
+		_start_attract()
+		return
 	# 스토리 모드 한정: 캐릭터를 스폰하기도 전에 "주인공 VS 적" 매치업 화면부터 보여준다.
 	# GameState.p1/p2_character_path만으로 채우므로 Fighter가 없어도 상관없다
 	if GameState.game_mode == "story":
@@ -101,6 +109,20 @@ func _ready() -> void:
 	_countdown_active = false
 	_unfreeze_controllers()
 
+## 타이틀 구경 모드 시작 — 두 캐릭터를 AI로 세우고 HUD를 숨긴 채 바로 싸우게 한다
+func _start_attract() -> void:
+	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", true, 1)
+	_p2 = _spawn_fighter(GameState.p2_character_path, "PlayerSpawn2", true, 2)
+	var hud: Node = get_node_or_null("CombatHUD")
+	if hud is CanvasLayer:
+		hud.visible = false
+	# 게임을 멈추고 화면을 덮는 맵 연출(놀이터 왕관 획득 컷인)도 뺀다 — 없으면 Crown이 그냥 넘어간다
+	for n in get_tree().get_nodes_in_group("crown_cutin"):
+		if is_ancestor_of(n):
+			n.remove_from_group("crown_cutin")
+			n.queue_free()
+	_countdown_active = false
+
 ## 맵 밖으로 떨어진 캐릭터를 처음 자리(PlayerSpawn 마커)로 되돌린다.
 ## **링아웃을 없애면서 생긴 안전장치다** — 죽이지도, 점수를 주지도 않고 그냥 제자리에 놓는다.
 ## 마커를 못 찾으면 맵 한가운데 위쪽에 놓는다
@@ -122,6 +144,9 @@ func _process(delta: float) -> void:
 	for f in [_p1, _p2]:
 		if f and is_instance_valid(f) and f.global_position.y > fall_rescue_y:
 			_rescue_fallen(f)
+	# 구경 모드는 승패 판정·결과 화면·재시작을 하지 않는다(체력 0이 돼도 계속 싸운다)
+	if _attract:
+		return
 	if _p1.current_hp <= 0 or _p2.current_hp <= 0:
 		var p1_dead: bool = _p1.current_hp <= 0
 		var p2_dead: bool = _p2.current_hp <= 0
@@ -258,6 +283,9 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 ## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
 ## 메뉴가 떠 있는 동안 다시 ESC를 눌러도 여기서 중복으로 또 띄우는 일은 없다
 func _unhandled_input(event: InputEvent) -> void:
+	# 구경 모드는 키 입력을 전부 타이틀 화면에 맡긴다(ESC로 일시정지가 뜨면 안 된다)
+	if _attract:
+		return
 	if debug_story_skip_key and event is InputEventKey:
 		var key: InputEventKey = event
 		var is_s: bool = key.keycode == KEY_S or key.physical_keycode == KEY_S

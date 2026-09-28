@@ -150,6 +150,9 @@ func _notify_blocked_by_guard() -> void:
 
 ## 막은 지점에 "BLOCK" 팝업을 띄운다 (데미지 숫자와 같은 장면을 다른 모드로 쓴다)
 func _spawn_block_popup(pos: Vector2) -> void:
+	# 타이틀 뒤 구경 모드엔 숫자·HIT·BLOCK 팝업을 안 띄운다(2026-09-28 사용자 요청)
+	if GameState.game_mode == "attract":
+		return
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return
@@ -160,6 +163,9 @@ func _spawn_block_popup(pos: Vector2) -> void:
 
 ## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)
 func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:
+	# 타이틀 뒤 구경 모드엔 숫자·HIT·BLOCK 팝업을 안 띄운다(2026-09-28 사용자 요청)
+	if GameState.game_mode == "attract":
+		return
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return

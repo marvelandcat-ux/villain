@@ -43,6 +43,23 @@ extends Node
 ## 이 거리(px) 안에 주울 수 있는 왕관이 있으면 싸움을 미루고 주우러 간다(놀이터 전용, 높이 상관없이 발판을 타고 올라간다)
 @export var crown_interest_range: float = 900.0
 
+@export_group("구경 모드(타이틀)")
+## 켜면 보여주기 위주로 싸운다(타이틀 전용, 2026-09-28 사용자 요청) — 붙어서 계속 치고받지 않고
+## 잠깐 거리를 벌린 채 이단 점프·대시로 돌아다니다가 다가가서 스킬을 쓰거나 평타 3타 콤보를 한 번 치고 다시 빠진다.
+## 화면(카메라에 보이는 곳) 밖으로는 웬만하면 안 나간다. 실제 대전 AI는 꺼져 있음
+@export var showcase: bool = false
+## 빠져 있는 동안 벌려 둘 거리(px)
+@export var showcase_keep_distance: float = 220.0
+## 빠져 있는 시간(초, 최소~최대 랜덤) — 끝나면 다시 다가간다
+@export var showcase_kite_time: Vector2 = Vector2(0.5, 1.1)
+## 화면 가장자리에서 이만큼(px) 안쪽을 넘어가지 않으려 한다
+@export var showcase_screen_margin: float = 70.0
+## 거리를 벌리는 동안 이단 점프·대시를 하는 간격(초, 최소~최대 랜덤)
+@export var showcase_hop_interval: Vector2 = Vector2(0.6, 1.4)
+@export var showcase_dash_interval: Vector2 = Vector2(0.7, 1.6)
+## 한 번 다가갈 때 최대 몇 초까지 붙어 보는지(그 안에 못 쓰면 다시 빠진다)
+@export var showcase_engage_time: float = 1.8
+
 ## false면 아무 판단도 안 한다(대전 시작 카운트다운 등) — 그래도 중력·바닥 착지는 계속 처리한다
 var is_active: bool = true
 ## 바깥에서 방어 확률에 곱하는 배수 — ClaudeAIController가 전략(공격적/수비적)에 따라 바꾼다. 1이면 기본
@@ -82,6 +99,18 @@ var _escape_wait: float = 0.0
 var _escape_air_jumped: bool = false
 ## 탈출 직후엔 발판을 뚫고 내려가지 않는다(내려가면 다시 끼인 자리로 돌아간다)
 var _no_drop_left: float = 0.0
+## 구경 모드 — 스킬 쓰러 다가가는 중인지, 지금 단계의 남은 시간, 점프·대시 타이머
+var _show_engage: bool = false
+var _show_timer: float = 0.0
+var _show_hop: float = 0.5
+var _show_dash: float = 0.8
+## 1단 점프 뒤 정점에서 2단 점프를 누를 차례인지(누른 뒤 지난 시간)
+var _show_air_pending: bool = false
+var _show_air_age: float = 0.0
+## 벽에 몰렸을 때 상대를 뛰어넘어 반대편으로 가는 남은 시간
+var _show_cross: float = 0.0
+## 이번에 다가가서 평타 콤보를 시작했는지 — 콤보가 끝나면(3타 또는 헛침) 빠진다
+var _show_combo: bool = false
 
 @onready var fighter: Fighter = get_parent()
 
@@ -124,8 +153,13 @@ func _physics_process(delta: float) -> void:
 
 	if fighter.movement_override == null:
 		_update_stuck(delta)
-		if not _try_dodge_hazard() and not _run_detour(delta) and not _try_take_crown(delta) and not _navigate_to_target(delta):
-			_decide_movement(delta)
+		# 구경 모드에선 스킬 쓰러 다가갈 때만 상대 발판까지 길을 찾는다(평소엔 거리를 벌린다)
+		var nav_ok: bool = not showcase or _show_engage
+		if not _try_dodge_hazard() and not _run_detour(delta) and not _try_take_crown(delta) and not (nav_ok and _navigate_to_target(delta)):
+			if showcase:
+				_showcase_movement(delta)
+			else:
+				_decide_movement(delta)
 		_jump_obstacles()
 	_decide_skills(delta)
 
@@ -746,6 +780,133 @@ func _decide_movement(delta: float) -> void:
 	if _is_ranged and _all_skills_on_cooldown() and randf() < retreat_start_chance:
 		_retreat_timer = retreat_duration
 
+# ---------------------------------------------------------------- 구경 모드(타이틀)
+
+## 보여주기용 움직임 — 잠깐(showcase_kite_time) showcase_keep_distance를 벌리고 이단 점프·대시로 돌아다니다가 다가간다.
+## 다가가는 동안 조건 맞는 스킬이 있으면 _decide_skills가 쓰고, 평타 거리까지 붙으면 3타 콤보를 한 번 친다 — 어느 쪽이든 끝나면 다시 빠진다.
+## 화면(카메라에 보이는 곳) 가장자리를 넘어가려 하면 안쪽으로 되돌린다
+func _showcase_movement(delta: float) -> void:
+	var dx: float = target.global_position.x - fighter.global_position.x
+	var dist: float = absf(dx)
+	var dir: float = signf(dx) if not is_zero_approx(dx) else fighter.facing
+	var dy: float = absf(target.global_position.y - fighter.global_position.y)
+	var x: float = fighter.global_position.x
+	var view: Rect2 = _view_rect()
+	_show_timer -= delta
+	_showcase_air_jump(delta)
+
+	# 평타 콤보 중 — 밀려난 상대를 따라가며 3타까지 누르고, 콤보가 끝나면(3타 또는 헛침) 빠진다
+	if _show_combo:
+		if not _in_combo():
+			_show_combo = false
+			_end_engage()
+		else:
+			fighter.move(dir if dist > _melee_reach - 8.0 else 0.0)
+			fighter.facing = dir
+			if dist <= _melee_reach + 45.0 and dy < 60.0:
+				fighter.use_basic_attack()
+			return
+
+	if _show_engage:
+		if _show_timer <= 0.0:
+			_end_engage()
+		else:
+			fighter.move(dir if dist > 70.0 else 0.0)
+			if dist > dash_approach_distance and dy < 80.0:
+				fighter.dash(dir)
+			if fighter.is_on_wall() and fighter.is_on_floor():
+				fighter.jump()
+			fighter.facing = dir
+			if dist <= _melee_reach and dy < 45.0:
+				var ba: Skill = fighter.basic_attack
+				if ba and ba.can_use() and not fighter.is_basic_attack_locked() and not target.is_guarding:
+					fighter.use_basic_attack()
+					_show_combo = true
+				else:
+					_end_engage()
+			return
+
+	var keep: float = showcase_keep_distance
+	var away: float = -dir
+	if _show_cross > 0.0:
+		# 벽·화면 끝에 몰렸다 — 상대를 뛰어넘어 반대편으로(캐릭터끼리 몸 충돌이 없다)
+		_show_cross -= delta
+		fighter.move(dir if dist < 60.0 or _show_cross > 0.35 else away)
+	elif dist < keep - 40.0:
+		if (_room_behind(away) < 70.0 or not _in_view_x(view, x + away * 60.0)) and fighter.is_on_floor():
+			_show_cross = 0.7
+			_showcase_hop()
+			fighter.move(dir)
+		else:
+			fighter.move(away)
+			if dist < keep * 0.6 and _in_view_x(view, x + away * 200.0):
+				fighter.dash(away)
+	elif dist > keep + 80.0:
+		fighter.move(dir)
+	else:
+		fighter.move(0.0)
+
+	_show_hop -= delta
+	if _show_hop <= 0.0 and fighter.is_on_floor():
+		_show_hop = randf_range(showcase_hop_interval.x, showcase_hop_interval.y)
+		_showcase_hop()
+	_show_dash -= delta
+	if _show_dash <= 0.0:
+		_show_dash = randf_range(showcase_dash_interval.x, showcase_dash_interval.y)
+		# 뒤가 트였고 화면 안이면 뒤로, 아니면 멀 때만 앞으로(거리를 너무 좁히지 않는 선에서)
+		if _room_behind(away) > 150.0 and _in_view_x(view, x + away * 200.0):
+			fighter.dash(away)
+		elif dist > keep and _in_view_x(view, x + dir * 200.0):
+			fighter.dash(dir)
+
+	# 화면 가장자리를 넘어가려 하면 안쪽으로 걷는다
+	if view.size.x > 0.0:
+		if x < view.position.x + showcase_screen_margin:
+			fighter.move(1.0)
+		elif x > view.end.x - showcase_screen_margin:
+			fighter.move(-1.0)
+	fighter.facing = dir
+
+	if _show_timer <= 0.0:
+		_show_engage = true
+		_show_timer = showcase_engage_time
+
+## 지금 카메라에 보이는 월드 영역(카메라가 없으면 빈 Rect2)
+func _view_rect() -> Rect2:
+	var vp: Viewport = fighter.get_viewport()
+	var cam: Camera2D = vp.get_camera_2d() if vp else null
+	if cam == null:
+		return Rect2()
+	var half: Vector2 = vp.get_visible_rect().size * 0.5 / cam.zoom
+	return Rect2(cam.get_screen_center_position() - half, half * 2.0)
+
+## x가 화면 가장자리(showcase_screen_margin 안쪽)를 넘지 않는지. 화면을 모르면 true
+func _in_view_x(view: Rect2, x: float) -> bool:
+	if view.size.x <= 0.0:
+		return true
+	return x > view.position.x + showcase_screen_margin and x < view.end.x - showcase_screen_margin
+
+## 1단 점프 후 정점 근처에서 2단 점프까지 쓰게 예약한다
+func _showcase_hop() -> void:
+	fighter.jump()
+	_show_air_pending = true
+	_show_air_age = 0.0
+
+func _showcase_air_jump(delta: float) -> void:
+	if not _show_air_pending:
+		return
+	_show_air_age += delta
+	if not fighter.is_on_floor() and fighter.velocity.y > -60.0:
+		fighter.jump()
+		_show_air_pending = false
+	elif fighter.is_on_floor() and _show_air_age > 0.2:
+		_show_air_pending = false
+
+## 다가가기를 끝내고 잠깐 거리를 벌린다
+func _end_engage() -> void:
+	_show_engage = false
+	_show_timer = randf_range(showcase_kite_time.x, showcase_kite_time.y)
+
 func _all_skills_on_cooldown() -> bool:
 	for skill in [fighter.skill_1, fighter.skill_2, fighter.skill_ultimate]:
 		if skill and skill.can_use():
@@ -777,6 +938,8 @@ func _decide_skills(delta: float) -> void:
 			1: fighter.use_skill_1()
 			2: fighter.use_skill_2()
 			3: fighter.use_ultimate()
+		if showcase and not _show_combo:
+			_end_engage()
 		return
 
 ## 맵 전용 스킬(공사현장 내리찍기) — 공중에서 상대 바로 위에 있을 때

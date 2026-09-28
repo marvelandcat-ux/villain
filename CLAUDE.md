@@ -207,6 +207,7 @@
 - 기본공격 모션 `Visual.play_attack_swing()`: 올렸다(`attack_raise_*`) 내려찍고(`attack_slam_*`/`attack_swing_deg`) 복귀, `attack_duration` 중 40~62%가 내려찍기
   - **⚠️ `attack_duration`을 바꾸면 `BasicAttack.windup`(= duration x 0.4)도 맞출 것**
   - 손에 든 물건은 손 회전을 그대로 따라감 — 각도 고정(`attack_hold_deg`)은 넣었다 되돌림, 다시 건드리지 말 것
+  - **악플러 키보드는 맨 앞(`HandRHold/Keyboard` `z_index` 1, 2026-09-28 사용자 요청)** — 머리·몸·손보다 앞에 그려진다(원래는 `Head`가 뒤 순서라 머리에 가려졌음). 1보다 크게 올리지 말 것: 대시 잔상은 `Visual`째 z -2로 복제돼 자식 z가 더해지므로, 2 이상이면 잔상 키보드가 본체 앞에 그려진다
   - 두 손 잡기 `attack_two_handed`(악플러만): 왼손 `attack_grip_offset`. `_grip_blend`는 `_attack_time > 0`이면 1 유지(타마다 풀리면 덜덜). `_pose_grip_hand()`는 `_apply_pose`에서 매 프레임. `attack_grip_speed`를 9 밑으로 내리지 말 것. 왼손 회전은 매 프레임 0으로 되돌린 뒤 덮어씀
   - 두 손 무기 타별 스윙 `_two_handed_variant_params()`: **총 회전각(raise+swing) 120도 이하**(넘으면 키보드가 얼굴 가로지름), 타별 크기 차이는 각도 말고 손 이동 거리로
   - `attack_swing_arc`(0이면 직선): 후려칠 때 손이 아래로 부푼 호
@@ -363,11 +364,24 @@
 
 **첫 화면:** `ui/TitleScreen.tscn` -> `ui/MainMenu.tscn`(왼쪽 메뉴 + 오른쪽 일러스트).
 
+- **타이틀 뒤에서 실제 게임이 돈다(구경 모드, 2026-09-28 사용자 요청)** — 켤 때마다 `GameState.MAPS`에서 맵 하나, `CHARACTERS`에서 캐릭터 둘을 랜덤으로 뽑아 **둘 다 `AIController`** 로 싸운다. **카메라는 싸움을 따라가지 않고 맵 왼쪽 벽 끝에서 전체 거리의 `pan_end`(3/4)까지 `pan_time`(10초) 동안 흐르고**(`CameraRig.start_pan`/`pan_finished`, 출발만 살짝 느림 — 사용자 결정: 끝까지 가면 맵만 오래 보여서 3/4), 거기 닿으면 어두워졌다가(`swap_fade`) 새 조합으로 바꿔 다시 왼쪽부터 흐른다(2026-09-28 사용자 결정 — 쓰러져도 계속 흐른다. 체력 0이 돼도 캐릭터는 계속 움직이고 싸운다). `round_max_time`(40초)은 흐르기가 안 끝날 때의 안전 한도. 게임 소리(열차 등)는 그대로, 제목 글자는 임시(사용자가 로고를 줄 예정)
+  - `Stage`는 `GameState.game_mode == "attract"`면 `_start_attract()`만 한다: 두 캐릭터 AI, `CombatHUD` 숨김, 카운트다운·일시정지 버튼·연타 대결 매니저·궁극기 컷인 없음(화면을 멈추거나 UI를 띄워서), 맵의 `"crown_cutin"`(왕관 획득 컷인, 게임을 멈춤)도 지운다. `_process`는 낙사 구조만 하고 승패·결과·재시작 안 함, `_unhandled_input` 무시(ESC 일시정지 방지). 판 교체는 TitleScreen이 카메라 흐르기 끝을 보고 한다
+  - 게임 장면은 `ArenaViewport`(SubViewport, **창 해상도 그대로** — 선명하게)에 띄우고 `Arena`(TextureRect)로 깐다 — 맵 카메라가 제목 글자까지 움직이지 않게. ⚠️ `CameraRig`는 시야를 **뷰포트 픽셀 크기**로 잡아서, 창 크기로 그리면 그만큼 넓게(작게) 찍힌다(SubViewportContainer 늘이기·`size_2d_override` 둘 다 안 먹음) -> **`CameraRig.view_scale`**(static, 창 높이/720)로 기준 배율을 곱해 구도를 맞추고, **`CameraRig.zoom_boost`**(static, 타이틀 `arena_zoom` 1.5)로 더 당겨 찍는다 — **지금 1.5배**(1.5 -> 1 -> 다시 1.5, 2026-09-28 사용자 결정: 1배에선 좁은 맵이 흐를 거리가 없어 제자리에 멈춰 있었는데, **넘어가는 기준은 항상 카메라가 왼쪽에서 오른쪽으로 흐른 것**이어야 한다). 그래서 제자리 대기(`pan_min_range`/`hold_time`)는 `pan_min_range` 0으로 꺼 두었다. 맵이 1.5배 화면보다도 좁으면 벽 한계선 때문에 흐를 거리가 0이라 멈춘 채 `pan_time`이 지나고 넘어간다 — 그럴 땐 `arena_zoom`을 더 올릴 것. 둘 다 평소 1 — **TitleScreen `_exit_tree()`가 1로 되돌린다**(안 되돌리면 실제 대전 카메라까지 당겨짐)
+  - **흐를 때 카메라 높이는 바닥선이 화면 맨 아래 근처**(`CameraRig._pan_center_y()` — 맵 `Ground` 윗면 + `_pan_bottom_px` 36, 2026-09-28 사용자 요청 "땅이 너무 많이 보인다, 위쪽이 다 보여야"). `Ground`가 없으면 싸울 때의 가장 아래 높이
+  - **새 판의 두 AI는 카메라가 처음 보는 화면 안의 밟을 수 있는 곳에 랜덤으로 선다**(`TitleScreen._place_fighters_in_view()`, 2026-09-28 사용자 요청): 맵 StaticBody2D 직사각형 윗면 중 벽·기둥(폭 60 미만·세로가 가로 2배 넘음) 빼고, 발~머리(100px)가 화면에 들어오는 곳에서 고르고 둘은 `min_spawn_gap`(140) 넘게 떨어뜨린다
+  - **타이틀 AI만 약하게**(`TitleScreen.ai_reaction_time` 0.25 / `ai_guard_chance` 0.25 / `ai_dodge_chance` 0.35 / `ai_skill_chance` 0.8, 헛손질 유도 끔 — 인스펙터에서 조절). 판을 띄운 직후 `_soften_ai()`가 그 판의 `AIController`에 넣는다. 실제 대전 AI는 그대로
+  - **타이틀 AI는 보여주기 위주**(`AIController.showcase`, 2026-09-28 사용자 요청): `_showcase_movement()`가 잠깐(`showcase_kite_time`) `showcase_keep_distance`(220)를 벌린 채 `showcase_hop_interval`마다 이단 점프, `showcase_dash_interval`마다 대시(벽·화면 끝에 몰리면 상대를 뛰어넘음)하다가 다가간다(최대 `showcase_engage_time`). 다가가는 동안 조건 맞는 스킬을 쓰거나, 평타 거리까지 붙으면 **평타 3타 콤보를 한 번 치고**(사용자 결정 — 콤보가 끝나거나 헛치면) 다시 빠진다. **화면(카메라에 보이는 곳) 가장자리 `showcase_screen_margin`(70px) 밖으로는 웬만하면 안 나간다**(`_view_rect()`, 넘어가면 안쪽으로 걷고 그쪽으론 대시 안 함). 발판 길찾기는 다가갈 때만. 스킬 쓸 확률 `ai_skill_chance`는 0.8
+  - **타이틀에선 데미지 숫자·N HIT·BLOCK 팝업이 안 뜬다**(`Hitbox._spawn_damage_number`/`_spawn_block_popup`이 `game_mode == "attract"`면 리턴)
+  - TitleScreen은 `process_mode = ALWAYS`(뒤 게임에서 멈추는 연출이 끼어도 타이틀은 돈다), 새 판 시작 때 `paused = false`. 메뉴로 넘어갈 때 `game_mode`를 "pvp"로 되돌린다. `_exit_tree()`에서 브금을 멈춘다(재생 중 종료하면 "resources still in use"·ObjectDB 누수 경고)
+  - **타이틀 로고 `ui/TitleLogo.tscn`+`.gd`+`.gdshader`**(2026-09-28 사용자 요청 — 델타룬 타이틀처럼): 사용자 그림 `sprite/타이틀/타이틀.png`는 검은 손글씨 테두리만 있고 글자 안이 투명이라, `tools/make_title_logo.py`가 같은 캔버스(글자 영역 + 여백 70) 세 장을 만든다 — `타이틀_선.png`(원본 테두리) / `타이틀_채움.png`(글자 안쪽 — 투명 덩어리마다 가로 광선이 테두리를 홀수 번 건너면 글자 몸통, 짝수면 'ㅇ'·'ㅂ'·'ㅁ' 구멍이라 안 칠함. 선끼리 붙은 곳은 판정이 틀려서 — '이'의 ㅣ가 빠졌었다 — 스크립트의 `FORCE_FILL`/`FORCE_EMPTY`에 원본 그림 좌표로 찍어 고친다) / `타이틀_빛.png`(흐리게 번진 둘레 빛). **로고 그림을 바꾸면 스크립트를 다시 돌릴 것.** 겹 순서 Glow -> Fill -> Line, **검은 테두리는 그대로**(사용자 결정). 연출은 계속 반복(사용자 결정): 하양(`white_time`) -> 빛 세짐 + 사선 빛줄기 훑기(`shine_time`) -> 글자 안에 **왼쪽 -> 오른쪽으로 흐르는 무지개**가 차오름(`rainbow_fade_time`/`rainbow_time`, `flow_speed`) -> 다시 하양. 둘레 빛도 무지개일 땐 같은 색. 예전 `TitleLabel` 글자는 뺐다(부제·안내 글자는 그대로)
+  - 실행 순서: `project.godot` 시작 씬 `ui/Disclaimer.tscn` -> TitleScreen -> MainMenu
+
 - 확인 창 `ui/ConfirmPopup.tscn`: 동작은 `_ask(문구, Callable)`로 넘김
   - ⚠️ 오버레이가 왼쪽 위 구석에 뜨면 인스턴스에 `anchors_preset = 0`이 덮어써진 것(에디터 드래그로 조용히 생김) -> `anchors_preset = 15` + anchor 1.0 + grow 2
   - 취소 시 직전 포커스 복귀, ESC 후 `set_input_as_handled()`(안 하면 뒤 메뉴 ESC까지 발동)
 - **주의:** `.tscn`은 모든 노드 뒤에 `[connection]`이 와야 함(파일 끝에 노드 덧붙이면 깨짐)
 - 배경 위 `Scrim` + `LeftFade` 필수(버튼 글씨 묻힘)
+- **메인 메뉴에서 ESC = "게임을 나가시겠습니까?" -> 게임 종료**(`_quit_game()`, 2026-09-28 사용자 요청 — 예전엔 타이틀로 돌아갔다). 아래 안내 글자도 "ESC로 게임 나가기"
 - **메뉴 사선 5항목(사용자 결정): 스토리 모드 / 대전 모드 / 훈련장 / 조작 방법 / 설정**
   - `<이름>Item`(Button, 판정 고정) > `Slide`(보이는 것만 이동) — **판정까지 움직이면 호버가 떨림**. 호버 = `grab_focus()`, 연출은 포커스만 봄
   - 도형 `메뉴사선_임시.png`는 흰색 + `modulate`. 교체 규격: 1장 재사용 / 투명 배경 / 글자 굽지 말 것
@@ -569,6 +583,7 @@
   - 지면→지붕은 스프링만으로 부족, **튕긴 정점에서 공중점프**로 닿는 설계(스프링 좌석은 바닥 취급이라 튕길 때 공중점프가 차 있음)
 - **모든 층 발판·스프링 좌석은 원웨이여야 한다** — 스프링으로 지붕을 뚫고 올라가고 위에서 내려오기 위해. 좌석이 꽉 찬 충돌이면 옆으로 못 지나가 벽이 된다
 - **카메라:** 위쪽이 중요해서 `max_y` 20 / `min_y` -300. 구름을 올리면 `min_y`도 같이 올릴 것(안 그러면 꼭대기에서 카메라가 멈춤)
+  - `CameraRig.start_pan(초, 끝 비율, 최소 거리, 제자리 시간)`: 캐릭터를 안 따라가고 벽 한계선 왼쪽 끝에서 끝 비율까지 흐른다. ⚠️ 타이틀은 카메라를 `get_camera_2d()`로 찾지 말고 맵 안의 CameraRig를 직접 찾는다(놀이터는 지워지는 중인 왕관 컷인 안의 카메라가 잡혀 흐르기가 안 시작됐었다)(타이틀 전용, `pan_time` 0이면 평소대로 따라감). 벽 없는 맵은 처음 자리 기준 ±400px
   - `CameraRig.lock_ground_to_bottom`: 줌과 무관하게 지면을 화면 아래 `ground_margin_px` 위에 고정. 기본 꺼짐, 놀이터만 켬(다른 맵은 `ground_y` 맞춰 켜면 됨)
 - ⚠️ **배경이 지글거리면 밉맵부터 의심**(큰 원본을 0.14배까지 축소) — 두 가지 다 해야 한다: ① `sprite/맵/놀이터/*.png.import`에 `mipmaps/generate=true` ② 씬 루트 `texture_filter = 4`(기본 필터는 밉맵을 안 봄). 이방성(6)은 효과 없음. 더 줄이려면 `FENCE_H`를 키울 것
 - **아파트 배경:** `아파트1동/2동/3동.png`을 빌더 `APT_SPRITES`/`APARTMENTS`로 9동 배치

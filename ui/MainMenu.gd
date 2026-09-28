@@ -402,9 +402,10 @@ func _set_menu_buttons_visible(is_visible: bool) -> void:
 func _on_dex_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/CharacterDex.tscn")
 
-## ESC로 뒤로 나갈 때도 모드 진입과 똑같이 한 번 물어본다 (실수로 튕겨나가지 않게)
-func _go_title() -> void:
-	get_tree().change_scene_to_file("res://ui/TitleScreen.tscn")
+## ESC로 나갈 때도 모드 진입과 똑같이 한 번 물어본다 (실수로 꺼지지 않게).
+## 2026-09-28 사용자 요청으로 타이틀로 돌아가는 대신 **게임을 끈다**
+func _quit_game() -> void:
+	get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
 	# 확인 창/설정 팝업이 떠 있으면 그쪽이 ESC를 먼저 먹는다(둘 다 set_input_as_handled까지 처리) —
@@ -422,4 +423,4 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 	if event.is_action_pressed("ui_cancel"):
-		_ask("타이틀 화면으로 나가시겠습니까?", _go_title)
+		_ask("게임을 나가시겠습니까?", _quit_game)

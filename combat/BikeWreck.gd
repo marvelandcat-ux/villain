@@ -138,8 +138,10 @@ func _reach(p: Dictionary, rot: float, dir: Vector2) -> float:
 ## 그림에서 **색이 칠해진 부분(알파 절반 이상)** 을 감싸는 볼록 껍질 — 캔버스 가운데 기준 px.
 ## 4px 간격으로만 훑는다(1536x1024 기준 10만 번). 조각 그림은 원본 캔버스에 조각만 남긴 것이라 여백이 크다
 func _hull_of(tex: Texture2D) -> PackedVector2Array:
-	if _hull_cache.has(tex):
-		return _hull_cache[tex]
+	# 그림 자체가 아니라 경로로 기억한다(static 사전에 그림을 넣어 두면 종료 때 자원이 안 풀려 경고가 난다)
+	var key: String = tex.resource_path
+	if _hull_cache.has(key):
+		return _hull_cache[key]
 	var half: Vector2 = tex.get_size() * 0.5
 	var pts := PackedVector2Array()
 	var img: Image = tex.get_image()
@@ -162,7 +164,7 @@ func _hull_of(tex: Texture2D) -> PackedVector2Array:
 				pts.append(Vector2(last + STEP, y) - half)
 				pts.append(Vector2(last + STEP, y + STEP) - half)
 	var hull: PackedVector2Array = Geometry2D.convex_hull(pts) if pts.size() >= 3 else PackedVector2Array([-half, half])
-	_hull_cache[tex] = hull
+	_hull_cache[key] = hull
 	return hull
 
 ## 껍질을 감싸는 상자의 가운데 — 조각을 이 점 기준으로 돌린다

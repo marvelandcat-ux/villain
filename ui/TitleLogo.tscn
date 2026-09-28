@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/TitleLogo.gd" id="1_logo"]
+[ext_resource type="Shader" path="res://ui/TitleLogo.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" path="res://sprite/타이틀/타이틀_빛.png" id="3_glow"]
+[ext_resource type="Texture2D" path="res://sprite/타이틀/타이틀_채움.png" id="4_fill"]
+[ext_resource type="Texture2D" path="res://sprite/타이틀/타이틀_선.png" id="5_line"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_logo"]
+shader = ExtResource("2_shader")
+
+[node name="TitleLogo" type="Control"]
+custom_minimum_size = Vector2(472, 336)
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_logo")
+
+[node name="Glow" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_logo")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_glow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Fill" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_logo")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_fill")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Line" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_line")
+expand_mode = 1
+stretch_mode = 5

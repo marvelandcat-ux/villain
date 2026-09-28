@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://cq68f4urvawlr" path="res://ui/TitleScreen.gd" id="1"]
 [ext_resource type="AudioStream" uid="uid://dai5lwppv7s00" path="res://Sound/타이틀화면브금.mp3" id="2_bgm"]
 [ext_resource type="AudioStream" uid="uid://cmd4rkhtaegr" path="res://Sound/타이틀클릭했을때나는소리.mp3" id="3_click"]
+[ext_resource type="PackedScene" path="res://ui/TitleLogo.tscn" id="4_logo"]
 
 [node name="TitleScreen" type="Control" unique_id=1984858122]
 layout_mode = 3
@@ -21,6 +22,26 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.05, 0.04, 0.07, 1)
 
+[node name="ArenaViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+audio_listener_enable_2d = true
+size = Vector2i(1280, 720)
+render_target_update_mode = 4
+
+[node name="Arena" type="TextureRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.25)
+
 [node name="Center" type="CenterContainer" parent="." unique_id=1261936685]
 layout_mode = 0
 anchor_right = 1.0
@@ -33,14 +54,12 @@ mouse_filter = 2
 theme_override_constants/separation = 26
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="Center/VBox" unique_id=485353146]
+[node name="TitleLogo" parent="Center/VBox" instance=ExtResource("4_logo")]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
-theme_override_font_sizes/font_size = 84
-text = "트러블 메이커"
-horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="Center/VBox" unique_id=943040074]
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.06, 1)
+theme_override_constants/outline_size = 7
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.62, 0.8, 1)
 theme_override_font_sizes/font_size = 24
@@ -52,6 +71,8 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 
 [node name="PromptLabel" type="Label" parent="Center/VBox" unique_id=1546762833]
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.06, 1)
+theme_override_constants/outline_size = 7
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.8, 0.9, 1)
 theme_override_font_sizes/font_size = 26
