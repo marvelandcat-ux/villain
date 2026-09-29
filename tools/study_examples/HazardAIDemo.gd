@@ -13,7 +13,7 @@ extends SceneTree
 
 
 ## 지하철 열차 (maps/SubwayTrain.gd 단순화) — 경고 중이거나 달리는 중이면 위험
-class SubwayTrain extends Node2D:
+class DemoSubwayTrain extends Node2D:
 	var state := "WAITING"
 
 	func _ready() -> void:
@@ -24,7 +24,7 @@ class SubwayTrain extends Node2D:
 
 
 ## 가상의 새 기믹 — AI 코드를 한 줄도 안 고치고 추가한다
-class FallingRocks extends Node2D:
+class DemoFallingRocks extends Node2D:
 	var shaking := false
 
 	func _ready() -> void:
@@ -35,7 +35,7 @@ class FallingRocks extends Node2D:
 
 
 ## 피신 지점 (maps/AISafeSpot.gd와 동일) — 맵에 놓기만 하면 된다
-class SafeSpot extends Marker2D:
+class DemoSafeSpot extends Marker2D:
 	func _ready() -> void:
 		add_to_group("ai_safe_spot")
 
@@ -72,12 +72,12 @@ class SimpleAI:
 
 
 func _initialize() -> void:
-	var train := SubwayTrain.new()
+	var train := DemoSubwayTrain.new()
 	root.add_child(train)
-	var left_spot := SafeSpot.new()
+	var left_spot := DemoSafeSpot.new()
 	left_spot.position = Vector2(-280, 155)
 	root.add_child(left_spot)
-	var right_spot := SafeSpot.new()
+	var right_spot := DemoSafeSpot.new()
 	right_spot.position = Vector2(280, 155)
 	root.add_child(right_spot)
 
@@ -95,7 +95,7 @@ func _initialize() -> void:
 	print("4. 열차 지나감       -> ", ai.decide())
 
 	print("\n=== 새 기믹 '떨어지는 돌' 추가 — AI 코드는 그대로 ===")
-	var rocks := FallingRocks.new()
+	var rocks := DemoFallingRocks.new()
 	root.add_child(rocks)
 	print("5. 돌 가만히 있음    -> ", ai.decide())
 	rocks.shaking = true

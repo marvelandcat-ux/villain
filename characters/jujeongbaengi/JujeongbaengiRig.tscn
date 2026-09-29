@@ -11,7 +11,7 @@
 [ext_resource type="Script" path="res://characters/SwirlEye.gd" id="90_swirl"]
 [ext_resource type="Texture2D" uid="uid://b53e6h3nfkjcu" path="res://sprite/주정뱅이/몸/주정뱅이 측면1.png" id="89_turn1"]
 [ext_resource type="Texture2D" uid="uid://bvssbl7qn5pqo" path="res://sprite/주정뱅이/몸/주정뱅잉 측면2.png" id="88_turn2"]
-[ext_resource type="Texture2D" uid="uid://dvjxwrxebn475" path="res://sprite/주정뱅이/몸/주정뱅이 측면 3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://byem4n8psb6ue" path="res://sprite/주정뱅이/몸/주정뱅이  몸 측면 3.png" id="87_turn3"]
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="86_front"]
 
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
