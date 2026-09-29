@@ -41,6 +41,11 @@ extends MeleeAttack
 ## 이동은 예비동작(windup) 동안에 끝나고, 판정은 **도착한 자리** 기준으로 나간다 — 그래서 밀린 상대에게 닿는다.
 ## 드롭킥 마무리 타는 스스로 앞으로 뛰므로 그 칸은 무시된다
 @export var combo_lunge: Array[float] = [0.0, 0.0, 0.0]
+## 타별 파고드는 시간(초) — 비어 있거나 0이면 windup을 쓴다(예전 동작). 같은 거리라도 시간이 길면 천천히 미끄러진다.
+## AttackData의 lunge_time에 해당 — 옛 배열 방식 캐릭터도 파고드는 "속도"를 타별로 맞출 수 있게 한다(악플러를 금쪽이처럼)
+@export var combo_lunge_time: Array[float] = []
+## 타별 "발 먼저 내딛기" 비율(0~0.6) — 비어 있으면 0(발 동작 없이 바로 미끄러짐). AttackData의 lunge_foot_lead에 해당
+@export var combo_lunge_lead: Array[float] = []
 
 ## --- 데미지 비례 푸시백 (앞 타 1·2타) ---
 ## 둘 다 0이면 꺼진다(기본값 — 예전처럼 combo_knockback의 x로 민다).
@@ -68,13 +73,20 @@ extends MeleeAttack
 @export var break_debris_scene: PackedScene
 @export var break_debris_count: int = 5
 
-## --- 마무리 타로 멀리 날려보내기 (촉법소년 3타 발차기) ---
-## 0보다 크면 마무리 타에 맞은 상대가 이 시간(초) 동안 조작을 못 한 채 날아간다.
-## **날아가는 거리를 정하는 건 combo_knockback의 마지막 칸이고**, 이 값은 "날아가는 동안 못 움직이는 시간"이다 —
-## 짧으면 넉백이 한창 실려 있는데 조작이 돌아와 공중에서 제자리걸음을 한다. 0이면 평소대로(넉백 세기에 비례)
-@export var launch_stun: float = 0.0
-## 날아가는 동안 몸이 도는 바퀴 수 (0이면 안 돈다). 바닥에 닿으면 그 자리에서 일어선다
-@export var launch_spin_turns: float = 0.0
+## --- 3타 공격(마무리 타) 날리기 — 모든 캐릭터 공용(2026-09-29, 스매시식) ---
+## 마무리 타에 맞은 상대는 기절(별)한 채 돌면서 때린 방향으로 날아간다(`Fighter.launch_finisher`).
+## 아래 값은 전부 **맞은 쪽이 잃은 체력이 0일 때** 기준이고, 잃은 체력에 비례해 finisher_max_scale배까지 커진다.
+## 기본값은 금쪽이 3타(`SpinFinisher.tres`)와 같다 — hits를 쓰는 캐릭터는 그 파일의 knockback.x/pop/hitstun/tumble_turns가 우선
+## 날아가는 가로 속도(px/초). 체력을 잃을수록 finisher_max_scale배까지 더 빨라진다(더 멀리 감)
+@export var finisher_launch_speed: float = 535.0
+## 위로 띄우는 속도(px/초)
+@export var finisher_launch_pop: float = 220.0
+## 기절(조작 불가) 시간(초) — 도는 시간·별이 떠 있는 시간도 같다
+@export var finisher_launch_stun: float = 0.4
+## 도는 바퀴 수
+@export var finisher_tumble_turns: float = 1.0
+## 체력을 전부 잃었을 때 위 값(속도·띄우기·시간·바퀴)에 곱해지는 배수. 반쯤 잃었으면 그 중간(2면 1.5배)
+@export var finisher_max_scale: float = 2.0
 ## 날아가는 동안 뒤에 연기 꼬리를 남길지
 @export var launch_smoke: bool = false
 ## 마무리 타 넉백 가로 세기에 곱하는 배수 — 3타로 더 멀리 날린다(2026-09-26 사용자 요청 "거리 1.5배", 전 캐릭터 공통). 1이면 예전과 같다.
@@ -83,6 +95,23 @@ extends MeleeAttack
 @export var finisher_distance_scale: float = 1.25
 ## 마무리 타에 맞은 상대에게 날아가는 이펙트(충격·바람 줄기·먼지 고리, `combat/LaunchTrail.gd`)를 붙일지
 @export var finisher_trail: bool = true
+
+## --- 키보드 회전 난무 (악플러: 그랩으로 끌어온 직후 다음 기본공격) ---
+## 켜면, 상대를 그랩으로 끌어온 직후(custom_data["keyboard_spin_charged"]가 켜져 있을 때) 다음 기본공격이
+## 두 손으로 무기를 빙빙 돌리는 회전 난무로 바뀐다 — 몸 주변 원형 다단히트, 도는 동안 좌우 이동 가능.
+## 기본 꺼짐(다른 캐릭터 영향 없음). 시각은 BodyRig.play_keyboard_fan이 맡는다
+@export var spin_flurry_enabled: bool = false
+## 회전 난무가 지속되는 시간(초)
+@export var spin_flurry_duration: float = 2.0
+## 다단히트 간격(초) — 이 간격마다 주변 상대에게 한 번씩 들어간다
+@export var spin_flurry_interval: float = 0.18
+## 한 번의 타격 데미지
+@export var spin_flurry_damage: int = 2
+## 판정 반경(px) — 도는 무기가 닿는 몸 주변 원
+@export var spin_flurry_radius: float = 70.0
+## 한 대마다의 넉백(x는 바라보는 쪽 자동반전, y는 띄우기) — 원형이라 세게 밀면 상대가 판정 밖으로
+## 나가 다음 타가 헛치므로 살짝만 준다
+@export var spin_flurry_knockback: Vector2 = Vector2(30, 0)
 
 ## 타입을 안 붙이고 preload로 가져온다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다 (Fighter._shield, ShoulderChargeSkill의 ChargeWind와 같은 이유)
@@ -146,6 +175,10 @@ var _lunge_dir: float = 1.0
 var _lunge_lead: float = 0.0
 ## 직전 앞 타에 상대가 밀린 거리(px) — lunge_follows_pushback이 다음 타 파고들기에 쓴다
 var _last_pushback: float = 0.0
+## 키보드 회전 난무가 도는 중인지 / 남은 시간(초) / 회전 중 바꿔둔 히트박스 원래 모양(끝나면 복구)
+var _spin_active: bool = false
+var _spin_left: float = 0.0
+var _spin_saved_shape: Shape2D = null
 
 ## 이만큼보다 짧은 시간에 파고들지는 않는다 — 예비동작이 0인 캐릭터가 한 프레임에 순간이동하지 않게
 const LUNGE_MIN_TIME := 0.08
@@ -231,34 +264,43 @@ func _apply_pushback(target: Fighter, base: float, per_damage: float) -> void:
 	target.velocity.x = dir * speed
 	target.apply_hitstun(speed / Fighter.HITSTUN_FRICTION)
 
-## 마무리 타에 맞은 상대를 멀리 날려보낸다. 데미지·넉백은 히트박스가 이미 줬고 여기서는
-## **날아가는 동안의 경직·구르기·연기만** 얹는다. 가드로 막혔으면 아무것도 안 한다
+## 마무리 타(3타 공격)에 맞은 상대를 날려보낸다 — 방향은 때린 쪽이 바라보는 쪽(= 맞은 방향).
+## 데미지는 히트박스가 이미 줬고, 날아가는 속도·기절·구르기는 `Fighter.launch_finisher`가 잃은 체력에 비례해 정한다
+## (히트박스 넉백으로 붙은 속도는 거기서 덮어쓴다). 가드로 막혔으면 아무것도 안 한다
 func _launch_finisher(victim: Node) -> void:
 	if not _is_final(_swing_step):
 		return
-	var d: AttackData = _hit_data(_swing_step)
-	var stun: float = d.hitstun if d != null else launch_stun
-	var turns: float = d.tumble_turns if d != null else launch_spin_turns
-	var smoke: bool = d.launch_smoke if d != null else launch_smoke
 	if not (victim is Fighter) or not is_instance_valid(victim):
 		return
 	var target: Fighter = victim
 	# 막은 쪽은 넉백도 데미지도 안 받았으므로 날아가지도 않는다 (막았는데 구르면 어긋나 보인다)
 	if target.is_guarding:
 		return
+	var speed: float = finisher_launch_speed
+	var pop: float = finisher_launch_pop
+	var stun: float = finisher_launch_stun
+	var turns: float = finisher_tumble_turns
+	var smoke: bool = launch_smoke
+	var d: AttackData = _hit_data(_swing_step)
+	if d != null:
+		# 타 파일에 적힌 값이 있으면 그걸 기준으로 (0 이하면 공용 기본값)
+		if d.knockback.x > 0.0:
+			speed = d.knockback.x
+		if d.pop > 0.0:
+			pop = d.pop
+		if d.hitstun > 0.0:
+			stun = d.hitstun
+		if d.tumble_turns > 0.0:
+			turns = d.tumble_turns
+		smoke = d.launch_smoke
 	var dir: float = 1.0
 	if is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
 		dir = signf(_fighter.facing)
-	# 날아가는 이펙트는 경직·구르기 설정과 상관없이 모든 캐릭터의 마무리 타에 붙인다
+	# 날아가는 이펙트(현재 브랜치 기능) — 경직·구르기와 상관없이 모든 마무리 타에 붙인다
 	if finisher_trail:
 		_spawn_launch_trail(target, Vector2(dir, -0.35))
-	if stun <= 0.0 and turns <= 0.0 and not smoke:
-		return
-	if stun > 0.0:
-		target.apply_hitstun(stun)
-	if turns > 0.0 and target.has_method("play_launch_tumble"):
-		# 도는 시간은 못 움직이는 시간과 맞춘다 — 경직이 없으면 짧게 한 번 굴리고 만다
-		target.play_launch_tumble(turns, stun if stun > 0.0 else 0.6, dir)
+	# 날려보내기는 sub 전투 시스템에 위임(속도·팝·기절·구르기·체력 비례 확대)
+	target.launch_finisher(dir, speed, pop, stun, turns, finisher_max_scale)
 	if smoke:
 		_spawn_launch_smoke(target, maxf(stun, 0.45))
 
@@ -316,12 +358,20 @@ func _spawn_break_debris() -> void:
 		elif piece is Node2D:
 			piece.global_position = hitbox.global_position
 
-## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다
+## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다.
+## 그랩 충전이 걸려 있으면 쿨과 상관없이 회전 난무를 받아준다(끌어온 직후 바로 나가야 하므로)
 func can_use() -> bool:
+	if spin_flurry_enabled and not _spin_active and _fighter != null and is_instance_valid(_fighter) and _fighter.custom_data.get("keyboard_spin_charged", false):
+		return true
 	return _swinging or _chain_left > 0.0 or cooldown_left <= 0.0
 
 func use(fighter: Fighter) -> void:
 	_fighter = fighter
+	# 그랩으로 끌어온 직후 다음 기본공격 1번은 키보드 회전 난무로 바뀐다(악플러 강화). 쓰면 충전이 소모된다
+	if spin_flurry_enabled and not _spin_active and fighter.custom_data.get("keyboard_spin_charged", false):
+		fighter.custom_data["keyboard_spin_charged"] = false
+		_start_spin_flurry(fighter)
+		return
 	# 스윙 판정이 아직 안 났으면, 지금 입력을 예약만 해둔다 (맞으면 다음 타, 헛발이면 버림)
 	if _swinging:
 		_queued = true
@@ -343,6 +393,20 @@ func handles_own_visual() -> bool:
 
 func _process(delta: float) -> void:
 	super._process(delta)  # 쿨타임 감소
+	# 키보드 회전 난무가 도는 중이면 히트박스를 몸 중심에 붙여 따라다니게 하고, 시간이 다 되면 끝낸다.
+	# (도는 동안은 아래 일반 콤보 판정 로직을 건너뛴다)
+	if _spin_active:
+		if not is_instance_valid(_fighter):
+			_end_spin_flurry()
+			return
+		hitbox.global_position = _fighter.global_position
+		hitbox.knockback = Vector2(spin_flurry_knockback.x * _fighter.facing, spin_flurry_knockback.y)
+		# 범위에 든 상대 투사체는 반토막 내서 땅에 떨어뜨린다
+		_slice_projectiles_in_range()
+		_spin_left = maxf(_spin_left - delta, 0.0)
+		if _spin_left <= 0.0:
+			_end_spin_flurry()
+		return
 	# 판정 창(active_duration)이 지날 때까지 안 맞았으면 헛발로 확정한다
 	if _active_left > 0.0:
 		# **판정이 켜져 있는 동안 캐릭터를 따라간다.** 드롭킥·파고들기처럼 때리는 중에 앞으로 나가면
@@ -429,6 +493,11 @@ func _fire(fighter: Fighter, step: int) -> void:
 		else:
 			lunge = combo_lunge[step] if step < combo_lunge.size() else 0.0
 			follows = lunge_follows_pushback
+			# 옛 배열도 타별 파고드는 시간·발 동작을 줄 수 있다(비면 windup·0 = 예전 동작)
+			if step < combo_lunge_time.size() and combo_lunge_time[step] > 0.0:
+				lunge_time = combo_lunge_time[step]
+			if step < combo_lunge_lead.size():
+				lead = combo_lunge_lead[step]
 		# 직전 타에 밀린 만큼 따라붙는다 (1타는 직전 타가 없으니 칸 값만)
 		if follows and step > 0:
 			lunge += _last_pushback
@@ -479,6 +548,79 @@ func _reset(cd: float) -> void:
 	_queued = false
 	_chain_left = 0.0
 	cooldown_left = cd
+
+## --- 키보드 회전 난무 (악플러 그랩 후 강화 평타) ---
+## 두 손으로 무기를 빙빙 돌리며 몸 주변을 spin_flurry_duration초 동안 다단히트한다.
+## 히트박스(BasicAttack/Hitbox)를 잠깐 큰 원형 + repeat_interval로 바꿔 재활용하고, 끝나면 원래대로 되돌린다
+func _start_spin_flurry(fighter: Fighter) -> void:
+	_spin_active = true
+	_spin_left = spin_flurry_duration
+	# 진행 중이던 콤보 상태를 깨끗이 정리한다
+	_swinging = false
+	_resolved = true
+	_queued = false
+	_active_left = 0.0
+	_chain_left = 0.0
+	_step = 0
+	# 다른 공격·스킬은 막고 이동은 계속 가능하게(start_busy 규칙) — 도는 동안 좌우로 움직일 수 있다
+	fighter.start_busy(spin_flurry_duration)
+	# 히트박스를 몸 주변 원형 다단히트로 바꾼다(끝나면 _end_spin_flurry가 원래 모양으로 복구)
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node:
+		_spin_saved_shape = shape_node.shape
+		var circle := CircleShape2D.new()
+		circle.radius = spin_flurry_radius
+		shape_node.shape = circle
+	hitbox.damage = fighter.compute_damage(spin_flurry_damage)
+	hitbox.knockback = Vector2(spin_flurry_knockback.x * fighter.facing, spin_flurry_knockback.y)
+	hitbox.pop_override = 0.0            # 원형 난무는 위로 안 띄운다(뜨면 판정 밖으로 빠진다)
+	hitbox.source_fighter = fighter
+	hitbox.repeat_interval = spin_flurry_interval
+	hitbox.debris_enabled = false
+	hitbox.global_position = fighter.global_position
+	hitbox.clear_repeat_state()
+	hitbox.monitoring = true
+	hitbox.monitorable = true
+	# 시각 — 두 손으로 키보드를 선풍기처럼 돌린다(리그에 기능이 없으면 그냥 넘어간다)
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("play_keyboard_fan"):
+		visual.play_keyboard_fan(spin_flurry_duration)
+
+## 회전 난무를 끝내고 히트박스를 원래 상태(사각형 · 단발)로 되돌린다
+func _end_spin_flurry() -> void:
+	_spin_active = false
+	_spin_left = 0.0
+	# 명중 콜백 안에서 불릴 수 있으므로 monitoring은 물리 스텝 뒤에 안전하게 끈다(_resolve와 같은 이유)
+	hitbox.set_deferred("monitoring", false)
+	hitbox.set_deferred("monitorable", false)
+	hitbox.repeat_interval = 0.0
+	hitbox.clear_repeat_state()
+	hitbox.debris_enabled = true
+	hitbox.pop_override = -1.0
+	if _spin_saved_shape != null:
+		var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+		if shape_node:
+			shape_node.shape = _spin_saved_shape
+		_spin_saved_shape = null
+	_reset(effective_cooldown())
+	var visual: Node = _fighter.get_node_or_null("Visual") if is_instance_valid(_fighter) else null
+	if visual and visual.has_method("end_keyboard_fan"):
+		visual.end_keyboard_fan()
+
+## 회전 난무 판정 반경 안에 든 **상대** 투사체를 반토막 낸다(자기가 쏜 건 무시).
+## 잘린 투사체는 스스로 반쪽 두 조각을 맵에 남기고 사라진다(Projectile.slice_in_half)
+func _slice_projectiles_in_range() -> void:
+	if not is_instance_valid(_fighter):
+		return
+	var center: Vector2 = _fighter.global_position
+	for p in _fighter.get_tree().get_nodes_in_group("projectiles"):
+		if p == null or not is_instance_valid(p) or not p.has_method("slice_in_half"):
+			continue
+		# 자기(악플러)가 쏜 투사체는 안 자른다 — 상대 것만
+		if "source_fighter" in p and p.source_fighter == _fighter:
+			continue
+		if center.distance_to(p.global_position) <= spin_flurry_radius:
+			p.slice_in_half()
 
 ## --- 파고들기 (combo_lunge) ---
 ## 예비동작 동안 distance만큼 앞으로 미끄러진다. 이동 권한을 잠깐 가져가므로 그동안 걷기·대시는 안 먹는다

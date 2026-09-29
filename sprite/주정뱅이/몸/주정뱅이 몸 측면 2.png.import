@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dvjxwrxebn475"
-path="res://.godot/imported/주정뱅이 측면 3.png-752bb053eef7bfe56f02178629d883d4.ctex"
+uid="uid://cdxbp4f2yppij"
+path="res://.godot/imported/주정뱅이 몸 측면 2.png-e42709aa9b960b401222538d5ff8dfa7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/주정뱅이/몸/주정뱅이 측면 3.png"
-dest_files=["res://.godot/imported/주정뱅이 측면 3.png-752bb053eef7bfe56f02178629d883d4.ctex"]
+source_file="res://sprite/주정뱅이/몸/주정뱅이 몸 측면 2.png"
+dest_files=["res://.godot/imported/주정뱅이 몸 측면 2.png-e42709aa9b960b401222538d5ff8dfa7.ctex"]
 
 [params]
 
