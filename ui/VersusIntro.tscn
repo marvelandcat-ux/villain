@@ -1,30 +1,35 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://cf73hqcem58qo"]
 
-[ext_resource type="Script" path="res://ui/VersusIntro.gd" id="1"]
-[ext_resource type="Script" path="res://ui/VersusHalf.gd" id="2_half"]
-[ext_resource type="Script" path="res://ui/VersusSparks.gd" id="3_sparks"]
+[ext_resource type="Script" uid="uid://dq12nwj2mxfsb" path="res://ui/VersusIntro.gd" id="1"]
+[ext_resource type="Script" uid="uid://dhy8gkg1w43md" path="res://ui/VersusHalf.gd" id="2_half"]
+[ext_resource type="Script" uid="uid://xgw6kkuc6mtd" path="res://ui/VersusSparks.gd" id="3_sparks"]
 
-[node name="VersusIntro" type="CanvasLayer"]
+[node name="VersusIntro" type="CanvasLayer" unique_id=652620994]
 layer = 5
 script = ExtResource("1")
 
-[node name="Root" type="Control" parent="."]
+[node name="Root" type="Control" parent="." unique_id=36351377]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Background" type="ColorRect" parent="Root"]
+[node name="Background" type="ColorRect" parent="Root" unique_id=2043503524]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.04, 0.04, 0.06, 1)
 
-[node name="Banner" type="Control" parent="Root"]
+[node name="Banner" type="Control" parent="Root" unique_id=819029085]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="P1Half" type="Control" parent="Root/Banner"]
+[node name="P1Half" type="Control" parent="Root/Banner" unique_id=282193393]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
@@ -32,8 +37,9 @@ script = ExtResource("2_half")
 lean = 190.0
 fill_color = Color(0.17, 0.2, 0.76, 1)
 
-[node name="P1Box" type="Control" parent="Root/Banner/P1Half"]
+[node name="P1Box" type="Control" parent="Root/Banner/P1Half" unique_id=1977051353]
 clip_contents = true
+anchors_preset = 0
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
@@ -43,22 +49,23 @@ offset_right = -140.0
 offset_bottom = -95.0
 mouse_filter = 2
 
-[node name="P1Image" type="TextureRect" parent="Root/Banner/P1Half/P1Box"]
+[node name="P1Image" type="TextureRect" parent="Root/Banner/P1Half/P1Box" unique_id=831642957]
+layout_mode = 0
 offset_right = 480.0
 offset_bottom = 480.0
 mouse_filter = 2
 expand_mode = 1
 
-[node name="P1NameLabel" type="Label" parent="Root/Banner/P1Half"]
+[node name="P1NameLabel" type="Label" parent="Root/Banner/P1Half" unique_id=1607608639]
+layout_mode = 0
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -640.0
 offset_top = -92.0
 offset_right = -120.0
 offset_bottom = -28.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 10
@@ -67,7 +74,8 @@ text = "P1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="P2Half" type="Control" parent="Root/Banner"]
+[node name="P2Half" type="Control" parent="Root/Banner" unique_id=523150135]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
@@ -76,8 +84,9 @@ is_right = true
 lean = 190.0
 fill_color = Color(0.92, 0.11, 0.1, 1)
 
-[node name="P2Box" type="Control" parent="Root/Banner/P2Half"]
+[node name="P2Box" type="Control" parent="Root/Banner/P2Half" unique_id=856836343]
 clip_contents = true
+anchors_preset = 0
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
@@ -87,22 +96,23 @@ offset_right = 620.0
 offset_bottom = -95.0
 mouse_filter = 2
 
-[node name="P2Image" type="TextureRect" parent="Root/Banner/P2Half/P2Box"]
+[node name="P2Image" type="TextureRect" parent="Root/Banner/P2Half/P2Box" unique_id=1041349407]
+layout_mode = 0
 offset_right = 480.0
 offset_bottom = 480.0
 mouse_filter = 2
 expand_mode = 1
 
-[node name="P2NameLabel" type="Label" parent="Root/Banner/P2Half"]
+[node name="P2NameLabel" type="Label" parent="Root/Banner/P2Half" unique_id=362466460]
+layout_mode = 0
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 120.0
 offset_top = -92.0
 offset_right = 640.0
 offset_bottom = -28.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 10
@@ -111,14 +121,16 @@ text = "P2"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Sparks" type="Control" parent="Root/Banner"]
+[node name="Sparks" type="Control" parent="Root/Banner" unique_id=719389530]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("3_sparks")
 lean = 190.0
 
-[node name="VsLabel" type="Label" parent="Root/Banner"]
+[node name="VsLabel" type="Label" parent="Root/Banner" unique_id=1731685603]
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -128,7 +140,6 @@ offset_top = -95.0
 offset_right = 130.0
 offset_bottom = 95.0
 pivot_offset = Vector2(130, 95)
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 16

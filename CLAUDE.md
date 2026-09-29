@@ -111,7 +111,7 @@
 | 지하철 아저씨 | **없음** (`vault_jump`) | `TurnstileSkill` | `FearSkill` | `TteokbokkiUltimate` |
 | 헬스장 빌런 | `ComboMeleeAttack` | `LivingShadowSkill` | `BackSuplexSkill` | **빈 `Skill.gd`** |
 | 일진 | `ComboMeleeAttack` (3타 가방) | `CigaretteSmokeSkill` | `ShoulderChargeSkill` | **빈 `Skill.gd`** (컷인만) |
-| 주인공(경찰, 훈련장 전용) | `ComboMeleeAttack` (경봉) | **빈** | **빈** | **빈** |
+| 주인공(경찰) | `ComboMeleeAttack` (경봉) | `TaserGunSkill` (테이저건) | `StoneThrowSkill` (돌 던지기) | **빈** (컷인만, `PoliceCutIn` 1.3초) |
 
 - `skills/DunkUltimate.gd`(층간소음 궁): 상대 쪽으로 도약 후 착지 지점 범위 공격, 도약 중 `movement_override`로 좌우 잠금
 - `skills/TteokbokkiUltimate.gd`(지하철 궁): `channel_duration` 동안 전진하며 `drop_interval`마다 `FirePlate` 흘림, 벽에 닿으면 종료
@@ -333,6 +333,15 @@
 - `Engine.time_scale`은 **`_exit_tree`에서 1로 복구**(안 하면 메뉴까지 느려짐)
 - 동작 테스트: `BodyRig.play_scratch()`/`play_lookback()`/`play_blink()`
 - 충돌 영역 보기: `maps/CollisionDebugView.gd`
+
+## 경찰 스킬1 — 테이저건(`skills/TaserGunSkill.gd`, 2026-09-29)
+- **전기 침 한 발을 쏘고, 맞은 상대를 2초간 완전히 굳힌다.** 쿨 20초 / 데미지 10 (사용자 지정: 기절이 세니까 쿨을 길게)
+- 뼈대는 촉법소년 비비탄(`BBGunSkill`)과 같다 — `play_gun_motion()`으로 총 자세를 켜고 `Projectile`을 날린다. 다른 점은 **한 발**이라는 것과 기절
+- **기절은 총알이 아니라 스킬이 건다.** `Projectile`(=`Hitbox`)의 `connected` 신호를 받아 `apply_hitstun()` + `StunStars.spawn()`을 부른다. 총알 쪽에 넣으면 같은 총알 씬을 쓰는 다른 스킬까지 전부 기절을 걸게 된다
+- **막으면 기절도 없다**(`blocks_debuff()` 확인) — 데미지만 줄고 기절은 그대로면 막을 이유가 없어진다
+- 총알 씬 `skills/TaserBolt.tscn`(반지름 9, 수명 1.2초) / 총 그림은 리그의 `Gun` 노드(`PoliceRig.tscn`, `테이져건.png`, 배율 0.021 — 비비탄 총과 같은 화면 크기 34px)
+- **바디 수플렉스(`BodySuplexSkill`)는 이 자리에서 빠졌다.** 스크립트는 남아 있으니 다른 슬롯에 다시 붙일 수 있다
+- ⚠️ **헤드리스 테스트 주의:** 컨트롤러가 `apply_physics()`를 매 물리 프레임 부르므로 테스트에서 직접 또 부르면 경직이 **두 배 빨리** 닳는다(2초짜리가 1초로 측정됨). 캐릭터를 순간이동시킨 직후에는 착지 랙 때문에 `is_busy()`가 true라 스킬이 씹힌다 — 60프레임쯤 기다릴 것. 스킬은 클래시 대기창(0.15초) 뒤에 나간다
 
 ## 궁극기 컷인 연출
 

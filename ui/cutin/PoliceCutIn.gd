@@ -23,6 +23,14 @@ extends Node2D
 ## 2026-09-29 사용자 지정으로 2.6 -> 1.3 (종이 올라오는 0.55초를 빼면 말하는 구간이 0.6초쯤 남는다)
 @export var cutin_duration: float = 1.3
 
+@export_group("경찰차 엔진 진동")
+## 시동 걸린 차처럼 **배경만** 아주 조금 떠는 폭(px). 0이면 안 떤다.
+## 경찰·종이는 안 떤다 — 배경만 떨어야 "차가 공회전 중"으로 읽힌다
+@export var engine_shake: float = 0.55
+## 떠는 빠르기(초당 사이클). 두 값이 서로 안 나누어떨어져야 같은 자리를 반복하지 않아
+## 진짜 엔진처럼 불규칙하게 보인다
+@export var engine_shake_hz: Vector2 = Vector2(11.0, 13.7)
+
 @export_group("종이 끌어올리기")
 ## 종이가 화면 밖에서 제자리까지 올라오는 데 걸리는 시간(초)
 @export var paper_rise_time: float = 0.55
@@ -62,6 +70,8 @@ extends Node2D
 @export var talk_nod: float = 4.0
 
 @onready var _bg: Sprite2D = $Bg
+## 배경 제자리 — 엔진 진동이 여기서 벗어났다 돌아온다
+var _bg_home: Vector2
 @onready var _bg_color: ColorRect = $BgColor
 @onready var _police: Node2D = $Police
 @onready var _head: Sprite2D = $Police/Head
@@ -85,6 +95,7 @@ var _head_open_texture: Texture2D = null
 func _ready() -> void:
 	_paper_home = _paper_group.position
 	_head_home = _head.position
+	_bg_home = _bg.position
 	_bg.visible = _bg.texture != null
 	_bg_color.visible = _bg.texture == null
 	if paper_texture != null:
@@ -110,6 +121,16 @@ func _process(delta: float) -> void:
 	_apply_paper(clampf(_time / maxf(paper_rise_time, 0.001), 0.0, 1.0))
 	_update_mouth()
 	_update_flash()
+	_update_engine_shake()
+
+## 시동 걸린 차의 공회전 떨림. 세로가 가로보다 크다 — 차가 위아래로 잘게 들썩인다.
+## 주파수 두 개를 겹쳐 같은 자리를 반복하지 않게 한다(한 개면 규칙적으로 튕겨 기계처럼 보인다)
+func _update_engine_shake() -> void:
+	if engine_shake <= 0.0:
+		return
+	var x: float = sin(_time * engine_shake_hz.x * TAU) * engine_shake * 0.45
+	var y: float = sin(_time * engine_shake_hz.y * TAU + 1.7) * engine_shake
+	_bg.position = _bg_home + Vector2(x, y)
 
 ## 파랑과 빨강을 번갈아 켠다. 부드럽게 밝아졌다 어두워지는 게 아니라 **딱딱 켜졌다 꺼진다** —
 ## 경광등은 원래 그렇게 보이고, 부드럽게 하면 그냥 화면이 물드는 것처럼만 보인다
