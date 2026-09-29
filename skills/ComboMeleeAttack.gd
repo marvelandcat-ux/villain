@@ -41,6 +41,11 @@ extends MeleeAttack
 ## 이동은 예비동작(windup) 동안에 끝나고, 판정은 **도착한 자리** 기준으로 나간다 — 그래서 밀린 상대에게 닿는다.
 ## 드롭킥 마무리 타는 스스로 앞으로 뛰므로 그 칸은 무시된다
 @export var combo_lunge: Array[float] = [0.0, 0.0, 0.0]
+## 타별 파고드는 시간(초) — 비어 있거나 0이면 windup을 쓴다(예전 동작). 같은 거리라도 시간이 길면 천천히 미끄러진다.
+## AttackData의 lunge_time에 해당 — 옛 배열 방식 캐릭터도 파고드는 "속도"를 타별로 맞출 수 있게 한다(악플러를 금쪽이처럼)
+@export var combo_lunge_time: Array[float] = []
+## 타별 "발 먼저 내딛기" 비율(0~0.6) — 비어 있으면 0(발 동작 없이 바로 미끄러짐). AttackData의 lunge_foot_lead에 해당
+@export var combo_lunge_lead: Array[float] = []
 
 ## --- 데미지 비례 푸시백 (앞 타 1·2타) ---
 ## 둘 다 0이면 꺼진다(기본값 — 예전처럼 combo_knockback의 x로 민다).
@@ -72,8 +77,8 @@ extends MeleeAttack
 ## 마무리 타에 맞은 상대는 기절(별)한 채 돌면서 때린 방향으로 날아간다(`Fighter.launch_finisher`).
 ## 아래 값은 전부 **맞은 쪽이 잃은 체력이 0일 때** 기준이고, 잃은 체력에 비례해 finisher_max_scale배까지 커진다.
 ## 기본값은 금쪽이 3타(`SpinFinisher.tres`)와 같다 — hits를 쓰는 캐릭터는 그 파일의 knockback.x/pop/hitstun/tumble_turns가 우선
-## 날아가는 가로 속도(px/초)
-@export var finisher_launch_speed: float = 465.0
+## 날아가는 가로 속도(px/초). 체력을 잃을수록 finisher_max_scale배까지 더 빨라진다(더 멀리 감)
+@export var finisher_launch_speed: float = 535.0
 ## 위로 띄우는 속도(px/초)
 @export var finisher_launch_pop: float = 220.0
 ## 기절(조작 불가) 시간(초) — 도는 시간·별이 떠 있는 시간도 같다
@@ -396,6 +401,8 @@ func _process(delta: float) -> void:
 			return
 		hitbox.global_position = _fighter.global_position
 		hitbox.knockback = Vector2(spin_flurry_knockback.x * _fighter.facing, spin_flurry_knockback.y)
+		# 범위에 든 상대 투사체는 반토막 내서 땅에 떨어뜨린다
+		_slice_projectiles_in_range()
 		_spin_left = maxf(_spin_left - delta, 0.0)
 		if _spin_left <= 0.0:
 			_end_spin_flurry()
@@ -486,6 +493,11 @@ func _fire(fighter: Fighter, step: int) -> void:
 		else:
 			lunge = combo_lunge[step] if step < combo_lunge.size() else 0.0
 			follows = lunge_follows_pushback
+			# 옛 배열도 타별 파고드는 시간·발 동작을 줄 수 있다(비면 windup·0 = 예전 동작)
+			if step < combo_lunge_time.size() and combo_lunge_time[step] > 0.0:
+				lunge_time = combo_lunge_time[step]
+			if step < combo_lunge_lead.size():
+				lead = combo_lunge_lead[step]
 		# 직전 타에 밀린 만큼 따라붙는다 (1타는 직전 타가 없으니 칸 값만)
 		if follows and step > 0:
 			lunge += _last_pushback
@@ -594,6 +606,21 @@ func _end_spin_flurry() -> void:
 	var visual: Node = _fighter.get_node_or_null("Visual") if is_instance_valid(_fighter) else null
 	if visual and visual.has_method("end_keyboard_fan"):
 		visual.end_keyboard_fan()
+
+## 회전 난무 판정 반경 안에 든 **상대** 투사체를 반토막 낸다(자기가 쏜 건 무시).
+## 잘린 투사체는 스스로 반쪽 두 조각을 맵에 남기고 사라진다(Projectile.slice_in_half)
+func _slice_projectiles_in_range() -> void:
+	if not is_instance_valid(_fighter):
+		return
+	var center: Vector2 = _fighter.global_position
+	for p in _fighter.get_tree().get_nodes_in_group("projectiles"):
+		if p == null or not is_instance_valid(p) or not p.has_method("slice_in_half"):
+			continue
+		# 자기(악플러)가 쏜 투사체는 안 자른다 — 상대 것만
+		if "source_fighter" in p and p.source_fighter == _fighter:
+			continue
+		if center.distance_to(p.global_position) <= spin_flurry_radius:
+			p.slice_in_half()
 
 ## --- 파고들기 (combo_lunge) ---
 ## 예비동작 동안 distance만큼 앞으로 미끄러진다. 이동 권한을 잠깐 가져가므로 그동안 걷기·대시는 안 먹는다

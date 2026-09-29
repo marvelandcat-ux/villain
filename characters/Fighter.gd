@@ -362,10 +362,10 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		elif last_hit_direction == 0.0:
 			last_hit_direction = -facing
 		damaged.emit(reduced_amount, knockback)
-		# 3타에 날아간 직후 또 맞았으면 반대로 튕긴다 — 공격 종류(맵 공격 포함)는 안 가린다.
+		# 날아가며 기절한 동안 또 맞았으면 때린 방향으로 다시 날아가고 날아가는 시간이 늘어난다 — 공격 종류(맵 공격 포함)는 안 가린다.
 		# 이번 타가 새 3타면 이 뒤에 ComboMeleeAttack이 때린 쪽 방향으로 다시 날리므로 그쪽이 이긴다
 		if _finisher_window > 0.0:
-			_rebound_finisher()
+			_rebound_finisher(knockback.x)
 	if current_hp <= 0:
 		died.emit()
 
@@ -452,15 +452,18 @@ func _update_tumble(delta: float) -> void:
 	visual.rotation += _tumble_speed * delta
 
 ## --- 3타 공격 날리기 (스매시식, 2026-09-29) ---
-## 콤보 마무리 타(3타)에 맞으면 날아간 뒤 이 시간(초) 안에 **어떤 공격이든(맵 공격 포함)** 맞으면
-## 날아가던 반대 방향으로 다시 날아간다. 그 뒤에도 이 시간 안에 또 맞으면 또 반대로(핑퐁)
-const FINISHER_REBOUND_WINDOW := 0.5
+## 콤보 마무리 타(3타)에 맞으면 **날아가며 기절해 있는 동안** 어떤 공격이든(맵 공격 포함) 또 맞으면
+## 때린 방향으로 다시 날아가고, 날아가는(기절) 시간이 FINISHER_EXTRA_TIME만큼 늘어난다(계속 맞으면 계속 더 오래).
+## 속도는 그대로라 시간이 늘수록 더 멀리 날아간다
+const FINISHER_EXTRA_TIME := 0.5
 
-## 반대로 튕길 수 있는 남은 시간 / 지금 날아가는 방향(+1 오른쪽)
+## 추가 피격을 받을 수 있는 남은 시간(= 남은 기절 시간) / 지금 날아가는 방향(+1 오른쪽)
 var _finisher_window: float = 0.0
 var _finisher_dir: float = 0.0
-## 마지막 3타의 기준값 — 반대로 튕길 때 같은 값으로 다시 날린다
+## 마지막 3타의 기준값 — 추가 피격 때 같은 속도로 다시 날릴 때 쓴다
 var _finisher_params: Dictionary = {}
+## 추가 피격으로 누적된 날아가는 시간(초). 새 3타가 시작될 때 0으로 리셋된다
+var _finisher_extra_time: float = 0.0
 
 ## 3타 공격에 맞아 dir 쪽으로 기절한 채 돌면서 날아간다.
 ## speed/pop/stun/turns는 **잃은 체력 0일 때** 값이고, 잃은 체력 비율만큼 max_scale배 쪽으로 커진다
@@ -468,26 +471,36 @@ var _finisher_params: Dictionary = {}
 func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: float, max_scale: float) -> void:
 	if has_super_armor() or is_zero_approx(dir):
 		return
+	# 아직 날아가는 중(window > 0)이면 추가 피격으로 이어지는 것이라 누적 시간을 유지하고,
+	# 그게 아니면 새로 시작하는 3타이므로 누적 시간을 0으로 리셋한다
+	if _finisher_window <= 0.0:
+		_finisher_extra_time = 0.0
 	var max_hp: int = maxi(stats.max_hp, 1)
 	var lost_ratio: float = clampf(float(max_hp - current_hp) / float(max_hp), 0.0, 1.0)
-	var scale: float = lerpf(1.0, max_scale, lost_ratio)
+	var launch_scale: float = lerpf(1.0, max_scale, lost_ratio)
 	var d: float = signf(dir)
-	var time: float = stun * scale
-	velocity.x = d * speed * KNOCKBACK_MULTIPLIER * scale
-	velocity.y = -pop * scale
+	# 날아가는(기절) 시간 = 기본 + 추가 피격으로 누적된 시간. 속도는 그대로라 시간이 늘수록 더 멀리 간다
+	var time: float = stun * launch_scale + _finisher_extra_time
+	velocity.x = d * speed * KNOCKBACK_MULTIPLIER * launch_scale
+	velocity.y = -pop * launch_scale
 	_launch_momentum = true
-	# 새로 날아가는 것이므로 남은 경직과 상관없이 이번 시간으로 다시 잡는다(핑퐁 때 앞 경직이 남아 있어도)
+	# 새로 날아가는 것이므로 남은 경직과 상관없이 이번 시간으로 다시 잡는다
 	_hitstun_time = time
-	play_launch_tumble(turns * scale, time, d)
+	play_launch_tumble(turns * launch_scale, time, d)
 	StunStars.spawn(self, time)
 	_finisher_dir = d
-	_finisher_window = FINISHER_REBOUND_WINDOW
+	# 날아가며 기절해 있는 동안 계속 추가 피격을 받을 수 있다(감지 시간 = 남은 기절 시간)
+	_finisher_window = time
 	_finisher_params = {"speed": speed, "pop": pop, "stun": stun, "turns": turns, "max_scale": max_scale}
 
-## 3타로 날아간 직후(FINISHER_REBOUND_WINDOW 안)에 또 맞았을 때 — 날아가던 반대 방향으로 다시 날린다
-func _rebound_finisher() -> void:
+## 날아가며 기절한 동안 또 맞았을 때 — **때린 방향으로** 같은 속도로 다시 날리고, 날아가는 시간을 늘린다.
+## 시간만 FINISHER_EXTRA_TIME씩 누적되므로(속도는 그대로) 계속 따라가 때리면 점점 더 오래·더 멀리 날아간다.
+## hit_dir는 이번 추가타의 넉백 방향(x). 넉백이 없는 피해(맵 도트 등)면 날아가던 방향을 그대로 쓴다
+func _rebound_finisher(hit_dir: float) -> void:
 	var p: Dictionary = _finisher_params
-	launch_finisher(-_finisher_dir, p.speed, p.pop, p.stun, p.turns, p.max_scale)
+	_finisher_extra_time += FINISHER_EXTRA_TIME
+	var d: float = signf(hit_dir) if not is_zero_approx(hit_dir) else _finisher_dir
+	launch_finisher(d, p.speed, p.pop, p.stun, p.turns, p.max_scale)
 
 ## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
 func _play_hurt_face() -> void:

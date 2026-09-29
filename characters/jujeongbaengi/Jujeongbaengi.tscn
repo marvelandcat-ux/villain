@@ -56,6 +56,10 @@ broken_item_texture = ExtResource("17")
 break_debris_scene = ExtResource("18")
 break_debris_count = 5
 cooldown = 0.3
+pushback_base = 6.0
+pushback_per_damage = 2.0
+lunge_follows_pushback = true
+combo_lunge = Array[float]([0.0, 0.0, 60.0])
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]
 monitoring = false

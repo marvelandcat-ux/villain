@@ -31,13 +31,42 @@ var _visual_base_scale: Vector2 = Vector2.ONE
 ## 다음 잔상까지 남은 시간
 var _trail_timer: float = 0.0
 
+## 잘려서 만들 반쪽 조각(악플러 풍차). 새 스크립트라 preload로 가져온다(class_name 캐시 전 파싱 에러 방지)
+const SLICED_PROJECTILE := preload("res://combat/SlicedProjectile.gd")
+
 func _ready() -> void:
 	super._ready()
 	body_entered.connect(_on_body_entered)
+	# 회전 난무 등이 범위 안 투사체를 찾을 수 있게 그룹에 넣는다
+	add_to_group("projectiles")
 	# 그림 노드와 원래 크기를 기억해둔다 (속도선·잔상용)
 	_visual = get_node_or_null("Visual")
 	if _visual:
 		_visual_base_scale = _visual.scale
+
+## 반토막 난다(악플러 풍차에 맞음) — 그림을 위/아래 반쪽 두 조각으로 나눠 맵에 남기고 자신은 사라진다
+func slice_in_half() -> void:
+	var parent: Node = get_parent()
+	if parent != null and _visual is Sprite2D:
+		var spr: Sprite2D = _visual
+		var tex: Texture2D = spr.texture
+		if tex != null:
+			var world_scale: Vector2 = spr.global_scale
+			# region이 있으면 그 사각형을, 없으면 텍스처 전체를 위/아래로 반 나눈다
+			var full: Rect2 = spr.region_rect if spr.region_enabled else Rect2(Vector2.ZERO, tex.get_size())
+			var half_h: float = full.size.y * 0.5
+			var top_rect := Rect2(full.position, Vector2(full.size.x, half_h))
+			var bot_rect := Rect2(full.position + Vector2(0.0, half_h), Vector2(full.size.x, half_h))
+			var dir: float = 1.0 if _direction >= 0.0 else -1.0
+			# 위 반쪽은 튀어 오르고, 아래 반쪽은 낮게 — 둘 다 진행하던 쪽으로 살짝 흩어지며 돈다
+			_spawn_half(parent, tex, top_rect, world_scale, Vector2(dir * 60.0, -140.0), -6.0)
+			_spawn_half(parent, tex, bot_rect, world_scale, Vector2(dir * 40.0, -40.0), 6.0)
+	queue_free()
+
+func _spawn_half(parent: Node, tex: Texture2D, region: Rect2, sprite_scale: Vector2, vel: Vector2, spin: float) -> void:
+	var half := SLICED_PROJECTILE.new()
+	parent.add_child(half)
+	half.setup(tex, true, region, sprite_scale, true, global_position, vel, spin)
 
 ## 발사 방향(1 또는 -1), 속도, 최종 데미지, 발사자를 지정한다
 func setup(direction: float, speed: float, projectile_damage: int, shooter: Fighter) -> void:
