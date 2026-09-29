@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" uid="uid://c31db57p4mqjr" path="res://ui/FighterPanel.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/SkillCooldownIcon.tscn" id="2"]
+[ext_resource type="Shader" path="res://ui/HealthGlow.gdshader" id="3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hp_glow"]
+shader = ExtResource("3")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box_border"]
 bg_color = Color(0, 0, 0, 0)
@@ -23,9 +27,11 @@ border_color = Color(0.82, 0.1, 0.1, 1)
 bg_color = Color(0.29, 0.29, 0.32, 0.92)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp"]
-bg_color = Color(0.15, 0.9, 0.2, 1)
+bg_color = Color(0.3, 1, 0.4, 1)
 border_width_bottom = 4
-border_color = Color(0.08, 0.5, 0.12, 1)
+border_color = Color(0.1, 0.6, 0.15, 1)
+shadow_color = Color(0.35, 1, 0.45, 0.75)
+shadow_size = 12
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_frame"]
 bg_color = Color(0, 0, 0, 0)
@@ -97,6 +103,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="HPBar" type="ProgressBar" parent="BarsVBox/HPRow/HPBarSlot/HPBarWrap" unique_id=1407791335]
+material = SubResource("ShaderMaterial_hp_glow")
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0

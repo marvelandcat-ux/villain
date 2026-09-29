@@ -68,13 +68,20 @@ extends MeleeAttack
 @export var break_debris_scene: PackedScene
 @export var break_debris_count: int = 5
 
-## --- 마무리 타로 멀리 날려보내기 (촉법소년 3타 발차기) ---
-## 0보다 크면 마무리 타에 맞은 상대가 이 시간(초) 동안 조작을 못 한 채 날아간다.
-## **날아가는 거리를 정하는 건 combo_knockback의 마지막 칸이고**, 이 값은 "날아가는 동안 못 움직이는 시간"이다 —
-## 짧으면 넉백이 한창 실려 있는데 조작이 돌아와 공중에서 제자리걸음을 한다. 0이면 평소대로(넉백 세기에 비례)
-@export var launch_stun: float = 0.0
-## 날아가는 동안 몸이 도는 바퀴 수 (0이면 안 돈다). 바닥에 닿으면 그 자리에서 일어선다
-@export var launch_spin_turns: float = 0.0
+## --- 3타 공격(마무리 타) 날리기 — 모든 캐릭터 공용(2026-09-29, 스매시식) ---
+## 마무리 타에 맞은 상대는 기절(별)한 채 돌면서 때린 방향으로 날아간다(`Fighter.launch_finisher`).
+## 아래 값은 전부 **맞은 쪽이 잃은 체력이 0일 때** 기준이고, 잃은 체력에 비례해 finisher_max_scale배까지 커진다.
+## 기본값은 금쪽이 3타(`SpinFinisher.tres`)와 같다 — hits를 쓰는 캐릭터는 그 파일의 knockback.x/pop/hitstun/tumble_turns가 우선
+## 날아가는 가로 속도(px/초)
+@export var finisher_launch_speed: float = 465.0
+## 위로 띄우는 속도(px/초)
+@export var finisher_launch_pop: float = 220.0
+## 기절(조작 불가) 시간(초) — 도는 시간·별이 떠 있는 시간도 같다
+@export var finisher_launch_stun: float = 0.4
+## 도는 바퀴 수
+@export var finisher_tumble_turns: float = 1.0
+## 체력을 전부 잃었을 때 위 값(속도·띄우기·시간·바퀴)에 곱해지는 배수. 반쯤 잃었으면 그 중간(2면 1.5배)
+@export var finisher_max_scale: float = 2.0
 ## 날아가는 동안 뒤에 연기 꼬리를 남길지
 @export var launch_smoke: bool = false
 ## 마무리 타 넉백 가로 세기에 곱하는 배수 — 3타로 더 멀리 날린다(2026-09-26 사용자 요청 "거리 1.5배", 전 캐릭터 공통). 1이면 예전과 같다.
@@ -252,34 +259,43 @@ func _apply_pushback(target: Fighter, base: float, per_damage: float) -> void:
 	target.velocity.x = dir * speed
 	target.apply_hitstun(speed / Fighter.HITSTUN_FRICTION)
 
-## 마무리 타에 맞은 상대를 멀리 날려보낸다. 데미지·넉백은 히트박스가 이미 줬고 여기서는
-## **날아가는 동안의 경직·구르기·연기만** 얹는다. 가드로 막혔으면 아무것도 안 한다
+## 마무리 타(3타 공격)에 맞은 상대를 날려보낸다 — 방향은 때린 쪽이 바라보는 쪽(= 맞은 방향).
+## 데미지는 히트박스가 이미 줬고, 날아가는 속도·기절·구르기는 `Fighter.launch_finisher`가 잃은 체력에 비례해 정한다
+## (히트박스 넉백으로 붙은 속도는 거기서 덮어쓴다). 가드로 막혔으면 아무것도 안 한다
 func _launch_finisher(victim: Node) -> void:
 	if not _is_final(_swing_step):
 		return
-	var d: AttackData = _hit_data(_swing_step)
-	var stun: float = d.hitstun if d != null else launch_stun
-	var turns: float = d.tumble_turns if d != null else launch_spin_turns
-	var smoke: bool = d.launch_smoke if d != null else launch_smoke
 	if not (victim is Fighter) or not is_instance_valid(victim):
 		return
 	var target: Fighter = victim
 	# 막은 쪽은 넉백도 데미지도 안 받았으므로 날아가지도 않는다 (막았는데 구르면 어긋나 보인다)
 	if target.is_guarding:
 		return
+	var speed: float = finisher_launch_speed
+	var pop: float = finisher_launch_pop
+	var stun: float = finisher_launch_stun
+	var turns: float = finisher_tumble_turns
+	var smoke: bool = launch_smoke
+	var d: AttackData = _hit_data(_swing_step)
+	if d != null:
+		# 타 파일에 적힌 값이 있으면 그걸 기준으로 (0 이하면 공용 기본값)
+		if d.knockback.x > 0.0:
+			speed = d.knockback.x
+		if d.pop > 0.0:
+			pop = d.pop
+		if d.hitstun > 0.0:
+			stun = d.hitstun
+		if d.tumble_turns > 0.0:
+			turns = d.tumble_turns
+		smoke = d.launch_smoke
 	var dir: float = 1.0
 	if is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
 		dir = signf(_fighter.facing)
-	# 날아가는 이펙트는 경직·구르기 설정과 상관없이 모든 캐릭터의 마무리 타에 붙인다
+	# 날아가는 이펙트(현재 브랜치 기능) — 경직·구르기와 상관없이 모든 마무리 타에 붙인다
 	if finisher_trail:
 		_spawn_launch_trail(target, Vector2(dir, -0.35))
-	if stun <= 0.0 and turns <= 0.0 and not smoke:
-		return
-	if stun > 0.0:
-		target.apply_hitstun(stun)
-	if turns > 0.0 and target.has_method("play_launch_tumble"):
-		# 도는 시간은 못 움직이는 시간과 맞춘다 — 경직이 없으면 짧게 한 번 굴리고 만다
-		target.play_launch_tumble(turns, stun if stun > 0.0 else 0.6, dir)
+	# 날려보내기는 sub 전투 시스템에 위임(속도·팝·기절·구르기·체력 비례 확대)
+	target.launch_finisher(dir, speed, pop, stun, turns, finisher_max_scale)
 	if smoke:
 		_spawn_launch_smoke(target, maxf(stun, 0.45))
 
