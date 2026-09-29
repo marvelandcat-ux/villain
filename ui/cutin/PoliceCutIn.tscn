@@ -60,7 +60,7 @@ scale = Vector2(0.33733886, 0.3855301)
 texture = ExtResource("2_body")
 
 [node name="HandR" type="Sprite2D" parent="Police" unique_id=331050882]
-position = Vector2(369, 132)
+position = Vector2(315, 193)
 scale = Vector2(0.8680172, 0.8680172)
 texture = ExtResource("4_hand")
 
