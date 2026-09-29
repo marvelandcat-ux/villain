@@ -168,6 +168,10 @@ extends Node2D
 @export var attack_grip_speed: float = 12.0
 ## 두 손으로 잡을 때 왼손이 오른손에서 떨어져 있는 거리(px). 오른손보다 살짝 뒤·아래를 잡는다
 @export var attack_grip_offset: Vector2 = Vector2(-10, 4)
+## 두 손으로 잡는 동안 왼손이 올라가는 z_index. 악플러 키보드가 z_index 1이라, 왼손이 그 뒤에 그려져
+## "한 손으로 잡은" 것처럼 보이던 문제를 막는다 — 잡는 동안만 키보드보다 앞(2)으로 올리고 끝나면 원래대로.
+## 안경 올리기(z 3)와 동시에 나올 일이 없어 서로 안 싸운다. 대시 잔상(Visual째 z -2 복제)은 잡는 중이 아닐 때 나와 무관
+@export var attack_grip_hand_z: int = 2
 ## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
 ## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
 @export var attack_swing_arc: float = 0.0
@@ -858,6 +862,13 @@ func _process(delta: float) -> void:
 		if weapon_on_final_hit:
 			want_grip = want_grip and _attack_variant >= final_hit_index
 		_grip_blend = move_toward(_grip_blend, 1.0 if want_grip else 0.0, delta * attack_grip_speed)
+		# 두 손으로 잡는 동안엔 왼손을 키보드(z 1)보다 앞으로 올려 두 손이 다 보이게 한다.
+		# 잡기가 풀리면 원래 z로 되돌린다(안경 올리기가 세팅한 z 3은 건드리지 않는다 — 동시에 안 나온다)
+		if _hand_l:
+			if _grip_blend > 0.5:
+				_hand_l.z_index = attack_grip_hand_z
+			elif _hand_l.z_index == attack_grip_hand_z:
+				_hand_l.z_index = _hand_l_rest_z
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
@@ -1402,10 +1413,12 @@ func _pose_attack_hand() -> void:
 	var swing_deg: float = v["swing_deg"]
 	var raise_off: Vector2 = v["raise_off"]
 	var slam_off: Vector2 = v["slam_off"]
+	# 타별로 호(arc)를 다르게 줄 수 있다 — 안 담겨 있으면 씬 export(attack_swing_arc)를 쓴다(기존 동작 유지)
+	var arc: float = v.get("arc", attack_swing_arc)
 	var angle: float
 	var offset: Vector2
 	if attack_snap:
-		_snap_attack_pose(progress, raise_deg, swing_deg, raise_off, slam_off)
+		_snap_attack_pose(progress, raise_deg, swing_deg, raise_off, slam_off, arc)
 		return
 	if progress < ATTACK_STRIKE_START:
 		# ① 예비동작 — 손을 감는다 (끝으로 갈수록 느려지게)
@@ -1416,7 +1429,7 @@ func _pose_attack_hand() -> void:
 		# ② 빠르게 후려친다 (실제로 때리는 구간)
 		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
 		angle = lerpf(-raise_deg, swing_deg, p * p)
-		offset = raise_off.lerp(slam_off, p * p) + _swing_arc(p * p, raise_off, slam_off)
+		offset = raise_off.lerp(slam_off, p * p) + _swing_arc(p * p, raise_off, slam_off, arc)
 	else:
 		# ③ 원래 자세로 복귀
 		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
@@ -1430,7 +1443,7 @@ func _pose_attack_hand() -> void:
 ## ① 감기: 앞 snap_windup_reach 안에 감기 자세 완성 -> 나머지는 멈칫
 ## ② 후려치기: 앞 snap_strike_reach 안에 다 뻗음(감속 곡선이라 확 튀어나가 탁 멈춘다) -> 나머지는 뻗은 채
 ## ③ 복귀: snap_recovery_hold 동안 뻗은 자세로 버티다가 남은 시간에 제자리로 툭
-func _snap_attack_pose(progress: float, raise_deg: float, swing_deg: float, raise_off: Vector2, slam_off: Vector2) -> void:
+func _snap_attack_pose(progress: float, raise_deg: float, swing_deg: float, raise_off: Vector2, slam_off: Vector2, arc: float) -> void:
 	var angle: float
 	var offset: Vector2
 	if progress < ATTACK_STRIKE_START:
@@ -1443,7 +1456,7 @@ func _snap_attack_pose(progress: float, raise_deg: float, swing_deg: float, rais
 		var t: float = clampf((progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START) / maxf(snap_strike_reach, 0.01), 0.0, 1.0)
 		var p: float = 1.0 - pow(1.0 - t, 3.0)
 		angle = lerpf(-raise_deg, swing_deg, p)
-		offset = raise_off.lerp(slam_off, p) + _swing_arc(p, raise_off, slam_off)
+		offset = raise_off.lerp(slam_off, p) + _swing_arc(p, raise_off, slam_off, arc)
 	else:
 		var q: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
 		var t: float = clampf((q - snap_recovery_hold) / maxf(1.0 - snap_recovery_hold, 0.01), 0.0, 1.0)
@@ -1663,37 +1676,41 @@ func _attack_variant_params() -> Dictionary:
 				"slam_off": attack_slam_offset,
 			}
 
-## 두 손으로 잡는 무기(악플러 키보드)의 타별 동작. 두 손으로 잡은 채 **점점 크게 내려찍는** 흐름이다 —
-## 1타는 씬 값 그대로 짧게 후려치고, 2타는 들었다가 앞아래로 찍고, 3타는 머리 위까지 들었다가 바닥까지 찍는다.
+## 두 손으로 잡는 무기(악플러 키보드)의 타별 동작. **1·2타는 앞으로 밀치고(찌르기), 3타만 크게 옆으로 휘두른다**
+## (2026-09-29 사용자 요청). 밀치기는 키보드가 상대 쪽(앞)으로 나가므로 얼굴을 안 가리고, 두 손으로 잡은 게 잘 보인다.
+##  - 1·2타 밀치기: 회전을 거의 안 주고(각도 작게) 손을 뒤로 살짝 뺐다가 앞으로 쭉 내민다. "arc" 0이라 곧게 나간다
+##  - 3타 휘두르기: 뒤 위로 크게 감았다가 앞 아래로 후려친다. "arc"로 호를 그려 야구방망이처럼 휘두른다
 ##
-## **총 회전각(raise + swing)을 120도 밑으로 유지할 것.** 그 위로 가면 키보드가 얼굴을 가로질러
-## 지저분해진다(예전에 35/85로 해봤다가 25/70으로 낮춘 이유). 타마다 크기 차이는 각도 대신
-## 손 이동 거리(raise_off/slam_off)로 벌린다 — 무기가 손에서 20px 떨어져 있어 위치가 더 크게 먹힌다
+## 각도 부호: 음수 raise=무기가 위로 감김, 양수 swing=아래로 후려침. arc는 타별로 다르므로 Dictionary에 담아 넘긴다.
+## **휘두르는 3타는 총 회전각(raise+swing)을 120도 밑으로 유지할 것** — 넘으면 키보드가 얼굴을 가로지른다
 func _two_handed_variant_params() -> Dictionary:
 	match _attack_variant:
 		1:
-			# 2타 — 어깨 위로 들었다가 앞아래로 내려찍기 (총 105도)
+			# 2타 — 앞으로 더 강하게 밀치기 (1타보다 멀리)
 			return {
-				"raise_deg": 45.0,
-				"swing_deg": 60.0,
-				"raise_off": Vector2(-14.0, -18.0),
-				"slam_off": Vector2(22.0, 12.0),
+				"raise_deg": 14.0,
+				"swing_deg": 8.0,
+				"raise_off": Vector2(-12.0, -3.0),
+				"slam_off": Vector2(34.0, 2.0),
+				"arc": 0.0,
 			}
 		2:
-			# 3타 — 머리 위까지 크게 들었다가 바닥까지 내려찍는 마무리 (총 120도)
+			# 3타 — 뒤 위로 크게 감았다가 앞 아래로 후려치는 마무리 휘두르기 (총 116도)
 			return {
 				"raise_deg": 50.0,
-				"swing_deg": 70.0,
-				"raise_off": Vector2(-18.0, -30.0),
-				"slam_off": Vector2(26.0, 22.0),
+				"swing_deg": 66.0,
+				"raise_off": Vector2(-18.0, -22.0),
+				"slam_off": Vector2(30.0, 16.0),
+				"arc": 24.0,
 			}
 		_:
-			# 1타 — 씬 export 값 그대로 (악플러는 아래를 훑어 앞·위로 올려치는 스윙)
+			# 1타 — 앞으로 짧게 밀치기 (거의 수평으로 쭉 내민다)
 			return {
-				"raise_deg": attack_raise_deg,
-				"swing_deg": attack_swing_deg,
-				"raise_off": attack_raise_offset,
-				"slam_off": attack_slam_offset,
+				"raise_deg": 12.0,
+				"swing_deg": 8.0,
+				"raise_off": Vector2(-8.0, -2.0),
+				"slam_off": Vector2(28.0, 2.0),
+				"arc": 0.0,
 			}
 
 ## 찌르기(attack_thrust)일 때의 타별 동작. 세 타가 서로 다른 궤적이어야 한 동작을 세 번
@@ -1885,13 +1902,13 @@ func _lay_down(angle: float, shift: Vector2) -> void:
 
 ## 후려치는 동안 손이 지나가는 길을 아래로 부풀린다. 예비동작 위치에서 내려찍는 위치로 가는
 ## 직선의 수직(아래쪽) 방향으로 밀어내며, sin이라 출발·도착에서는 0이라 튀지 않는다
-func _swing_arc(t: float, raise_off: Vector2, slam_off: Vector2) -> Vector2:
-	if is_zero_approx(attack_swing_arc):
+func _swing_arc(t: float, raise_off: Vector2, slam_off: Vector2, arc_amount: float) -> Vector2:
+	if is_zero_approx(arc_amount):
 		return Vector2.ZERO
 	var travel: Vector2 = slam_off - raise_off
 	if travel.length() < 0.001:
 		return Vector2.ZERO
-	return Vector2(-travel.y, travel.x).normalized() * attack_swing_arc * sin(t * PI)
+	return Vector2(-travel.y, travel.x).normalized() * arc_amount * sin(t * PI)
 
 ## 두 손으로 잡는 캐릭터는 왼손이 오른손 옆으로 붙는다. **콤보가 이어지는 동안은 계속 붙어 있고**
 ## 마지막 타가 끝난 뒤에야 풀린다 — 타마다 놨다 잡으면 손이 덜덜거리는 것처럼 보인다.
