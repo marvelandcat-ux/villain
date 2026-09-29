@@ -334,6 +334,10 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		elif last_hit_direction == 0.0:
 			last_hit_direction = -facing
 		damaged.emit(reduced_amount, knockback)
+		# 3타에 날아간 직후 또 맞았으면 반대로 튕긴다 — 공격 종류(맵 공격 포함)는 안 가린다.
+		# 이번 타가 새 3타면 이 뒤에 ComboMeleeAttack이 때린 쪽 방향으로 다시 날리므로 그쪽이 이긴다
+		if _finisher_window > 0.0:
+			_rebound_finisher()
 	if current_hp <= 0:
 		died.emit()
 
@@ -408,6 +412,44 @@ func _update_tumble(delta: float) -> void:
 		_lean_tween.tween_property(visual, "rotation", 0.0, TUMBLE_RECOVER)
 		return
 	visual.rotation += _tumble_speed * delta
+
+## --- 3타 공격 날리기 (스매시식, 2026-09-29) ---
+## 콤보 마무리 타(3타)에 맞으면 날아간 뒤 이 시간(초) 안에 **어떤 공격이든(맵 공격 포함)** 맞으면
+## 날아가던 반대 방향으로 다시 날아간다. 그 뒤에도 이 시간 안에 또 맞으면 또 반대로(핑퐁)
+const FINISHER_REBOUND_WINDOW := 0.5
+
+## 반대로 튕길 수 있는 남은 시간 / 지금 날아가는 방향(+1 오른쪽)
+var _finisher_window: float = 0.0
+var _finisher_dir: float = 0.0
+## 마지막 3타의 기준값 — 반대로 튕길 때 같은 값으로 다시 날린다
+var _finisher_params: Dictionary = {}
+
+## 3타 공격에 맞아 dir 쪽으로 기절한 채 돌면서 날아간다.
+## speed/pop/stun/turns는 **잃은 체력 0일 때** 값이고, 잃은 체력 비율만큼 max_scale배 쪽으로 커진다
+## (전부 잃었으면 max_scale배, 반이면 그 중간). 히트박스 넉백으로 붙은 속도는 덮어쓴다
+func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: float, max_scale: float) -> void:
+	if has_super_armor() or is_zero_approx(dir):
+		return
+	var max_hp: int = maxi(stats.max_hp, 1)
+	var lost_ratio: float = clampf(float(max_hp - current_hp) / float(max_hp), 0.0, 1.0)
+	var scale: float = lerpf(1.0, max_scale, lost_ratio)
+	var d: float = signf(dir)
+	var time: float = stun * scale
+	velocity.x = d * speed * KNOCKBACK_MULTIPLIER * scale
+	velocity.y = -pop * scale
+	_launch_momentum = true
+	# 새로 날아가는 것이므로 남은 경직과 상관없이 이번 시간으로 다시 잡는다(핑퐁 때 앞 경직이 남아 있어도)
+	_hitstun_time = time
+	play_launch_tumble(turns * scale, time, d)
+	StunStars.spawn(self, time)
+	_finisher_dir = d
+	_finisher_window = FINISHER_REBOUND_WINDOW
+	_finisher_params = {"speed": speed, "pop": pop, "stun": stun, "turns": turns, "max_scale": max_scale}
+
+## 3타로 날아간 직후(FINISHER_REBOUND_WINDOW 안)에 또 맞았을 때 — 날아가던 반대 방향으로 다시 날린다
+func _rebound_finisher() -> void:
+	var p: Dictionary = _finisher_params
+	launch_finisher(-_finisher_dir, p.speed, p.pop, p.stun, p.turns, p.max_scale)
 
 ## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
 func _play_hurt_face() -> void:
@@ -924,6 +966,8 @@ func apply_physics(delta: float) -> void:
 		return
 	if _busy_time > 0.0:
 		_busy_time = maxf(_busy_time - delta, 0.0)
+	if _finisher_window > 0.0:
+		_finisher_window = maxf(_finisher_window - delta, 0.0)
 	# 경직 중엔 넉백 속도가 마찰로 서서히 줄며 미끄러진다 (멈출 때쯤 경직도 끝나 조작이 돌아온다)
 	if _hitstun_time > 0.0:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
