@@ -26,7 +26,30 @@ const EXTRA_RIGS := {
 	"주인공": "res://characters/police/PoliceRig.tscn",
 	"일진": "res://characters/iljin/IljinRig.tscn",
 }
-## 칸을 꽉 채우는 크기 대비 배율. 1보다 크면 칸 밖으로 넘쳐서(= 아래가 잘려서) 더 박력 있다
+## **VS 화면 전용 포즈 씬.** 여기 적힌 캐릭터는 인게임 리그 대신 이 씬을 띄운다.
+## 포즈 씬은 머리·몸·손·발·무기가 전부 그냥 Sprite2D라서, 씬을 열어 **하나씩 집어서 끌면**
+## 격돌 화면에서만 자리가 바뀐다(인게임 캐릭터는 그대로다).
+## 여기 없는 캐릭터는 인게임 리그를 그대로 쓰고, 머리만 아래 VERSUS_HEADS로 갈아 끼운다
+const VERSUS_POSES := {
+	"주인공": "res://ui/versus/PoliceVersusPose.tscn",
+	"금쪽이": "res://ui/versus/ChokbeopsonyeonVersusPose.tscn",
+}
+## 포즈 씬을 그린 기준 화면 높이(px). 화면이 이보다 크면 그 비율만큼 통째로 커진다
+const POSE_REFERENCE_HEIGHT := 720.0
+
+## 포즈 씬이 없는 캐릭터의 머리만 갈아 끼울 때 쓴다 — **격돌 장면이니 평소 얼굴 대신 화난 얼굴**을 쓴다.
+## 인게임 리그(characters/…Rig.tscn)는 안 건드린다. 여기 없는 캐릭터는 리그에 달린 머리 그대로다.
+## **원래 머리와 그림 크기가 같아야 한다**(경찰은 둘 다 1330x1182) — 다르면 머리만 커지거나 자리가 밀린다
+const VERSUS_HEADS := {
+	"주인공": "res://sprite/storymode/경찰서/분노경찰관.png",
+}
+## **포즈 씬 전용 배율.** 포즈 씬은 자동 맞춤을 안 하고 씬에 그린 크기 그대로 나온다 —
+## 부품을 옮겨도 전체 크기가 안 변해서, 에디터에서 보이는 그대로 화면에 뜬다
+@export var pose_scale: float = 1.0
+## 포즈 씬의 원점(머리 한가운데)이 화면 세로 어디에 놓일지 (0~1)
+@export_range(0.0, 1.0, 0.01) var pose_anchor_y: float = 0.31
+
+## **포즈 씬이 없는 캐릭터에만** 쓰는 자동 맞춤 배율. 칸을 꽉 채우는 크기 대비 값이다
 @export var rig_zoom: float = 0.72
 ## 발끝이 칸 높이의 몇 %에 오는지. 1이면 칸 맨 아래에 딱 선다
 @export_range(0.6, 1.2, 0.01) var rig_bottom: float = 1.0
@@ -79,19 +102,60 @@ func _fill_side(box: Control, image: TextureRect, name_label: Label, character_p
 	if rig != null:
 		image.texture = null
 		box.add_child(rig)
-		_fit_rig(box, rig, facing)
+		_swap_head(rig, character_name)
+		if VERSUS_POSES.has(character_name):
+			_place_pose(box, rig, facing)
+		else:
+			_fit_rig(box, rig, facing)
 		return
 	# 리그가 없으면 도감·HUD에 쓰는 초상화로 대신한다 (지금은 전원 리그가 있어서 여기까지 안 온다)
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.texture = GameState.portrait_texture(character_name) if GameState.has_portrait(character_name) else null
 
+## VS 화면 전용 머리로 갈아 끼운다. 갈아 끼울 게 없으면 아무것도 안 한다.
+## **포즈 씬을 쓰는 캐릭터는 건너뛴다** — 그쪽은 씬에 이미 원하는 머리가 꽂혀 있고,
+## 여기서 또 바꾸면 씬에서 고른 머리가 무시돼서 헷갈린다
+func _swap_head(rig: Node2D, character_name: String) -> void:
+	if VERSUS_POSES.has(character_name):
+		return
+	var path: String = str(VERSUS_HEADS.get(character_name, ""))
+	if path == "":
+		return
+	var head: Sprite2D = rig.get_node_or_null("Head") as Sprite2D
+	if head == null:
+		return
+	head.texture = load(path)
+	# **눈 깜빡임은 끈다** — 평소 얼굴 눈 위치·크기에 맞춰 둔 것이라 화난 얼굴에 그대로 쓰면
+	# 눈이 아닌 데서 눈꺼풀이 내려온다. 격돌 화면은 2초 남짓이라 안 깜빡여도 어색하지 않다
+	var blink: Node2D = head.get_node_or_null("EyeBlink") as Node2D
+	if blink != null:
+		blink.visible = false
+
 func _make_rig(character_name: String) -> Node2D:
+	# 포즈 씬이 있으면 그걸 먼저 쓴다 — 격돌 화면 전용으로 자리를 잡아 둔 씬이다
+	var pose: String = str(VERSUS_POSES.get(character_name, ""))
+	if pose != "":
+		var node: Node2D = (load(pose) as PackedScene).instantiate() as Node2D
+		# 포즈 씬 안의 에디터용 미리보기(배경·상대 캐릭터)는 게임에선 지운다
+		for child in node.get_children():
+			if child is VersusPosePreview:
+				node.remove_child(child)
+				child.queue_free()
+		return node
 	var path: String = str(EXTRA_RIGS.get(character_name, ""))
 	var scene: PackedScene = load(path) if path != "" else GameState.character_rig_scene(character_name)
 	if scene == null:
 		return null
 	# Fighter 없이 띄우면 BodyRig는 걷지 않고 가만히 숨쉬는 동작만 돈다 — VS 화면에 딱 맞는다
 	return scene.instantiate() as Node2D
+
+## 포즈 씬을 놓는다. **크기를 자동으로 안 맞춘다** — 씬에 그린 그대로 쓰고,
+## 화면 높이가 기준(720)과 다를 때만 그 비율로 통째로 키운다.
+## 원점(머리 한가운데)이 칸 가운데·화면 세로 pose_anchor_y 자리에 온다
+func _place_pose(box: Control, pose: Node2D, facing: float) -> void:
+	var k: float = (_banner.size.y / POSE_REFERENCE_HEIGHT) * maxf(pose_scale, 0.01)
+	pose.scale = Vector2(k * signf(facing), k)
+	pose.position = Vector2(box.size.x * 0.5, _banner.size.y * pose_anchor_y - box.position.y)
 
 ## 리그가 실제로 차지하는 크기를 재서 칸에 맞춰 키우고, 발끝을 칸 아래에 맞춘다.
 ## **부품 위치를 직접 재야 한다** — 캐릭터마다 머리 크기·팔 길이가 제각각이라
