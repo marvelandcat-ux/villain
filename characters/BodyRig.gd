@@ -172,6 +172,34 @@ extends Node2D
 ## "한 손으로 잡은" 것처럼 보이던 문제를 막는다 — 잡는 동안만 키보드보다 앞(2)으로 올리고 끝나면 원래대로.
 ## 안경 올리기(z 3)와 동시에 나올 일이 없어 서로 안 싸운다. 대시 잔상(Visual째 z -2 복제)은 잡는 중이 아닐 때 나와 무관
 @export var attack_grip_hand_z: int = 2
+## 켜면 공격할 때만이 아니라 **평소에도** 두 손으로 무기를 잡고 있는다(악플러가 키보드를 판때기처럼 앞으로 들고 다님).
+## 손을 따로 쓰는 스킬(마우스 던지기·되감기·마시기·총·잡기·돌 던지기) 중에는 저절로 풀려 그 동작을 안 방해한다.
+## attack_two_handed도 같이 켜져 있어야 한다
+@export var two_handed_always: bool = false
+## 이 번째 타(0=1타)는 **오른손(HandRHold)을 축으로 손에 든 무기가 빠르게 한 바퀴 돈다**(악플러 3타 키보드 돌리기).
+## 손·몸은 제자리에 두고 무기만 공전한다 — 도는 동안 반대 손(왼손 grip)은 잠깐 떨어졌다가 다 돌면 다시 잡는다.
+## -1이면 안 돈다(기본 — 다른 캐릭터 영향 없음). 판정 시각(보통 40%)은 그대로라 "돌면서 맞는" 그림이 된다
+@export var weapon_spin_hit: int = -1
+## 무기가 도는 바퀴 수(1 = 한 바퀴)
+@export var weapon_spin_turns: float = 1.0
+## 도는 방향(+1 시계 / -1 반시계). 보는 방향에 따라 뒤집히면 부호를 바꾼다
+@export var weapon_spin_dir: float = 1.0
+
+## --- 키보드 선풍기 회전 (악플러 그랩 후 회전 난무) ---
+## play_keyboard_fan(초)으로 켜면 두 손을 몸 앞에 모으고 무기를 그 자리에서 아주 빠르게 계속 돌린다.
+## 회전 난무 공격(ComboMeleeAttack.spin_flurry) 동안의 시각 연출이다
+## 두 손을 모으는 자리(리그 원점 기준, +x가 앞). 여기가 회전 축이 된다
+@export var fan_hand_pos: Vector2 = Vector2(8, -6)
+## 왼손이 오른손(축)에서 떨어져 잡는 거리 — 두 손이 겹치지 않게 벌린다
+@export var fan_hand_l_offset: Vector2 = Vector2(-16, 2)
+## 무기가 도는 속도(라디안/초). 크게 줄수록 빨라져 "선풍기 팬처럼" 끝이 안 보인다
+@export var fan_spin_speed: float = 40.0
+## 회전 중 무기를 원래 크기의 몇 배로 키울지(1이면 그대로). 도는 동안만 커졌다가 끝나면 원래 크기로
+@export var fan_weapon_scale: float = 1.5
+## 도는 무기의 잔상 개수 / 남는 시간(초) / 처음 투명도 — 빠르게 도는 키보드가 원반처럼 보이게 겹쳐 그린다
+@export var fan_ghost_count: int = 6
+@export var fan_ghost_life: float = 0.09
+@export_range(0.0, 1.0, 0.05) var fan_ghost_alpha: float = 0.4
 ## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
 ## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
 @export var attack_swing_arc: float = 0.0
@@ -704,6 +732,8 @@ var _scratch_time: float = 0.0
 var _special_time: float = 0.0
 var _hiccups_fired: int = 0
 var _hand_l_rest_z: int = 0
+## 오른손의 원래 z_index — 선풍기 회전 중 두 손을 키보드 앞으로 올렸다가 끝나면 되돌린다
+var _hand_r_rest_z: int = 0
 ## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
@@ -764,6 +794,18 @@ var _blocked_flash_left: float = 0.0
 ## 타별 진행도를 쓰면 1타가 끝날 때 왼손이 풀렸다가 2타에서 다시 붙어서, 콤보 내내
 ## 잡았다 놨다를 반복하는 어색한 그림이 된다. 공격이 이어지는 동안은 계속 1로 유지된다
 var _grip_blend: float = 0.0
+## 키보드 선풍기 회전에 남은 시간(초). 0보다 크면 회전 난무 중이다
+var _fan_time: float = 0.0
+## 도는 위상 — 계속 커지며 무기(HandRHold) 회전에 더해진다
+var _fan_phase: float = 0.0
+## 선풍기 회전 잔상 칸(주먹·스미어 잔상과 따로 쓴다) — 처음 쓸 때 만든다
+var _fan_ghosts: Array[Sprite2D] = []
+var _fan_ghost_left: Array[float] = []
+## 선풍기 회전 중 무기 자식의 원래 위치(끝나면 복구) — 회전축을 손 중심에 맞추려고 잠깐 (0,0)으로 옮긴다.
+## 이러면 무기 중심이 손(HandRHold 원점)에 와서, 손 주위를 공전하지 않고 그 자리에서 제자리로 자전한다
+var _fan_child_rest: Dictionary = {}
+## 선풍기 회전 중 무기 자식의 원래 크기(끝나면 복구) — 도는 동안 fan_weapon_scale만큼 키운다
+var _fan_child_scale: Dictionary = {}
 ## 이번 깜빡임의 전체 길이(초) — Fighter가 넘겨준 잠금 시간이 들어온다
 var _blocked_flash_span: float = 0.0
 ## --- 머리 부들부들 떨기 (악플러 열등감) ---
@@ -831,6 +873,8 @@ func _ready() -> void:
 		_body_rest_scale = _body.scale
 	if _hand_l:
 		_hand_l_rest_z = _hand_l.z_index
+	if _hand_r:
+		_hand_r_rest_z = _hand_r.z_index
 	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
 	if _bike:
 		_bike_mounted_pos = _bike.position
@@ -859,6 +903,9 @@ func _process(delta: float) -> void:
 	# weapon_on_final_hit이 켜져 있으면 **마지막 타에만** 왼손이 합류한다(앞 타는 한 손 주먹)
 	if attack_two_handed:
 		var want_grip: bool = _attack_time > 0.0
+		# 평소에도 두 손으로 잡는 캐릭터(악플러) — 손을 따로 쓰는 스킬 중에만 푼다
+		if two_handed_always and _cast_time <= 0.0 and _reel_blend <= 0.01 and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _throw_time <= 0.0:
+			want_grip = true
 		if weapon_on_final_hit:
 			want_grip = want_grip and _attack_variant >= final_hit_index
 		_grip_blend = move_toward(_grip_blend, 1.0 if want_grip else 0.0, delta * attack_grip_speed)
@@ -872,6 +919,10 @@ func _process(delta: float) -> void:
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
+	# 키보드 선풍기 회전 — 도는 동안 위상이 계속 커진다
+	if _fan_time > 0.0:
+		_fan_time = maxf(_fan_time - delta, 0.0)
+		_fan_phase += delta * fan_spin_speed
 	if _step_time > 0.0:
 		_step_time = maxf(_step_time - delta, 0.0)
 	if _crouch_time > 0.0:
@@ -1012,6 +1063,7 @@ func _process(delta: float) -> void:
 
 	_apply_pose(speed_ratio)
 	_update_smear(delta)
+	_update_fan_ghosts(delta)
 
 func _apply_pose(speed_ratio: float) -> void:
 	# 지난 프레임에 뒤돌기로 얇게 눌러둔 가로 크기를 먼저 되돌린다
@@ -1128,8 +1180,9 @@ func _apply_pose(speed_ratio: float) -> void:
 		_pose_special()
 
 	# 두 손으로 무기를 잡는 자세 (악플러 키보드) — 공격이 끝난 뒤에도 블렌드가 남아 있으므로
-	# 스윙 안이 아니라 여기서 매 프레임 적용한다. 왼손만 건드리므로 오른손 동작과 안 겹친다
-	if attack_two_handed and _grip_blend > 0.001:
+	# 스윙 안이 아니라 여기서 매 프레임 적용한다. 왼손만 건드리므로 오른손 동작과 안 겹친다.
+	# 선풍기 회전 중엔 아래 _pose_keyboard_fan이 두 손을 따로 잡으므로 건너뛴다
+	if attack_two_handed and _grip_blend > 0.001 and _fan_time <= 0.0:
 		_pose_grip_hand()
 
 	# 뒤돌아보는 중이면 몸은 그대로 두고 머리만 반대쪽을 본다
@@ -1193,10 +1246,30 @@ func _apply_pose(speed_ratio: float) -> void:
 			_hand_l.position += stance_hand_l_offset * l
 			_hand_l.rotation += deg_to_rad(stance_hand_l_deg) * l
 
+	# 키보드 선풍기 회전 — 두 손을 몸 앞에 모은다(회전은 아래 HandRHold에서 더한다)
+	if _fan_time > 0.0:
+		_pose_keyboard_fan()
+
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
+		# 무기 스핀 타(악플러 3타) — 오른손 위치를 축으로 HandRHold를 통째로 돌린다.
+		# HandRHold 원점 = 오른손이라, 자식 무기가 오른손 주위를 공전하며 한 바퀴 돈다(손·몸은 안 돎)
+		if _attack_time > 0.0 and weapon_spin_hit >= 0 and _attack_variant == weapon_spin_hit:
+			var sp: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+			_hand_r_hold.rotation += weapon_spin_dir * TAU * weapon_spin_turns * clampf(sp, 0.0, 1.0)
+		# 선풍기 회전 — 손이 무기 중심을 잡고 그 자리에서 돌리는 느낌(봉 돌리기).
+		# 무기 자식을 손(HandRHold 원점)으로 당겨 회전축=손 중심으로 만들고, 도는 동안 크기를 키운 뒤 HandRHold를 통째로 빠르게 돌린다
+		if _fan_time > 0.0:
+			for child in _hand_r_hold.get_children():
+				if child is Sprite2D:
+					child.position = Vector2.ZERO
+					if _fan_child_scale.has(child):
+						# 가로(x)만 키운다 — 키보드 긴 쪽만 늘어난다(세로는 원래대로)
+						var s: Vector2 = _fan_child_scale[child]
+						child.scale = Vector2(s.x * fan_weapon_scale, s.y)
+			_hand_r_hold.rotation += _fan_phase
 		if cast_hides_held_item or gun_hides_held_item:
 			# 마우스를 던지거나 줄을 당기는 동안엔 손에 든 물건(악플러 키보드)이 마우스와 겹치고,
 			# 총을 드는 동안엔 총과 겹친다(촉법소년 막대 사탕) — 그동안 숨긴다
@@ -1686,30 +1759,32 @@ func _attack_variant_params() -> Dictionary:
 func _two_handed_variant_params() -> Dictionary:
 	match _attack_variant:
 		1:
-			# 2타 — 앞으로 더 강하게 밀치기 (1타보다 멀리)
+			# 2타 — 두 손으로 키보드를 위로 쳐올린다 (올려치기).
+			# 예비는 가슴 높이에서 살짝만 내렸다가(아래로 크게 감으면 "아래로 치는" 것처럼 보임) 위로 크게 솟는다
 			return {
-				"raise_deg": 14.0,
-				"swing_deg": 8.0,
-				"raise_off": Vector2(-12.0, -3.0),
-				"slam_off": Vector2(34.0, 2.0),
+				"raise_deg": -4.0,
+				"swing_deg": -36.0,
+				"raise_off": Vector2(-6.0, 4.0),
+				"slam_off": Vector2(14.0, -40.0),
 				"arc": 0.0,
 			}
 		2:
-			# 3타 — 뒤 위로 크게 감았다가 앞 아래로 후려치는 마무리 휘두르기 (총 116도)
+			# 3타 — 키보드가 오른손을 축으로 한 바퀴 돈다(회전은 _apply_pose에서 HandRHold에 더한다).
+			# 손 자체는 돌지 않고 앞으로 살짝 내밀기만 한다(손 회전 0이라야 키보드 스핀만 깔끔하게 보인다)
 			return {
-				"raise_deg": 50.0,
-				"swing_deg": 66.0,
-				"raise_off": Vector2(-18.0, -22.0),
-				"slam_off": Vector2(30.0, 16.0),
-				"arc": 24.0,
+				"raise_deg": 0.0,
+				"swing_deg": 0.0,
+				"raise_off": Vector2(-4.0, 0.0),
+				"slam_off": Vector2(16.0, 0.0),
+				"arc": 0.0,
 			}
 		_:
-			# 1타 — 앞으로 짧게 밀치기 (거의 수평으로 쭉 내민다)
+			# 1타 — 앞으로 짧게 밀치기 (키보드를 거의 수평으로 쭉 내민다)
 			return {
-				"raise_deg": 12.0,
-				"swing_deg": 8.0,
+				"raise_deg": 5.0,
+				"swing_deg": 3.0,
 				"raise_off": Vector2(-8.0, -2.0),
-				"slam_off": Vector2(28.0, 2.0),
+				"slam_off": Vector2(28.0, 0.0),
 				"arc": 0.0,
 			}
 
@@ -1916,8 +1991,120 @@ func _swing_arc(t: float, raise_off: Vector2, slam_off: Vector2, arc_amount: flo
 func _pose_grip_hand() -> void:
 	if _hand_l == null:
 		return
-	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, _grip_blend)
-	_hand_l.rotation = _hand_r.rotation * _grip_blend
+	var grip: float = _grip_blend
+	# 무기 스핀 타 중엔 도는 동안 왼손을 뗀다 — 무기가 오른손 축으로 돌 때 왼손이 따라가면 이상하다.
+	# 시작·끝에서는 다시 잡아 "돌린 뒤 다시 두 손으로 잡는" 그림이 된다
+	if _attack_time > 0.0 and weapon_spin_hit >= 0 and _attack_variant == weapon_spin_hit:
+		var sp: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+		grip *= 1.0 - _weapon_spin_release(sp)
+	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, grip)
+	_hand_l.rotation = _hand_r.rotation * grip
+
+## 무기 스핀 중 왼손을 떼는 정도(0=잡음, 1=완전히 뗌). 가운데(도는 구간)엔 1, 시작·끝 15%엔 서서히 다시 잡는다
+func _weapon_spin_release(progress: float) -> float:
+	var t: float = clampf(progress, 0.0, 1.0)
+	if t < 0.15:
+		return t / 0.15
+	if t > 0.85:
+		return (1.0 - t) / 0.15
+	return 1.0
+
+## --- 키보드 선풍기 회전 (악플러 그랩 후 회전 난무) ---
+## duration초 동안 두 손을 몸 앞에 모으고 무기를 아주 빠르게 계속 돌린다. 0 이하면 그 자리에서 끝낸다
+func play_keyboard_fan(duration: float) -> void:
+	_fan_time = maxf(duration, 0.0)
+	_fan_phase = 0.0
+	# 무기 자식의 원래 위치·크기를 기억해 둔다 — 도는 동안 (0,0)으로 옮기고 키웠다가 끝나면 되돌린다
+	_fan_child_rest.clear()
+	_fan_child_scale.clear()
+	if _hand_r_hold:
+		for child in _hand_r_hold.get_children():
+			if child is Sprite2D:
+				_fan_child_rest[child] = child.position
+				_fan_child_scale[child] = child.scale
+	# 도는 동안 두 손을 키보드(z 1)보다 앞으로 올려 둘 다 보이게 한다(어떤 방향에서도 손이 안 가려지게)
+	if _hand_r:
+		_hand_r.z_index = attack_grip_hand_z
+	if _hand_l:
+		_hand_l.z_index = attack_grip_hand_z
+
+func end_keyboard_fan() -> void:
+	_fan_time = 0.0
+	# 회전 때문에 (0,0)으로 옮기고 키운 무기를 원래 자리·크기로 되돌린다
+	for child in _fan_child_rest:
+		if is_instance_valid(child):
+			child.position = _fan_child_rest[child]
+			if _fan_child_scale.has(child):
+				child.scale = _fan_child_scale[child]
+	_fan_child_rest.clear()
+	_fan_child_scale.clear()
+	# 손 z_index를 원래대로 되돌린다
+	if _hand_r:
+		_hand_r.z_index = _hand_r_rest_z
+	if _hand_l:
+		_hand_l.z_index = _hand_l_rest_z
+
+## 두 손을 몸 앞 축(fan_hand_pos)으로 모은다 — 무기 회전은 _apply_pose의 HandRHold에서 더한다.
+## 로컬 좌표라 좌우 반전(scale.x = -1)에 저절로 맞는다
+func _pose_keyboard_fan() -> void:
+	if _hand_r:
+		_hand_r.position = fan_hand_pos
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.position = fan_hand_pos + fan_hand_l_offset
+		_hand_l.rotation = 0.0
+
+## 빠르게 도는 무기가 원반(선풍기 팬)처럼 보이게, 매 프레임 현재 모습을 잔상으로 남기고 서서히 지운다.
+## _apply_pose가 끝난 뒤(이번 프레임 무기 위치 확정 후) 호출한다 — _update_smear와 같은 방식
+func _update_fan_ghosts(delta: float) -> void:
+	for i in _fan_ghosts.size():
+		if _fan_ghost_left[i] <= 0.0:
+			continue
+		_fan_ghost_left[i] -= delta
+		if _fan_ghost_left[i] <= 0.0:
+			_fan_ghosts[i].visible = false
+		else:
+			_fan_ghosts[i].modulate.a = fan_ghost_alpha * (_fan_ghost_left[i] / maxf(fan_ghost_life, 0.001))
+	if _fan_time <= 0.0 or _hand_r_hold == null:
+		return
+	for child in _hand_r_hold.get_children():
+		if child is Sprite2D and child.visible:
+			_spawn_fan_ghost(child)
+
+func _spawn_fan_ghost(src: Sprite2D) -> void:
+	if _fan_ghosts.is_empty():
+		_build_fan_ghosts()
+	var idx: int = 0
+	for i in _fan_ghost_left.size():
+		if _fan_ghost_left[i] < _fan_ghost_left[idx]:
+			idx = i
+	var g: Sprite2D = _fan_ghosts[idx]
+	g.texture = src.texture
+	g.centered = src.centered
+	g.offset = src.offset
+	g.flip_h = src.flip_h
+	g.flip_v = src.flip_v
+	g.region_enabled = src.region_enabled
+	g.region_rect = src.region_rect
+	g.z_index = src.z_index
+	g.global_transform = src.get_global_transform()
+	_fan_ghost_left[idx] = fan_ghost_life
+	g.modulate = Color(1, 1, 1, fan_ghost_alpha)
+	g.visible = true
+
+## 잔상 칸을 만든다 — top_level이라 리그가 움직여도 그 자리에 남는다. owner를 안 줘서 씬에 저장되지 않는다
+func _build_fan_ghosts() -> void:
+	var at: int = get_child_count()
+	if _hand_r_hold:
+		at = mini(at, _hand_r_hold.get_index())
+	for i in maxi(fan_ghost_count, 1) * 2:
+		var g := Sprite2D.new()
+		g.top_level = true
+		g.visible = false
+		add_child(g)
+		move_child(g, at + i)
+		_fan_ghosts.append(g)
+		_fan_ghost_left.append(0.0)
 
 ## 점프하는 순간 몸을 세로로 늘린다 (squash & stretch). Fighter.jump()이 호출한다
 func play_jump_stretch() -> void:

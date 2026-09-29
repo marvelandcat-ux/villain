@@ -46,6 +46,7 @@ range = 40.0
 windup = 0.18
 cooldown = 0.3
 miss_cooldown = 1.0
+spin_flurry_enabled = true
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false

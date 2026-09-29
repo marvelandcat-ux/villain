@@ -263,6 +263,9 @@ func _grab() -> void:
 		_opponent.take_damage(_damage)
 	if _opponent.movement_override == null:
 		_opponent.movement_override = self
+	# 유선 마우스를 맞힌 순간 다음 기본공격 1번이 "키보드 회전 난무"로 강화된다(악플러)
+	if is_instance_valid(_source):
+		_source.custom_data["keyboard_spin_charged"] = true
 
 ## movement_override 인터페이스 — 상대를 악플러 쪽으로 수평으로 끌어당긴다 (Fighter.apply_physics가 부른다)
 func get_move_velocity_x() -> float:

@@ -84,6 +84,23 @@ extends MeleeAttack
 ## 마무리 타에 맞은 상대에게 날아가는 이펙트(충격·바람 줄기·먼지 고리, `combat/LaunchTrail.gd`)를 붙일지
 @export var finisher_trail: bool = true
 
+## --- 키보드 회전 난무 (악플러: 그랩으로 끌어온 직후 다음 기본공격) ---
+## 켜면, 상대를 그랩으로 끌어온 직후(custom_data["keyboard_spin_charged"]가 켜져 있을 때) 다음 기본공격이
+## 두 손으로 무기를 빙빙 돌리는 회전 난무로 바뀐다 — 몸 주변 원형 다단히트, 도는 동안 좌우 이동 가능.
+## 기본 꺼짐(다른 캐릭터 영향 없음). 시각은 BodyRig.play_keyboard_fan이 맡는다
+@export var spin_flurry_enabled: bool = false
+## 회전 난무가 지속되는 시간(초)
+@export var spin_flurry_duration: float = 2.0
+## 다단히트 간격(초) — 이 간격마다 주변 상대에게 한 번씩 들어간다
+@export var spin_flurry_interval: float = 0.18
+## 한 번의 타격 데미지
+@export var spin_flurry_damage: int = 2
+## 판정 반경(px) — 도는 무기가 닿는 몸 주변 원
+@export var spin_flurry_radius: float = 70.0
+## 한 대마다의 넉백(x는 바라보는 쪽 자동반전, y는 띄우기) — 원형이라 세게 밀면 상대가 판정 밖으로
+## 나가 다음 타가 헛치므로 살짝만 준다
+@export var spin_flurry_knockback: Vector2 = Vector2(30, 0)
+
 ## 타입을 안 붙이고 preload로 가져온다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다 (Fighter._shield, ShoulderChargeSkill의 ChargeWind와 같은 이유)
 const LAUNCH_SMOKE := preload("res://combat/LaunchSmoke.gd")
@@ -146,6 +163,10 @@ var _lunge_dir: float = 1.0
 var _lunge_lead: float = 0.0
 ## 직전 앞 타에 상대가 밀린 거리(px) — lunge_follows_pushback이 다음 타 파고들기에 쓴다
 var _last_pushback: float = 0.0
+## 키보드 회전 난무가 도는 중인지 / 남은 시간(초) / 회전 중 바꿔둔 히트박스 원래 모양(끝나면 복구)
+var _spin_active: bool = false
+var _spin_left: float = 0.0
+var _spin_saved_shape: Shape2D = null
 
 ## 이만큼보다 짧은 시간에 파고들지는 않는다 — 예비동작이 0인 캐릭터가 한 프레임에 순간이동하지 않게
 const LUNGE_MIN_TIME := 0.08
@@ -316,12 +337,20 @@ func _spawn_break_debris() -> void:
 		elif piece is Node2D:
 			piece.global_position = hitbox.global_position
 
-## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다
+## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다.
+## 그랩 충전이 걸려 있으면 쿨과 상관없이 회전 난무를 받아준다(끌어온 직후 바로 나가야 하므로)
 func can_use() -> bool:
+	if spin_flurry_enabled and not _spin_active and _fighter != null and is_instance_valid(_fighter) and _fighter.custom_data.get("keyboard_spin_charged", false):
+		return true
 	return _swinging or _chain_left > 0.0 or cooldown_left <= 0.0
 
 func use(fighter: Fighter) -> void:
 	_fighter = fighter
+	# 그랩으로 끌어온 직후 다음 기본공격 1번은 키보드 회전 난무로 바뀐다(악플러 강화). 쓰면 충전이 소모된다
+	if spin_flurry_enabled and not _spin_active and fighter.custom_data.get("keyboard_spin_charged", false):
+		fighter.custom_data["keyboard_spin_charged"] = false
+		_start_spin_flurry(fighter)
+		return
 	# 스윙 판정이 아직 안 났으면, 지금 입력을 예약만 해둔다 (맞으면 다음 타, 헛발이면 버림)
 	if _swinging:
 		_queued = true
@@ -343,6 +372,18 @@ func handles_own_visual() -> bool:
 
 func _process(delta: float) -> void:
 	super._process(delta)  # 쿨타임 감소
+	# 키보드 회전 난무가 도는 중이면 히트박스를 몸 중심에 붙여 따라다니게 하고, 시간이 다 되면 끝낸다.
+	# (도는 동안은 아래 일반 콤보 판정 로직을 건너뛴다)
+	if _spin_active:
+		if not is_instance_valid(_fighter):
+			_end_spin_flurry()
+			return
+		hitbox.global_position = _fighter.global_position
+		hitbox.knockback = Vector2(spin_flurry_knockback.x * _fighter.facing, spin_flurry_knockback.y)
+		_spin_left = maxf(_spin_left - delta, 0.0)
+		if _spin_left <= 0.0:
+			_end_spin_flurry()
+		return
 	# 판정 창(active_duration)이 지날 때까지 안 맞았으면 헛발로 확정한다
 	if _active_left > 0.0:
 		# **판정이 켜져 있는 동안 캐릭터를 따라간다.** 드롭킥·파고들기처럼 때리는 중에 앞으로 나가면
@@ -479,6 +520,64 @@ func _reset(cd: float) -> void:
 	_queued = false
 	_chain_left = 0.0
 	cooldown_left = cd
+
+## --- 키보드 회전 난무 (악플러 그랩 후 강화 평타) ---
+## 두 손으로 무기를 빙빙 돌리며 몸 주변을 spin_flurry_duration초 동안 다단히트한다.
+## 히트박스(BasicAttack/Hitbox)를 잠깐 큰 원형 + repeat_interval로 바꿔 재활용하고, 끝나면 원래대로 되돌린다
+func _start_spin_flurry(fighter: Fighter) -> void:
+	_spin_active = true
+	_spin_left = spin_flurry_duration
+	# 진행 중이던 콤보 상태를 깨끗이 정리한다
+	_swinging = false
+	_resolved = true
+	_queued = false
+	_active_left = 0.0
+	_chain_left = 0.0
+	_step = 0
+	# 다른 공격·스킬은 막고 이동은 계속 가능하게(start_busy 규칙) — 도는 동안 좌우로 움직일 수 있다
+	fighter.start_busy(spin_flurry_duration)
+	# 히트박스를 몸 주변 원형 다단히트로 바꾼다(끝나면 _end_spin_flurry가 원래 모양으로 복구)
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node:
+		_spin_saved_shape = shape_node.shape
+		var circle := CircleShape2D.new()
+		circle.radius = spin_flurry_radius
+		shape_node.shape = circle
+	hitbox.damage = fighter.compute_damage(spin_flurry_damage)
+	hitbox.knockback = Vector2(spin_flurry_knockback.x * fighter.facing, spin_flurry_knockback.y)
+	hitbox.pop_override = 0.0            # 원형 난무는 위로 안 띄운다(뜨면 판정 밖으로 빠진다)
+	hitbox.source_fighter = fighter
+	hitbox.repeat_interval = spin_flurry_interval
+	hitbox.debris_enabled = false
+	hitbox.global_position = fighter.global_position
+	hitbox.clear_repeat_state()
+	hitbox.monitoring = true
+	hitbox.monitorable = true
+	# 시각 — 두 손으로 키보드를 선풍기처럼 돌린다(리그에 기능이 없으면 그냥 넘어간다)
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("play_keyboard_fan"):
+		visual.play_keyboard_fan(spin_flurry_duration)
+
+## 회전 난무를 끝내고 히트박스를 원래 상태(사각형 · 단발)로 되돌린다
+func _end_spin_flurry() -> void:
+	_spin_active = false
+	_spin_left = 0.0
+	# 명중 콜백 안에서 불릴 수 있으므로 monitoring은 물리 스텝 뒤에 안전하게 끈다(_resolve와 같은 이유)
+	hitbox.set_deferred("monitoring", false)
+	hitbox.set_deferred("monitorable", false)
+	hitbox.repeat_interval = 0.0
+	hitbox.clear_repeat_state()
+	hitbox.debris_enabled = true
+	hitbox.pop_override = -1.0
+	if _spin_saved_shape != null:
+		var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+		if shape_node:
+			shape_node.shape = _spin_saved_shape
+		_spin_saved_shape = null
+	_reset(effective_cooldown())
+	var visual: Node = _fighter.get_node_or_null("Visual") if is_instance_valid(_fighter) else null
+	if visual and visual.has_method("end_keyboard_fan"):
+		visual.end_keyboard_fan()
 
 ## --- 파고들기 (combo_lunge) ---
 ## 예비동작 동안 distance만큼 앞으로 미끄러진다. 이동 권한을 잠깐 가져가므로 그동안 걷기·대시는 안 먹는다

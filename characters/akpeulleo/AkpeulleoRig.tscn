@@ -22,6 +22,9 @@ attack_raise_offset = Vector2(-24, 4)
 attack_slam_offset = Vector2(26, -12)
 attack_duration = 0.45
 attack_two_handed = true
+attack_grip_offset = Vector2(-40, 5)
+two_handed_always = true
+weapon_spin_hit = 2
 attack_swing_arc = 26.0
 cast_hides_held_item = true
 hurt_head_texture = ExtResource("6_hurtface")
@@ -46,11 +49,12 @@ texture = ExtResource("3_body")
 
 [node name="HandL" parent="." index="3" unique_id=927525538]
 position = Vector2(-27, 4)
+z_index = 2
 
 [node name="Keyboard" type="Sprite2D" parent="HandRHold" index="0" unique_id=378244792]
-position = Vector2(-14, -14)
+position = Vector2(-19, 6)
 z_index = 1
-rotation = 0.7853982
+rotation = 0.0
 scale = Vector2(0.0221, 0.0221)
 texture = ExtResource("5_keyboard")
 
