@@ -12,9 +12,9 @@ extends Node2D
 ## `paper_texture`를 넣으면 종이 그림이 나오고, 비어 있으면 대신 흰 종이(PaperPlaceholder)가 그려진다.
 ## 배경도 `Bg`에 그림을 넣으면 그 그림이, 없으면 `BgColor`의 단색이 깔린다.
 ##
-## 입은 두 가지 방식을 다 받쳐 둔다 —
-##  - `head_closed_texture`(입 다문 정면 얼굴)를 넣으면 **얼굴 그림 두 장을 번갈아 끼운다**(일진 컷인과 같은 방식)
-##  - 비워 두면 원래 입을 피부색으로 덮고 그 위에 입을 그린다(PoliceMouth 참고). 입 주변이 단색 피부라 덮은 티가 안 난다
+## 입은 **얼굴 그림 두 장을 번갈아 끼워서** 움직인다(`head_closed_texture` = 입 다문 정면 얼굴, 일진 컷인과 같은 방식).
+## 예전에는 원래 입을 피부색 판으로 덮고 그 위에 입을 그리는 방식(`PoliceMouth`)도 같이 들고 있었는데,
+## 2026-09-29에 통째로 걷어냈다 — 얼굴 두 장 방식만 쓰는데도 노드가 남아 있어서 엉뚱한 자리에 입이 보일 여지가 있었다
 ##
 ## 배경의 빨강·파랑 경광등은 화면 전체에 **덧셈(add)으로 얹는 색판 두 장**을 번갈아 켜서 만든다 —
 ## 배경 그림은 가만히 있고 빛만 번쩍이므로 그림을 여러 장 그릴 필요가 없다.
@@ -47,9 +47,9 @@ extends Node2D
 @export var flash_tint_red: Color = Color(1.08, 0.8, 0.82, 1.0)
 
 @export_group("입")
-## **입 다문 정면 얼굴**을 여기 넣으면, 그려 넣는 입(Mouth) 대신 얼굴 그림 두 장을 번갈아 끼운다.
+## **입 다문 정면 얼굴.** 이 그림과 원래 얼굴(입 벌린 그림)을 번갈아 끼워서 말하게 한다.
 ## 손그림 두 장을 바꾸는 쪽이 더 자연스러워서, 그림이 생기면 이쪽을 쓴다.
-## 비워 두면 지금처럼 원래 입을 덮고 그 위에 입을 그린다.
+## 비워 두면 입은 안 움직이고 얼굴 한 장으로만 나온다.
 ## **두 장은 크기·위치가 똑같아야 한다** — 다르면 말할 때 얼굴이 통째로 들썩인다
 @export var head_closed_texture: Texture2D = null
 ## 종이가 다 올라온 뒤 이만큼 있다가 말하기 시작한다(초)
@@ -64,7 +64,6 @@ extends Node2D
 @onready var _bg_color: ColorRect = $BgColor
 @onready var _police: Node2D = $Police
 @onready var _head: Sprite2D = $Police/Head
-@onready var _mouth: PoliceMouth = $Police/Head/Mouth
 @onready var _blue_wash: ColorRect = $Flash/BlueWash
 @onready var _red_wash: ColorRect = $Flash/RedWash
 @onready var _paper_group: Node2D = $PaperGroup
@@ -91,9 +90,7 @@ func _ready() -> void:
 		_paper.texture = paper_texture
 	_paper.visible = _paper.texture != null
 	_paper_placeholder.visible = _paper.texture == null
-	# 입 다문 얼굴이 들어와 있으면 그려 넣는 입은 꺼 버린다 — 둘이 겹치면 입이 두 개로 보인다
 	_head_open_texture = _head.texture
-	_mouth.visible = head_closed_texture == null
 	play()
 
 ## UltimateCutIn이 띄우자마자 불러 준다. 여기서 처음 상태로 되돌린다
@@ -159,7 +156,5 @@ func _update_mouth() -> void:
 func _set_mouth(open: bool) -> void:
 	if head_closed_texture != null:
 		_head.texture = _head_open_texture if open else head_closed_texture
-	else:
-		_mouth.openness = 1.0 if open else 0.0
 	# 말할 때 고개가 아주 조금 까딱인다 — 입만 움직이면 인형이 뻐끔거리는 것처럼 보인다
 	_head.position = _head_home + Vector2(0.0, talk_nod if open else 0.0)

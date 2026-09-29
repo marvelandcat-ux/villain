@@ -6,24 +6,17 @@
 [ext_resource type="Script" uid="uid://bmebft5pykdb0" path="res://ui/FanTile.gd" id="4_fantile"]
 [ext_resource type="Script" uid="uid://bqabsvc8vka2n" path="res://ui/SlantToggle.gd" id="5_toggle"]
 [ext_resource type="Script" uid="uid://dqtv1pumwlb72" path="res://ui/SlantSlider.gd" id="6_slider"]
+[ext_resource type="Script" uid="uid://bovapf866hspv" path="res://ui/KeyboardMap.gd" id="7_keyboard"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("3_blur")
 shader_parameter/blur_amount = 0.0
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8vul0"]
-
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_mkgeb"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1mil0"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_784hf"]
-bg_color = Color(0.13, 0.11, 0.17, 0.85)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 1, 1, 1)
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_784hf"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1rdb0"]
 bg_color = Color(0.13, 0.11, 0.17, 0.85)
@@ -34,7 +27,7 @@ border_width_bottom = 2
 border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mi372"]
-bg_color = Color(0.72, 0.18, 0.28, 0.95)
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -42,7 +35,7 @@ border_width_bottom = 2
 border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a6vu5"]
-bg_color = Color(0.13, 0.11, 0.17, 0.85)
+bg_color = Color(0.72, 0.18, 0.28, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -74,7 +67,7 @@ border_width_bottom = 2
 border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_46d88"]
-bg_color = Color(0.72, 0.18, 0.28, 0.95)
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -82,7 +75,7 @@ border_width_bottom = 2
 border_color = Color(1, 1, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8rdk0"]
-bg_color = Color(0.13, 0.11, 0.17, 0.85)
+bg_color = Color(0.72, 0.18, 0.28, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -97,7 +90,15 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(1, 1, 1, 1)
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_34yyu"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_34yyu"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4aner"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_focusring"]
 bg_color = Color(0.72, 0.18, 0.28, 0)
@@ -205,7 +206,7 @@ offset_right = 557.0
 offset_bottom = 157.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_8vul0")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_mkgeb")
 flat = true
 script = ExtResource("4_fantile")
 corners = PackedVector2Array()
@@ -237,7 +238,7 @@ offset_right = 771.0
 offset_bottom = 157.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_mkgeb")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_1mil0")
 flat = true
 script = ExtResource("4_fantile")
 corners = PackedVector2Array()
@@ -266,7 +267,7 @@ offset_right = 985.0
 offset_bottom = 157.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_1mil0")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_784hf")
 flat = true
 script = ExtResource("4_fantile")
 corners = PackedVector2Array()
@@ -343,11 +344,11 @@ mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 26
-theme_override_styles/normal = SubResource("StyleBoxFlat_784hf")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_1rdb0")
-theme_override_styles/hover = SubResource("StyleBoxFlat_mi372")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_a6vu5")
-theme_override_styles/focus = SubResource("StyleBoxFlat_g1mpe")
+theme_override_styles/normal = SubResource("StyleBoxFlat_1rdb0")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mi372")
+theme_override_styles/hover = SubResource("StyleBoxFlat_a6vu5")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_g1mpe")
+theme_override_styles/focus = SubResource("StyleBoxFlat_gn2nj")
 text = "1280 x 720"
 
 [node name="ResolutionArrow" type="Button" parent="Card/GraphicsPanel" unique_id=1563243240]
@@ -361,11 +362,11 @@ mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_gn2nj")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_7amd4")
-theme_override_styles/hover = SubResource("StyleBoxFlat_46d88")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_8rdk0")
-theme_override_styles/focus = SubResource("StyleBoxFlat_aabdw")
+theme_override_styles/normal = SubResource("StyleBoxFlat_7amd4")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_46d88")
+theme_override_styles/hover = SubResource("StyleBoxFlat_8rdk0")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_aabdw")
+theme_override_styles/focus = SubResource("StyleBoxFlat_34yyu")
 text = "∨"
 
 [node name="ResolutionList" type="Control" parent="Card/GraphicsPanel" unique_id=1882136181]
@@ -512,59 +513,56 @@ mouse_filter = 2
 [node name="Hint" type="Label" parent="Card/ControlsPanel" unique_id=864891546]
 layout_mode = 0
 offset_left = 300.0
-offset_top = 193.0
+offset_top = 168.0
 offset_right = 980.0
-offset_bottom = 225.0
+offset_bottom = 200.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 20
-text = "바꿀 키를 누른 뒤 새 키를 입력하세요 (ESC로 취소)"
+text = "키를 끌어다 원하는 자리에 놓으면 바뀝니다"
 horizontal_alignment = 1
 
-[node name="P1Header" type="Label" parent="Card/ControlsPanel" unique_id=471680980]
+[node name="P1Legend" type="Label" parent="Card/ControlsPanel" unique_id=471680980]
 layout_mode = 0
-offset_left = 330.0
-offset_top = 233.0
-offset_right = 610.0
-offset_bottom = 267.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+offset_left = 28.0
+offset_top = 202.0
+offset_right = 108.0
+offset_bottom = 236.0
+theme_override_colors/font_color = Color(0.11, 0.53, 0.9, 1)
 theme_override_font_sizes/font_size = 24
 text = "1P"
+horizontal_alignment = 2
 
-[node name="P1Column" type="Control" parent="Card/ControlsPanel" unique_id=288456711]
-anchors_preset = 0
-offset_left = 330.0
-offset_top = 274.0
-offset_right = 596.0
-offset_bottom = 514.0
-mouse_filter = 2
-
-[node name="P2Header" type="Label" parent="Card/ControlsPanel" unique_id=1104106765]
+[node name="P2Legend" type="Label" parent="Card/ControlsPanel" unique_id=1104106765]
 layout_mode = 0
-offset_left = 670.0
-offset_top = 233.0
-offset_right = 950.0
-offset_bottom = 267.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+offset_left = 130.0
+offset_top = 202.0
+offset_right = 210.0
+offset_bottom = 236.0
+theme_override_colors/font_color = Color(0.9, 0.22, 0.21, 1)
 theme_override_font_sizes/font_size = 24
 text = "2P"
 
-[node name="P2Column" type="Control" parent="Card/ControlsPanel" unique_id=1472531832]
+[node name="Keyboard" type="Control" parent="Card/ControlsPanel" unique_id=288456711]
+custom_minimum_size = Vector2(1108.7, 301)
 anchors_preset = 0
-offset_left = 670.0
-offset_top = 274.0
-offset_right = 936.0
-offset_bottom = 514.0
-mouse_filter = 2
+offset_left = 86.0
+offset_top = 246.0
+offset_right = 1195.0
+offset_bottom = 547.0
+texture_filter = 4
+script = ExtResource("7_keyboard")
+unit = 46.0
+gap = 5.0
 
 [node name="ResetButton" type="Button" parent="Card/ControlsPanel" unique_id=934742503]
 layout_mode = 0
-offset_left = 479.0
-offset_top = 554.0
-offset_right = 795.0
-offset_bottom = 590.0
+offset_left = 1004.0
+offset_top = 201.0
+offset_right = 1200.0
+offset_bottom = 239.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-text = "조작키 초기화"
+text = "기본값으로"
 
 [node name="CloseButton" type="Button" parent="Card" unique_id=30931634]
 texture_repeat = 1
@@ -576,7 +574,7 @@ offset_bottom = 682.0
 pivot_offset = Vector2(340, 31)
 focus_mode = 0
 mouse_default_cursor_shape = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_34yyu")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_4aner")
 flat = true
 script = ExtResource("4_fantile")
 corners = PackedVector2Array()

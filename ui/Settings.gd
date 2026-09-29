@@ -13,8 +13,10 @@ extends Control
 ## `@tool`이라 에디터에서도 그대로 그려지므로 보면서 맞출 수 있다.
 ##
 ## 코드가 만드는 건 두 가지뿐이다(손으로 놓기엔 개수가 많아서):
-##  - 조작 탭의 키 줄 16개 → `P1Column` / `P2Column` 안에 채운다. **그 두 칸을 끌면 통째로 따라온다**
 ##  - 해상도 펼침 목록 → `ResolutionList` 안에 채운다. 그 칸을 끌면 목록이 따라온다
+##
+## (2026-09-29) **조작 탭은 키보드 그림(ui/KeyboardMap.gd) 한 칸이 전부다** —
+## 예전의 "조작 이름 + 키 칸" 16줄은 없앴다. 키를 끌어다 놓아서 바꾼다
 
 ## 닫힐 때(슬라이드 연출이 끝난 뒤) 알린다. 부르는 쪽(MainMenu)이 포커스를 되돌리는 데 쓴다
 signal closed
@@ -70,18 +72,9 @@ const GAME_STATE := preload("res://GameState.gd")
 @export var focus_ring_pad: float = 5.0
 
 @export_group("코드가 채우는 칸")
-## 조작 탭 키 줄 한 칸의 높이와, 이름칸/키칸 너비 (P1Column·P2Column 안에서 쓰인다)
-@export var key_row_height: float = 30.0
-@export var key_name_width: float = 110.0
-@export var key_button_width: float = 150.0
 ## 해상도 펼침 목록 한 줄의 높이 (ResolutionList 안에서 쓰인다)
 @export var resolution_row_height: float = 44.0
 
-const ACTION_LABELS := {
-	"left": "왼쪽", "right": "오른쪽", "jump": "점프", "down": "아래",
-	"basic_attack": "기본공격", "skill_1": "스킬1", "skill_2": "스킬2", "ultimate": "궁극기",
-}
-const ROWS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate"]
 ## 사선 칸(토글·볼륨 막대)의 평소 테두리 굵기 — 커서가 떠나면 이 값으로 되돌린다
 const SLANT_OUTLINE_WIDTH := 3.0
 
@@ -115,11 +108,9 @@ const SLANT_OUTLINE_WIDTH := 3.0
 
 @onready var _focus_ring: Panel = $Card/FocusRing
 @onready var _reset_button: Button = $Card/ControlsPanel/ResetButton
+@onready var _keyboard: KeyboardMap = $Card/ControlsPanel/Keyboard
 
 var _mode: String = "graphics"
-var _key_buttons: Dictionary = {}
-## 지금 새 키 입력을 기다리는 액션. 빈 문자열이면 대기 중이 아님
-var _listening_action: String = ""
 
 ## 방향키 커서 — "tabs"(탭 줄) / "items"(탭 내용) / "close"(닫기)
 var _focus_area: String = "tabs"
@@ -142,7 +133,6 @@ var _opening: bool = true
 func _ready() -> void:
 	_style_tabs()
 	_style_resolution_buttons()
-	_fill_key_rows()
 	_fill_resolution_list()
 	_setup_values()
 	_setup_nav()
@@ -199,38 +189,6 @@ func _style_resolution_buttons() -> void:
 	_style_box_button(_resolution_arrow)
 
 # ---------------------------------------------------------------- 코드가 채우는 칸
-
-## 조작 탭 키 줄을 P1Column / P2Column 안에 채운다.
-## **두 칸을 에디터에서 끌면 줄이 통째로 따라온다** — 줄 자리가 칸 기준 상대 좌표라서
-func _fill_key_rows() -> void:
-	_key_buttons.clear()
-	var columns := {"p1_": $Card/ControlsPanel/P1Column, "p2_": $Card/ControlsPanel/P2Column}
-	for prefix in columns:
-		var column: Control = columns[prefix]
-		for child in column.get_children():
-			column.remove_child(child)
-			child.queue_free()
-		for i in range(ROWS.size()):
-			var suffix: String = str(ROWS[i])
-			var y: float = key_row_height * float(i)
-			var label := Label.new()
-			label.text = str(ACTION_LABELS[suffix])
-			label.position = Vector2(0.0, y)
-			label.size = Vector2(key_name_width, key_row_height)
-			label.add_theme_font_size_override("font_size", 20)
-			label.add_theme_color_override("font_color", text_color)
-			column.add_child(label)
-
-			var button := Button.new()
-			button.position = Vector2(key_name_width + 6.0, y)
-			button.size = Vector2(key_button_width, key_row_height)
-			button.text = _key_display_text(str(prefix) + suffix)
-			button.add_theme_font_size_override("font_size", 18)
-			button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-			if not Engine.is_editor_hint():
-				button.pressed.connect(_on_rebind_pressed.bind(str(prefix) + suffix, button))
-			column.add_child(button)
-			_key_buttons[str(prefix) + suffix] = button
 
 ## 해상도 펼침 목록을 ResolutionList 안에 채운다. 그 칸을 끌면 목록이 따라온다
 func _fill_resolution_list() -> void:
@@ -367,22 +325,8 @@ func _update_percent(kind: String, value: float) -> void:
 
 # ---------------------------------------------------------------- 조작
 
-func _key_display_text(action: String) -> String:
-	var events := InputMap.action_get_events(action)
-	if events.is_empty():
-		return "(없음)"
-	return OS.get_keycode_string((events[0] as InputEventKey).physical_keycode)
-
-func _on_rebind_pressed(action: String, button: Button) -> void:
-	if _listening_action != "":
-		return
-	_listening_action = action
-	button.text = "키 입력..."
-
 func _on_reset_pressed() -> void:
-	GameState.reset_keybindings()
-	for action in _key_buttons.keys():
-		_key_buttons[action].text = _key_display_text(action)
+	_keyboard.reset_all()
 
 # ---------------------------------------------------------------- 탭 전환·연출
 
@@ -491,21 +435,8 @@ func _on_back_pressed() -> void:
 	_opening = false
 	_anim_time = 0.0
 
-## 재배정 대기 중일 때만 키 입력을 가로챈다. ESC면 취소하고 기존 키로 되돌린다
-func _unhandled_key_input(event: InputEvent) -> void:
-	if Engine.is_editor_hint() or _listening_action == "" or not event.pressed or event.is_echo():
-		return
-	var action := _listening_action
-	var button: Button = _key_buttons[action]
-	var key_event := event as InputEventKey
-	if key_event.physical_keycode != KEY_ESCAPE:
-		GameState.rebind_action(action, key_event.physical_keycode)
-	button.text = _key_display_text(action)
-	_listening_action = ""
-	get_viewport().set_input_as_handled()
-
 func _unhandled_input(event: InputEvent) -> void:
-	if Engine.is_editor_hint() or _listening_action != "":
+	if Engine.is_editor_hint():
 		return
 	if event.is_action_pressed("ui_cancel"):
 		# **먹었다는 표시를 닫기 전에 해야 한다** — 뒤쪽 메인 메뉴의 ESC가 같이 먹는 걸 막는다
@@ -536,14 +467,9 @@ func _rows_of(tab_name: String) -> Array:
 		"audio":
 			return [[_sliders["master"]], [_sliders["music"]], [_sliders["sfx"]]]
 		_:
-			var rows: Array = []
-			for action in ROWS:
-				var p1: Button = _key_buttons.get("p1_" + str(action))
-				var p2: Button = _key_buttons.get("p2_" + str(action))
-				if p1 != null and p2 != null:
-					rows.append([p1, p2])
-			rows.append([_reset_button])
-			return rows
+			# 키보드 그림은 끌어다 놓는 것이라 방향키 커서가 들를 자리가 아니다 —
+			# 게다가 방향키 자체가 바꿀 수 있는 키라서 커서와 배정이 서로 헷갈린다
+			return [[_reset_button]]
 
 ## 모든 칸의 기본 포커스를 끄고, 마우스를 올리면 방향키 커서도 따라오게 묶는다.
 ## **키 줄을 다 채운 뒤에 불러야 한다** — 조작 탭 칸은 코드가 만들기 때문
@@ -591,9 +517,8 @@ func _current_item() -> Control:
 
 ## 방향키를 꾹 누르고 있으면 촤라락 넘어간다 — 처음 한 번, 한 박자 쉬고, 그 뒤로 빠르게 반복
 func _update_key_repeat(delta: float) -> void:
-	# 키 재배정을 기다리는 중이면 방향키도 "새 키"로 받아야 한다 — 커서를 움직이면 안 된다.
-	# 닫히는 연출 중에도 멈춘다
-	if _listening_action != "" or (_anim_time >= 0.0 and not _opening):
+	# 닫히는 연출 중에는 커서를 멈춘다
+	if _anim_time >= 0.0 and not _opening:
 		_held_step = 0
 		return
 	var step: int = 0
