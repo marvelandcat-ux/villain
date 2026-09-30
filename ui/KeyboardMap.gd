@@ -31,19 +31,20 @@ const KEYCAP_REGION := Rect2(269, 250, 743, 729)
 const KEYCAP_FACE := 0.424
 
 ## 이 화면에서 바꿀 수 있는 조작. **순서가 곧 설명 순서**다
-const ACTIONS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate"]
+const ACTIONS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate", "map_skill"]
 
-## 키 위에 적을 이름. 좌우는 한 쌍이라 둘 다 "좌우이동"이고,
-## 아래 키는 방어와 맵 전용 스킬을 겸한다(지상에서 누르면 방어, 공중에서 누르면 맵 스킬)
+## 키 위에 적을 이름. 좌우는 한 쌍이라 둘 다 "좌우이동"이다.
+## 아래 키는 방어 전용이 됐고(2026-09-30), 맵 전용 스킬은 자기 키가 따로 생겼다
 const ACTION_LABELS := {
 	"left": "좌우이동",
 	"right": "좌우이동",
 	"jump": "점프",
-	"down": "방어 / 맵 전용",
+	"down": "가드",
 	"basic_attack": "기본공격",
 	"skill_1": "스킬1",
 	"skill_2": "스킬2",
 	"ultimate": "궁극기",
+	"map_skill": "맵 전용",
 }
 
 ## 키 한 칸(1u)의 크기와 키 사이 틈(px). 한 줄은 15u, 방향키까지 넣으면 18.5u다
@@ -64,6 +65,13 @@ const ACTION_LABELS := {
 		key_aspect = value
 		_build_keys()
 		queue_redraw()
+
+## **읽기 전용** — 켜면 끌어다 놓기를 막고 보여주기만 한다(조작 방법 화면에서 쓴다)
+@export var read_only: bool = false:
+	set(value):
+		read_only = value
+		if is_node_ready():
+			mouse_filter = Control.MOUSE_FILTER_IGNORE if read_only else Control.MOUSE_FILTER_STOP
 
 ## 정사각형 키를 손그림 키캡으로 그릴지. **기본은 꺼짐**(네모)
 @export var use_keycap_sprite: bool = false:
@@ -149,7 +157,8 @@ var _mouse_pos: Vector2 = Vector2.ZERO
 var _hover: int = -1
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
+	# 읽기 전용이면 마우스를 아예 안 받는다 — 뒤에 있는 버튼이 가려지지도 않는다
+	mouse_filter = Control.MOUSE_FILTER_IGNORE if read_only else Control.MOUSE_FILTER_STOP
 	set_process(false)   # 끌고 있을 때만 돈다(놓기를 놓치지 않으려는 감시)
 	_build_keys()
 	refresh()
@@ -381,7 +390,7 @@ func _drop_target() -> int:
 ## 키를 집어 든다. 아무 조작도 안 걸린 키면 아무 일도 없다.
 ## 한 키에 둘이 걸려 있으면(1P·2P가 같은 키) 1P 쪽을 먼저 집는다
 func _start_drag(index: int) -> void:
-	if index < 0:
+	if read_only or index < 0:
 		return
 	var actions: Array = _bindings.get(_key_id(_keys[index]), [])
 	if actions.is_empty():

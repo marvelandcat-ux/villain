@@ -111,7 +111,7 @@
 | 지하철 아저씨 | **없음** (`vault_jump`) | `TurnstileSkill` | `FearSkill` | `TteokbokkiUltimate` |
 | 헬스장 빌런 | `ComboMeleeAttack` | `LivingShadowSkill` | `BackSuplexSkill` | **빈 `Skill.gd`** |
 | 일진 | `ComboMeleeAttack` (3타 가방) | `CigaretteSmokeSkill` | `ShoulderChargeSkill` | **빈 `Skill.gd`** (컷인만) |
-| 주인공(경찰) | `ComboMeleeAttack` (경봉) | `TaserGunSkill` (테이저건) | `StoneThrowSkill` (돌 던지기) | **빈** (컷인만, `PoliceCutIn` 1.3초) |
+| 주인공(경찰) | `ComboMeleeAttack` (**맨손 잽** / 경봉 모드면 경봉) | `TaserGunSkill` (테이저건) | `StoneThrowSkill` (돌 던지기) | `BatonModeUltimate` (경관봉 15초) |
 
 - `skills/DunkUltimate.gd`(층간소음 궁): 상대 쪽으로 도약 후 착지 지점 범위 공격, 도약 중 `movement_override`로 좌우 잠금
 - `skills/TteokbokkiUltimate.gd`(지하철 궁): `channel_duration` 동안 전진하며 `drop_interval`마다 `FirePlate` 흘림, 벽에 닿으면 종료
@@ -343,6 +343,23 @@
 - **바디 수플렉스(`BodySuplexSkill`)는 이 자리에서 빠졌다.** 스크립트는 남아 있으니 다른 슬롯에 다시 붙일 수 있다
 - ⚠️ **헤드리스 테스트 주의:** 컨트롤러가 `apply_physics()`를 매 물리 프레임 부르므로 테스트에서 직접 또 부르면 경직이 **두 배 빨리** 닳는다(2초짜리가 1초로 측정됨). 캐릭터를 순간이동시킨 직후에는 착지 랙 때문에 `is_busy()`가 true라 스킬이 씹힌다 — 60프레임쯤 기다릴 것. 스킬은 클래시 대기창(0.15초) 뒤에 나간다
 
+## 경찰 맨손/경봉 전환 (2026-09-30)
+- **평소엔 맨손 잽, 궁극기(`BatonModeUltimate`)를 쓰면 15초 동안 경봉을 들고 때린다.** 경봉을 든 동안 기본공격 데미지 x2, 사거리 x1.35(40 -> 54). 시간이 끝나면 알아서 집어넣는다
+- 전환은 **리그가 상태를 보고 알아서 바꾼다** — `BodyRig.weapon_switch`(이 캐릭터가 무기를 들었다 넣었다 하는지) + `held_item_armed`(지금 들었는지)
+  - `held_item_armed = false`면 `HandRHold` 안의 무기 그림을 숨기고, 공격이 **찌르기(잽) 궤적**(`unarmed_thrust`)이 되며 반대 손이 얼굴 앞으로 올라간다(`unarmed_guard_hand`, 권투 자세)
+  - ⚠️ **무기 숨기기는 던지기 처리보다 뒤에 둬야 한다** — 던지기 코드가 `HandRHold` 자식들을 다시 켜기 때문에, 순서를 바꾸면 돌을 던진 뒤 경봉이 되살아난다
+  - 던지는 중(`_held_hidden_by_throw`)에는 이 전환이 손대지 않는다 — 던진 돌까지 숨기면 안 된다
+- 데미지 배수는 `Fighter.set_modifier("attack_debuff_multiplier", "baton_mode", 배수)`로 걸고 끝나면 `clear_modifier`로 푼다. **`_exit_tree()`에서도 풀어야** 라운드가 끝날 때 배수가 남지 않는다
+- **원투(1·2타)는 손을 번갈아 친다**(`unarmed_alternate_hands`) — 1타 = 뒤쪽(왼쪽) 손, 2타 = 앞쪽(오른쪽) 손, 마무리는 다시 오른손
+  - 잽은 **정면으로 곧게** 나간다(`jab_raise_off` 만큼 당겼다가 뻗음, 호 0이라 위아래 0px)
+  - ⚠️ **두 손은 쉬는 자리가 다르다**(왼손 x=-27 / 오른손 x=30). 같은 거리만큼 밀면 1타·2타 사거리가 어긋나므로, **도달할 x를 절대값으로 준다**(`jab_reach_x`, 지금 62) — 실측 1타 61 / 2타 62
+- **3타(마무리) = 어퍼컷**(`unarmed_uppercut`, 2026-09-30 러프 3프레임 기준)
+  - 주먹이 아래에서 앞·위로 크게 휘어 올라간다(`uppercut_raise_off` -> `uppercut_slam_off` + `uppercut_arc` 30px)
+  - 치는 내내 **고개(-24도)와 상체(-12도)가 점점 반시계로 돌아가고**, 상체가 앞으로 5px 나간다. 후려치는 구간 끝에서 가장 많이 꺾였다가 복귀 구간에 풀린다(`_pose_uppercut_lean()`)
+  - **발은 안 건드린다**(러프 지시) — 실측으로 두 발 y가 34.0 그대로인 것 확인
+  - 각도는 `scale.x = -1`로 뒤집어도 같이 안 뒤집히므로 **바라보는 방향 부호를 곱한다**(클래시·발차기와 같은 규칙)
+  - 경봉을 들면(`held_item_armed = true`) 어퍼컷이 아니라 원래 휘두르기로 돌아간다
+
 ## 궁극기 컷인 연출
 
 `ui/UltimateCutIn.tscn` — Stage·훈련장이 심고 Fighter는 `ultimate_cutin` 그룹으로 찾음(없으면 즉시 발동).
@@ -397,7 +414,10 @@
 - **주의:** `.tscn`은 모든 노드 뒤에 `[connection]`이 와야 함(파일 끝에 노드 덧붙이면 깨짐)
 - 배경 위 `Scrim` + `LeftFade` 필수(버튼 글씨 묻힘)
 - **메인 메뉴에서 ESC = "게임을 나가시겠습니까?" -> 게임 종료**(`_quit_game()`, 2026-09-28 사용자 요청 — 예전엔 타이틀로 돌아갔다). 아래 안내 글자도 "ESC로 게임 나가기"
-- **메뉴 사선 5항목(사용자 결정): 스토리 모드 / 대전 모드 / 훈련장 / 조작 방법 / 설정**
+- **메뉴 사선 5항목(사용자 결정): 스토리 모드 / 대전 모드 / 훈련장 / 가이드 / 설정**
+  - **가이드(`Menu/GuideItem`)는 조작 방법 + 도감을 묶은 칸이다**(2026-09-30). 누르면 `ui/Guide.tscn`이 열리고 거기서 둘 중 하나를 고른다 — 둘 다 "읽어보는 것"이라 메뉴에서 한 줄씩 차지할 이유가 없었다
+  - 가이드 화면의 칸은 `FanTile`(캐릭터 선택·도감과 같은 사선 칸)이다. **흰 테두리는 FanTile이 알아서 그리고**(커서/포커스), 커지는 것만 `Guide.gd`가 `scale`을 lerp로 키운다(1.06배). 썸네일은 `sprite/도감/조작방법썸네일.png` / `도감썸네일.png`
+  - ⚠️ 썸네일 **가장자리 한 줄이 흰색이면 칸 전체에 흰 띠가 생긴다** — 그림을 칸 안 네모에 넣을 때 바깥 영역이 가장자리 픽셀로 늘어나기 때문(2026-09-30에 조작방법썸네일 맨 윗줄이 그래서 흰 띠가 났다). 새 썸네일을 넣을 땐 가장자리 줄 색을 확인할 것
   - `<이름>Item`(Button, 판정 고정) > `Slide`(보이는 것만 이동) — **판정까지 움직이면 호버가 떨림**. 호버 = `grab_focus()`, 연출은 포커스만 봄
   - 도형 `메뉴사선_임시.png`는 흰색 + `modulate`. 교체 규격: 1장 재사용 / 투명 배경 / 글자 굽지 말 것
   - TODO: 메뉴 글꼴 미정(기본 폰트) — 정하면 `Text` 5개에 `theme_override_fonts/font`
@@ -519,7 +539,14 @@
 
 ### 대전 공통 (화면 흐름·라운드·HUD·이펙트)
 
-- `ui/HowToPlay.tscn`은 키를 `InputMap`에서 읽음(읽기 전용, 변경은 설정 > 조작)
+- **조작 기본 배치(2026-09-30 사용자 지정 러프 기준)**
+  - P1: 이동 A/D · 점프 W · **가드 S** · 기본공격 **F** · 스킬1 **G** · 스킬2 **H** · 궁극기 R · **맵 전용 E**
+  - P2: 이동 ←/→ · 점프 ↑ · **가드 ↓** · 기본공격 **L** · 스킬1 **;** · 스킬2 **'** · 궁극기 **]** · **맵 전용 [**
+  - 기본공격은 **이동하는 손 바로 옆**(F / L)이고 오른쪽으로 갈수록 스킬 번호가 올라간다(2026-09-30 확정)
+  - 대시 = 좌우 이동키 두 번 / 2단 점프 = 점프키 두 번 (전용 키 없음)
+  - **맵 전용 스킬이 아래 키에서 떨어져 나와 전용 키가 됐다.** 예전엔 "공중에서 아래 키"였는데 아래 키가 방어·발판 통과까지 겸해서 헷갈렸다(`PlayerController`가 `map_skill` 액션을 본다). 공중에서만 나가는 건 그대로
+  - ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION`을 올릴 것.** 저장 파일(`user://settings.cfg`)의 번호가 더 낮으면 저장해 둔 키를 버리고 새 기본값으로 갈아엎는다 — 안 올리면 예전에 설정을 한 번이라도 만진 사람은 새 배치를 영영 못 본다
+- `ui/HowToPlay.tscn`은 **설정 > 조작 탭과 같은 키보드 그림**(`KeyboardMap`, `read_only = true`)을 보여준다(2026-09-30). 예전 "조작 이름 + 키" 16줄 표는 없앴다 — 키를 바꿀 때 보는 그림과 설명 화면이 달라서 같은 걸 두 번 익혀야 했다. 키는 `InputMap`에서 읽으므로 설정에서 바꾸면 여기도 바로 바뀐다(변경은 설정 > 조작에서만)
 - 캐릭터·맵 목록은 `GameState.CHARACTERS`/`GameState.MAPS`에 한 줄 추가하면 선택 화면에 자동 반영
 - 모든 화면 ESC(`ui_cancel`)로 한 단계 뒤로. 스토리 장면·대전 중엔 일시정지 화면(거기 "메인메뉴로")
 - **라운드제:** `Stage._process()`가 KO/시간 초과(HP 높은 쪽 승, 동률 무승부) 감지 -> `_end_round(p1_won, is_draw)`. 승수는 `GameState.p1_round_wins`/`p2_round_wins`(오토로드라 유지). 미달이면 `MatchResult.show_round_result()` 후 `reload_current_scene()`, 도달이면 `show_result()`/`show_draw()`(스토리 승리는 위 `story_next_scene` 경로)

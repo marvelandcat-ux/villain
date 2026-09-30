@@ -6,10 +6,19 @@
 [ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="5_baton"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/테이져건.png" id="6_taser"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰측면.png" id="7_side"]
 [ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=2119973844 instance=ExtResource("1_rig")]
 grab_slam_deg = -58.0
+weapon_switch = true
+held_item_armed = false
+unarmed_thrust = true
+unarmed_guard_hand = true
+unarmed_uppercut = true
+attack_body_texture = ExtResource("7_side")
+attack_body_hits = Array[int]([0, 1])
+attack_body_flip_hits = Array[int]([1])
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 position = Vector2(-8.000001, 34)

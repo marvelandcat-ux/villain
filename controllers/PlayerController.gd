@@ -67,10 +67,10 @@ func _physics_process(delta: float) -> void:
 					_drop_through_platform()
 				else:
 					fighter.jump()
-			# 아래 키만 단독으로 누르면(점프와 조합이 아니면) 지상에서는 원래 아무 일도 없던 입력이라,
-			# 공중에서만 맵 전용 스킬(내리찍기 등)에 자유롭게 배정할 수 있다. map_skill이 없는
-			# 보통 맵에서는 use_map_skill()이 그냥 아무 효과 없이 리턴한다
-			elif Input.is_action_just_pressed(_action("down")) and not fighter.is_on_floor():
+			# 맵 전용 스킬(내리찍기 등)은 **전용 키**다(2026-09-30 사용자 지정: P1 E / P2 [).
+			# 예전에는 공중에서 아래 키였는데, 아래 키가 방어·발판 통과까지 겸해서 헷갈렸다.
+			# 공중에서만 나간다 — 맵에 스킬이 없으면 use_map_skill()이 그냥 아무 효과 없이 리턴한다
+			if Input.is_action_just_pressed(_action("map_skill")) and not fighter.is_on_floor():
 				fighter.use_map_skill()
 
 		if Input.is_action_just_pressed(_action("basic_attack")):

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/PoliceStats.tres" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://skills/Skill.gd" id="6"]
 [ext_resource type="PackedScene" path="res://characters/police/PoliceRig.tscn" id="7"]
 [ext_resource type="Script" path="res://skills/TaserGunSkill.gd" id="8_taser"]
+[ext_resource type="Script" path="res://skills/BatonModeUltimate.gd" id="11_baton"]
 [ext_resource type="PackedScene" path="res://skills/TaserBolt.tscn" id="10_bolt"]
 [ext_resource type="Script" path="res://skills/StoneThrowSkill.gd" id="9_stone"]
 
@@ -70,6 +71,10 @@ description = "발밑의 돌을 주워 앞으로 던진다. 자전거로 돌진�
 damage = 6
 
 [node name="SkillUltimate" type="Node" parent="."]
-script = ExtResource("6")
+script = ExtResource("11_baton")
 cooldown = 20.0
 start_on_cooldown = true
+skill_name = "경관봉"
+description = "허리에서 경관봉을 뽑아 든다. 15초 동안 기본공격이 주먹 대신 경봉 타격이 되고 데미지가 두 배로 오른다. 시간이 끝나면 도로 집어넣는다."
+duration = 15.0
+damage_multiplier = 2.0

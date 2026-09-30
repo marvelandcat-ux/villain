@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://ui/HowToPlay.gd" id="1"]
+[ext_resource type="Script" path="res://ui/KeyboardMap.gd" id="2_keyboard"]
 
 [node name="HowToPlay" type="Control"]
 anchor_right = 1.0
@@ -15,18 +16,12 @@ color = Color(0.06, 0.05, 0.09, 1)
 [node name="Center" type="CenterContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
+mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="Center"]
 layout_mode = 2
 theme_override_constants/separation = 18
 alignment = 1
-
-[node name="TitleLabel" type="Label" parent="Center/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
-theme_override_font_sizes/font_size = 40
-text = "조작 방법"
-horizontal_alignment = 1
 
 [node name="DescLabel" type="Label" parent="Center/VBox"]
 layout_mode = 2
@@ -34,52 +29,65 @@ theme_override_colors/font_color = Color(0.72, 0.68, 0.8, 1)
 text = "같은 키보드를 둘이 나눠 쓰는 로컬 대전입니다. 궁극기는 컷인이 끝난 뒤 발동됩니다."
 horizontal_alignment = 1
 
-[node name="Columns" type="HBoxContainer" parent="Center/VBox"]
+[node name="Legend" type="HBoxContainer" parent="Center/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 70
+theme_override_constants/separation = 24
 alignment = 1
 
-[node name="P1Column" type="VBoxContainer" parent="Center/VBox/Columns"]
+[node name="P1Title" type="Label" parent="Center/VBox/Legend"]
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="P1Title" type="Label" parent="Center/VBox/Columns/P1Column"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.8, 1, 1)
+theme_override_colors/font_color = Color(0.11, 0.53, 0.9, 1)
 theme_override_font_sizes/font_size = 26
 text = "1P"
 
-[node name="P2Column" type="VBoxContainer" parent="Center/VBox/Columns"]
+[node name="P2Title" type="Label" parent="Center/VBox/Legend"]
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="P2Title" type="Label" parent="Center/VBox/Columns/P2Column"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.6, 0.5, 1)
+theme_override_colors/font_color = Color(0.9, 0.22, 0.21, 1)
 theme_override_font_sizes/font_size = 26
 text = "2P"
+
+[node name="Keyboard" type="Control" parent="Center/VBox"]
+layout_mode = 2
+texture_filter = 4
+script = ExtResource("2_keyboard")
+read_only = true
+unit = 48.0
+gap = 5.0
+key_aspect = 1.2
+
+[node name="ExtraLabel" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.68, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+text = "대시: 좌우 이동키 두 번 빠르게    |    2단 점프: 점프키 두 번    |    맵 전용 스킬은 공중에서만"
+horizontal_alignment = 1
 
 [node name="NoteLabel" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.5, 0.62, 1)
 theme_override_font_sizes/font_size = 18
-text = "키를 바꾸려면 설정 > 조작 탭에서 바꿀 수 있습니다."
+text = "회색 = 안 쓰는 키 / 파랑 = 1P / 빨강 = 2P.  키를 바꾸려면 설정 > 조작 탭에서 끌어다 놓으세요."
 horizontal_alignment = 1
 
-[node name="ButtonRow" type="HBoxContainer" parent="Center/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 16
-alignment = 1
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 77.0
+offset_top = 10.0
+offset_right = 600.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0.96, 0.93, 0.98, 1)
+theme_override_font_sizes/font_size = 44
+text = "조작 방법"
 
-[node name="TrainingButton" type="Button" parent="Center/VBox/ButtonRow"]
-custom_minimum_size = Vector2(200, 46)
-layout_mode = 2
-text = "훈련장에서 해보기"
+[node name="BackButton" type="Button" parent="."]
+offset_left = 1.0
+offset_top = 1.0
+offset_right = 67.0
+offset_bottom = 67.0
+pivot_offset = Vector2(33, 33)
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+text = "◀"
+flat = true
 
-[node name="BackButton" type="Button" parent="Center/VBox/ButtonRow"]
-custom_minimum_size = Vector2(200, 46)
-layout_mode = 2
-text = "뒤로 (ESC)"
-
-[connection signal="pressed" from="Center/VBox/ButtonRow/TrainingButton" to="." method="_on_training_pressed"]
-[connection signal="pressed" from="Center/VBox/ButtonRow/BackButton" to="." method="_on_back_pressed"]
