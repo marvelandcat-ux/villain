@@ -31,6 +31,10 @@ extends Node2D
 @export var travel_x: float = 1200.0
 ## true면 열차가 올 때마다 진행 방향이 좌↔우로 번갈아 바뀐다
 @export var alternate_direction: bool = true
+## 열차 길이(칸 수) — 올 때마다 min_cars ~ max_cars 중 랜덤(2026-10-01 사용자 요청 "1~5칸").
+## 1칸 = 원래 그림 한 대(약 882px), 1칸 늘 때마다 가운데 객실(문 두 쌍 사이, 약 392px)이 하나 더 붙는다 — 5칸이면 약 2450px
+@export_range(1, 10) var min_cars: int = 1
+@export_range(1, 10) var max_cars: int = 5
 ## 경고등이 1초에 깜빡이는 횟수
 @export var warning_blink_speed: float = 4.0
 ## 열차 도착 음악(옛날 지하철 도착 음악). 비워두면 소리 없이 경고등만 깜빡인다
@@ -82,6 +86,9 @@ enum State { WAITING, WARNING, RUNNING }
 
 @onready var body: Node2D = $Body
 @onready var hitbox: Hitbox = $Body/Hitbox
+## 원래 열차 그림 한 장 — 칸 조각(앞머리·가운데·뒷머리)을 잘라 쓰는 원본이고 자신은 숨긴다
+@onready var _car: Sprite2D = $Body/Car
+@onready var _hitbox_shape: CollisionShape2D = $Body/Hitbox/HitboxCollision
 @onready var _warning_light: Node2D = $WarningLight
 @onready var _music: AudioStreamPlayer = $Music
 ## 창문만 밝게 구워둔 그림을 가산 블렌드로 열차 위에 얹은 스프라이트 (Body의 자식이라 열차와 같이 움직이고 같이 숨는다)
@@ -95,6 +102,13 @@ var _state: int = State.WAITING
 ## 다음 열차가 도착하기까지 남은 시간. 열차가 출발하는 순간 interval로 다시 채워지므로
 ## "도착에서 다음 도착까지"가 정확히 interval초가 된다 (지나가는 시간도 이 안에 포함)
 var _timer: float = 0.0
+## 이번 열차의 칸 수와 몸통 반폭(px) — 출발 때 정한다
+var _cars: int = 1
+var _half_width: float = 0.0
+## 칸 조각 스프라이트 — [앞머리, 뒷머리, 가운데 x max_cars]. _ready에서 만들어 두고 칸 수에 맞춰 켜고 끈다
+var _head: Sprite2D
+var _tail: Sprite2D
+var _middles: Array[Sprite2D] = []
 ## 1이면 왼쪽 → 오른쪽, -1이면 오른쪽 → 왼쪽
 var _direction: int = 1
 ## 창문 불빛이 떨리는 위상 — 계속 커지며 sin()으로 미세한 흔들림을 만든다
@@ -104,6 +118,14 @@ var _glow_phase: float = 0.0
 ## 그림을 다시 그리면 이 표도 다시 뽑아야 한다 (region_rect 안에서 무채색 중간 밝기 덩어리를 골라 재는 방식)
 ## 열차 그림의 화면상 반폭(px) — 창문이 앞/뒤 어느 쪽 끝에 가까운지 재는 기준 (2101 x 0.42 / 2)
 const TRAIN_HALF_WIDTH: float = 441.2
+
+## 칸 조각을 자르는 자리 — Car region_rect 안의 x(그림 px). 둘 다 문 두 짝 사이 세로선 한가운데라 이어 붙이면 선이 다시 합쳐진다.
+## 앞머리 = 0 ~ SEAM_FRONT, 가운데 객실 = SEAM_FRONT ~ SEAM_BACK(반복), 뒷머리 = SEAM_BACK ~ 끝. **그림을 다시 그리면 다시 잴 것**
+const SEAM_FRONT: float = 545.0
+const SEAM_BACK: float = 1478.0
+## 손그림이 오른쪽으로 갈수록 내려가 있어서 가운데 객실 오른쪽 끝이 왼쪽 끝보다 이만큼(그림 px) 낮다.
+## 그대로 반복하면 이음새마다 턱이 지므로 가운데 조각만 이만큼 세로로 기울여(rotation + skew) 수평으로 만든다
+const MIDDLE_DRIFT: float = 7.5
 
 const WINDOW_RECTS: Array[Rect2] = [
 	Rect2(-426.5, -32.8, 64.3, 40.3),   # 운전실 앞유리
@@ -127,6 +149,10 @@ func _ready() -> void:
 	# 신문지 날림(WindNewspaper) 같은 장식 연출이 "subway_train" 그룹으로 찾아서 바람 위치를 묻는다
 	add_to_group("subway_train")
 	_timer = first_delay
+	_build_car_pieces()
+	# 판정 도형은 씬이 공유하는 리소스라 복제해서 칸 수만큼 늘린다
+	_hitbox_shape.shape = _hitbox_shape.shape.duplicate() as Shape2D
+	_set_cars(1)
 	hitbox.damage = damage
 	hitbox.repeat_interval = hit_interval
 	_music.stream = arrival_music
@@ -155,9 +181,13 @@ func get_direction() -> int:
 func get_body_x() -> float:
 	return body.global_position.x
 
-## 열차 몸통 길이의 절반(px)
+## 열차 몸통 길이의 절반(px) — 칸 수에 따라 달라진다
 func get_half_width() -> float:
-	return TRAIN_HALF_WIDTH
+	return _half_width
+
+## 출발·도착 지점 x — 열차가 길어진 만큼 더 바깥에서 출발해 더 바깥까지 가야 화면 안에서 툭 나타나거나 사라지지 않는다
+func _travel_limit() -> float:
+	return travel_x + maxf(_half_width - TRAIN_HALF_WIDTH, 0.0)
 
 func _process(delta: float) -> void:
 	_timer -= delta
@@ -174,7 +204,7 @@ func _process(delta: float) -> void:
 		State.RUNNING:
 			body.position.x += speed * _direction * delta
 			_update_window_light(delta)
-			if absf(body.position.x) >= travel_x:
+			if absf(body.position.x) >= _travel_limit():
 				_finish_run()
 
 ## 도착 warning_duration초 전 — 음악과 경고등이 시작된다
@@ -188,7 +218,8 @@ func _begin_run() -> void:
 	_warning_light.visible = false
 	_state = State.RUNNING
 	_timer = interval
-	body.position.x = -travel_x * _direction
+	_set_cars(randi_range(mini(min_cars, max_cars), maxi(min_cars, max_cars)))
+	body.position.x = -_travel_limit() * _direction
 	_apply_direction()
 	# 열차가 가는 쪽으로 밀리면서 위로 튕긴다 — 옆에서 부딪히면 밀려나고, 지붕에 있으면 떨어져 나간다
 	hitbox.knockback = Vector2(knockback_push * _direction, -knockback_lift)
@@ -199,9 +230,9 @@ func _begin_run() -> void:
 func _finish_run() -> void:
 	_set_hitbox_active(false)
 	_music.stop()
-	_park_body()
 	if alternate_direction:
 		_direction = -_direction
+	_park_body()
 	_state = State.WAITING
 
 ## 창문마다 위아래로 빛기둥을 하나씩 만들어 Body에 붙인다.
@@ -272,9 +303,59 @@ func _update_window_light(delta: float) -> void:
 	if _window_beams:
 		_window_beams.modulate.a = level
 
+## 원래 그림(Car)을 앞머리·뒷머리·가운데 객실 조각으로 잘라 Body에 붙여 둔다(Car 자리에 끼워 창문 빛보다 뒤에 그려지게)
+func _build_car_pieces() -> void:
+	var r: Rect2 = _car.region_rect
+	_head = _make_piece(Rect2(r.position.x, r.position.y, SEAM_FRONT, r.size.y))
+	_tail = _make_piece(Rect2(r.position.x + SEAM_BACK, r.position.y, r.size.x - SEAM_BACK, r.size.y))
+	var slope: float = atan(MIDDLE_DRIFT / (SEAM_BACK - SEAM_FRONT))
+	for i in maxi(maxi(min_cars, max_cars), 1):
+		var m: Sprite2D = _make_piece(Rect2(r.position.x + SEAM_FRONT, r.position.y, SEAM_BACK - SEAM_FRONT, r.size.y))
+		# 세로 기울이기(rotation -a + skew a = x축만 들림) — 오른쪽 끝을 올려 왼쪽 끝과 높이를 맞춘다
+		m.rotation = -slope
+		m.skew = slope
+		_middles.append(m)
+	_car.visible = false
+
+func _make_piece(region: Rect2) -> Sprite2D:
+	var piece := Sprite2D.new()
+	piece.texture = _car.texture
+	piece.region_enabled = true
+	piece.region_rect = region
+	piece.scale = _car.scale
+	body.add_child(piece)
+	body.move_child(piece, _car.get_index())
+	return piece
+
+## 칸 수에 맞춰 조각을 늘어놓고 판정 길이를 맞춘다. 열차 한가운데가 Body 원점(판정 사각형 가운데)이다
+func _set_cars(count: int) -> void:
+	_cars = clampi(count, 1, _middles.size())
+	var sx: float = _car.scale.x
+	var sy: float = _car.scale.y
+	var mid_w: float = SEAM_BACK - SEAM_FRONT
+	var total: float = _car.region_rect.size.x + mid_w * (_cars - 1)
+	var left: float = -total * 0.5
+	_head.position = Vector2((left + SEAM_FRONT * 0.5) * sx, 0.0)
+	for i in _middles.size():
+		var m: Sprite2D = _middles[i]
+		m.visible = i < _cars
+		# 가운데를 축으로 수평을 맞췄으니 원래 왼쪽 끝 높이로 반만큼 올린다
+		m.position = Vector2((left + SEAM_FRONT + mid_w * (i + 0.5)) * sx, -MIDDLE_DRIFT * 0.5 * sy)
+	var tail_w: float = _car.region_rect.size.x - SEAM_BACK
+	# 뒷머리는 가운데 객실이 수평이 된 만큼 올려야 이음새가 맞는다
+	_tail.position = Vector2((left + total - tail_w * 0.5) * sx, -MIDDLE_DRIFT * sy)
+	_half_width = total * 0.5 * sx
+	var rect := _hitbox_shape.shape as RectangleShape2D
+	rect.size.x = _half_width * 2.0
+	# 창문 불빛은 1칸 그림 기준으로만 맞춰져 있어서 길어지면 숨긴다
+	if _window_light:
+		_window_light.visible = window_lights and _cars == 1
+	if _window_beams:
+		_window_beams.visible = _cars == 1
+
 ## 대기 중에는 열차를 화면 밖에 세워둔다
 func _park_body() -> void:
-	body.position.x = -travel_x * _direction
+	body.position.x = -_travel_limit() * _direction
 	_apply_direction()
 
 ## 진행 방향에 맞춰 열차 그림을 좌우로 뒤집는다.
@@ -301,7 +382,7 @@ func _shake_screen(_delta: float) -> void:
 		State.RUNNING:
 			# 열차가 스테이지 한가운데에 가까울수록 세게 — 멀리 있을 때부터 최대로 흔들면
 			# 지나가는 순간이 안 살아난다
-			var near: float = 1.0 - clampf(absf(body.position.x) / maxf(travel_x, 1.0), 0.0, 1.0)
+			var near: float = 1.0 - clampf(absf(body.position.x) / maxf(_travel_limit(), 1.0), 0.0, 1.0)
 			amount = pass_shake * (1.0 - pass_shake_focus + pass_shake_focus * near)
 	if amount <= 0.0:
 		return

@@ -473,9 +473,10 @@ const FINISHER_WALL_BOUNCE := 1.0
 const FINISHER_WALL_MIN_SPEED := 120.0
 ## 벽에 부딪힐 때 화면 흔들림(CameraRig.add_trauma)
 const FINISHER_WALL_TRAUMA := 0.35
-## 3타로 날아가다 땅에 떨어지면 떨어진 속도의 이 비율로 다시 튀어 오른다(2026-09-29 사용자 요청 "벽처럼 100%").
+## 3타로 날아가다 땅에 떨어지면 떨어진 속도의 이 비율로 다시 튀어 오른다(2026-09-29 "벽처럼 100%"였다가
+## 2026-10-01 사용자 요청 "2번째 튕김은 1/3만큼 작게"로 0.58 = √(1/3) — 튕길 때마다 높이가 1/3씩 준다).
 ## 앞으로 가는 속도가 FINISHER_WALL_MIN_SPEED 밑으로 줄면 더는 안 튕기고 내려앉아 미끄러진다
-const FINISHER_GROUND_BOUNCE := 1.0
+const FINISHER_GROUND_BOUNCE := 0.58
 ## 이 낙하 속도(px/초)보다 약하게 닿으면 튕기지 않는다
 const FINISHER_GROUND_MIN_FALL := 120.0
 ## 땅에 튕길 때 화면 흔들림
@@ -488,16 +489,23 @@ const FINISHER_LAUNCH_ANGLE_DEG := 45.0
 const FINISHER_PEAK_PER_SCALE := 150.0
 ## 3타로 날아가는 동안 중력 배율(평소의 45%, 사용자 결정) — 다른 피격 경직의 HIT_LAUNCH_GRAVITY_SCALE(0.6)과 따로
 const FINISHER_GRAVITY_SCALE := 0.45
-## 3타로 날아가는 동안 **공중에서** 옆 속도가 줄어드는 빠르기(px/초²) — 바닥 마찰(HITSTUN_FRICTION 900)을 공중에도 쓰면
-## 옆 속도가 먼저 끝나 마지막엔 수직으로 떨어진다. 300이면 빈사 때 2500px까지 날아가서 중간값
-const FINISHER_AIR_DRAG := 500.0
+## 3타로 날아가는 동안 **공중에서** 옆 속도가 매초 줄어드는 비율(옆 속도 x e^(-이 값 x 초)) — 2026-10-01 사용자 요청 "직각 포물선 싫다".
+## 예전엔 일정한 양(500px/초²)씩 깎아서 체공 중간에 옆 속도가 0이 되고 나머지는 수직으로 뚝 떨어졌다. 비율로 깎으면 0이 안 돼서 끝까지 둥글다.
+## 1.3 = 예전과 기절 시간이 비슷한 값(첫 포물선 거리는 풀피 약 186 -> 285px). 작을수록 멀리·오래 날아간다(1.0이면 한 번 더 튕겨 풀피 1.5배 길어짐)
+const FINISHER_AIR_DRAG_RATE := 1.3
+## 3타로 날아가는 **옆 속도**만 이 배로(2026-10-01 사용자 요청 "기본 포물선을 훨씬 멀리, 벽이나 바닥 전부") — 위로 솟는 속도·높이 상한은 그대로.
+## 첫 땅 튕김(FINISHER_GROUND_KICK)은 이 옆 속도를 기준으로, 벽 튕김은 부딪힌 속도 그대로라 튕긴 뒤 포물선도 같이 길어진다.
+## 2.0은 "너무 많이 날아간다"(같은 날)로 1.3 — 평지 첫 포물선 풀피 약 285 -> 370px
+const FINISHER_HORIZONTAL_SCALE := 1.3
 ## 3타로 날아가다 **처음** 땅에 튕길 때 때린 사람 반대쪽으로 날리는 옆 속도 = 처음 날아간 옆 속도 x 이 배율
-## (2026-09-29 사용자 요청 "제자리에서 통통 튀면 추가타가 너무 쉽다" — 1.5배). 두 번째 튕김부턴 안 민다(매번 밀면 영영 안 멈춤)
-const FINISHER_GROUND_KICK := 1.5
-## 3타 날아가기 빨리감기 배율(2026-09-30 사용자 요청 "날아가는 시간 50% 줄여줘" — 2.0). 궤적·거리·높이는 그대로 두고 시간만 1/이 값.
-## 속도는 x배율, 중력·공중 감속·바닥 마찰은 x배율², 튕김 기준 속도는 x배율, 안전 한도 시간은 /배율로 같이 바꾼다.
+## (2026-09-29 사용자 요청 "제자리에서 통통 튀면 추가타가 너무 쉽다" — 1.5배, 2026-10-01 "2번째 튕김 1/3"로 0.6 — 튕긴 포물선 거리가
+## 그 전의 약 1/3). 두 번째 튕김부턴 안 민다(매번 밀면 영영 안 멈춤)
+const FINISHER_GROUND_KICK := 0.6
+## 3타 날아가기 빨리감기 배율(2026-09-30 사용자 요청 "날아가는 시간 50% 줄여줘" — 2.0, 2026-10-01 "너무 빨리 날아간다"로 1.5).
+## 궤적·거리·높이는 그대로 두고 시간만 1/이 값.
+## 속도·공중 감속 비율은 x배율, 중력·바닥 마찰은 x배율², 튕김 기준 속도는 x배율, 안전 한도 시간은 /배율로 같이 바꾼다.
 ## 위 FINISHER_* 속도·감속 상수들은 전부 배율 1 기준 값이다
-const FINISHER_TIME_SCALE := 2.0
+const FINISHER_TIME_SCALE := 1.5
 
 ## 추가 피격을 받을 수 있는 남은 시간(= 남은 기절 시간) / 지금 날아가는 방향(+1 오른쪽)
 var _finisher_window: float = 0.0
@@ -509,7 +517,7 @@ var _finisher_extra_time: float = 0.0
 ## 3타에 맞아 날아가는 중인지 — **완전히 멈출 때까지** 기절이 이어진다(2026-09-29 사용자 요청 "기절 시간 = 날아가는 시간")
 var _finisher_flying: bool = false
 var _finisher_fly_time: float = 0.0
-## 이번 3타에서 위로 솟는 속도 상한(최고 높이 제한에서 역산) — 벽에 튕겨 다시 떠오를 때도 쓴다
+## 이번 3타에서 위로 솟는 속도 상한(최고 높이 제한에서 역산)
 var _finisher_up_cap: float = 0.0
 ## 이번 3타에서 땅에 튕긴 횟수 — 첫 착지는 옆 속도와 상관없이 한 번은 튕긴다(사용자 결정)
 var _finisher_ground_bounces: int = 0
@@ -539,7 +547,7 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	var total: float = speed * KNOCKBACK_MULTIPLIER * launch_scale * FINISHER_TIME_SCALE
 	var ang: float = deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)
 	_finisher_up_cap = sqrt(2.0 * _finisher_gravity() * FINISHER_PEAK_PER_SCALE * launch_scale)
-	_finisher_launch_vx = total * cos(ang)
+	_finisher_launch_vx = total * cos(ang) * FINISHER_HORIZONTAL_SCALE
 	velocity.x = d * _finisher_launch_vx
 	velocity.y = -minf(total * sin(ang), _finisher_up_cap)
 	_finisher_ground_bounces = 0
@@ -565,8 +573,8 @@ func _try_finisher_wall_bounce(pre_vx: float) -> void:
 	if is_zero_approx(normal.x) or signf(pre_vx) != -signf(normal.x):
 		return
 	velocity.x = -pre_vx * FINISHER_WALL_BOUNCE
-	# 떨어지던 속도를 버리고 처음 맞았을 때처럼 FINISHER_LAUNCH_ANGLE_DEG 위로 다시 떠오른다(사용자 결정, 높이 상한 동일)
-	velocity.y = -minf(absf(velocity.x) * tan(deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)), _finisher_up_cap)
+	# 위아래 속도는 그대로 — 옆만 거울처럼 뒤집어서 벽이 없을 때와 같은 시간에 떨어진다(2026-10-01 사용자 요청 "벽에 튕겨도 지속 시간이 안 늘게").
+	# 예전엔 45도 위로 다시 떠올라 포물선 하나만큼 기절이 늘었다
 	_launch_momentum = true
 	_finisher_dir = signf(velocity.x)
 	# 구르는 방향도 뒤집는다(날아가는 쪽으로 굴러야 자연스럽다)
@@ -632,6 +640,16 @@ func _away_from_opponent() -> float:
 		if absf(dx) > 1.0:
 			return signf(dx)
 	return _finisher_dir if not is_zero_approx(_finisher_dir) else 1.0
+
+## 3타에 맞아 날아가는(기절) 중인지
+func is_finisher_flying() -> bool:
+	return _finisher_flying
+
+## 3타로 날아가는 중이면 바로 끝낸다 — 잡기 스킬(MouseGrab)이 끌어오기 전에 부른다.
+## 안 끝내면 잡는 피해가 "날아가는 중 추가타"(_rebound_finisher)로 쳐져서 끌려오지 않고 다시 튕겨 나갔다
+func cancel_finisher_flight() -> void:
+	if _finisher_flying:
+		_end_finisher_flight()
 
 ## 3타 날아가기가 끝났다(멈춤·잡힘·안전 한도) — 기절을 풀고 구르기·기절 별을 정리한다
 func _end_finisher_flight() -> void:
@@ -1260,11 +1278,14 @@ func apply_physics(delta: float) -> void:
 	# 경직 중엔 넉백 속도가 마찰로 서서히 줄며 미끄러진다 (멈출 때쯤 경직도 끝나 조작이 돌아온다)
 	if _hitstun_time > 0.0:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
-		# 3타로 날아가는 중 공중에선 옆 속도를 덜 깎는다(포물선이 끝까지 이어지게) — 바닥에선 평소 마찰
-		var friction: float = FINISHER_AIR_DRAG if _finisher_flying and not is_on_floor() else HITSTUN_FRICTION
-		if _finisher_flying:
-			friction *= FINISHER_TIME_SCALE * FINISHER_TIME_SCALE
-		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
+		# 3타로 날아가는 중 공중에선 옆 속도를 비율로 깎는다(0이 안 돼서 끝까지 둥근 포물선) — 바닥에선 평소 마찰
+		if _finisher_flying and not is_on_floor():
+			velocity.x *= exp(-FINISHER_AIR_DRAG_RATE * FINISHER_TIME_SCALE * delta)
+		else:
+			var friction: float = HITSTUN_FRICTION
+			if _finisher_flying:
+				friction *= FINISHER_TIME_SCALE * FINISHER_TIME_SCALE
+			velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 	# 크게 날아가는 중이면 몸이 빙글빙글 돈다 (시간이 다 되거나 바닥에 닿으면 알아서 일어선다)
 	if _tumble_left > 0.0:
 		_update_tumble(delta)

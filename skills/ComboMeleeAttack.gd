@@ -234,6 +234,10 @@ func _hold_for_next_hit(victim: Node) -> void:
 	# 막은 쪽은 맞지 않았으므로 붙잡지 않는다
 	if target.is_guarding:
 		return
+	# 3타에 맞아 날아가는 중이면 건드리지 않는다 — take_damage가 이미 추가타로 다시 날렸는데(_rebound_finisher),
+	# 아래에서 속도를 작은 밀림으로 덮으면 1·2타에 맞는 순간 옆 속도가 사라져 제자리에서 떨어졌다(2026-10-01 사용자 요청)
+	if target.is_finisher_flying():
+		return
 	# **앞 타에 밀리던 속도를 지우고 이번 넉백만 남긴다.** Fighter.take_damage는 넉백을 기존 속도에 더해서,
 	# 1타에 밀리는 중에 2타를 맞으면 두 넉백이 겹쳐 상대가 한참 더 미끄러졌다(촉법소년 실측: 3타 준비 동안 약 70px).
 	# 격투게임처럼 "한 대에 한 칸씩" 일정하게 밀리게 한다
