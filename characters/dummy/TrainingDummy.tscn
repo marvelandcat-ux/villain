@@ -1,9 +1,14 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/TrainingDummyStats.tres" id="2"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="3"]
 [ext_resource type="PackedScene" path="res://characters/dummy/DummyRig.tscn" id="4"]
+[ext_resource type="Script" path="res://skills/MeleeAttack.gd" id="5_melee"]
+[ext_resource type="Script" path="res://combat/Hitbox.gd" id="6_hitbox"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
+size = Vector2(30, 30)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -28,3 +33,17 @@ script = ExtResource("3")
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
 position = Vector2(0, -15)
 shape = SubResource("CapsuleShape2D_hurt")
+
+[node name="BasicAttack" type="Node" parent="."]
+script = ExtResource("5_melee")
+damage = 5
+windup = 0.16
+cooldown = 0.3
+
+[node name="Hitbox" type="Area2D" parent="BasicAttack"]
+monitoring = false
+monitorable = false
+script = ExtResource("6_hitbox")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox"]
+shape = SubResource("RectangleShape2D_hitbox")

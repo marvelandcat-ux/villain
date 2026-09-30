@@ -18,7 +18,7 @@ func _execute(fighter: Fighter) -> void:
 	hitbox.global_position = fighter.global_position
 	hitbox.monitoring = true
 	hitbox.monitorable = true
-	if slow_duration > 0.0:
+	if slow_duration > 0.0 and not hitbox.area_entered.is_connected(_on_hit_apply_slow):
 		hitbox.area_entered.connect(_on_hit_apply_slow)
 	await get_tree().create_timer(active_duration).timeout
 	hitbox.monitoring = false

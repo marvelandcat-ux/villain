@@ -467,6 +467,19 @@ func _effective_miss_cooldown() -> float:
 	var base: float = cooldown_override if cooldown_override > 0.0 else (miss_cooldown if miss_cooldown >= 0.0 else cooldown)
 	return base * GameState.cooldown_multiplier
 
+## 마무리 타 모션 길이(초) — finisher_windup을 정해 뒀으면 **내려치는 순간이 정확히 그 시각에 오게** 모션을 늘이거나 줄인다
+## (3타 준비시간 0.223초 통일, 2026-09-30 사용자 결정). 아니면 -1(리그 기본 길이).
+## 회전 타·발차기 타는 리그가 자기 길이(spin_duration/kick_duration)를 따로 들고 있어 건드리지 않는다 —
+## 그런 캐릭터는 finisher_windup을 그 길이에 맞춰 적는다(지하철 0.5 x 0.62 x 0.72)
+func _final_swing_duration(step: int, visual: Node) -> float:
+	if not _is_final(step) or finisher_windup < 0.0 or not visual.has_method("strike_time"):
+		return -1.0
+	if int(visual.get("spin_hit_index")) == step or int(visual.get("attack_kick_hit")) == step:
+		return -1.0
+	# strike_time(1초)는 1초짜리 모션에서 후려치는 비율(보통 0.4) — 그걸로 나눠 필요한 길이를 거꾸로 구한다
+	var ratio: float = visual.strike_time(1.0, false)
+	return finisher_windup / ratio if ratio > 0.0 else -1.0
+
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:
 	var d: AttackData = _hit_data(step)
@@ -475,7 +488,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		if d != null:
 			visual.play_attack_swing(d.anim_variant if d.anim_variant >= 0 else step, d.anim_duration, d.spin)
 		else:
-			visual.play_attack_swing(step)
+			visual.play_attack_swing(step, _final_swing_duration(step, visual))
 	var is_final: bool = _is_final(step)
 	# 마무리 타가 드롭킥이면 판정보다 먼저 뛰어오른다 — 뛰는 동안 두 발이 뻗고 그 뒤에 판정이 켜진다
 	if dropkick_finisher and is_final:

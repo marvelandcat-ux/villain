@@ -7,8 +7,32 @@
 [ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="5_hand"]
 [ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌/단소.png" id="6_danso"]
 [ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
+[ext_resource type="Texture2D" uid="uid://bfqo4v0j70ero" path="res://sprite/지하철빌/지하철 아저 씨측면 1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://dp1kw8845ingg" path="res://sprite/지하철빌/지하철 아저씨 측면 2.png" id="88_turn2"]
+[ext_resource type="Texture2D" uid="uid://byjgbbxiy5mrd" path="res://sprite/지하철빌/지하철 아저씨 측면 3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="86_front"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
+attack_raise_deg = -40.0
+attack_swing_deg = 46.0
+attack_raise_offset = Vector2(-12, 2)
+attack_slam_offset = Vector2(22, 0)
+attack_two_handed = true
+attack_grip_offset = Vector2(-9, -2)
+grip_hit_index = 0
+attack_thrust = true
+thrust3_raise_deg = 70.0
+thrust3_swing_deg = 80.0
+thrust3_raise_offset = Vector2(-14, -22)
+thrust3_slam_offset = Vector2(16, 8)
+attack_smear = true
+attack_kick_hit = 1
+spin_hit_index = 2
+spin_duration = 0.5
+head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
+head_turn_anchors = Array[Vector3]([Vector3(619, 598, 1079), Vector3(581, 651, 1045), Vector3(582, 661, 1022), Vector3(597, 648, 1095), Vector3(627, 648, 1125)])
+head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_turn_on_face = true
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

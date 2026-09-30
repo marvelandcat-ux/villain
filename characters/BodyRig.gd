@@ -176,6 +176,9 @@ extends Node2D
 ## 손을 따로 쓰는 스킬(마우스 던지기·되감기·마시기·총·잡기·돌 던지기) 중에는 저절로 풀려 그 동작을 안 방해한다.
 ## attack_two_handed도 같이 켜져 있어야 한다
 @export var two_handed_always: bool = false
+## 0 이상이면 **그 번째 타(0=1타)에만** 두 손으로 잡는다(지하철 아저씨 1타 단소 찌르기). -1이면 모든 타.
+## attack_two_handed도 같이 켜져 있어야 한다
+@export var grip_hit_index: int = -1
 ## 이 번째 타(0=1타)는 **오른손(HandRHold)을 축으로 손에 든 무기가 빠르게 한 바퀴 돈다**(악플러 3타 키보드 돌리기).
 ## 손·몸은 제자리에 두고 무기만 공전한다 — 도는 동안 반대 손(왼손 grip)은 잠깐 떨어졌다가 다 돌면 다시 잡는다.
 ## -1이면 안 돈다(기본 — 다른 캐릭터 영향 없음). 판정 시각(보통 40%)은 그대로라 "돌면서 맞는" 그림이 된다
@@ -314,8 +317,8 @@ extends Node2D
 ## 켜면 몸통 그림마다 불투명 영역 **높이**를 원래 몸통과 같게 배율을 맞춘다 — 캔버스·그린 크기가 원래 몸통과 다른 그림용
 ## (악플러: 원래 344x270, 측면 그림 887x887에 크게 그려짐, 2026-09-28). 금쪽이처럼 같은 캔버스로 그렸으면 끈다
 @export var body_turn_match_height: bool = false
-## body_turn_textures와 같은 순서로, 그 그림이 **왼쪽을 보고** 그려졌으면 true — 좌우로 뒤집어 오른쪽을 보게 쓴다
-## (주정뱅이 몸 측면 2만 왼쪽을 봄, 2026-09-29 사용자 결정). 비었거나 칸이 모자라면 오른쪽을 본다고 친다
+## body_turn_textures 칸마다 그 그림이 **왼쪽을 보고** 그려졌는지(head_turn_faces_left와 같은 뜻). 켠 그림은 좌우를 뒤집어 쓴다.
+## 비워 두거나 칸이 모자라면 오른쪽으로 친다(금쪽이·악플러). 주정뱅이 몸 측면 2가 왼쪽을 봐서 넣었다(2026-09-30)
 @export var body_turn_faces_left: Array[bool] = []
 ## 방향을 바꿀 때도 머리가 위 그림들을 넘기며 돈다(2026-09-26 시험) — 몸은 예전처럼 바로 뒤집히고,
 ## 머리가 옛 방향 쪽 측면1 -> ... -> 정면 -> ... -> 새 방향 옆모습으로 따라 돌아온다. 끄면 머리도 몸과 같이 탁 뒤집힌다
@@ -574,6 +577,30 @@ extends Node2D
 ## 방어 자세가 켜지고 꺼지는 빠르기 (클수록 즉각적)
 @export var guard_blend_speed: float = 16.0
 
+## --- 카운터 자세 (지하철 아저씨 스킬2, 2026-09-30 사용자 레퍼런스 — 지하철에서 단소 든 아저씨) ---
+## **두 손으로 단소를 얼굴 높이에 들고 앞 아래로 찌를 듯 겨눈다**(사용자 그림, 창·당구 큐 자세). 몸은 똑바로.
+## 앞손(오른손, 단소가 매달린 손)은 턱 앞, 뒷손(왼손)은 단소 뒤끝을 잡는다 — 게임 단소가 짧아서(약 47px, 앞손 기준 뒤 8 ~ 앞 36px)
+## 두 손 간격이 좁다(사용자 결정). 뒷손은 원래 머리 뒤에 그려지는데 그림처럼 머리 위로 보이게 자세 동안 z를 올린다(attack_grip_hand_z).
+## 손 자리는 **숙이기 전** 기준(리그 원점, 앞이 +x) — 숙이는 회전은 그 뒤에 엉덩이를 축으로 몸·머리·손에 같이 건다
+@export var counter_hand_r_pos: Vector2 = Vector2(-6, -18)
+## 오른손 각도(도) — 단소가 제자리에서 앞 위(약 -46도)라 +67이면 앞 아래 약 21도를 겨눈다
+@export var counter_hand_r_deg: float = 67.0
+## 왼손(뒷손) 자리 — 단소 뒤끝(앞손 + (-8, -6) 근처)
+@export var counter_hand_l_pos: Vector2 = Vector2(-15, -24)
+@export var counter_hand_l_deg: float = 67.0
+## 상체를 앞으로 숙이는 각도(도). 0이면 똑바로
+@export var counter_lean_deg: float = 0.0
+## 찌를 듯 들썩이기 — 단소 방향으로 두 손이 이만큼(px) 당겼다 내밀기를 반복한다. 0이면 멈춰 있음
+@export var counter_poke_amount: float = 3.0
+## 들썩이는 빠르기(라디안/초)
+@export var counter_poke_speed: float = 11.0
+## 들썩이는 방향 — 단소가 겨누는 쪽(앞 아래 21도)
+@export var counter_poke_dir: Vector2 = Vector2(0.934, 0.358)
+## 숙일 때 도는 축(엉덩이, 리그 원점 기준)
+@export var counter_lean_pivot: Vector2 = Vector2(0, 16)
+## 자세가 섞이는 빠르기(1/초)
+@export var counter_blend_speed: float = 16.0
+
 ## --- 어깨 들이박기 자세 (일진 스킬2) ---
 ## 돌진할 때 두 손을 모으는 자리 (앞이 +x — 리그 전체가 좌우 반전되므로 방향 부호는 안 곱한다)
 @export var charge_hand_r_pos: Vector2 = Vector2(31.0, 0.0)
@@ -747,6 +774,7 @@ var _hiccups_fired: int = 0
 var _hand_l_rest_z: int = 0
 ## 오른손의 원래 z_index — 선풍기 회전 중 두 손을 키보드 앞으로 올렸다가 끝나면 되돌린다
 var _hand_r_rest_z: int = 0
+var _hand_r_hold_rest_z: int = 0
 ## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
@@ -847,6 +875,9 @@ var _head_aim: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
 var _guard_target: float = 0.0
+var _counter_blend: float = 0.0
+var _counter_target: float = 0.0
+var _counter_phase: float = 0.0
 ## 돌진 자세 섞임(0~1)과 목표값
 var _charge_blend: float = 0.0
 var _charge_target: float = 0.0
@@ -894,6 +925,8 @@ func _ready() -> void:
 		_hand_l_rest_z = _hand_l.z_index
 	if _hand_r:
 		_hand_r_rest_z = _hand_r.z_index
+	if _hand_r_hold:
+		_hand_r_hold_rest_z = _hand_r_hold.z_index
 	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
 	if _bike:
 		_bike_mounted_pos = _bike.position
@@ -927,6 +960,8 @@ func _process(delta: float) -> void:
 			want_grip = true
 		if weapon_on_final_hit:
 			want_grip = want_grip and _attack_variant >= final_hit_index
+		if grip_hit_index >= 0:
+			want_grip = want_grip and _attack_variant == grip_hit_index
 		_grip_blend = move_toward(_grip_blend, 1.0 if want_grip else 0.0, delta * attack_grip_speed)
 		# 두 손으로 잡는 동안엔 왼손을 키보드(z 1)보다 앞으로 올려 두 손이 다 보이게 한다.
 		# 잡기가 풀리면 원래 z로 되돌린다(안경 올리기가 세팅한 z 3은 건드리지 않는다 — 동시에 안 나온다)
@@ -979,6 +1014,8 @@ func _process(delta: float) -> void:
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
 	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
+	_counter_blend = move_toward(_counter_blend, _counter_target, delta * counter_blend_speed)
+	_counter_phase = _counter_phase + delta * counter_poke_speed if _counter_blend > 0.001 else 0.0
 	_update_dropkick(delta)
 	if _head_shake_left > 0.0:
 		_head_shake_left = maxf(_head_shake_left - delta, 0.0)
@@ -997,7 +1034,8 @@ func _process(delta: float) -> void:
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
 	# idle_gestures를 끄면 여기서 바로 false가 되어 아래 "취소" 가지로 빠진다 — 모션이 아예 안 나온다
-	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
+	# 카운터 자세 중엔 몸짓 금지 — 뒤돌아보기가 끼면 몸은 앞을 보는데 머리만 뒤를 봐서 단소가 뒤통수 뒤로 간 것처럼 보였다(2026-09-30)
+	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0 and _counter_target <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -1064,7 +1102,7 @@ func _process(delta: float) -> void:
 	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
 	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 \
 		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 \
-		and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
+		and _counter_target <= 0.0 and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
 	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
 
 	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
@@ -1216,6 +1254,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 방어 중에는 이동·공격·스킬이 다 막히므로 실제로 겹칠 일도 거의 없다)
 	if _guard_blend > 0.001:
 		_pose_guard()
+
+	# 카운터 자세 — 단소를 앞 아래로 겨누고 한 손은 얼굴 옆, 상체를 숙인다 (방어 자세 다음이라 우선한다)
+	if _counter_blend > 0.001:
+		_pose_counter_stance()
 
 	# 어깨 들이박기 — 두 손을 앞으로 모으고 몸·머리를 앞으로 기울인다 (방어 자세 다음이라 우선한다)
 	if _charge_blend > 0.001:
@@ -1645,6 +1687,9 @@ func _pose_hit_flinch() -> void:
 ## 잔상을 남길 구간인지 — 후려치는 동안(끊어 치기면 다 뻗을 때까지)만 남긴다
 func _smear_window() -> bool:
 	if _attack_time <= 0.0:
+		return false
+	# 발차기 타는 손이 균형만 잡으므로 잔상을 안 남긴다
+	if attack_kick_hit >= 0 and _attack_variant == attack_kick_hit:
 		return false
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var end: float = ATTACK_STRIKE_END
@@ -2966,14 +3011,14 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 		return
 	var nh: int = maxi(head_turn_textures.size(), 1)
 	var tex: Texture2D = _body_rest_texture
-	# 왼쪽을 보고 그린 그림은 한 번 더 뒤집어 오른쪽을 보게 한다
-	var flip: float = 1.0
+	# 이 그림을 좌우로 뒤집을 양 — 보통 dir, 왼쪽을 보고 그린 그림이면 그 반대
+	var flip: float = dir
 	if head_frame > 0 and head_frame < nh:
 		var middle: int = maxi(nh - 1, 1)
 		var i: int = clampi(int(floor(float(head_frame - 1) * body_turn_textures.size() / middle)), 0, body_turn_textures.size() - 1)
 		tex = body_turn_textures[i]
 		if i < body_turn_faces_left.size() and body_turn_faces_left[i]:
-			flip = -1.0
+			flip = -dir
 	var sx: float = absf(_body_rest_scale.x)
 	var sy: float = _body_rest_scale.y
 	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
@@ -2983,8 +3028,8 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 	if body_turn_match_height and tex != _body_rest_texture:
 		k = _body_height_of(_body_rest_texture) / maxf(_body_height_of(tex), 1.0)
 	_body.texture = tex
-	_body.scale = Vector2(sx * k * dir * flip, sy * k)
-	_body.position += Vector2((rest_anchor.x - here.x * k * dir * flip) * sx, (rest_anchor.y - here.y * k) * sy)
+	_body.scale = Vector2(sx * k * flip, sy * k)
+	_body.position += Vector2((rest_anchor.x - here.x * k * flip) * sx, (rest_anchor.y - here.y * k) * sy)
 	_turn_applied = true
 
 ## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다
@@ -3104,7 +3149,7 @@ func _face_turn_progress() -> float:
 ## 방향 전환을 그 자리에서 끝내야 하는 동작 중인지 — 손·몸을 따로 쓰는 동작이 시작되면 몸을 바로 새 방향으로 맞춘다
 func _face_turn_blocked() -> bool:
 	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
-		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 \
+		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _counter_target > 0.0 \
 		or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
 
 ## 방향 전환 머리 돌리기 — 앞 절반은 몸이 옛 방향인 채 머리가 측면1 -> ... -> 정면으로 돌고,
@@ -3226,6 +3271,41 @@ func swap_held_texture(tex: Texture2D) -> void:
 ## 어깨 들이박기 자세를 켜고 끈다 (일진 스킬2). 자세는 _charge_blend로 서서히 섞인다
 func set_charging(on: bool) -> void:
 	_charge_target = 1.0 if on else 0.0
+
+## 카운터 자세를 켜고 끈다(CounterSkill). 자세는 _counter_blend로 서서히 섞인다
+func set_counter_stance(on: bool) -> void:
+	_counter_target = 1.0 if on else 0.0
+
+## 카운터 자세 — 두 손을 단소 자리로 옮기고(찌를 듯 들썩임 포함), 숙이는 각도가 있으면
+## 엉덩이(counter_lean_pivot)를 축으로 몸·머리·두 손을 같이 앞으로 숙인다.
+## 위치는 로컬 +x가 늘 앞이라 부호 없이 돌리고, 스프라이트 회전은 **facing 부호를 곱한다**(_pose_charge와 같은 이유)
+func _pose_counter_stance() -> void:
+	var t: float = _counter_blend
+	var sgn: float = 1.0
+	if _fighter != null and is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
+		sgn = signf(_fighter.facing)
+	var poke: Vector2 = counter_poke_dir * sin(_counter_phase) * counter_poke_amount
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(counter_hand_r_pos + poke, t)
+		_hand_r.rotation = lerpf(_hand_r.rotation, deg_to_rad(counter_hand_r_deg), t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(counter_hand_l_pos + poke, t)
+		_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(counter_hand_l_deg), t)
+		# 뒷손은 원래 머리 뒤에 그려진다 — 자세가 반 넘게 섞이면 머리보다 앞으로 올려 단소를 쥔 게 보이게
+		_hand_l.z_index = attack_grip_hand_z if t > 0.5 else _hand_l_rest_z
+	# 앞손·단소도 몸 안쪽(머리 앞 끝 25보다 안)으로 들어와 있어 머리에 가려지므로 같이 올린다
+	if _hand_r:
+		_hand_r.z_index = attack_grip_hand_z if t > 0.5 else _hand_r_rest_z
+	if _hand_r_hold:
+		_hand_r_hold.z_index = attack_grip_hand_z if t > 0.5 else _hand_r_hold_rest_z
+	var lean: float = deg_to_rad(counter_lean_deg) * t
+	for part in [_body, _head, _hand_r, _hand_l]:
+		if part:
+			part.position = counter_lean_pivot + (part.position - counter_lean_pivot).rotated(lean)
+	if _body:
+		_body.rotation += lean * sgn
+	if _head:
+		_head.rotation += lean * sgn
 
 ## 두 손을 앞으로 모으고 몸·머리를 앞으로 기울인다.
 ## **기울기에 facing 부호를 곱한다** — 좌우 반전이 scale.x = -1이라 회전 각도는 그대로 남기 때문에,

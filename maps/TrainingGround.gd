@@ -279,6 +279,11 @@ func _build_ui() -> void:
 	dummy_reset_button.pressed.connect(_reset_dummy)
 	box.add_child(dummy_reset_button)
 
+	var dummy_attack_toggle := CheckBox.new()
+	dummy_attack_toggle.text = "더미 기본공격 계속하기"
+	dummy_attack_toggle.toggled.connect(_on_dummy_attack_toggled)
+	box.add_child(dummy_attack_toggle)
+
 	var reset_button := Button.new()
 	reset_button.text = "기본값으로 되돌리기"
 	reset_button.pressed.connect(_on_reset_pressed)
@@ -303,6 +308,15 @@ func _add_slider(parent: VBoxContainer, min_value: float, max_value: float, step
 func _on_collision_toggled(pressed: bool) -> void:
 	_collision_view.enabled = pressed
 	_collision_legend.visible = pressed
+	# 체크박스가 포커스를 쥐고 있으면 스페이스·엔터가 체크를 다시 뒤집는다
+	get_viewport().gui_release_focus()
+
+## 더미가 상대를 보고 기본공격을 계속 할지 (카운터·방어 연습용)
+func _on_dummy_attack_toggled(pressed: bool) -> void:
+	if _dummy and is_instance_valid(_dummy):
+		for child in _dummy.get_children():
+			if child is DummyController:
+				child.auto_attack = pressed
 	# 체크박스가 포커스를 쥐고 있으면 스페이스·엔터가 체크를 다시 뒤집는다
 	get_viewport().gui_release_focus()
 
