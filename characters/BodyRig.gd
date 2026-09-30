@@ -572,11 +572,11 @@ extends Node2D
 ## 앞손(오른손, 단소가 매달린 손)은 턱 앞, 뒷손(왼손)은 단소 뒤끝을 잡는다 — 게임 단소가 짧아서(약 47px, 앞손 기준 뒤 8 ~ 앞 36px)
 ## 두 손 간격이 좁다(사용자 결정). 뒷손은 원래 머리 뒤에 그려지는데 그림처럼 머리 위로 보이게 자세 동안 z를 올린다(attack_grip_hand_z).
 ## 손 자리는 **숙이기 전** 기준(리그 원점, 앞이 +x) — 숙이는 회전은 그 뒤에 엉덩이를 축으로 몸·머리·손에 같이 건다
-@export var counter_hand_r_pos: Vector2 = Vector2(32, -18)
+@export var counter_hand_r_pos: Vector2 = Vector2(24, -18)
 ## 오른손 각도(도) — 단소가 제자리에서 앞 위(약 -46도)라 +67이면 앞 아래 약 21도를 겨눈다
 @export var counter_hand_r_deg: float = 67.0
 ## 왼손(뒷손) 자리 — 단소 뒤끝(앞손 + (-8, -6) 근처)
-@export var counter_hand_l_pos: Vector2 = Vector2(23, -24)
+@export var counter_hand_l_pos: Vector2 = Vector2(15, -24)
 @export var counter_hand_l_deg: float = 67.0
 ## 상체를 앞으로 숙이는 각도(도). 0이면 똑바로
 @export var counter_lean_deg: float = 0.0
@@ -764,6 +764,7 @@ var _hiccups_fired: int = 0
 var _hand_l_rest_z: int = 0
 ## 오른손의 원래 z_index — 선풍기 회전 중 두 손을 키보드 앞으로 올렸다가 끝나면 되돌린다
 var _hand_r_rest_z: int = 0
+var _hand_r_hold_rest_z: int = 0
 ## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
@@ -908,6 +909,8 @@ func _ready() -> void:
 		_hand_l_rest_z = _hand_l.z_index
 	if _hand_r:
 		_hand_r_rest_z = _hand_r.z_index
+	if _hand_r_hold:
+		_hand_r_hold_rest_z = _hand_r_hold.z_index
 	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
 	if _bike:
 		_bike_mounted_pos = _bike.position
@@ -1015,7 +1018,8 @@ func _process(delta: float) -> void:
 
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
 	# idle_gestures를 끄면 여기서 바로 false가 되어 아래 "취소" 가지로 빠진다 — 모션이 아예 안 나온다
-	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0
+	# 카운터 자세 중엔 몸짓 금지 — 뒤돌아보기가 끼면 몸은 앞을 보는데 머리만 뒤를 봐서 단소가 뒤통수 뒤로 간 것처럼 보였다(2026-09-30)
+	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0 and _counter_target <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -3227,6 +3231,11 @@ func _pose_counter_stance() -> void:
 		_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(counter_hand_l_deg), t)
 		# 뒷손은 원래 머리 뒤에 그려진다 — 자세가 반 넘게 섞이면 머리보다 앞으로 올려 단소를 쥔 게 보이게
 		_hand_l.z_index = attack_grip_hand_z if t > 0.5 else _hand_l_rest_z
+	# 앞손·단소도 몸 안쪽(머리 앞 끝 25보다 안)으로 들어와 있어 머리에 가려지므로 같이 올린다
+	if _hand_r:
+		_hand_r.z_index = attack_grip_hand_z if t > 0.5 else _hand_r_rest_z
+	if _hand_r_hold:
+		_hand_r_hold.z_index = attack_grip_hand_z if t > 0.5 else _hand_r_hold_rest_z
 	var lean: float = deg_to_rad(counter_lean_deg) * t
 	for part in [_body, _head, _hand_r, _hand_l]:
 		if part:

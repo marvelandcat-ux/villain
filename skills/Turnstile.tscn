@@ -20,5 +20,5 @@ texture = ExtResource("2_closed")
 centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 768, 1024)
-position = Vector2(-26.06, -42.53)
-scale = Vector2(0.0734, 0.0734)
+position = Vector2(-33.87, -62.02)
+scale = Vector2(0.0954, 0.0954)

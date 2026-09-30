@@ -4,7 +4,8 @@ extends Skill
 ## 개찰구 생성 — 전방에 낮은 장애물(점프로만 통과) 2개를 간격을 두고 놓는다 (지하철 아저씨 스킬1)
 @export var turnstile_scene: PackedScene
 @export var count: int = 2
-@export var spacing: float = 60.0
+## 개찰구 사이 간격(px). **Turnstile.visual_scale x 817(그림 속 한 쌍 몸통 간격)과 같아야** 날개가 맞물린다
+@export var spacing: float = 78.0
 @export var start_distance: float = 50.0
 
 func _execute(fighter: Fighter) -> void:
