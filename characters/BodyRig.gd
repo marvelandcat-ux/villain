@@ -210,6 +210,99 @@ extends Node2D
 ## 켜면 콤보 2·3타 변주가 위아래로 크게 후리는 대신, 각도는 거의 그대로 두고
 ## 손이 뒤로 빠졌다가 앞으로 곧게 내질러진다. 기본은 꺼짐(다른 캐릭터 영향 없음)
 @export var attack_thrust: bool = false
+
+## --- 맨손/무기 전환 (경찰 경봉, 2026-09-30) ---
+## **이 캐릭터가 무기를 들었다 넣었다 하는지.** 켜야 아래 `held_item_armed`가 무기 그림을 켜고 끈다 —
+## 안 켜면 예전처럼 씬에 놓인 대로 늘 들고 있다(다른 캐릭터 영향 없음)
+@export var weapon_switch: bool = false
+
+## **손에 든 무기를 지금 들고 있는지.** `weapon_switch`가 켜졌을 때만 쓴다 —
+## 경찰은 평소엔 맨손으로 싸우다 궁극기를 쓴 뒤 15초만 경봉을 든다
+@export var held_item_armed: bool = true:
+	set(value):
+		held_item_armed = value
+		queue_redraw()
+## 무기를 안 든 동안엔 휘두르기 대신 **곧게 내지르는 잽**으로 친다(`attack_thrust`와 같은 궤적).
+## 무기를 들면 다시 휘두른다 — 맨손으로 크게 후리면 허공을 긁는 것처럼 보인다
+@export var unarmed_thrust: bool = false
+## 잽을 뻗는 동안 **반대 손을 얼굴 앞에 올려 가드**한다(권투 자세). 무기를 들면 안 한다
+@export var unarmed_guard_hand: bool = false
+## 그때 반대 손이 가는 자리(쉬는 자리 기준)와 각도(도)
+@export var unarmed_guard_offset: Vector2 = Vector2(10, -14)
+@export var unarmed_guard_deg: float = -25.0
+
+## 잽을 **정면으로 곧게** 내지른다 — 살짝 당겼다가(raise) 앞으로 쭉. 위아래로 안 흔들린다
+@export var jab_raise_off: Vector2 = Vector2(-7, 0)
+## **다 뻗었을 때 주먹이 닿는 x(리그 기준 절대값).** 두 손은 쉬는 자리가 서로 달라서
+## 같은 거리만큼 밀면 뻗은 끝이 어긋난다 — **어느 손으로 쳐도 여기까지** 와야 1타·2타 사거리가 같다
+@export var jab_reach_x: float = 62.0
+## 잽은 주먹 각도를 거의 안 바꾼다(휘두르는 게 아니라 내지르는 것이라)
+@export var jab_raise_deg: float = 0.0
+@export var jab_swing_deg: float = 0.0
+## **1타와 2타를 서로 다른 손으로 친다**(원투). 켜면 홀수 타는 반대 손이 나가고, 쉬는 손이 가드를 잡는다
+@export var unarmed_alternate_hands: bool = true
+
+## 특정 타를 치는 동안 **몸통 그림을 이걸로 갈아 끼운다**(경찰 2타 = 측면 몸통, 2026-09-30).
+## 앞손으로 칠 땐 몸이 옆을 보고 있어야 뻗는 맛이 사는데, 정면 몸통 그림으로는 그게 안 보인다
+@export var attack_body_texture: Texture2D = null
+## 갈아 끼울 타 번호(0부터). 비어 있으면 안 바꾼다
+@export var attack_body_hits: Array[int] = []
+## 그중 **좌우를 뒤집어 쓸** 타 번호 — 같은 측면 그림으로 반대쪽에서 친 것처럼 보이게 한다
+@export var attack_body_flip_hits: Array[int] = []
+
+## **한 타 동안 순서대로 넘길 몸통 그림**(2026-09-30). 넣은 장수만큼 **균등하게 나눠서** 차례로 보여준다 —
+## 예: [정면, 45도, 측면]이면 치는 동안 몸이 정면에서 옆으로 돌아가는 세 프레임이 된다.
+## 비워 두면 위 `attack_body_*` 규칙을 따른다
+@export var uppercut_body_textures: Array[Texture2D] = []
+## 그 그림 순서를 쓸 타 번호(0부터). 경찰은 1타와 어퍼컷(3타)이 여기 들어간다
+@export var attack_frame_hits: Array[int] = []
+
+## --- 맨손 마무리 = 어퍼컷 (경찰 3타, 2026-09-30 러프) ---
+## 켜면 맨손일 때 **마무리 타(`final_hit_index` 이상)만** 잽 대신 어퍼컷이 된다 —
+## 주먹이 아래에서 앞으로 크게 휘어 올라가고, 그 사이 고개와 상체가 점점 돌아간다
+@export var unarmed_uppercut: bool = false
+## **어퍼컷을 시작하는 주먹 자리**(리그 기준 절대 좌표). 러프처럼 **몸 앞 배 높이**에서 출발한다 —
+## 쉬는 자리(뒷손은 x=-27)에서 그냥 내리면 주먹이 몸통과 다리 사이를 파고든다
+@export var uppercut_start: Vector2 = Vector2(-15, -38)
+## **올려친 주먹이 멈추는 자리**(리그 기준 절대 좌표). 시작점과 이 점, 그리고 `uppercut_arc`가 궤도를 만든다
+@export var uppercut_end: Vector2 = Vector2(58, -55)
+## 감을 때/올려칠 때 주먹 각도(도). 음수가 위로 젖히는 쪽이다
+@export var uppercut_raise_deg: float = -15.0
+@export var uppercut_swing_deg: float = -75.0
+## 궤도가 얼마나 볼록하게 휘는지(px). 클수록 아래로 크게 돌아 올라온다
+## 궤도가 휘는 정도(px). **너무 크면 주먹이 몸 안쪽으로 파고든다** — 앞에서 올려치는 호만 남긴다
+@export var uppercut_arc: float = 48.0
+## 켜면 **어퍼컷 궤도를 화면에 그려준다**(시작점·끝점·휘는 길). 자리를 잡을 때만 켜고 끄면 된다
+@export var uppercut_debug_path: bool = false:
+	set(value):
+		uppercut_debug_path = value
+		queue_redraw()
+## **머리+몸통을 한 덩어리로 묶어 돌릴 때 쓰는 축**(리그 기준 좌표, 머리 위).
+## 각자 제자리에서 돌리면 목이 꺾이는 것처럼 보인다 — 머리 위 한 점에 매달린 것처럼 같이 돌아야 상체가 통째로 넘어간다
+@export var uppercut_pivot: Vector2 = Vector2(0, -62)
+## **감을 때** 그 축을 중심으로 도는 각도(도, 양수 = 시계 방향) — 몸을 말아 넣는 구간
+@export var uppercut_turn_deg: float = 38.0
+## **칠 때** 반대로 젖히는 각도(도, 음수 = 반시계) — 말았던 몸을 펴면서 올려친다
+@export var uppercut_turn_back_deg: float = -30.0
+## 다 감은 자세를 그대로 **버티는 구간**(때리는 구간 중 앞 몇 %).
+## **0이면 몸이 돌아가는 것과 주먹이 나가는 것이 딱 같이 시작하고 같이 끝난다**(2026-09-30 사용자 지정) —
+## 0보다 크면 몸이 잠깐 버틴 뒤에 펴지므로 주먹이 먼저 나가는 것처럼 보인다
+@export_range(0.0, 0.8, 0.05) var uppercut_hold: float = 0.0
+## 머리만 추가로 더 기울이고 싶을 때(0이면 몸통과 똑같이 돈다)
+@export var uppercut_head_extra_deg: float = 0.0
+## 상체가 같이 돌아가는 각도(도)와 앞으로 나가는 거리(px)
+## **어퍼컷 때 발 보폭**(px) — 앞발은 앞으로, 뒷발은 뒤로 이만큼 벌어진다(높이는 그대로)
+## **어퍼컷을 시작할 때 앞발(오른발)이 내딛는 거리(px).** 뒷발은 제자리에 둔다 —
+## 한 발짝 들어가면서 치는 그림(2026-09-30 러프)
+@export var uppercut_step: float = 14.0
+@export var uppercut_body_forward: float = 11.0
+## **감는 동안 이미 몇 %까지 젖혀 둘지**(0~1). 러프 1프레임이 벌써 크게 돌아가 있어서,
+## 때리는 순간에야 돌기 시작하면 그 그림이 안 나온다 — 미리 이만큼 돌려놓고 치면서 마저 돈다
+@export_range(0.0, 1.0, 0.05) var uppercut_windup_lean: float = 0.75
+## **감을 때 몸이 내려앉는 깊이(px)와, 칠 때 솟아오르는 높이(px).**
+## 어퍼컷은 낮췄다가 올라오는 힘으로 치는 동작이라, 몸통이 같이 내려갔다 올라와야 맛이 산다(러프 2->3프레임)
+@export var uppercut_crouch: float = 9.0
+@export var uppercut_rise: float = 12.0
 ## 마지막 타에만 오른손 무기를 쥔다 — 평소·앞 타에는 `idle_weapon`(반대 손에 늘어뜨린 물건)이 보인다.
 ## 일진처럼 "가방을 옆에 들고 다니다 주먹으로 때리고, 마지막에 가방으로 후려치는" 캐릭터용
 @export var weapon_on_final_hit: bool = false
@@ -1202,6 +1295,45 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
 	if _attack_time > 0.0:
 		_pose_attack_hand()
+		# 맨손 잽이면 반대 손을 얼굴 앞에 올린다 — 한 손은 막고 한 손은 뻗는 권투 자세
+		if unarmed_guard_hand and not held_item_armed:
+			var guard_hand: Sprite2D = _guard_hand()
+			if guard_hand and _rest_positions.has(guard_hand):
+				guard_hand.position = _rest_positions[guard_hand] + unarmed_guard_offset
+				guard_hand.rotation = deg_to_rad(unarmed_guard_deg)
+		# 어퍼컷이면 고개와 상체가 치는 내내 점점 돌아간다
+		if unarmed_uppercut and not held_item_armed and _attack_variant >= final_hit_index:
+			_pose_uppercut_lean()
+	# 몸통 그림 갈아 끼우기 — 치는 타가 목록에 있으면 그 그림, 아니면 원래대로.
+	# 매 프레임 확인한다(공격이 도중에 끊겨도 원래 그림으로 돌아오게)
+	# (원래 그림은 몸통 돌리기 기능이 이미 `_body_rest_texture`에 담아 둔다 — 같은 값이라 그걸 쓴다)
+	if _body and attack_body_texture != null and not attack_body_hits.is_empty():
+		var want_side: bool = _attack_time > 0.0 and attack_body_hits.has(_attack_variant)
+		var want: Texture2D = attack_body_texture if want_side else _body_rest_texture
+		if want != null and _body.texture != want:
+			_body.texture = want
+		# 좌우 반전은 그림을 바꾼 타에서만 — 평소엔 항상 원래대로 돌려둔다
+		_body.flip_h = want_side and attack_body_flip_hits.has(_attack_variant)
+
+	# **여러 장을 차례로 넘기는 타**(경찰 1타·어퍼컷) — 한 타 안에서 몸이 돌아가는 걸 보여준다.
+	# 위 한 장짜리 규칙보다 나중에 둬서, 목록에 있는 타에서는 이쪽이 이긴다
+	if _body and not uppercut_body_textures.is_empty() and _attack_time > 0.0 			and attack_frame_hits.has(_attack_variant) and not held_item_armed:
+		var up_prog: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+		# 감기+치기 구간(복귀 전까지)을 장수만큼 균등하게 쪼개 차례로 넘긴다.
+		# 복귀 구간에서는 마지막 장을 유지한다 — 치자마자 정면으로 튀면 돌아간 게 안 보인다
+		var span: float = maxf(ATTACK_STRIKE_END, 0.01)
+		var k: float = clampf(up_prog / span, 0.0, 0.999)
+		var idx: int = int(k * float(uppercut_body_textures.size()))
+		idx = clampi(idx, 0, uppercut_body_textures.size() - 1)
+		var up_tex: Texture2D = uppercut_body_textures[idx]
+		if up_tex != null and _body.texture != up_tex:
+			_body.texture = up_tex
+		_body.flip_h = false
+	elif _body and _body_rest_texture != null and body_turn_textures.is_empty() 			and attack_body_texture == null and _body.texture != _body_rest_texture:
+		# 그림을 바꾸는 타가 끝났으면 원래 몸통으로 돌려둔다 —
+		# 안 돌려놓으면 다음 타·평소 자세까지 마지막 프레임(측면)이 남는다
+		_body.texture = _body_rest_texture
+		_body.flip_h = false
 
 	# 그 타가 발차기면 두 발·몸통도 차는 자세로 덮어쓴다 (손은 위에서 이미 균형 자세를 잡았다).
 	# 드롭킥이 돌고 있으면 건너뛴다 — 아래 드롭킥 자세가 두 발을 따로 잡으므로 두 번 손대면 싸운다
@@ -1351,6 +1483,14 @@ func _apply_pose(speed_ratio: float) -> void:
 					child.visible = not throwing
 			if throwing:
 				_hand_r_hold.visible = true
+	# **무기를 들었다 넣었다 하는 캐릭터(경찰 경봉)는 여기서 그림을 켜고 끈다.**
+	# 던지기 처리가 자식들을 다시 켜기 때문에 그 뒤에 둔다 — 순서를 바꾸면 돌을 던진 뒤 경봉이 되살아난다.
+	# 던지는 중에는 던지기 쪽 판단을 그대로 둔다(던진 돌까지 건드리면 안 된다)
+	if _hand_r_hold and weapon_switch and not _held_hidden_by_throw:
+		for child in _hand_r_hold.get_children():
+			if child != _throw_item:
+				child.visible = held_item_armed
+
 	# 클래시 주먹 러시 중엔 손에 든 물건을 숨긴다 — 잔상은 손만 복사하므로 물건만 덩그러니 따라다니면 어색하다
 	if _hand_r_hold:
 		if _clash_blend > 0.5:
@@ -1539,6 +1679,19 @@ const ATTACK_STRIKE_END: float = 0.62
 
 ## 스윙 진행도에 따라 오른손의 각도와 위치를 잡는다 (걷기 동작보다 우선한다).
 ## 각도는 음수가 반시계 방향(무기가 위로 올라감), 양수가 시계 방향(아래로 내리침)이다
+## 이번 타를 **어느 손으로** 치는지 — 맨손이면 **왼-오-왼**으로 번갈아 친다.
+## 마무리(어퍼컷)도 **뒤쪽(왼쪽) 손**이다(2026-09-30 사용자 지정) —
+## 앞손으로 치면 손이 이미 앞에 있어서 올라오는 궤도가 안 보이고, 뒷손이라야 크게 휘어 올라온다
+func _attack_hand() -> Sprite2D:
+	if unarmed_alternate_hands and unarmed_thrust and not held_item_armed and _hand_l:
+		if _attack_variant % 2 == 0:
+			return _hand_l
+	return _hand_r
+
+## 치는 손의 반대 손(가드를 잡는 손)
+func _guard_hand() -> Sprite2D:
+	return _hand_r if _attack_hand() == _hand_l else _hand_l
+
 func _pose_attack_hand() -> void:
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	# 타별로 감는 각도·내려치는 각도·손 이동 경로가 달라진다 (콤보 1·2·3타 스윙 변주)
@@ -1569,8 +1722,10 @@ func _pose_attack_hand() -> void:
 		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
 		angle = lerpf(swing_deg, 0.0, p)
 		offset = slam_off.lerp(Vector2.ZERO, p)
-	_hand_r.rotation = deg_to_rad(angle)
-	_hand_r.position = _rest_positions[_hand_r] + offset
+	var hand: Sprite2D = _attack_hand()
+	if hand and _rest_positions.has(hand):
+		hand.rotation = deg_to_rad(angle)
+		hand.position = _rest_positions[hand] + offset
 	# 두 손 잡기는 스윙이 끝난 뒤에도 블렌드가 남아 있어야 하므로 _apply_pose에서 따로 부른다
 
 ## 격투게임식 끊어 치기(attack_snap) — 구간 나누는 지점(40% / 62%)은 원래 스윙과 같고, 구간 안의 흐름만 다르다.
@@ -1597,8 +1752,10 @@ func _snap_attack_pose(progress: float, raise_deg: float, swing_deg: float, rais
 		var p: float = t * t * (3.0 - 2.0 * t)
 		angle = lerpf(swing_deg, 0.0, p)
 		offset = slam_off.lerp(Vector2.ZERO, p)
-	_hand_r.rotation = deg_to_rad(angle)
-	_hand_r.position = _rest_positions[_hand_r] + offset
+	var hand: Sprite2D = _attack_hand()
+	if hand and _rest_positions.has(hand):
+		hand.rotation = deg_to_rad(angle)
+		hand.position = _rest_positions[hand] + offset
 
 ## 착지 경직 자세를 duration초 동안 잡는다 — Fighter가 높은 데서 떨어져 착지한 순간 부른다
 ## 0 이하를 주면 자세를 그 자리에서 푼다
@@ -1783,6 +1940,30 @@ func _attack_variant_params() -> Dictionary:
 	# 발로 차는 타에서는 손에 든 무기를 휘두르지 않는다 — 팔은 균형만 잡는다
 	if attack_kick_hit >= 0 and _attack_variant == attack_kick_hit:
 		return _kick_arm_params()
+	# 맨손 마무리는 어퍼컷 — 잽보다 먼저 판단한다(마무리 타만 궤도가 다르다)
+	if unarmed_uppercut and not held_item_armed and _attack_variant >= final_hit_index:
+		var up_hand: Sprite2D = _attack_hand()
+		var up_rest: Vector2 = _rest_positions[up_hand] if (up_hand and _rest_positions.has(up_hand)) else Vector2.ZERO
+		# 시작·끝을 **절대 좌표로** 정하고 쉬는 자리와의 차이로 바꾼다 — 어느 손으로 쳐도 같은 궤도가 된다
+		return {
+			"raise_deg": uppercut_raise_deg,
+			"swing_deg": uppercut_swing_deg,
+			"raise_off": uppercut_start - up_rest,
+			"slam_off": uppercut_end - up_rest,
+			"arc": uppercut_arc,
+		}
+	# 맨손 잽은 정면으로 곧게 — 호(arc) 0이라 위아래로 안 휜다.
+	# 뻗는 끝점은 **손마다 다른 쉬는 자리에서 같은 x까지** 오도록 그 자리에서 계산한다
+	if unarmed_thrust and not held_item_armed:
+		var hand: Sprite2D = _attack_hand()
+		var rest_x: float = _rest_positions[hand].x if (hand and _rest_positions.has(hand)) else 0.0
+		return {
+			"raise_deg": jab_raise_deg,
+			"swing_deg": jab_swing_deg,
+			"raise_off": jab_raise_off,
+			"slam_off": Vector2(jab_reach_x - rest_x, 0.0),
+			"arc": 0.0,
+		}
 	if attack_thrust:
 		return _thrust_variant_params()
 	if attack_two_handed:
@@ -2860,6 +3041,96 @@ func _pose_gun() -> void:
 		_gun.rotation = rad
 		if _gun_rest_scale != Vector2.ZERO:
 			_gun.scale = _gun_rest_scale * gun_pop
+
+## 어퍼컷을 치는 동안 고개·상체가 점점 돌아가는 부분.
+## **발은 건드리지 않는다**(러프: 발 위치 고정) — 돌아가는 건 상체와 고개뿐이다.
+## 각도는 `scale.x = -1`로 좌우를 뒤집어도 같이 안 뒤집히므로, 바라보는 방향 부호를 곱해준다
+func _pose_uppercut_lean() -> void:
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var sgn: float = signf(_fighter.facing) if (_fighter != null and is_instance_valid(_fighter)) else 1.0
+	if sgn == 0.0:
+		sgn = 1.0
+
+	# 어퍼컷은 세 박자다(2026-09-30 러프 3프레임):
+	#  ① 감기 — **시계로 말면서 몸을 낮춘다**
+	#  ② 버티기 — 낮은 자세 그대로 잠깐 멈춘다(`uppercut_hold`)
+	#  ③ 올려치기 — **반시계로 젖히면서 솟는다**. 말았던 몸을 펴는 힘으로 친다
+	var turn_deg: float
+	var lift: float
+	var reach: float   # 발 보폭·앞으로 나가기에 쓰는 0~1 진행도
+	if progress < ATTACK_STRIKE_START:
+		var w: float = progress / ATTACK_STRIKE_START
+		w = w * w * (3.0 - 2.0 * w)
+		turn_deg = uppercut_turn_deg * w
+		lift = uppercut_crouch * w
+		reach = w * 0.5
+	else:
+		# 때리는 구간(0~1)과 복귀 구간(1~2)을 한 줄로 이어서 센다
+		var m: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
+		if progress >= ATTACK_STRIKE_END:
+			m = 1.0 + (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		if m <= uppercut_hold:
+			turn_deg = uppercut_turn_deg
+			lift = uppercut_crouch
+			reach = 0.5
+		elif m <= 1.0:
+			var k: float = (m - uppercut_hold) / maxf(1.0 - uppercut_hold, 0.01)
+			k = k * k   # 끝으로 갈수록 확 펴진다
+			turn_deg = lerpf(uppercut_turn_deg, uppercut_turn_back_deg, k)
+			lift = lerpf(uppercut_crouch, -uppercut_rise, k)
+			reach = lerpf(0.5, 1.0, k)
+		else:
+			var r: float = clampf(m - 1.0, 0.0, 1.0)
+			var e: float = 1.0 - (1.0 - r) * (1.0 - r)
+			turn_deg = lerpf(uppercut_turn_back_deg, 0.0, e)
+			lift = lerpf(-uppercut_rise, 0.0, e)
+			reach = 1.0 - e
+
+	# **머리 위 축을 중심으로 머리와 몸통을 통째로 돌린다.** 두 파츠의 "지금 자리"를 축 기준으로
+	# 같이 회전시키므로, 매달린 상체가 한 덩어리로 넘어가는 그림이 된다
+	var angle: float = deg_to_rad(turn_deg) * sgn
+	var pivot: Vector2 = Vector2(uppercut_pivot.x * sgn, uppercut_pivot.y)
+	var shift := Vector2(uppercut_body_forward * reach * sgn, lift)
+	# **치는 손도 같이 돈다** — 몸 따로 손 따로 돌면 팔만 휘젓는 것처럼 보인다.
+	# 손은 자기 궤도(_pose_attack_hand가 잡아 둔 자리)를 가진 채로, 그 자리를 축 기준으로 같이 돌린다
+	var parts: Array = [_body, _head]
+	var punch: Sprite2D = _attack_hand()
+	if punch:
+		parts.append(punch)
+	for part in parts:
+		if part == null:
+			continue
+		var here: Vector2 = part.position + (shift if part != punch else Vector2.ZERO)
+		part.position = pivot + (here - pivot).rotated(angle)
+		part.rotation = angle
+	if _head and not is_zero_approx(uppercut_head_extra_deg):
+		_head.rotation += deg_to_rad(uppercut_head_extra_deg * reach) * sgn
+
+	# **앞발(오른발)이 한 발짝 내딛는다.** 감는 동안에 다 내딛고, 치는 동안엔 그 자리를 지킨다.
+	# 뒷발과 높이는 안 건드린다 — 디딘 발이 땅에 붙어 있어야 버티고 치는 그림이 된다
+	if not is_zero_approx(uppercut_step) and _foot_r and _rest_positions.has(_foot_r):
+		var step_t: float = clampf(reach / 0.5, 0.0, 1.0)
+		_foot_r.position.x = _rest_positions[_foot_r].x + uppercut_step * step_t * sgn
+
+## 어퍼컷 궤도를 눈으로 보여준다 — `uppercut_debug_path`를 켜면 시작점(초록)·끝점(빨강)과
+## 휘어 가는 길(노랑)을 그린다. 값을 고치고 바로 확인하라고 만든 것이라 게임에서는 꺼 둔다
+func _draw() -> void:
+	if not uppercut_debug_path:
+		return
+	var a: Vector2 = uppercut_start
+	var b: Vector2 = uppercut_end
+	var pts := PackedVector2Array()
+	for i in range(21):
+		var k: float = float(i) / 20.0
+		var base: Vector2 = a.lerp(b, k)
+		# _swing_arc와 같은 방식으로 휜다 — 직선에 수직으로 볼록하게
+		var dir: Vector2 = (b - a).normalized()
+		var normal := Vector2(-dir.y, dir.x)
+		pts.append(base + normal * uppercut_arc * sin(PI * k))
+	draw_polyline(pts, Color(1, 0.9, 0.2, 0.9), 2.0)
+	draw_circle(a, 4.0, Color(0.2, 1.0, 0.3, 0.95))
+	draw_circle(b, 4.0, Color(1.0, 0.3, 0.3, 0.95))
+	draw_circle(uppercut_pivot, 3.0, Color(0.4, 0.7, 1.0, 0.95))
 
 ## 특수 idle 몸짓을 시작한다
 func _start_special() -> void:

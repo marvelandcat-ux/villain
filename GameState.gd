@@ -166,10 +166,19 @@ var anthropic_api_key: String = ""
 const DEFAULT_KEYBINDS := {
 	"p1_left": KEY_A, "p1_right": KEY_D, "p1_jump": KEY_W, "p1_down": KEY_S,
 	"p1_basic_attack": KEY_F, "p1_skill_1": KEY_G, "p1_skill_2": KEY_H, "p1_ultimate": KEY_R,
+	"p1_map_skill": KEY_E,
 	"p2_left": KEY_LEFT, "p2_right": KEY_RIGHT, "p2_jump": KEY_UP, "p2_down": KEY_DOWN,
-	"p2_basic_attack": KEY_L, "p2_skill_1": KEY_K, "p2_skill_2": KEY_J, "p2_ultimate": KEY_P,
+	"p2_basic_attack": KEY_L, "p2_skill_1": KEY_SEMICOLON, "p2_skill_2": KEY_APOSTROPHE,
+	"p2_ultimate": KEY_BRACKETRIGHT, "p2_map_skill": KEY_BRACKETLEFT,
 }
 const SETTINGS_PATH := "user://settings.cfg"
+## **기본 조작 배치가 바뀔 때마다 1씩 올린다.** 저장 파일에 적힌 번호가 이보다 낮으면
+## 저장해 둔 키를 버리고 새 기본값으로 갈아엎는다 — 안 그러면 예전에 한 번이라도 설정을 만진
+## 사람은 새 배치(맵 전용 키 추가 등)를 영영 못 본다.
+## 2: 2026-09-30 사용자 지정 배치 — 기본공격/스킬1/스킬2 자리 교체(P1 G/H/F, P2 '/;/L),
+##    P2 궁극기 ], 맵 전용 스킬을 아래 키에서 떼어내 전용 키로(P1 E / P2 [)
+## 3: 2026-09-30 — 기본공격을 이동키 바로 옆으로(P1 F / P2 L), 스킬1·2를 그 오른쪽으로 차례로
+const KEYBIND_VERSION := 3
 ## RoomSettings의 "현재 설정 저장"이 방 설정 프리셋을 저장할 때 쓰는 section 이름(SETTINGS_PATH 안)
 const ROOM_PRESET_SECTION := "room_presets"
 
@@ -283,9 +292,20 @@ func _load_settings() -> void:
 		# 처음 켠 PC(저장 파일 없음)도 기본 해상도를 창에 적용한다 — 안 하면 프로젝트 창 크기 그대로 뜬다
 		_apply_window_size()
 		return
+	var saved_version: int = int(config.get_value("keybinds", "version", 1))
+	if saved_version < KEYBIND_VERSION:
+		# 기본 배치가 바뀌었다 — 저장해 둔 조작키를 통째로 새 기본값으로 되돌린다
+		reset_keybindings()
+		_save_setting("keybinds", "version", KEYBIND_VERSION)
+		config.load(SETTINGS_PATH)
 	for action in DEFAULT_KEYBINDS.keys():
 		if config.has_section_key("keybinds", action):
-			_apply_keybind(action, config.get_value("keybinds", action))
+			# 예전 저장 파일: 물리 키코드 숫자 하나 / 지금: [키코드, 좌우위치]
+			var saved = config.get_value("keybinds", action)
+			if saved is Array and saved.size() >= 2:
+				_apply_keybind(action, int(saved[0]), int(saved[1]))
+			else:
+				_apply_keybind(action, int(saved))
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
@@ -316,24 +336,32 @@ func load_room_presets() -> Dictionary:
 		result[preset_name] = config.get_value(ROOM_PRESET_SECTION, preset_name, {})
 	return result
 
-## action에 걸려있던 키 입력을 전부 지우고 물리 키코드 하나로 새로 등록한다
-func _apply_keybind(action: String, physical_keycode: int) -> void:
+## action에 걸려있던 키 입력을 전부 지우고 물리 키코드 하나로 새로 등록한다.
+##
+## `location`은 **왼쪽/오른쪽이 따로 있는 키**(Shift·Ctrl·Alt·Win)에서 어느 쪽인지다
+## (`KEY_LOCATION_LEFT`/`RIGHT`, 0이면 양쪽 다 먹는다). 키보드 화면에서 오른쪽 Shift에
+## 올려놨는데 왼쪽 Shift로도 눌리던 문제 때문에 넣었다(2026-09-29) — 키코드는 둘이 같아서
+## 구분할 수 있는 건 이 값뿐이다
+func _apply_keybind(action: String, physical_keycode: int, location: int = 0) -> void:
 	InputMap.action_erase_events(action)
 	var event := InputEventKey.new()
 	event.physical_keycode = physical_keycode as Key
+	event.location = location as KeyLocation
 	InputMap.action_add_event(action, event)
 
-## ui/Settings.gd에서 키를 재배정할 때 호출한다. InputMap에 바로 반영하고 파일에도 저장해서 다음 실행에도 유지시킨다
-func rebind_action(action: String, physical_keycode: int) -> void:
-	_apply_keybind(action, physical_keycode)
-	_save_setting("keybinds", action, physical_keycode)
+## ui/KeyboardMap.gd에서 키를 재배정할 때 호출한다. InputMap에 바로 반영하고 파일에도 저장해서 다음 실행에도 유지시킨다
+func rebind_action(action: String, physical_keycode: int, location: int = 0) -> void:
+	_apply_keybind(action, physical_keycode, location)
+	# 위치까지 같이 저장한다. **예전 저장 파일은 숫자 하나뿐**이라 읽을 때 둘 다 받아준다
+	_save_setting("keybinds", action, [physical_keycode, location])
 
 ## 모든 조작키를 project.godot 기본값으로 되돌리고 저장 파일도 그 값으로 덮어쓴다
 func reset_keybindings() -> void:
+	_save_setting("keybinds", "version", KEYBIND_VERSION)
 	for action in DEFAULT_KEYBINDS.keys():
 		var keycode: int = DEFAULT_KEYBINDS[action]
 		_apply_keybind(action, keycode)
-		_save_setting("keybinds", action, keycode)
+		_save_setting("keybinds", action, [keycode, 0])
 
 ## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다.
 ## **창 모드로 돌아올 때는 저장해 둔 해상도를 다시 적용한다** — 안 그러면 전체화면 크기 그대로 남는다

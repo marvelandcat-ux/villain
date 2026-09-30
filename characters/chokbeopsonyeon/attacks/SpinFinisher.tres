@@ -1,16 +1,14 @@
-[gd_resource type="Resource" script_class="AttackData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://dbs0csef4qqhf"]
 
-[ext_resource type="Script" path="res://combat/AttackData.gd" id="1"]
+[ext_resource type="Script" uid="uid://c5yu7akrllq58" path="res://combat/AttackData.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 damage = 7
 anim_duration = 0.5
-active_time = 0.12
 spin = true
 hitstop_scale = 1.6
 shake_scale = 1.6
-lunge_follows_pushback = true
 lunge_extra = 120
 lunge_time = 0.34
 lunge_foot_lead = 0.3

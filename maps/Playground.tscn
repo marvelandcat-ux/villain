@@ -26,33 +26,6 @@ size = Vector2(219.25, 15)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_5h11f"]
 size = Vector2(17, 297)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_bx8n8"]
-size = Vector2(264.16287, 22.149841)
-
-[sub_resource type="RectangleShape2D" id="Shape_PavilionRightRoof"]
-size = Vector2(315, 20)
-
-[sub_resource type="RectangleShape2D" id="Shape_CloudMidLeft"]
-size = Vector2(260, 20)
-
-[sub_resource type="RectangleShape2D" id="Shape_CloudMidRight"]
-size = Vector2(260, 20)
-
-[sub_resource type="RectangleShape2D" id="Shape_CloudTop"]
-size = Vector2(288, 16)
-
-[sub_resource type="RectangleShape2D" id="Shape_crown"]
-size = Vector2(56, 34)
-
-[sub_resource type="RectangleShape2D" id="Shape_ground"]
-size = Vector2(1920, 40)
-
-[sub_resource type="RectangleShape2D" id="Shape_sand"]
-size = Vector2(220, 40)
-
-[sub_resource type="RectangleShape2D" id="Shape_wall"]
-size = Vector2(40, 1600)
-
 [node name="Playground" type="Node2D" unique_id=287704265]
 texture_filter = 4
 script = ExtResource("1")
@@ -414,14 +387,6 @@ position = Vector2(-782.25, -75)
 [node name="PostLeft" type="CollisionShape2D" parent="PavilionLeftPosts" unique_id=1337816333]
 position = Vector2(-119.75, 205)
 shape = SubResource("RectangleShape2D_5h11f")
-
-[node name="PavilionLeftSlide" type="StaticBody2D" parent="." unique_id=782958340]
-position = Vector2(-559, 202)
-
-[node name="Collision" type="CollisionShape2D" parent="PavilionLeftSlide" unique_id=782958341]
-position = Vector2(0.64764404, -3.1474304)
-rotation = 0.598648
-shape = SubResource("RectangleShape2D_bx8n8")
 
 [node name="PavilionRightRoof" type="StaticBody2D" parent="." unique_id=187124670]
 position = Vector2(560, -72)

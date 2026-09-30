@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://skills/Projectile.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/테이져건총알-Photoroom.png" id="2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_taser"]
+radius = 9.0
+
+[node name="TaserBolt" type="Area2D"]
+script = ExtResource("1")
+lifetime = 1.2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_taser")
+
+[node name="Visual" type="Sprite2D" parent="."]
+scale = Vector2(0.03, 0.03)
+region_enabled = true
+region_rect = Rect2(730, 391, 1006, 516)
+texture = ExtResource("2")

@@ -3,11 +3,18 @@ class_name SlantToggle
 extends Button
 
 ## 평행사변형 켜기/끄기 스위치 (설정 화면 전체화면 항목).
-## **켜면 빨간 덩이가 왼쪽으로 미끄러져 들어오고, 끄면 회색 덩이가 오른쪽으로 빠진다.**
-## 러프 그대로다 — on은 왼쪽이 빨갛게 차고, off는 오른쪽이 회색으로 남는다.
 ##
-## 평행사변형은 "높이에 따라 좌우가 밀리는" 모양이라, 안에 덩이를 그릴 때도 같은 기울기를 따라야
-## 모서리가 어긋나지 않는다. 그래서 x를 직접 쓰지 않고 `_edge_x(y)`로 그 높이의 왼쪽 변을 구해서 더한다
+## **흰 칸이 움직이는 커서고, 그 밑에 핑크/회색 바탕이 깔려 있다.**
+## 커서가 왼쪽 끝에 있으면 핑크가 다 가려져서 **꺼짐**, 오른쪽 끝으로 밀려가면 가려졌던
+## 핑크가 왼쪽부터 드러나면서 **켜짐**이 된다. 끄면 커서가 되돌아오면서 핑크를 다시 덮는다.
+## 상태 글자(켜짐/꺼짐)는 커서 위에 적혀서 커서와 같이 움직인다.
+##
+## 그려지는 모습은 늘 세 토막이다 —
+##   [ 핑크: 드러난 만큼 ][ 흰색: 커서 ][ 회색: 아직 안 지나간 만큼 ]
+## 볼륨 막대(SlantSlider)와 **똑같은 구조**다. 회색도 같은 값을 쓴다 — 설정 화면 안에서 회색이 둘이면 따로 논다.
+##
+## 평행사변형은 높이에 따라 좌우가 밀리는 모양이라, 토막을 나눌 때도 같은 기울기를 따라야
+## 경계선이 변과 나란해진다. 그래서 x를 직접 쓰지 않고 `_edge_x(y)`로 그 높이의 왼쪽 변을 구해서 더한다
 
 ## 상태가 바뀌었을 때 알린다 (Button의 toggled와 이름이 겹치지 않게 따로 둔다)
 signal state_changed(on: bool)
@@ -17,25 +24,35 @@ signal state_changed(on: bool)
 	set(value):
 		lean = value
 		queue_redraw()
-## 안 채워진 바탕색과 테두리
-@export var base_color: Color = Color(0.13, 0.11, 0.17, 0.85):
+## 커서가 지나간 자리에 드러나는 색(핑크) / 아직 안 지나간 자리에 깔린 색(회색)
+@export var fill_color: Color = Color(0.83, 0.22, 0.31, 1.0):
 	set(value):
-		base_color = value
+		fill_color = value
 		queue_redraw()
-@export var outline_color: Color = Color(0.62, 0.58, 0.72, 0.85)
-@export var outline_width: float = 2.0
-## 켰을 때 차오르는 색 / 껐을 때 남는 색
-@export var on_color: Color = Color(0.83, 0.22, 0.31, 1.0)
-@export var off_color: Color = Color(0.58, 0.58, 0.63, 1.0)
-## 덩이가 칸의 몇 %를 차지하는지
-@export_range(0.2, 0.9, 0.05) var knob_ratio: float = 0.55
-## 켜짐/꺼짐이 바뀔 때 미끄러지는 시간(초)
+@export var rest_color: Color = Color(0.72, 0.72, 0.75, 1.0):
+	set(value):
+		rest_color = value
+		queue_redraw()
+## 움직이는 커서 색 (러프의 흰 평행사변형)
+@export var knob_color: Color = Color(0.95, 0.94, 0.97, 1.0):
+	set(value):
+		knob_color = value
+		queue_redraw()
+## 커서가 칸의 몇 %를 차지하는지 (0.5면 반반)
+@export_range(0.2, 0.9, 0.05) var knob_ratio: float = 0.5:
+	set(value):
+		knob_ratio = value
+		queue_redraw()
+@export var outline_color: Color = Color(0.15, 0.13, 0.19, 1.0)
+@export var outline_width: float = 3.0
+## 켜짐/꺼짐이 바뀔 때 커서가 미끄러지는 시간(초)
 @export var anim_time: float = 0.18
-## 빈 쪽에 작게 적는 글자 (비우면 아무것도 안 쓴다)
+## 커서 위에 적는 글자 (비우면 아무것도 안 쓴다)
 @export var on_text: String = "켜짐"
 @export var off_text: String = "꺼짐"
 @export var text_size: int = 18
-@export var text_color: Color = Color(0.86, 0.82, 0.92, 1.0)
+## 커서가 흰색이라 글자는 어둡게 쓴다
+@export var text_color: Color = Color(0.22, 0.19, 0.27, 1.0)
 
 ## 지금 켜져 있는지
 var is_on: bool = false:
@@ -45,7 +62,7 @@ var is_on: bool = false:
 		is_on = value
 		set_process(true)
 
-## 덩이 위치 0(꺼짐) ~ 1(켜짐). 목표로 서서히 간다
+## 커서 위치 0(꺼짐, 왼쪽 끝) ~ 1(켜짐, 오른쪽 끝). 목표로 서서히 간다
 var _t: float = 0.0
 
 func _ready() -> void:
@@ -85,28 +102,37 @@ func _edge_x(y: float) -> float:
 func _slice(a: float, b: float) -> PackedVector2Array:
 	var h: float = size.y
 	var w: float = maxf(size.x - lean, 1.0)
+	var lo: float = minf(a, b)
+	var hi: float = maxf(a, b)
 	return PackedVector2Array([
-		Vector2(_edge_x(0.0) + a * w, 0.0),
-		Vector2(_edge_x(0.0) + b * w, 0.0),
-		Vector2(_edge_x(h) + b * w, h),
-		Vector2(_edge_x(h) + a * w, h),
+		Vector2(_edge_x(0.0) + lo * w, 0.0),
+		Vector2(_edge_x(0.0) + hi * w, 0.0),
+		Vector2(_edge_x(h) + hi * w, h),
+		Vector2(_edge_x(h) + lo * w, h),
 	])
 
 func _draw() -> void:
+	# 커서는 칸 안에서만 움직인다 — 꺼짐이면 왼쪽 끝, 켜짐이면 오른쪽 끝에 딱 붙는다
+	var knob_start: float = _t * (1.0 - knob_ratio)
+	var knob_end: float = knob_start + knob_ratio
+	if knob_start > 0.0:
+		draw_colored_polygon(_slice(0.0, knob_start), fill_color)
+	if knob_end < 1.0:
+		draw_colored_polygon(_slice(knob_end, 1.0), rest_color)
+	draw_colored_polygon(_slice(knob_start, knob_end), knob_color)
+	# 테두리는 맨 위에 — 토막이 테두리를 덮으면 칸이 번져 보인다
 	var full: PackedVector2Array = _slice(0.0, 1.0)
-	draw_colored_polygon(full, base_color)
-	# 덩이 — 꺼짐이면 오른쪽 끝에, 켜짐이면 왼쪽 끝에 붙는다
-	var a: float = lerpf(1.0 - knob_ratio, 0.0, _t)
-	var knob: PackedVector2Array = _slice(a, a + knob_ratio)
-	draw_colored_polygon(knob, off_color.lerp(on_color, _t))
-	# 테두리는 맨 위에 — 덩이가 테두리를 덮으면 칸이 번져 보인다
 	var closed: PackedVector2Array = full.duplicate()
 	closed.append(full[0])
 	draw_polyline(closed, outline_color, outline_width)
-	_draw_state_text(a)
+	# 커서 양옆 경계선도 변과 나란하게 그어준다
+	var knob: PackedVector2Array = _slice(knob_start, knob_end)
+	draw_line(knob[0], knob[3], outline_color, outline_width * 0.7)
+	draw_line(knob[1], knob[2], outline_color, outline_width * 0.7)
+	_draw_state_text(knob_start)
 
-## 덩이가 없는 쪽에 상태 글자를 적는다
-func _draw_state_text(knob_a: float) -> void:
+## 상태 글자는 **커서 위에** 적어서 커서와 같이 움직인다
+func _draw_state_text(knob_start: float) -> void:
 	var text: String = on_text if is_on else off_text
 	if text == "":
 		return
@@ -114,9 +140,7 @@ func _draw_state_text(knob_a: float) -> void:
 	if font == null:
 		return
 	var w: float = maxf(size.x - lean, 1.0)
-	# 덩이가 왼쪽(켜짐)이면 글자는 오른쪽 빈 곳에, 덩이가 오른쪽(꺼짐)이면 왼쪽 빈 곳에 적는다.
-	# **_t로 판단한다** — knob_a로 보면 꺼짐(0.45)도 0.5보다 작아서 글자가 덩이 위에 겹쳐 찍혔다
-	var center_ratio: float = (knob_a + knob_ratio + 1.0) * 0.5 if _t > 0.5 else knob_a * 0.5
+	var center_ratio: float = knob_start + knob_ratio * 0.5
 	var y: float = size.y * 0.5
 	var pos := Vector2(_edge_x(y) + center_ratio * w, y)
 	var text_size_px: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size)

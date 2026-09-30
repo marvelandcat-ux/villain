@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dmj6g71ghu8yt"
-path="res://.godot/imported/경찰몸통.png-60ead1c3e89166c258a40d316bd56d30.ctex"
+uid="uid://bf6mrqvwfohhx"
+path="res://.godot/imported/주정뱅이 머리 측면 3.png-cbf54192fd167d04359d91e8d13f5093.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/storymode/경찰서/경찰몸통.png"
-dest_files=["res://.godot/imported/경찰몸통.png-60ead1c3e89166c258a40d316bd56d30.ctex"]
+source_file="res://sprite/주정뱅이/몸/주정뱅이 머리 측면 3.png"
+dest_files=["res://.godot/imported/주정뱅이 머리 측면 3.png-cbf54192fd167d04359d91e8d13f5093.ctex"]
 
 [params]
 

@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://bjtmbdoj01srj"]
+
+[ext_resource type="Script" uid="uid://by45b5vlnjnvr" path="res://ui/cutin/PoliceCutIn.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://om1k0t7echtn" path="res://sprite/storymode/경찰서/경찰정면.png" id="3_head"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="4_hand"]
+[ext_resource type="Texture2D" uid="uid://diwjm0n21gcor" path="res://sprite/storymode/경찰서/궁극기경찰차.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://ck3gu7qcxpeeg" path="res://sprite/storymode/경찰서/미란다종이.png" id="6_paper"]
+[ext_resource type="Texture2D" uid="uid://boxf7maey23ac" path="res://sprite/storymode/경찰서/경찰정면_입다문.png" id="8_shut"]
+[ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="9_baton"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_addblue"]
+blend_mode = 1
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_addred"]
+blend_mode = 1
+
+[node name="PoliceCutIn" type="Node2D" unique_id=422732634]
+script = ExtResource("1")
+head_closed_texture = ExtResource("8_shut")
+
+[node name="BgColor" type="ColorRect" parent="." unique_id=381535400]
+offset_left = -1400.0
+offset_top = -800.0
+offset_right = 1400.0
+offset_bottom = 800.0
+mouse_filter = 2
+color = Color(0.0118, 0.0392, 0.098, 1)
+
+[node name="Bg" type="Sprite2D" parent="." unique_id=1395099487]
+texture = ExtResource("5_bg")
+
+[node name="Flash" type="Node2D" parent="." unique_id=1754668717]
+
+[node name="BlueWash" type="ColorRect" parent="Flash" unique_id=297359628]
+modulate = Color(1, 1, 1, 0)
+material = SubResource("CanvasItemMaterial_addblue")
+offset_left = -768.0
+offset_top = -512.0
+offset_right = 768.0
+offset_bottom = 512.0
+mouse_filter = 2
+color = Color(0.16, 0.42, 1, 1)
+
+[node name="RedWash" type="ColorRect" parent="Flash" unique_id=369839403]
+modulate = Color(1, 1, 1, 0)
+material = SubResource("CanvasItemMaterial_addred")
+offset_left = -768.0
+offset_top = -512.0
+offset_right = 768.0
+offset_bottom = 512.0
+mouse_filter = 2
+color = Color(1, 0.18, 0.22, 1)
+
+[node name="Police" type="Node2D" parent="." unique_id=1998235676]
+position = Vector2(170, 40)
+
+[node name="Body" type="Sprite2D" parent="Police" unique_id=2144447334]
+position = Vector2(45.00004, 161)
+scale = Vector2(0.33733886, 0.3855301)
+texture = ExtResource("2_body")
+
+[node name="Baton" type="Sprite2D" parent="Police" unique_id=774451201]
+position = Vector2(368, 36.000015)
+rotation = -0.35
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("9_baton")
+
+[node name="HandR" type="Sprite2D" parent="Police" unique_id=331050882]
+position = Vector2(313, 190)
+scale = Vector2(1.0398906, 1.0133189)
+texture = ExtResource("4_hand")
+
+[node name="Head" type="Sprite2D" parent="Police" unique_id=1684558765]
+position = Vector2(42.000008, -169)
+scale = Vector2(0.7448024, 0.74480236)
+texture = ExtResource("3_head")
+
+[node name="PaperGroup" type="Node2D" parent="." unique_id=255499377]
+position = Vector2(-180, -84)
+
+[node name="PaperPlaceholder" type="Node2D" parent="PaperGroup" unique_id=1943012214]
+
+[node name="Fill" type="Polygon2D" parent="PaperGroup/PaperPlaceholder" unique_id=668178918]
+polygon = PackedVector2Array(-108, 30, 108, 30, 108, 290, -108, 290)
+
+[node name="Edge" type="Line2D" parent="PaperGroup/PaperPlaceholder" unique_id=800358254]
+points = PackedVector2Array(-108, 30, 108, 30, 108, 290, -108, 290)
+closed = true
+width = 7.0
+default_color = Color(0.05, 0.05, 0.05, 1)
+joint_mode = 2
+
+[node name="Paper" type="Sprite2D" parent="PaperGroup" unique_id=1306405338]
+position = Vector2(16.124994, 226.41646)
+scale = Vector2(0.3296208, 0.32962078)
+texture = ExtResource("6_paper")
+
+[node name="PaperHand" type="Sprite2D" parent="PaperGroup" unique_id=877630115]
+position = Vector2(25.873707, 22.06875)
+scale = Vector2(0.9093965, 0.9093965)
+texture = ExtResource("4_hand")

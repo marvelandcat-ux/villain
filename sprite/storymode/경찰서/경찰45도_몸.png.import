@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cc857mdf7t0p8"
-path="res://.godot/imported/경찰몸통_배경제거.png-a41fedc2612d013c71aeed97f41f0687.ctex"
+uid="uid://dgmitov0uim7n"
+path="res://.godot/imported/경찰45도_몸.png-969eee93382df27bdddee5f97db9ddea.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/storymode/경찰서/경찰몸통_배경제거.png"
-dest_files=["res://.godot/imported/경찰몸통_배경제거.png-a41fedc2612d013c71aeed97f41f0687.ctex"]
+source_file="res://sprite/storymode/경찰서/경찰45도_몸.png"
+dest_files=["res://.godot/imported/경찰45도_몸.png-969eee93382df27bdddee5f97db9ddea.ctex"]
 
 [params]
 

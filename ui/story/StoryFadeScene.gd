@@ -71,8 +71,14 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 ## 대화창이 입력을 기다릴 때 오른쪽 아래에 깜빡이는 화살표를 띄울지.
 ## **`dialogue`를 지정한 장면에서만 뜬다** — 대사 없이 지나가는 연출 장면엔 나올 일이 없다
 @export var show_continue_indicator: bool = true
-## (임시) 테스트용 — **S 키를 누르면 다음 장면으로 바로 건너뛴다.** 스토리를 다 만들면 이 기능을 지울 것
-@export var debug_skip_key: bool = false
+## (임시) 테스트용 — **S 키를 누르면 다음 장면으로 바로 건너뛴다.**
+## 한 번 껐다가 2026-09-29에 다시 켰다(사용자 요청) — 스토리를 손볼 때마다 앞 장면을 다 보고 있을 수가 없어서다.
+## 여기서 기본값을 켜 두면 열두 장면 전부에 한 번에 걸린다. 특정 장면만 빼고 싶으면 그 장면에서 이 값을 끄면 된다.
+##
+## **연출만 건너뛴다 — 대전은 안 건너뛴다.** 대전까지 넘어가는 건 맵 루트의 `Stage.debug_story_skip_key`인데
+## 그건 계속 꺼 둔다(S가 P1 방어 키라서, 켜 두면 싸우다 방어할 때마다 전투가 끝나 버린다).
+## 스토리를 다 만들면 이 기능도 같이 지울 것
+@export var debug_skip_key: bool = true
 ## 에디터에선 보이게 두고(배치 조정용) **게임이 시작될 때 숨길** 노드들 — 대화창 명령(@show, @stamp)으로 나중에 나타난다.
 ## 에디터 눈 아이콘으로 켜고 끈 채 저장해도 게임에선 항상 숨긴 채 시작한다
 @export var hide_on_start: Array[NodePath] = []

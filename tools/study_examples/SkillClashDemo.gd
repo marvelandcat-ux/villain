@@ -6,7 +6,7 @@ extends SceneTree
 ##   <Godot 실행 파일> --headless --path . --script res://tools/study_examples/SkillClashDemo.gd
 ##
 ## 보여주는 것 두 가지:
-## 1) 쿨타임·사용 가능 확인은 부모(Skill)에 한 번만 짜고, 자식 스킬은 _execute()만 오버라이드한다
+## 1) 쿨타임·사용 가능 확인은 부모(DemoSkill)에 한 번만 짜고, 자식 스킬은 _execute()만 오버라이드한다
 ## 2) 두 사람이 match_window(0.15초) 안에 "같은 슬롯"을 쓰면 클래시 — 이긴 쪽만 발동, 진 쪽은 쿨타임만 소모
 ##
 ## 실제 코드는 Timer 노드와 연타 팝업(SkillClashPopup)을 쓰지만, 여기서는 시간을 직접 흘려서(tick)
@@ -16,7 +16,7 @@ const DT := 1.0 / 60.0
 
 
 ## --- 1) 모든 스킬의 공용 베이스 (skills/Skill.gd 단순화) ---
-class Skill:
+class DemoSkill:
 	var skill_name := ""
 	var cooldown := 1.0
 	var cooldown_left := 0.0
@@ -45,7 +45,7 @@ class Skill:
 
 
 ## --- 2) 자식 스킬: _execute()만 새로 쓴다 ---
-class DashSkill extends Skill:
+class DemoDashSkill extends DemoSkill:
 	func _init() -> void:
 		skill_name = "자전거 돌진"
 		cooldown = 6.0
@@ -54,7 +54,7 @@ class DashSkill extends Skill:
 		print("    [%s] 자전거 돌진 발동! 앞으로 224px 달려나간다" % user)
 
 
-class ShoulderChargeSkill extends Skill:
+class DemoShoulderChargeSkill extends DemoSkill:
 	func _init() -> void:
 		skill_name = "어깨 들이박기"
 		cooldown = 6.0
@@ -71,7 +71,7 @@ class ClashManager:
 	## 연타 미니게임 대신 승자를 정하는 함수 (a가 이기면 true)
 	var decide_winner: Callable
 
-	func request(user: String, slot: String, skill: Skill) -> void:
+	func request(user: String, slot: String, skill: DemoSkill) -> void:
 		if not skill.can_use():
 			print("    [%s] %s: 쿨타임 %.1f초 남음 -> 무시" % [user, skill.skill_name, skill.cooldown_left])
 			return
@@ -96,7 +96,7 @@ class ClashManager:
 				_pending.erase(slot)
 				req["skill"].use(req["user"])
 
-	func _clash(user_a: String, skill_a: Skill, user_b: String, skill_b: Skill) -> void:
+	func _clash(user_a: String, skill_a: DemoSkill, user_b: String, skill_b: DemoSkill) -> void:
 		print("    !! 클래시 발생: %s(%s) vs %s(%s) -> 연타 미니게임" % [user_a, skill_a.skill_name, user_b, skill_b.skill_name])
 		var a_won: bool = decide_winner.call(user_a, user_b)
 		var winner := user_a if a_won else user_b
@@ -110,8 +110,8 @@ class ClashManager:
 
 
 var _manager := ClashManager.new()
-var _p1_skill := DashSkill.new()
-var _p2_skill := ShoulderChargeSkill.new()
+var _p1_skill := DemoDashSkill.new()
+var _p2_skill := DemoShoulderChargeSkill.new()
 var _clock := 0.0
 
 
@@ -160,7 +160,7 @@ func _init() -> void:
 	_advance(0.2)
 
 	print("\n핵심:")
-	print("- 쿨타임 코드는 Skill 한 곳에만 있다. 새 스킬은 _execute()만 쓰면 된다 (실제 게임엔 스킬 20개 이상).")
+	print("- 쿨타임 코드는 DemoSkill 한 곳에만 있다. 새 스킬은 _execute()만 쓰면 된다 (실제 게임엔 스킬 20개 이상).")
 	print("- 클래시는 '어떤 스킬이냐'가 아니라 '어느 슬롯이냐'로 판정한다. 그래서 캐릭터가 달라도 동작한다.")
 	print("- 기본공격은 일부러 이 판정을 안 거친다(Fighter.use_basic_attack). 자주 쓰는 잽까지 걸리면")
 	print("  마주칠 때마다 화면이 멈춰서 게임이 끊기기 때문이다 — '넣지 않은 이유'도 설계다.")

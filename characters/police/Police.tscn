@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/PoliceStats.tres" id="2"]
@@ -7,7 +7,9 @@
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
 [ext_resource type="Script" path="res://skills/Skill.gd" id="6"]
 [ext_resource type="PackedScene" path="res://characters/police/PoliceRig.tscn" id="7"]
-[ext_resource type="Script" path="res://skills/BodySuplexSkill.gd" id="8_suplex"]
+[ext_resource type="Script" path="res://skills/TaserGunSkill.gd" id="8_taser"]
+[ext_resource type="Script" path="res://skills/BatonModeUltimate.gd" id="11_baton"]
+[ext_resource type="PackedScene" path="res://skills/TaserBolt.tscn" id="10_bolt"]
 [ext_resource type="Script" path="res://skills/StoneThrowSkill.gd" id="9_stone"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
@@ -53,12 +55,13 @@ script = ExtResource("4")
 shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="."]
-script = ExtResource("8_suplex")
-cooldown = 6.0
-skill_name = "바디 수플렉스"
-description = "앞에 있는 상대를 붙잡고 몸을 뒤로 젖혀 머리 위로 넘겨 등 뒤 바닥에 꽂는다. 붙잡을 수 있는 거리까지 붙어야 하고, 헛잡으면 그 자리에 잠깐 묶인다."
-damage = 16
-super_armor = true
+script = ExtResource("8_taser")
+cooldown = 20.0
+skill_name = "테이저건"
+description = "전기 침을 한 발 쏜다. 맞은 상대는 2초 동안 감전되어 아무것도 못 한다. 쿨타임이 길어서 한 발을 언제 쓰느냐가 전부다."
+projectile_scene = ExtResource("10_bolt")
+damage = 10
+stun_time = 2.0
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("9_stone")
@@ -68,6 +71,10 @@ description = "발밑의 돌을 주워 앞으로 던진다. 자전거로 돌진�
 damage = 6
 
 [node name="SkillUltimate" type="Node" parent="."]
-script = ExtResource("6")
+script = ExtResource("11_baton")
 cooldown = 20.0
 start_on_cooldown = true
+skill_name = "경관봉"
+description = "허리에서 경관봉을 뽑아 든다. 15초 동안 기본공격이 주먹 대신 경봉 타격이 되고 데미지가 두 배로 오른다. 시간이 끝나면 도로 집어넣는다."
+duration = 15.0
+damage_multiplier = 2.0

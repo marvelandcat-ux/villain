@@ -30,8 +30,9 @@ const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 
 ## 화면 왼쪽에 일시정지 버튼을 띄울지
 @export var pause_button: bool = true
-## 그 버튼이 화면 왼쪽 위에서 떨어지는 거리(px). 기본값은 P1 체력바 바로 아래
-@export var pause_button_margin: Vector2 = Vector2(20.0, 104.0)
+## 그 버튼이 화면 왼쪽 위에서 떨어지는 거리(px).
+## **체력바가 화면 아래로 내려가면서 위쪽이 비어서 맨 위로 올렸다**(2026-09-28)
+@export var pause_button_margin: Vector2 = Vector2(20.0, 18.0)
 
 @export_group("처치 연출")
 ## 켜면 **패배한 캐릭터가 화면이 느려진 채 날아가는 연출**을 보여준 뒤에 결과창이 뜬다.
@@ -102,6 +103,10 @@ func _ready() -> void:
 	if _combat_hud:
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
+
+	# 스토리 VS 화면이 **화면을 덮어 둔 채로** 끝난다 — 캐릭터가 다 자리잡은 지금 걷어낸다.
+	# 덮어 둔 게 없으면(대전 모드) 그냥 지나간다
+	await SceneTransition.uncover()
 
 	var round_start: RoundStart = load("res://ui/RoundStart.tscn").instantiate()
 	add_child(round_start)
@@ -301,7 +306,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## 화면 왼쪽에 일시정지 버튼을 붙인다 (스토리 장면과 같은 것).
 ## ESC만 있으면 처음 하는 사람은 멈출 방법을 모른다는 피드백을 받아서 넣었다(2026-09-15).
-## **P1 체력바(CombatHUD의 P1Panel, 20~330 x 16~90) 바로 아래**에 놓아 HUD와 안 겹치게 한다
+## 체력바는 화면 **아래쪽**으로 내려갔으므로(ui/CombatHUD.tscn) 이 버튼은 왼쪽 맨 위 구석에 둔다
 func _add_pause_button() -> void:
 	if not pause_button or not ResourceLoader.exists(PAUSE_BUTTON_SCENE):
 		return

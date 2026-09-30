@@ -15,9 +15,36 @@ extends CanvasLayer
 @export var layer_order: int = 100
 
 var _wipe: HologramWipe = null
+## 지금 덮여 있는 게 cover()로 직접 덮은 것인지. **go_to_scene이 쓰는 타일과 구분하려고 둔다** —
+## 이게 없으면, 맵 선택에서 넘어오느라 go_to_scene이 아직 타일을 걷는 중일 때
+## Stage가 부른 uncover()가 같은 타일을 한 번 더 걷어내며 서로 엉킨다
+var _manual_cover: bool = false
 
 func _ready() -> void:
 	layer = layer_order
+
+## 씬은 그대로 두고 **화면만 덮는다**. 스토리 VS 화면처럼 "장면은 안 바꾸는데 화면은 가려야 하는"
+## 경우에 쓴다 — 덮은 뒤엔 반드시 uncover()를 불러 줘야 걷힌다.
+## 이미 덮여 있거나 전환 중이면 아무것도 안 한다
+func cover() -> void:
+	if _wipe != null:
+		return
+	_wipe = HologramWipe.new()
+	_manual_cover = true
+	add_child(_wipe)
+	await _wipe.covered
+
+## cover()로 덮어 둔 화면을 걷어낸다. **덮어 둔 게 없으면 그냥 돌아간다** —
+## 부르는 쪽(Stage)이 스토리 모드인지 아닌지 따지지 않아도 되게 하려는 것이다
+func uncover() -> void:
+	if _wipe == null or not _manual_cover:
+		return
+	_manual_cover = false
+	var wipe: HologramWipe = _wipe
+	wipe.start_uncover()
+	await wipe.uncovered
+	wipe.queue_free()
+	_wipe = null
 
 ## 화면을 덮고 -> 씬을 바꾸고 -> 새 씬이 자리잡으면 다시 걷어낸다.
 ## 이미 전환 중이면 무시한다(버튼 연타로 두 번 겹쳐 불리는 것을 막는다)

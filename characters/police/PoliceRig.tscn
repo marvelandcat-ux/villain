@@ -2,12 +2,22 @@
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://clr6pqihia4xb" path="res://sprite/storymode/경찰서/경찰머리.png" id="2_head"]
-[ext_resource type="Texture2D" uid="uid://cc857mdf7t0p8" path="res://sprite/storymode/경찰서/경찰몸통_배경제거.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="5_baton"]
-[ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
+[ext_resource type="Texture2D" uid="uid://c5curqetb0ax4" path="res://sprite/storymode/경찰서/테이져건.png" id="6_taser"]
+[ext_resource type="Texture2D" uid="uid://burq4yuut8dtc" path="res://sprite/storymode/경찰서/경찰90도.png" id="7_side"]
+[ext_resource type="Texture2D" uid="uid://dgmitov0uim7n" path="res://sprite/storymode/경찰서/경찰45도_몸.png" id="8_side45"]
+[ext_resource type="Script" uid="uid://4ystuepvifgv" path="res://characters/EyeBlink.gd" id="99_blink"]
 
 [node name="BodyRig" unique_id=2119973844 instance=ExtResource("1_rig")]
+weapon_switch = true
+held_item_armed = false
+unarmed_thrust = true
+unarmed_guard_hand = true
+attack_frame_hits = Array[int]([0, 2])
+uppercut_body_textures = Array[Texture2D]([ExtResource("3_body"), ExtResource("8_side45"), ExtResource("7_side")])
+unarmed_uppercut = true
 grab_slam_deg = -58.0
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
@@ -39,7 +49,13 @@ position = Vector2(0, -27.000002)
 scale = Vector2(0.045834586, 0.045551606)
 texture = ExtResource("2_head")
 
-[node name="EyeBlink" type="Node2D" parent="Head"]
-position = Vector2(247.0, 115.0)
+[node name="EyeBlink" type="Node2D" parent="Head" index="0" unique_id=606055161]
+position = Vector2(247, 115)
 script = ExtResource("99_blink")
 eye_size = Vector2(205, 128)
+
+[node name="Gun" type="Sprite2D" parent="." index="7" unique_id=1713205311]
+visible = false
+position = Vector2(2, -4)
+scale = Vector2(0.021, 0.021)
+texture = ExtResource("6_taser")

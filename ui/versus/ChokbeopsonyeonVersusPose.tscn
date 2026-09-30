@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://s5p768ya8xit"]
+
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
+[ext_resource type="Texture2D" uid="uid://c3rrljta7b1s3" path="res://sprite/축법소년/달리는 축법소년 표정.png" id="3_irdh3"]
+[ext_resource type="Texture2D" uid="uid://d3r2vpysgqom8" path="res://sprite/축법소년/총.png" id="4_gun"]
+[ext_resource type="Script" uid="uid://jabroynj53ym" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
+
+[node name="ChokbeopsonyeonVersusPose" type="Node2D" unique_id=2044948383]
+position = Vector2(0, 6)
+
+[node name="Body" type="Sprite2D" parent="." unique_id=618086769]
+position = Vector2(23, 353)
+scale = Vector2(0.3312987, 0.35577005)
+texture = ExtResource("2_body")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1291486395]
+position = Vector2(-212.00002, 424.99994)
+scale = Vector2(0.67845094, 0.7089662)
+texture = ExtResource("3_hand")
+flip_h = true
+
+[node name="Head" type="Sprite2D" parent="." unique_id=490763406]
+position = Vector2(34, 72)
+scale = Vector2(0.4065674, 0.40656742)
+texture = ExtResource("3_irdh3")
+
+[node name="Gun" type="Sprite2D" parent="." unique_id=905963111]
+position = Vector2(258.00003, 215.00002)
+rotation = -0.6981317
+scale = Vector2(0.14582217, 0.14907752)
+texture = ExtResource("4_gun")
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1032693798]
+position = Vector2(231.24377, 270.1625)
+rotation = 0.0151835205
+scale = Vector2(0.67538446, 0.715146)
+skew = -0.030286431
+texture = ExtResource("3_hand")
+
+[node name="Preview" type="Node2D" parent="." unique_id=1625513929]
+z_index = -100
+script = ExtResource("9_preview")
+origin_on_screen = Vector2(1020, 223)
+facing = -1.0
+opponent_pose = "res://ui/versus/PoliceVersusPose.tscn"
+opponent_origin_on_screen = Vector2(260, 223)
+opponent_facing = 1.0

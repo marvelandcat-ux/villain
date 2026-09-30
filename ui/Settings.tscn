@@ -1,15 +1,116 @@
-[gd_scene load_steps=7 format=3 uid="uid://dpjixyav50oqt"]
+[gd_scene format=3 uid="uid://dpjixyav50oqt"]
 
 [ext_resource type="Script" uid="uid://bsjqihhx8kc08" path="res://ui/Settings.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://h8rcws1tktkj" path="res://sprite/도감/캐릭터도감뒷배경.png" id="2_bg"]
 [ext_resource type="Shader" uid="uid://bieemcgsfw8e6" path="res://ui/cutin/blur.gdshader" id="3_blur"]
-[ext_resource type="Script" path="res://ui/FanTile.gd" id="4_fantile"]
-[ext_resource type="Script" path="res://ui/SlantToggle.gd" id="5_toggle"]
-[ext_resource type="Script" path="res://ui/SlantSlider.gd" id="6_slider"]
+[ext_resource type="Script" uid="uid://bmebft5pykdb0" path="res://ui/FanTile.gd" id="4_fantile"]
+[ext_resource type="Script" uid="uid://bqabsvc8vka2n" path="res://ui/SlantToggle.gd" id="5_toggle"]
+[ext_resource type="Script" uid="uid://dqtv1pumwlb72" path="res://ui/SlantSlider.gd" id="6_slider"]
+[ext_resource type="Script" uid="uid://bovapf866hspv" path="res://ui/KeyboardMap.gd" id="7_keyboard"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bgblur"]
 shader = ExtResource("3_blur")
 shader_parameter/blur_amount = 0.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_mkgeb"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1mil0"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_784hf"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1rdb0"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mi372"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a6vu5"]
+bg_color = Color(0.72, 0.18, 0.28, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g1mpe"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gn2nj"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7amd4"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_46d88"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8rdk0"]
+bg_color = Color(0.72, 0.18, 0.28, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_aabdw"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_34yyu"]
+bg_color = Color(0.13, 0.11, 0.17, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4aner"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_focusring"]
+bg_color = Color(0.72, 0.18, 0.28, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.95, 0.38, 0.48, 0.95)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
 
 [node name="Settings" type="Control" unique_id=1480383688]
 layout_mode = 3
@@ -71,7 +172,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.04, 0.03, 0.07, 0.3)
 
-[node name="BackButton" type="Button" parent="Card"]
+[node name="BackButton" type="Button" parent="Card" unique_id=1406509304]
 layout_mode = 0
 offset_left = 1.0
 offset_top = 1.0
@@ -85,7 +186,7 @@ theme_override_font_sizes/font_size = 40
 text = "◀"
 flat = true
 
-[node name="TitleLabel" type="Label" parent="Card"]
+[node name="TitleLabel" type="Label" parent="Card" unique_id=923248711]
 layout_mode = 0
 offset_left = 77.0
 offset_top = 4.0
@@ -96,121 +197,97 @@ theme_override_font_sizes/font_size = 52
 text = "설정"
 vertical_alignment = 1
 
-[node name="GraphicsTab" type="Button" parent="Card"]
+[node name="GraphicsTab" type="Button" parent="Card" unique_id=93243227]
+texture_repeat = 1
 layout_mode = 0
-offset_left = 296.0
-offset_top = 150.0
-offset_right = 556.0
-offset_bottom = 214.0
+offset_left = 297.0
+offset_top = 93.0
+offset_right = 557.0
+offset_bottom = 157.0
+focus_mode = 0
 mouse_default_cursor_shape = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_mkgeb")
 flat = true
 script = ExtResource("4_fantile")
+corners = PackedVector2Array()
 lean = 46.0
-display_text = "그래픽"
+selected = true
+fill_color = Color(0.72, 0.18, 0.28, 0.95)
+backdrop_color = Color(0.72, 0.18, 0.28, 0.95)
 display_font_size = 30
 plain_outline = true
+plain_outline_color = Color(1, 0.86, 0.9, 1)
+plain_outline_width = 4.0
 
-[node name="AudioTab" type="Button" parent="Card"]
+[node name="Text" type="Label" parent="Card/GraphicsTab" unique_id=869152929]
 layout_mode = 0
-offset_left = 510.0
-offset_top = 150.0
-offset_right = 770.0
-offset_bottom = 214.0
-mouse_default_cursor_shape = 2
-flat = true
-script = ExtResource("4_fantile")
-lean = 46.0
-display_text = "오디오"
-display_font_size = 30
-plain_outline = true
-
-[node name="ControlsTab" type="Button" parent="Card"]
-layout_mode = 0
-offset_left = 724.0
-offset_top = 150.0
-offset_right = 984.0
-offset_bottom = 214.0
-mouse_default_cursor_shape = 2
-flat = true
-script = ExtResource("4_fantile")
-lean = 46.0
-display_text = "조작"
-display_font_size = 30
-plain_outline = true
-
-[node name="GraphicsPanel" type="Control" parent="Card"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="FullscreenLabel" type="Label" parent="Card/GraphicsPanel"]
-layout_mode = 0
-offset_left = 300.0
-offset_top = 288.0
-offset_right = 550.0
-offset_bottom = 344.0
-theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
-theme_override_font_sizes/font_size = 26
-text = "전체화면"
-horizontal_alignment = 2
+offset_right = 260.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
+text = "그래픽"
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="FullscreenToggle" type="Button" parent="Card/GraphicsPanel"]
+[node name="AudioTab" type="Button" parent="Card" unique_id=710887143]
+texture_repeat = 1
 layout_mode = 0
-offset_left = 580.0
-offset_top = 288.0
-offset_right = 830.0
-offset_bottom = 344.0
+offset_left = 511.0
+offset_top = 93.0
+offset_right = 771.0
+offset_bottom = 157.0
+focus_mode = 0
 mouse_default_cursor_shape = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_1mil0")
 flat = true
-script = ExtResource("5_toggle")
-lean = 38.0
+script = ExtResource("4_fantile")
+corners = PackedVector2Array()
+lean = 46.0
+fill_color = Color(0.09, 0.07, 0.13, 0.82)
+backdrop_color = Color(0.09, 0.07, 0.13, 0.82)
+display_font_size = 30
+plain_outline = true
 
-[node name="ResolutionLabel" type="Label" parent="Card/GraphicsPanel"]
+[node name="Text" type="Label" parent="Card/AudioTab" unique_id=511875242]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 368.0
-offset_right = 550.0
-offset_bottom = 424.0
+offset_right = 260.0
+offset_bottom = 64.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
-theme_override_font_sizes/font_size = 26
-text = "해상도"
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 30
+text = "오디오"
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ResolutionBox" type="Button" parent="Card/GraphicsPanel"]
+[node name="ControlsTab" type="Button" parent="Card" unique_id=2125472829]
+texture_repeat = 1
 layout_mode = 0
-offset_left = 580.0
-offset_top = 368.0
-offset_right = 924.0
-offset_bottom = 424.0
+offset_left = 725.0
+offset_top = 93.0
+offset_right = 985.0
+offset_bottom = 157.0
+focus_mode = 0
 mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 26
-text = "1280 x 720"
+theme_override_styles/focus = SubResource("StyleBoxEmpty_784hf")
+flat = true
+script = ExtResource("4_fantile")
+corners = PackedVector2Array()
+lean = 46.0
+fill_color = Color(0.09, 0.07, 0.13, 0.82)
+backdrop_color = Color(0.09, 0.07, 0.13, 0.82)
+display_font_size = 30
+plain_outline = true
 
-[node name="ResolutionArrow" type="Button" parent="Card/GraphicsPanel"]
+[node name="Text" type="Label" parent="Card/ControlsTab" unique_id=199328410]
 layout_mode = 0
-offset_left = 924.0
-offset_top = 368.0
-offset_right = 980.0
-offset_bottom = 424.0
-mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 24
-text = "∨"
+offset_right = 260.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 30
+text = "조작"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="ResolutionList" type="Control" parent="Card/GraphicsPanel"]
-layout_mode = 0
-offset_left = 580.0
-offset_top = 424.0
-offset_right = 924.0
-offset_bottom = 556.0
-mouse_filter = 2
-
-[node name="AudioPanel" type="Control" parent="Card"]
+[node name="GraphicsPanel" type="Control" parent="Card" unique_id=82600255]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -220,106 +297,200 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MasterLabel" type="Label" parent="Card/AudioPanel"]
+[node name="FullscreenLabel" type="Label" parent="Card/GraphicsPanel" unique_id=377939474]
 layout_mode = 0
 offset_left = 300.0
-offset_top = 288.0
+offset_top = 241.0
 offset_right = 550.0
-offset_bottom = 344.0
+offset_bottom = 291.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "전체화면"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="FullscreenToggle" type="Button" parent="Card/GraphicsPanel" unique_id=1506982164]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 241.0
+offset_right = 880.0
+offset_bottom = 291.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true
+script = ExtResource("5_toggle")
+outline_color = Color(1, 1, 1, 1)
+
+[node name="ResolutionLabel" type="Label" parent="Card/GraphicsPanel" unique_id=1521197362]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 361.0
+offset_right = 550.0
+offset_bottom = 411.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 26
+text = "해상도"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ResolutionBox" type="Button" parent="Card/GraphicsPanel" unique_id=1542347315]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 361.0
+offset_right = 824.0
+offset_bottom = 411.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_1rdb0")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mi372")
+theme_override_styles/hover = SubResource("StyleBoxFlat_a6vu5")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_g1mpe")
+theme_override_styles/focus = SubResource("StyleBoxFlat_gn2nj")
+text = "1280 x 720"
+
+[node name="ResolutionArrow" type="Button" parent="Card/GraphicsPanel" unique_id=1563243240]
+layout_mode = 0
+offset_left = 824.0
+offset_top = 361.0
+offset_right = 880.0
+offset_bottom = 411.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_7amd4")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_46d88")
+theme_override_styles/hover = SubResource("StyleBoxFlat_8rdk0")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_aabdw")
+theme_override_styles/focus = SubResource("StyleBoxFlat_34yyu")
+text = "∨"
+
+[node name="ResolutionList" type="Control" parent="Card/GraphicsPanel" unique_id=1882136181]
+visible = false
+anchors_preset = 0
+offset_left = 580.0
+offset_top = 418.0
+offset_right = 824.0
+offset_bottom = 550.0
+mouse_filter = 2
+
+[node name="AudioPanel" type="Control" parent="Card" unique_id=598342981]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MasterLabel" type="Label" parent="Card/AudioPanel" unique_id=1731385651]
+layout_mode = 0
+offset_left = 206.0
+offset_top = 241.0
+offset_right = 456.0
+offset_bottom = 297.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 26
 text = "전체 볼륨"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="MasterSlider" type="Control" parent="Card/AudioPanel"]
-layout_mode = 0
-offset_left = 580.0
-offset_top = 293.0
-offset_right = 1000.0
-offset_bottom = 339.0
+[node name="MasterSlider" type="Control" parent="Card/AudioPanel" unique_id=665723124]
+anchors_preset = 0
+offset_left = 486.0
+offset_top = 246.0
+offset_right = 906.0
+offset_bottom = 292.0
+mouse_default_cursor_shape = 2
 script = ExtResource("6_slider")
-lean = 46.0
 value = 0.85
+outline_color = Color(1, 1, 1, 1)
 
-[node name="MasterPercent" type="Label" parent="Card/AudioPanel"]
+[node name="MasterPercent" type="Label" parent="Card/AudioPanel" unique_id=1817461710]
 layout_mode = 0
-offset_left = 1018.0
-offset_top = 293.0
-offset_right = 1128.0
-offset_bottom = 339.0
+offset_left = 924.0
+offset_top = 246.0
+offset_right = 1034.0
+offset_bottom = 292.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 24
 text = "85%"
 vertical_alignment = 1
 
-[node name="MusicLabel" type="Label" parent="Card/AudioPanel"]
+[node name="MusicLabel" type="Label" parent="Card/AudioPanel" unique_id=341643423]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 368.0
-offset_right = 550.0
-offset_bottom = 424.0
+offset_left = 207.0
+offset_top = 344.0
+offset_right = 457.0
+offset_bottom = 400.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 26
 text = "음악 볼륨"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="MusicSlider" type="Control" parent="Card/AudioPanel"]
-layout_mode = 0
-offset_left = 580.0
-offset_top = 373.0
-offset_right = 1000.0
-offset_bottom = 419.0
+[node name="MusicSlider" type="Control" parent="Card/AudioPanel" unique_id=407033757]
+anchors_preset = 0
+offset_left = 487.0
+offset_top = 349.0
+offset_right = 907.0
+offset_bottom = 395.0
+mouse_default_cursor_shape = 2
 script = ExtResource("6_slider")
-lean = 46.0
 value = 0.0
+outline_color = Color(1, 1, 1, 1)
 
-[node name="MusicPercent" type="Label" parent="Card/AudioPanel"]
+[node name="MusicPercent" type="Label" parent="Card/AudioPanel" unique_id=590616147]
 layout_mode = 0
-offset_left = 1018.0
-offset_top = 373.0
-offset_right = 1128.0
-offset_bottom = 419.0
+offset_left = 925.0
+offset_top = 349.0
+offset_right = 1035.0
+offset_bottom = 395.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 24
 text = "0%"
 vertical_alignment = 1
 
-[node name="SfxLabel" type="Label" parent="Card/AudioPanel"]
+[node name="SfxLabel" type="Label" parent="Card/AudioPanel" unique_id=399993929]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 448.0
-offset_right = 550.0
-offset_bottom = 504.0
+offset_left = 206.0
+offset_top = 445.0
+offset_right = 456.0
+offset_bottom = 501.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 26
 text = "효과음 볼륨"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="SfxSlider" type="Control" parent="Card/AudioPanel"]
-layout_mode = 0
-offset_left = 580.0
-offset_top = 453.0
-offset_right = 1000.0
-offset_bottom = 499.0
+[node name="SfxSlider" type="Control" parent="Card/AudioPanel" unique_id=1005880958]
+anchors_preset = 0
+offset_left = 486.0
+offset_top = 450.0
+offset_right = 906.0
+offset_bottom = 496.0
+mouse_default_cursor_shape = 2
 script = ExtResource("6_slider")
-lean = 46.0
 value = 0.35
+outline_color = Color(1, 1, 1, 1)
 
-[node name="SfxPercent" type="Label" parent="Card/AudioPanel"]
+[node name="SfxPercent" type="Label" parent="Card/AudioPanel" unique_id=1072676588]
 layout_mode = 0
-offset_left = 1018.0
-offset_top = 453.0
-offset_right = 1128.0
-offset_bottom = 499.0
+offset_left = 924.0
+offset_top = 450.0
+offset_right = 1034.0
+offset_bottom = 496.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 24
 text = "35%"
 vertical_alignment = 1
 
-[node name="MutedLabel" type="Label" parent="Card/AudioPanel"]
+[node name="MutedLabel" type="Label" parent="Card/AudioPanel" unique_id=1806311385]
 visible = false
 layout_mode = 0
 offset_left = 580.0
@@ -330,8 +501,7 @@ theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 20
 text = "이 빌드는 소리가 꺼져 있습니다"
 
-[node name="ControlsPanel" type="Control" parent="Card"]
-visible = false
+[node name="ControlsPanel" type="Control" parent="Card" unique_id=64606535]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -340,73 +510,93 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Hint" type="Label" parent="Card/ControlsPanel"]
+[node name="Hint" type="Label" parent="Card/ControlsPanel" unique_id=864891546]
 layout_mode = 0
 offset_left = 300.0
-offset_top = 244.0
+offset_top = 168.0
 offset_right = 980.0
-offset_bottom = 276.0
+offset_bottom = 200.0
 theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
 theme_override_font_sizes/font_size = 20
-text = "바꿀 키를 누른 뒤 새 키를 입력하세요 (ESC로 취소)"
+text = "키를 끌어다 원하는 자리에 놓으면 바뀝니다"
 horizontal_alignment = 1
 
-[node name="P1Header" type="Label" parent="Card/ControlsPanel"]
+[node name="P1Legend" type="Label" parent="Card/ControlsPanel" unique_id=471680980]
 layout_mode = 0
-offset_left = 330.0
-offset_top = 284.0
-offset_right = 610.0
-offset_bottom = 314.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+offset_left = 28.0
+offset_top = 202.0
+offset_right = 108.0
+offset_bottom = 236.0
+theme_override_colors/font_color = Color(0.11, 0.53, 0.9, 1)
 theme_override_font_sizes/font_size = 24
 text = "1P"
+horizontal_alignment = 2
 
-[node name="P1Column" type="Control" parent="Card/ControlsPanel"]
+[node name="P2Legend" type="Label" parent="Card/ControlsPanel" unique_id=1104106765]
 layout_mode = 0
-offset_left = 330.0
-offset_top = 318.0
-offset_right = 596.0
-offset_bottom = 558.0
-mouse_filter = 2
-
-[node name="P2Header" type="Label" parent="Card/ControlsPanel"]
-layout_mode = 0
-offset_left = 670.0
-offset_top = 284.0
-offset_right = 950.0
-offset_bottom = 314.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+offset_left = 130.0
+offset_top = 202.0
+offset_right = 210.0
+offset_bottom = 236.0
+theme_override_colors/font_color = Color(0.9, 0.22, 0.21, 1)
 theme_override_font_sizes/font_size = 24
 text = "2P"
 
-[node name="P2Column" type="Control" parent="Card/ControlsPanel"]
-layout_mode = 0
-offset_left = 670.0
-offset_top = 318.0
-offset_right = 936.0
-offset_bottom = 558.0
-mouse_filter = 2
+[node name="Keyboard" type="Control" parent="Card/ControlsPanel" unique_id=288456711]
+custom_minimum_size = Vector2(1108.7, 301)
+anchors_preset = 0
+offset_left = 86.0
+offset_top = 246.0
+offset_right = 1195.0
+offset_bottom = 547.0
+texture_filter = 4
+script = ExtResource("7_keyboard")
+unit = 46.0
+gap = 5.0
 
-[node name="ResetButton" type="Button" parent="Card/ControlsPanel"]
+[node name="ResetButton" type="Button" parent="Card/ControlsPanel" unique_id=934742503]
 layout_mode = 0
-offset_left = 540.0
-offset_top = 566.0
-offset_right = 740.0
-offset_bottom = 602.0
+offset_left = 1004.0
+offset_top = 201.0
+offset_right = 1200.0
+offset_bottom = 239.0
+focus_mode = 0
 mouse_default_cursor_shape = 2
-text = "조작키 초기화"
+text = "기본값으로"
 
-[node name="CloseButton" type="Button" parent="Card"]
+[node name="CloseButton" type="Button" parent="Card" unique_id=30931634]
+texture_repeat = 1
 layout_mode = 0
 offset_left = 300.0
 offset_top = 620.0
 offset_right = 980.0
 offset_bottom = 682.0
 pivot_offset = Vector2(340, 31)
+focus_mode = 0
 mouse_default_cursor_shape = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_4aner")
 flat = true
 script = ExtResource("4_fantile")
-lean = 50.0
-display_text = "닫기 (ESC)"
+corners = PackedVector2Array()
+fill_color = Color(0.09, 0.07, 0.13, 0.82)
+backdrop_color = Color(0.09, 0.07, 0.13, 0.82)
 display_font_size = 28
 plain_outline = true
+
+[node name="Text" type="Label" parent="Card/CloseButton" unique_id=39292512]
+layout_mode = 0
+offset_right = 680.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.86, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 28
+text = "닫기 (ESC)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FocusRing" type="Panel" parent="Card" unique_id=842455608]
+visible = false
+layout_mode = 0
+offset_right = 100.0
+offset_bottom = 40.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_focusring")
