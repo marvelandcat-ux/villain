@@ -13,6 +13,11 @@ extends Skill
 @export var damage: int = 6  ## 오픈 이슈 임시값
 ## 총알이 나오는 위치(총구) — 캐릭터 원점 기준. x는 앞으로 나가는 거리(바라보는 방향으로 자동 반전), y는 높이(음수가 위)
 @export var muzzle_offset: Vector2 = Vector2(42, -8)
+## 주머니에서 총을 꺼내 겨누기까지 걸리는 시간(초) — 이게 지나야 첫 발이 나간다(2026-09-29 사용자 요청 "주머니에서 바로 꺼내는 느낌").
+## 길수록 꺼내는 게 잘 보이지만 스킬이 굼떠진다
+@export var draw_time: float = 0.2
+## 다 쏜 뒤 총을 다시 주머니에 넣는 시간(초, 2026-09-29 사용자 요청). 0이면 넣는 동작 없이 사라진다
+@export var holster_time: float = 0.25
 
 var _shots_left: int = 0
 var _shot_timer: float = 0.0
@@ -44,11 +49,13 @@ func _execute(fighter: Fighter) -> void:
 	_fighter_ref = fighter
 	_direction = fighter.facing
 	_shots_left = shot_count
-	_shot_timer = 0.0
-	# 몸에서 총을 꺼내 두 손 모아 겨누는 모션 — 마지막 발 뒤에도 잠깐 겨눈 채 있도록 여유를 준다
+	# 총을 다 꺼내 겨눈 뒤에 첫 발
+	_shot_timer = maxf(draw_time, 0.0)
+	# 주머니에서 총을 꺼내 두 손 모아 겨누고, 마지막 발 뒤 잠깐 겨눈 채 있다가, 다시 주머니에 넣는 모션
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_gun_motion"):
-		visual.play_gun_motion(shot_count * shot_interval + 0.15)
+		var holster: float = maxf(holster_time, 0.0)
+		visual.play_gun_motion(draw_time + shot_count * shot_interval + 0.15 + holster, draw_time, holster)
 	# 총 쏘는 동안 달리는 표정으로 바꾼다 (연사가 끝나면 _process에서 되돌린다)
 	if visual and visual.has_method("set_action_face"):
 		visual.set_action_face(true)

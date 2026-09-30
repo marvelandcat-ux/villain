@@ -310,6 +310,8 @@ func take_map_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_overrid
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0, ignore_guard: bool = false) -> void:
 	if is_invincible:
 		return
+	# 3타로 날아가는 중 추가타를 맞으면 위아래 속도는 맞기 전 그대로 둔다(_rebound_finisher) — 아래 넉백·팝업이 바꾸기 전에 기억
+	var vy_before_hit: float = velocity.y
 	# 방어 중엔 캐릭터의 공격이 통하지 않는다 — 데미지도 넉백도 없다(무적과 같은 취급).
 	# **단 맵 기믹(지나가는 열차·화분 등)은 방어로 못 막는다** — ignore_guard로 그냥 통과한다.
 	# 막아낸 양은 얼마나 잘 막았는지 볼 수 있게 누적해둔다
@@ -365,7 +367,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		# 날아가며 기절한 동안 또 맞았으면 때린 방향으로 다시 날아가고 날아가는 시간이 늘어난다 — 공격 종류(맵 공격 포함)는 안 가린다.
 		# 이번 타가 새 3타면 이 뒤에 ComboMeleeAttack이 때린 쪽 방향으로 다시 날리므로 그쪽이 이긴다
 		if _finisher_window > 0.0:
-			_rebound_finisher(knockback.x)
+			_rebound_finisher(knockback.x, vy_before_hit)
 	if current_hp <= 0:
 		died.emit()
 
@@ -439,7 +441,8 @@ func _update_tumble(delta: float) -> void:
 		return
 	_tumble_grace = maxf(_tumble_grace - delta, 0.0)
 	_tumble_left = maxf(_tumble_left - delta, 0.0)
-	var landed: bool = _tumble_grace <= 0.0 and is_on_floor()
+	# 3타로 땅에 튕겨 다시 떠오르는 순간(위로 가는 중)은 착지로 치지 않는다 — 튕길 때마다 구르기가 끊기지 않게
+	var landed: bool = _tumble_grace <= 0.0 and is_on_floor() and velocity.y >= 0.0
 	if _tumble_left <= 0.0 or landed:
 		_tumble_left = 0.0
 		# 돌던 각도를 -180~180도로 접어두고 가까운 쪽으로 일어선다 (안 접으면 몇 바퀴를 되감는다)
@@ -456,6 +459,34 @@ func _update_tumble(delta: float) -> void:
 ## 때린 방향으로 다시 날아가고, 날아가는(기절) 시간이 FINISHER_EXTRA_TIME만큼 늘어난다(계속 맞으면 계속 더 오래).
 ## 속도는 그대로라 시간이 늘수록 더 멀리 날아간다
 const FINISHER_EXTRA_TIME := 0.5
+## 3타에 맞고 날아가다 벽에 부딪히면 부딪힌 가로 속도의 이 비율로 반대쪽(때린 사람 쪽)으로 튕겨 나온다(2026-09-29 사용자 요청, 전원 —
+## 처음 0.5였다가 "속도·거리 100%"로 1.0: 부딪힌 속도 그대로 되튕긴다)
+const FINISHER_WALL_BOUNCE := 1.0
+## 이 가로 속도(px/초)보다 느리게 닿으면 튕기지 않는다(다 미끄러져 벽에 기대는 정도는 제외)
+const FINISHER_WALL_MIN_SPEED := 120.0
+## 벽에 부딪힐 때 화면 흔들림(CameraRig.add_trauma)
+const FINISHER_WALL_TRAUMA := 0.35
+## 3타로 날아가다 땅에 떨어지면 떨어진 속도의 이 비율로 다시 튀어 오른다(2026-09-29 사용자 요청 "벽처럼 100%").
+## 앞으로 가는 속도가 FINISHER_WALL_MIN_SPEED 밑으로 줄면 더는 안 튕기고 내려앉아 미끄러진다
+const FINISHER_GROUND_BOUNCE := 1.0
+## 이 낙하 속도(px/초)보다 약하게 닿으면 튕기지 않는다
+const FINISHER_GROUND_MIN_FALL := 120.0
+## 땅에 튕길 때 화면 흔들림
+const FINISHER_GROUND_TRAUMA := 0.2
+## 3타 기절은 완전히 멈출 때까지 가지만, 어딘가 끼어 안 멈추는 경우를 위한 안전 한도(초)
+const FINISHER_MAX_FLY_TIME := 6.0
+## 3타로 날아가는 각도(도, 수평에서 위로) — 2026-09-29 사용자 요청 "아래로 말고 위쪽으로" 45도. 속도 크기는 그대로, 방향만 돌린다
+const FINISHER_LAUNCH_ANGLE_DEG := 45.0
+## 최고 높이 상한(px) = 이 값 x 체력 배율(풀피 150 ~ 빈사 300) — 45도 그대로면 빈사 때 약 720px(화면 위로 사라짐)라 위로 솟는 속도를 자른다
+const FINISHER_PEAK_PER_SCALE := 150.0
+## 3타로 날아가는 동안 중력 배율(평소의 45%, 사용자 결정) — 다른 피격 경직의 HIT_LAUNCH_GRAVITY_SCALE(0.6)과 따로
+const FINISHER_GRAVITY_SCALE := 0.45
+## 3타로 날아가는 동안 **공중에서** 옆 속도가 줄어드는 빠르기(px/초²) — 바닥 마찰(HITSTUN_FRICTION 900)을 공중에도 쓰면
+## 옆 속도가 먼저 끝나 마지막엔 수직으로 떨어진다. 300이면 빈사 때 2500px까지 날아가서 중간값
+const FINISHER_AIR_DRAG := 500.0
+## 3타로 날아가다 **처음** 땅에 튕길 때 때린 사람 반대쪽으로 날리는 옆 속도 = 처음 날아간 옆 속도 x 이 배율
+## (2026-09-29 사용자 요청 "제자리에서 통통 튀면 추가타가 너무 쉽다" — 1.5배). 두 번째 튕김부턴 안 민다(매번 밀면 영영 안 멈춤)
+const FINISHER_GROUND_KICK := 1.5
 
 ## 추가 피격을 받을 수 있는 남은 시간(= 남은 기절 시간) / 지금 날아가는 방향(+1 오른쪽)
 var _finisher_window: float = 0.0
@@ -464,6 +495,17 @@ var _finisher_dir: float = 0.0
 var _finisher_params: Dictionary = {}
 ## 추가 피격으로 누적된 날아가는 시간(초). 새 3타가 시작될 때 0으로 리셋된다
 var _finisher_extra_time: float = 0.0
+## 3타에 맞아 날아가는 중인지 — **완전히 멈출 때까지** 기절이 이어진다(2026-09-29 사용자 요청 "기절 시간 = 날아가는 시간")
+var _finisher_flying: bool = false
+var _finisher_fly_time: float = 0.0
+## 이번 3타에서 위로 솟는 속도 상한(최고 높이 제한에서 역산) — 벽에 튕겨 다시 떠오를 때도 쓴다
+var _finisher_up_cap: float = 0.0
+## 이번 3타에서 땅에 튕긴 횟수 — 첫 착지는 옆 속도와 상관없이 한 번은 튕긴다(사용자 결정)
+var _finisher_ground_bounces: int = 0
+## 이번 3타에서 처음 날아간 옆 속도(크기) — 첫 땅 튕김 때 FINISHER_GROUND_KICK을 곱해 반대쪽으로 날린다
+var _finisher_launch_vx: float = 0.0
+## 날아가는 동안 머리 위에 띄운 기절 별 — 멈출 때까지 늘리고, 멈추면 지운다
+var _finisher_stars: StunStars = null
 
 ## 3타 공격에 맞아 dir 쪽으로 기절한 채 돌면서 날아간다.
 ## speed/pop/stun/turns는 **잃은 체력 0일 때** 값이고, 잃은 체력 비율만큼 max_scale배 쪽으로 커진다
@@ -481,26 +523,123 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	var d: float = signf(dir)
 	# 날아가는(기절) 시간 = 기본 + 추가 피격으로 누적된 시간. 속도는 그대로라 시간이 늘수록 더 멀리 간다
 	var time: float = stun * launch_scale + _finisher_extra_time
-	velocity.x = d * speed * KNOCKBACK_MULTIPLIER * launch_scale
-	velocity.y = -pop * launch_scale
+	# 속도 크기는 예전 가로 속도 그대로, 방향은 FINISHER_LAUNCH_ANGLE_DEG 위로(2026-09-29). pop은 더 안 쓴다 —
+	# 위로 솟는 속도는 각도로 정하되 최고 높이(FINISHER_PEAK_PER_SCALE x 배율)를 넘지 않게 자른다
+	var total: float = speed * KNOCKBACK_MULTIPLIER * launch_scale
+	var ang: float = deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)
+	_finisher_up_cap = sqrt(2.0 * gravity * FINISHER_GRAVITY_SCALE * FINISHER_PEAK_PER_SCALE * launch_scale)
+	_finisher_launch_vx = total * cos(ang)
+	velocity.x = d * _finisher_launch_vx
+	velocity.y = -minf(total * sin(ang), _finisher_up_cap)
+	_finisher_ground_bounces = 0
 	_launch_momentum = true
 	# 새로 날아가는 것이므로 남은 경직과 상관없이 이번 시간으로 다시 잡는다
 	_hitstun_time = time
 	play_launch_tumble(turns * launch_scale, time, d)
-	StunStars.spawn(self, time)
+	_finisher_stars = StunStars.spawn(self, time)
+	_finisher_flying = true
+	_finisher_fly_time = 0.0
 	_finisher_dir = d
 	# 날아가며 기절해 있는 동안 계속 추가 피격을 받을 수 있다(감지 시간 = 남은 기절 시간)
 	_finisher_window = time
 	_finisher_params = {"speed": speed, "pop": pop, "stun": stun, "turns": turns, "max_scale": max_scale}
 
+## 3타에 맞고 날아가는 중(_finisher_window)에 벽에 부딪혔으면 반대쪽으로 튕겨 낸다 — apply_physics가 move_and_slide 직후 부른다.
+## pre_vx는 **move_and_slide가 0으로 지우기 전의** 가로 속도. 튕긴 뒤엔 벽에서 멀어지므로 같은 벽에 또 걸리지 않는다
+func _try_finisher_wall_bounce(pre_vx: float) -> void:
+	if _finisher_window <= 0.0 or not is_on_wall() or absf(pre_vx) < FINISHER_WALL_MIN_SPEED:
+		return
+	var normal: Vector2 = get_wall_normal()
+	# 벽 쪽으로 가던 중일 때만(벽에서 멀어지는 중인데 벽 판정만 남은 프레임은 무시)
+	if is_zero_approx(normal.x) or signf(pre_vx) != -signf(normal.x):
+		return
+	velocity.x = -pre_vx * FINISHER_WALL_BOUNCE
+	# 떨어지던 속도를 버리고 처음 맞았을 때처럼 FINISHER_LAUNCH_ANGLE_DEG 위로 다시 떠오른다(사용자 결정, 높이 상한 동일)
+	velocity.y = -minf(absf(velocity.x) * tan(deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)), _finisher_up_cap)
+	_launch_momentum = true
+	_finisher_dir = signf(velocity.x)
+	# 구르는 방향도 뒤집는다(날아가는 쪽으로 굴러야 자연스럽다)
+	_tumble_speed = -_tumble_speed
+	var parent: Node = get_parent()
+	if parent:
+		CrashBurst.spawn(parent, global_position - Vector2(normal.x * 18.0, 6.0))
+	var cam: Node = get_tree().get_first_node_in_group("game_camera")
+	if cam and cam.has_method("add_trauma"):
+		cam.add_trauma(FINISHER_WALL_TRAUMA)
+
+## 3타로 날아가는 동안 매 물리 프레임(move_and_slide 직후) — 땅에 떨어지면 튕겨 올리고, **완전히 멈출 때까지** 기절을 붙잡아 둔다.
+## fall_speed는 move_and_slide가 0으로 지우기 전의 낙하 속도. 앞으로 가는 속도는 기절 중 마찰(HITSTUN_FRICTION)로 줄어서,
+## FINISHER_WALL_MIN_SPEED 밑이 되면 더는 안 튕기고 내려앉아 미끄러지다 멈춘다 — 그때 기절이 풀린다
+func _update_finisher_flight(delta: float, fall_speed: float) -> void:
+	if not _finisher_flying:
+		return
+	_finisher_fly_time += delta
+	if has_super_armor() or is_grabbed or _finisher_fly_time >= FINISHER_MAX_FLY_TIME:
+		_end_finisher_flight()
+		return
+	# 첫 착지는 옆 속도와 상관없이 한 번은 튕긴다(사용자 결정) — 그 뒤로는 옆 속도가 남아 있을 때만
+	var can_bounce: bool = absf(velocity.x) >= FINISHER_WALL_MIN_SPEED or _finisher_ground_bounces == 0
+	if is_on_floor() and fall_speed > FINISHER_GROUND_MIN_FALL and can_bounce:
+		# 첫 땅 튕김은 제자리에서 통통 튀지 않고 때린 사람 반대쪽으로 세게 날아간다(추가타가 너무 쉬웠다, 사용자 요청)
+		if _finisher_ground_bounces == 0:
+			var away: float = _away_from_opponent()
+			velocity.x = away * _finisher_launch_vx * FINISHER_GROUND_KICK
+			if signf(_tumble_speed) != away:
+				_tumble_speed = -_tumble_speed
+			_finisher_dir = away
+		_finisher_ground_bounces += 1
+		velocity.y = -fall_speed * FINISHER_GROUND_BOUNCE
+		# 바닥에 닿아 꺼진 날아가는 관성을 다시 켠다(다음 착지까지 가로 속도를 조작으로 덮어쓰지 않게)
+		_launch_momentum = true
+		var parent: Node = get_parent()
+		if parent:
+			# 발끝(원점 +30) 조금 위 — 바닥에 부딪힌 자리
+			CrashBurst.spawn(parent, global_position + Vector2(0.0, 24.0))
+		var cam: Node = get_tree().get_first_node_in_group("game_camera")
+		if cam and cam.has_method("add_trauma"):
+			cam.add_trauma(FINISHER_GROUND_TRAUMA)
+	if is_on_floor() and velocity.y >= 0.0 and absf(velocity.x) < 1.0:
+		_end_finisher_flight()
+		return
+	# 아직 날아가거나 미끄러지는 중 — 기절·추가타 창·구르기·기절 별을 계속 잡아 둔다
+	_hitstun_time = maxf(_hitstun_time, 0.1)
+	_finisher_window = maxf(_finisher_window, 0.1)
+	if _tumble_left > 0.0 and not is_on_floor():
+		_tumble_left = maxf(_tumble_left, 0.1)
+	if is_instance_valid(_finisher_stars):
+		_finisher_stars.extend(0.15)
+
+## 상대(때린 사람)의 반대쪽 방향(+1 오른쪽 / -1 왼쪽). 같은 x거나 상대가 없으면 날아가던 방향
+func _away_from_opponent() -> float:
+	var opp: Fighter = find_opponent()
+	if opp != null and is_instance_valid(opp):
+		var dx: float = global_position.x - opp.global_position.x
+		if absf(dx) > 1.0:
+			return signf(dx)
+	return _finisher_dir if not is_zero_approx(_finisher_dir) else 1.0
+
+## 3타 날아가기가 끝났다(멈춤·잡힘·안전 한도) — 기절을 풀고 구르기·기절 별을 정리한다
+func _end_finisher_flight() -> void:
+	_finisher_flying = false
+	_hitstun_time = 0.0
+	_finisher_window = 0.0
+	if _tumble_left > 0.0:
+		_tumble_left = 0.001   # 다음 프레임 _update_tumble이 똑바로 세운다
+	if is_instance_valid(_finisher_stars):
+		_finisher_stars.queue_free()
+	_finisher_stars = null
+
 ## 날아가며 기절한 동안 또 맞았을 때 — **때린 방향으로** 같은 속도로 다시 날리고, 날아가는 시간을 늘린다.
 ## 시간만 FINISHER_EXTRA_TIME씩 누적되므로(속도는 그대로) 계속 따라가 때리면 점점 더 오래·더 멀리 날아간다.
-## hit_dir는 이번 추가타의 넉백 방향(x). 넉백이 없는 피해(맵 도트 등)면 날아가던 방향을 그대로 쓴다
-func _rebound_finisher(hit_dir: float) -> void:
+## hit_dir는 이번 추가타의 넉백 방향(x). 넉백이 없는 피해(맵 도트 등)면 날아가던 방향을 그대로 쓴다.
+## **추가타는 옆으로만 민다(2026-09-29 사용자 결정)** — 위아래 속도는 맞기 전(vy_before) 그대로. 3타처럼 45도 위로 다시 솟게 하면
+## 비비탄 첫 발에 맞은 상대가 위로 떠올라 2·3발째가 발밑으로 지나갔다("총알이 씹힌다")
+func _rebound_finisher(hit_dir: float, vy_before: float) -> void:
 	var p: Dictionary = _finisher_params
 	_finisher_extra_time += FINISHER_EXTRA_TIME
 	var d: float = signf(hit_dir) if not is_zero_approx(hit_dir) else _finisher_dir
 	launch_finisher(d, p.speed, p.pop, p.stun, p.turns, p.max_scale)
+	velocity.y = vy_before
 
 ## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
 func _play_hurt_face() -> void:
@@ -1096,7 +1235,9 @@ func apply_physics(delta: float) -> void:
 	# 경직 중엔 넉백 속도가 마찰로 서서히 줄며 미끄러진다 (멈출 때쯤 경직도 끝나 조작이 돌아온다)
 	if _hitstun_time > 0.0:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
-		velocity.x = move_toward(velocity.x, 0.0, HITSTUN_FRICTION * delta)
+		# 3타로 날아가는 중 공중에선 옆 속도를 덜 깎는다(포물선이 끝까지 이어지게) — 바닥에선 평소 마찰
+		var friction: float = FINISHER_AIR_DRAG if _finisher_flying and not is_on_floor() else HITSTUN_FRICTION
+		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 	# 크게 날아가는 중이면 몸이 빙글빙글 돈다 (시간이 다 되거나 바닥에 닿으면 알아서 일어선다)
 	if _tumble_left > 0.0:
 		_update_tumble(delta)
@@ -1105,7 +1246,9 @@ func apply_physics(delta: float) -> void:
 	if not is_on_floor():
 		# 피격으로 떠 있는 동안엔 중력을 줄여 잠깐 더 체공하게 한다 (옆보다 위로 뜨는 넉백과 어울림)
 		var g: float = gravity
-		if _hitstun_time > 0.0:
+		if _finisher_flying:
+			g *= FINISHER_GRAVITY_SCALE
+		elif _hitstun_time > 0.0:
 			g *= HIT_LAUNCH_GRAVITY_SCALE
 		elif velocity.y > 0.0:
 			g *= fall_gravity_multiplier
@@ -1160,7 +1303,11 @@ func apply_physics(delta: float) -> void:
 	var was_launched: bool = _launch_momentum or _hitstun_time > 0.0
 	if _landing_lag > 0.0:
 		_landing_lag = maxf(_landing_lag - delta, 0.0)
+	# 벽에 부딪히면 move_and_slide()가 가로 속도를 0으로 만든다 — 3타 벽 튕김에 쓸 속도를 미리 기억한다
+	var pre_vx: float = velocity.x
 	move_and_slide()
+	_try_finisher_wall_bounce(pre_vx)
+	_update_finisher_flight(delta, fall_speed)
 	# 착지할 때마다 공중 점프 횟수를 다시 채운다 (move_and_slide 뒤라야 이번 프레임의 착지가 반영된다)
 	if is_on_floor():
 		_air_jumps_left = max_air_jumps

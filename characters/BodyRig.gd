@@ -314,6 +314,9 @@ extends Node2D
 ## 켜면 몸통 그림마다 불투명 영역 **높이**를 원래 몸통과 같게 배율을 맞춘다 — 캔버스·그린 크기가 원래 몸통과 다른 그림용
 ## (악플러: 원래 344x270, 측면 그림 887x887에 크게 그려짐, 2026-09-28). 금쪽이처럼 같은 캔버스로 그렸으면 끈다
 @export var body_turn_match_height: bool = false
+## body_turn_textures와 같은 순서로, 그 그림이 **왼쪽을 보고** 그려졌으면 true — 좌우로 뒤집어 오른쪽을 보게 쓴다
+## (주정뱅이 몸 측면 2만 왼쪽을 봄, 2026-09-29 사용자 결정). 비었거나 칸이 모자라면 오른쪽을 본다고 친다
+@export var body_turn_faces_left: Array[bool] = []
 ## 방향을 바꿀 때도 머리가 위 그림들을 넘기며 돈다(2026-09-26 시험) — 몸은 예전처럼 바로 뒤집히고,
 ## 머리가 옛 방향 쪽 측면1 -> ... -> 정면 -> ... -> 새 방향 옆모습으로 따라 돌아온다. 끄면 머리도 몸과 같이 탁 뒤집힌다
 @export var head_turn_on_face: bool = false
@@ -436,16 +439,26 @@ extends Node2D
 ## 술병을 추가로 기울이는 각도(도). 씬에 잡아둔 제자리 각도(-155도)가 이미 붓는 자세라 기본은 0이다
 @export var drink_hand_deg: float = 0.0
 
-## --- 총 쏘기 (촉법소년 비비탄) : 몸에서 총을 꺼내 두 손을 모아 앞으로 겨눈다 ---
-## 총을 "몸에서 꺼내는" 시작점(허리/가슴 근처, 리그 원점 기준). 여기서 앞으로 뻗어 조준 자세로 간다
-@export var gun_draw_offset: Vector2 = Vector2(2, -4)
+## --- 총 쏘기 (촉법소년 비비탄) : 주머니에서 총을 휙 꺼내 두 손을 모아 앞으로 겨눈다 ---
+## (2026-09-29 사용자 요청 "주머니에서 바로 꺼내는 느낌") 꺼내는 시간 = 앞 gun_pocket_ratio 동안 빈손이 주머니로 내려가고,
+## 나머지 동안 총을 쥔 채 총구가 아래를 보던 각도(gun_pocket_deg)에서 수평으로 돌며 조준 자리까지 뽑아 올린다
+## 오른손이 총을 꺼내는 주머니 자리(허리 앞쪽, 리그 원점 기준)
+@export var gun_pocket_offset: Vector2 = Vector2(9, 12)
+## 꺼내는 시간 중 빈손이 주머니로 내려가는 앞부분 비율(이 동안 총은 안 보인다)
+@export_range(0.0, 0.9, 0.05) var gun_pocket_ratio: float = 0.35
+## 주머니에서 막 뽑을 때 총 각도(도, 양수 = 총구가 아래) — 올라오면서 0도(수평)로 돈다
+@export var gun_pocket_deg: float = 95.0
+## 뽑아 올릴 때 손이 위로 부푸는 정도(px) — 곧게 오지 않고 살짝 호를 그린다
+@export var gun_pull_arc: float = 5.0
+## 다 쏘고 다시 넣을 때(BBGunSkill.holster_time) 앞부분 비율 — 여기까지 총이 주머니로 들어가 사라지고, 나머지 동안 빈손이 제자리로 돌아온다
+@export_range(0.05, 1.0, 0.05) var gun_holster_hide: float = 0.6
 ## 두 손을 모아 앞으로 겨누는 그립 위치(리그 원점 기준). x가 클수록 팔을 더 앞으로 뻗는다
 @export var gun_aim_offset: Vector2 = Vector2(20, -6)
 ## 왼손이 오른손(그립)에서 떨어져 있는 거리 — 두 손을 살짝 어긋나게 모아 잡는다
 @export var gun_hand_l_offset: Vector2 = Vector2(-4, 3)
 ## 총 스프라이트가 그립(손)보다 총구 쪽으로 나가 있는 거리
 @export var gun_forward_offset: Vector2 = Vector2(10, 0)
-## 전체 동작 중 "몸에서 꺼내 조준까지" 올리는 구간 비율(앞 20%). 나머지는 겨눈 채 유지한다
+## 꺼내는 시간을 따로 안 넘겨받았을 때(컷인 등) 전체 동작 중 "주머니에서 꺼내 조준까지" 구간 비율. 나머지는 겨눈 채 유지한다
 @export var gun_draw_ratio: float = 0.2
 ## 발사 반동으로 총·손이 뒤로 밀리는 거리(px)
 @export var gun_recoil_kick: float = 6.0
@@ -759,6 +772,12 @@ var _drink_time: float = 0.0
 var _gun_time: float = 0.0
 ## 총 조준 동작 전체 길이(스킬이 넘겨준다) — 진행도 계산용
 var _gun_duration: float = 0.5
+## 그중 주머니에서 꺼내 조준까지 걸리는 시간(초)
+var _gun_draw_time: float = 0.1
+## 그중 맨 끝에서 총을 다시 주머니에 넣는 시간(초). 0이면 넣는 동작 없이 사라진다(컷인)
+var _gun_holster_time: float = 0.0
+## 총 스프라이트 원래 배율 — 꺼낼 때 살짝 작게 시작했다 돌아오므로 기억해 둔다(처음 꺼낼 때 잰다)
+var _gun_rest_scale: Vector2 = Vector2.ZERO
 ## 발사 반동 세기 0~1 — 쏠 때마다 1로 튀었다가 서서히 0으로 줄어든다
 var _recoil: float = 0.0
 ## 파일드라이버 동작에 남은 시간(초). 0보다 크면 잡기~내리꽂기 동작 중이다
@@ -2299,13 +2318,19 @@ func _pose_pedal() -> void:
 func play_drink_motion() -> void:
 	_drink_time = drink_duration
 
-## 총 쏘기 동작 시작 — 몸에서 총을 꺼내 두 손을 모아 앞으로 겨눈다.
-## BBGunSkill이 발동하는 순간 전체 지속시간을 넘겨서 호출한다 (총 노드가 없으면 아무 일도 안 한다)
-func play_gun_motion(duration: float) -> void:
+## 총 쏘기 동작 시작 — 주머니에서 총을 꺼내 두 손을 모아 앞으로 겨눈다.
+## BBGunSkill이 발동하는 순간 전체 지속시간과 꺼내는 시간(draw_time, 첫 발 전까지)을 넘겨서 호출한다.
+## draw_time을 안 주면 전체의 gun_draw_ratio만큼 꺼낸다(컷인). holster_time > 0이면 전체의 맨 끝 그만큼 다시 주머니에 넣는다.
+## 총 노드가 없으면 아무 일도 안 한다
+func play_gun_motion(duration: float, draw_time: float = -1.0, holster_time: float = 0.0) -> void:
 	if _gun == null:
 		return
+	if _gun_rest_scale == Vector2.ZERO:
+		_gun_rest_scale = _gun.scale
 	_gun_duration = maxf(duration, 0.05)
 	_gun_time = _gun_duration
+	_gun_draw_time = draw_time if draw_time > 0.0 else _gun_duration * gun_draw_ratio
+	_gun_holster_time = clampf(holster_time, 0.0, maxf(_gun_duration - _gun_draw_time, 0.0))
 
 ## 한 발 쏠 때마다 반동을 준다 — BBGunSkill이 총알을 발사한 순간 호출한다
 func gun_recoil() -> void:
@@ -2641,8 +2666,8 @@ func play_hurt_face() -> void:
 	if _head == null or hurt_head_texture == null:
 		return
 	_head.texture = hurt_head_texture
-	if hurt_head_scale != Vector2.ZERO:
-		_head.scale = hurt_head_scale
+	# (0,0)이면 원래 머리 배율 — 안 넣으면 직전 표정(술 머금은 얼굴 등)의 배율이 남아 피격 머리가 커졌다(2026-09-29 주정뱅이)
+	_head.scale = hurt_head_scale if hurt_head_scale != Vector2.ZERO else _head_rest_scale
 	_hurt_time = hurt_face_duration
 
 ## 잠깐 바뀌었던 표정이 끝났을 때 — 아직 남아있는 다른 표정이 있으면 그쪽으로,
@@ -2653,8 +2678,7 @@ func _restore_head() -> void:
 		return
 	if _hurt_time > 0.0 and hurt_head_texture != null:
 		_head.texture = hurt_head_texture
-		if hurt_head_scale != Vector2.ZERO:
-			_head.scale = hurt_head_scale
+		_head.scale = hurt_head_scale if hurt_head_scale != Vector2.ZERO else _head_rest_scale
 		return
 	if _vomit_time > 0.0 and vomit_head_texture != null:
 		_head.texture = vomit_head_texture
@@ -2730,26 +2754,67 @@ func _pose_drink() -> void:
 		_hand_r.rotation = deg_to_rad(drink_hand_deg * reach)
 		_hand_r.position = _rest_positions[_hand_r] + drink_hand_offset * reach + arc + Vector2(0.0, gulp)
 
-## 총 조준 자세 — 몸에서 꺼내(앞 gun_draw_ratio 구간) 두 손을 모아 앞으로 겨눈다.
-## 두 손과 총을 그립 위치에 두고, 발사 반동이 있으면 뒤로 살짝 밀어낸다 (걷기 동작보다 우선)
+## 총 조준 자세 — 주머니에서 총을 꺼내(꺼내는 시간 _gun_draw_time) 두 손을 모아 앞으로 겨눈다.
+## ① 빈손이 주머니로 쑥 내려간다(총 안 보임) ② 총을 쥔 채 총구가 아래를 보던 각도에서 수평으로 돌며 조준 자리까지 휙 뽑아 올리고,
+## 왼손이 따라와 그립을 받친다 ③ 겨눈 채 유지. 발사 반동이 있으면 뒤로 살짝 밀어낸다 (걷기 동작보다 우선)
 func _pose_gun() -> void:
-	var progress: float = 1.0 - _gun_time / _gun_duration
-	# 꺼내는 구간(0~draw_ratio)에서 그립이 몸에서 조준 위치로 부드럽게 이동, 이후엔 조준 위치 유지
-	var t: float = clampf(progress / maxf(gun_draw_ratio, 0.001), 0.0, 1.0)
-	var ease_t: float = t * t * (3.0 - 2.0 * t)   # smoothstep
-	var grip: Vector2 = gun_draw_offset.lerp(gun_aim_offset, ease_t)
+	var elapsed: float = _gun_duration - _gun_time
+	var t: float = clampf(elapsed / maxf(_gun_draw_time, 0.001), 0.0, 1.0)
+	var rest_r: Vector2 = _rest_positions[_hand_r] if _hand_r else Vector2.ZERO
+	var rest_l: Vector2 = _rest_positions[_hand_l] if _hand_l else Vector2.ZERO
+	var grip: Vector2
+	var gun_deg: float = 0.0
+	var show_gun: bool = true
+	var gun_pop: float = 1.0
+	var left_t: float = 1.0
+	var pocket_ratio: float = clampf(gun_pocket_ratio, 0.0, 0.9)
+	if t < pocket_ratio:
+		# ① 빈손이 주머니로
+		var k: float = t / maxf(pocket_ratio, 0.001)
+		grip = rest_r.lerp(gun_pocket_offset, k * k * (3.0 - 2.0 * k))
+		show_gun = false
+		left_t = 0.0
+	else:
+		# ② 휙 뽑아 올리기 — 끝에서 감속(ease out)해 조준 자리에 탁 멈춘다
+		var k: float = (t - pocket_ratio) / maxf(1.0 - pocket_ratio, 0.001)
+		var e: float = 1.0 - pow(1.0 - k, 3.0)
+		grip = gun_pocket_offset.lerp(gun_aim_offset, e) + Vector2(0.0, -gun_pull_arc * sin(PI * k))
+		gun_deg = gun_pocket_deg * (1.0 - e)
+		# 주머니에서 막 나올 때 살짝 작게 시작해 커진다(꺼내는 느낌)
+		gun_pop = lerpf(0.75, 1.0, clampf(k / 0.35, 0.0, 1.0))
+		left_t = e
+	# ④ 다 쏘면 다시 주머니에 넣는다(2026-09-29 사용자 요청) — 동작 맨 끝 _gun_holster_time 동안 꺼낼 때를 거꾸로:
+	# 총구가 아래로 돌며 주머니 자리로 쑥 내려가 작아지고, 왼손은 놓고 제자리로. 앞 gun_holster_hide 비율에서 총이 사라지고 빈손만 돌아온다
+	if _gun_holster_time > 0.0 and _gun_time < _gun_holster_time and t >= 1.0:
+		var h: float = 1.0 - _gun_time / _gun_holster_time
+		var hide_at: float = clampf(gun_holster_hide, 0.05, 1.0)
+		if h < hide_at:
+			var k: float = h / hide_at
+			var e: float = k * k   # 처음엔 천천히, 넣을 때 쑥
+			grip = gun_aim_offset.lerp(gun_pocket_offset, e)
+			gun_deg = gun_pocket_deg * e
+			gun_pop = lerpf(1.0, 0.75, e)
+			left_t = 1.0 - clampf(k * 1.6, 0.0, 1.0)
+		else:
+			var k: float = (h - hide_at) / maxf(1.0 - hide_at, 0.001)
+			grip = gun_pocket_offset.lerp(rest_r, k * k * (3.0 - 2.0 * k))
+			show_gun = false
+			left_t = 0.0
 	# 발사 반동 — 뒤(-x)로 밀리며 살짝 들린다(-y)
 	grip += Vector2(-gun_recoil_kick, -gun_recoil_kick * 0.4) * _recoil
 	if _hand_r:
 		_hand_r.position = grip
 		_hand_r.rotation = 0.0
 	if _hand_l:
-		_hand_l.position = grip + gun_hand_l_offset
+		_hand_l.position = rest_l.lerp(grip + gun_hand_l_offset, left_t)
 		_hand_l.rotation = 0.0
 	if _gun:
-		_gun.visible = true
-		_gun.position = grip + gun_forward_offset
-		_gun.rotation = 0.0
+		var rad: float = deg_to_rad(gun_deg)
+		_gun.visible = show_gun
+		_gun.position = grip + gun_forward_offset.rotated(rad)
+		_gun.rotation = rad
+		if _gun_rest_scale != Vector2.ZERO:
+			_gun.scale = _gun_rest_scale * gun_pop
 
 ## 특수 idle 몸짓을 시작한다
 func _start_special() -> void:
@@ -2901,10 +2966,14 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 		return
 	var nh: int = maxi(head_turn_textures.size(), 1)
 	var tex: Texture2D = _body_rest_texture
+	# 왼쪽을 보고 그린 그림은 한 번 더 뒤집어 오른쪽을 보게 한다
+	var flip: float = 1.0
 	if head_frame > 0 and head_frame < nh:
 		var middle: int = maxi(nh - 1, 1)
 		var i: int = clampi(int(floor(float(head_frame - 1) * body_turn_textures.size() / middle)), 0, body_turn_textures.size() - 1)
 		tex = body_turn_textures[i]
+		if i < body_turn_faces_left.size() and body_turn_faces_left[i]:
+			flip = -1.0
 	var sx: float = absf(_body_rest_scale.x)
 	var sy: float = _body_rest_scale.y
 	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
@@ -2914,8 +2983,8 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 	if body_turn_match_height and tex != _body_rest_texture:
 		k = _body_height_of(_body_rest_texture) / maxf(_body_height_of(tex), 1.0)
 	_body.texture = tex
-	_body.scale = Vector2(sx * k * dir, sy * k)
-	_body.position += Vector2((rest_anchor.x - here.x * k * dir) * sx, (rest_anchor.y - here.y * k) * sy)
+	_body.scale = Vector2(sx * k * dir * flip, sy * k)
+	_body.position += Vector2((rest_anchor.x - here.x * k * dir * flip) * sx, (rest_anchor.y - here.y * k) * sy)
 	_turn_applied = true
 
 ## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다

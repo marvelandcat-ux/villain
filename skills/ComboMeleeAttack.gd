@@ -298,7 +298,9 @@ func _launch_finisher(victim: Node) -> void:
 		dir = signf(_fighter.facing)
 	# 날아가는 이펙트(현재 브랜치 기능) — 경직·구르기와 상관없이 모든 마무리 타에 붙인다
 	if finisher_trail:
-		_spawn_launch_trail(target, Vector2(dir, -0.35))
+		# 충격 가시가 길게 뻗는 방향 = 날아가는 방향(Fighter.FINISHER_LAUNCH_ANGLE_DEG 위로)
+		var up: float = tan(deg_to_rad(Fighter.FINISHER_LAUNCH_ANGLE_DEG))
+		_spawn_launch_trail(target, Vector2(dir, -up))
 	# 날려보내기는 sub 전투 시스템에 위임(속도·팝·기절·구르기·체력 비례 확대)
 	target.launch_finisher(dir, speed, pop, stun, turns, finisher_max_scale)
 	if smoke:

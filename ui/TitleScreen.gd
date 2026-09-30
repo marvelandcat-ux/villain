@@ -113,6 +113,7 @@ func _ready() -> void:
 ## 타이틀이 사라질 때(메뉴로 넘어가거나 창을 닫을 때) 브금을 멈춘다 — 재생 중인 채로 꺼지면
 ## "resources still in use"·"ObjectDB instances were leaked" 경고가 났다
 ## 타이틀에서 창 닫기(X)로 끌 때도 브금을 먼저 멈춘다(재생 중인 채로 꺼지면 종료 경고가 난다)
+## ⚠️ `--headless`로 돌리면 그래도 이 경고가 매번 뜬다(가짜 소리 장치라 재생 정리가 안 돈다) — 창으로 띄우면 안 뜬다
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_bgm.stop()
