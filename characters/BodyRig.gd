@@ -572,11 +572,11 @@ extends Node2D
 ## 앞손(오른손, 단소가 매달린 손)은 턱 앞, 뒷손(왼손)은 단소 뒤끝을 잡는다 — 게임 단소가 짧아서(약 47px, 앞손 기준 뒤 8 ~ 앞 36px)
 ## 두 손 간격이 좁다(사용자 결정). 뒷손은 원래 머리 뒤에 그려지는데 그림처럼 머리 위로 보이게 자세 동안 z를 올린다(attack_grip_hand_z).
 ## 손 자리는 **숙이기 전** 기준(리그 원점, 앞이 +x) — 숙이는 회전은 그 뒤에 엉덩이를 축으로 몸·머리·손에 같이 건다
-@export var counter_hand_r_pos: Vector2 = Vector2(24, -18)
+@export var counter_hand_r_pos: Vector2 = Vector2(-6, -18)
 ## 오른손 각도(도) — 단소가 제자리에서 앞 위(약 -46도)라 +67이면 앞 아래 약 21도를 겨눈다
 @export var counter_hand_r_deg: float = 67.0
 ## 왼손(뒷손) 자리 — 단소 뒤끝(앞손 + (-8, -6) 근처)
-@export var counter_hand_l_pos: Vector2 = Vector2(15, -24)
+@export var counter_hand_l_pos: Vector2 = Vector2(-15, -24)
 @export var counter_hand_l_deg: float = 67.0
 ## 상체를 앞으로 숙이는 각도(도). 0이면 똑바로
 @export var counter_lean_deg: float = 0.0

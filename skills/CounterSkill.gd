@@ -116,7 +116,7 @@ func trigger_counter(fighter: Fighter) -> void:
 	fighter.start_busy(slow_time * slow_scale + active_duration + 0.1)
 	_spawn_flash(fighter)
 	# 모션의 후려치는 순간이 slow_time에 오도록 거꾸로 계산해 휘두르기 시작 시각을 정한다(느려진 만큼 모션도 길다)
-	var swing_at: float = maxf(slow_time - swing_strike_time / maxf(slow_scale, 0.01), 0.0)
+	var swing_at: float = maxf(slow_time - _swing_strike_time(fighter) / maxf(slow_scale, 0.01), 0.0)
 	Timers.after(self, swing_at, func(): _play_swing(fighter), true)
 	Timers.after(self, slow_time, func(): _strike(fighter), true)
 
@@ -134,6 +134,14 @@ func _teleport_behind(fighter: Fighter, opponent: Fighter) -> void:
 	fighter.global_position = target
 	fighter.velocity = Vector2.ZERO
 	fighter.facing = -back
+
+## 반격 모션에서 후려치는 순간까지(게임 시간) — 그 타가 리그의 회전 타격(spin_hit_index)이면 리그가 계산한 값,
+## 아니면 swing_strike_time. 지하철 3타는 2026-09-30부터 한 바퀴 돌며 벤다(0.5초 x 0.62 x 0.72 ≈ 0.223)
+func _swing_strike_time(fighter: Fighter) -> float:
+	var visual := fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("strike_time") and int(visual.get("spin_hit_index")) == counter_swing_variant:
+		return visual.strike_time(float(visual.get("spin_duration")), true)
+	return swing_strike_time
 
 func _play_swing(fighter: Fighter) -> void:
 	if not is_instance_valid(fighter):
