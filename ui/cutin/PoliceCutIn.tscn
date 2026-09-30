@@ -1,12 +1,13 @@
 [gd_scene format=3 uid="uid://bjtmbdoj01srj"]
 
 [ext_resource type="Script" uid="uid://by45b5vlnjnvr" path="res://ui/cutin/PoliceCutIn.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://cc857mdf7t0p8" path="res://sprite/storymode/경찰서/경찰몸통_배경제거.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="2_body"]
 [ext_resource type="Texture2D" uid="uid://om1k0t7echtn" path="res://sprite/storymode/경찰서/경찰정면.png" id="3_head"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="4_hand"]
 [ext_resource type="Texture2D" uid="uid://diwjm0n21gcor" path="res://sprite/storymode/경찰서/궁극기경찰차.png" id="5_bg"]
 [ext_resource type="Texture2D" uid="uid://ck3gu7qcxpeeg" path="res://sprite/storymode/경찰서/미란다종이.png" id="6_paper"]
 [ext_resource type="Texture2D" uid="uid://boxf7maey23ac" path="res://sprite/storymode/경찰서/경찰정면_입다문.png" id="8_shut"]
+[ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="9_baton"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_addblue"]
 blend_mode = 1
@@ -59,9 +60,15 @@ position = Vector2(45.00004, 161)
 scale = Vector2(0.33733886, 0.3855301)
 texture = ExtResource("2_body")
 
+[node name="Baton" type="Sprite2D" parent="Police" unique_id=774451201]
+position = Vector2(368, 36.000015)
+rotation = -0.35
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("9_baton")
+
 [node name="HandR" type="Sprite2D" parent="Police" unique_id=331050882]
-position = Vector2(315, 193)
-scale = Vector2(0.8680172, 0.8680172)
+position = Vector2(313, 190)
+scale = Vector2(1.0398906, 1.0133189)
 texture = ExtResource("4_hand")
 
 [node name="Head" type="Sprite2D" parent="Police" unique_id=1684558765]

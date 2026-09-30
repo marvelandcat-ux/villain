@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3xlva4lm2m54"
-path="res://.godot/imported/경찰측면.png-551c54d8558363cd85e66ebdeb98d41f.ctex"
+uid="uid://dvacgl4pjacgu"
+path="res://.godot/imported/경찰몸정면.png-9064c60dc36934ccc31dc01372d1ead4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/storymode/경찰서/경찰측면.png"
-dest_files=["res://.godot/imported/경찰측면.png-551c54d8558363cd85e66ebdeb98d41f.ctex"]
+source_file="res://sprite/storymode/경찰서/경찰몸정면.png"
+dest_files=["res://.godot/imported/경찰몸정면.png-9064c60dc36934ccc31dc01372d1ead4.ctex"]
 
 [params]
 

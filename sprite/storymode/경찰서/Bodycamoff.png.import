@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dmj6g71ghu8yt"
-path="res://.godot/imported/경찰몸통.png-60ead1c3e89166c258a40d316bd56d30.ctex"
+uid="uid://c03wnvkor8s7r"
+path="res://.godot/imported/Bodycamoff.png-7214209bb04bf010b189c3feae79601d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/storymode/경찰서/경찰몸통.png"
-dest_files=["res://.godot/imported/경찰몸통.png-60ead1c3e89166c258a40d316bd56d30.ctex"]
+source_file="res://sprite/storymode/경찰서/Bodycamoff.png"
+dest_files=["res://.godot/imported/Bodycamoff.png-7214209bb04bf010b189c3feae79601d.ctex"]
 
 [params]
 

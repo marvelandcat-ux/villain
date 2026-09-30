@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bscps3q44ap20"]
 
 [ext_resource type="Texture2D" uid="uid://dc0w0ffpl3qjb" path="res://sprite/storymode/경찰서/분노경찰관.png" id="1_head"]
-[ext_resource type="Texture2D" uid="uid://cc857mdf7t0p8" path="res://sprite/storymode/경찰서/경찰몸통_배경제거.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="2_body"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
 [ext_resource type="Texture2D" uid="uid://c5curqetb0ax4" path="res://sprite/storymode/경찰서/테이져건.png" id="4_taser"]
 [ext_resource type="Script" uid="uid://jabroynj53ym" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]

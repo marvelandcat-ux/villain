@@ -25,8 +25,10 @@ const MODIFIER_ID := "baton_mode"
 var _armed_fighter: Fighter = null
 ## 남은 시간(초)
 var _left: float = 0.0
-## 경봉을 들기 전의 기본공격 사거리 — 끝나면 이 값으로 되돌린다
+## 경봉을 들기 전의 기본공격 사거리·쿨타임 — 끝나면 이 값들로 되돌린다
 var _base_range: float = 0.0
+var _base_cooldown: float = -1.0
+var _base_miss_cooldown: float = -1.0
 
 func _process(delta: float) -> void:
 	super._process(delta)
@@ -51,6 +53,15 @@ func _execute(fighter: Fighter) -> void:
 	if basic and "range" in basic:
 		_base_range = basic.range
 		basic.range = _base_range * range_multiplier
+	# **경봉을 든 동안엔 평타 쿨을 아예 없앤다**(2026-09-30 사용자 지정) — 누르는 대로 바로 나간다.
+	# 헛쳤을 때 도는 쿨(miss_cooldown)도 같이 0으로 둔다. 안 그러면 한 번 헛치는 순간 1초를 쉰다
+	if basic and "cooldown" in basic:
+		_base_cooldown = basic.cooldown
+		basic.cooldown = 0.0
+		basic.cooldown_left = 0.0
+	if basic and "miss_cooldown" in basic:
+		_base_miss_cooldown = basic.miss_cooldown
+		basic.miss_cooldown = 0.0
 
 ## 경봉을 도로 집어넣는다 — 시간이 다 됐거나 캐릭터가 사라질 때
 func _disarm() -> void:
@@ -65,6 +76,12 @@ func _disarm() -> void:
 	var basic: Node = _armed_fighter.get_node_or_null("BasicAttack")
 	if basic and "range" in basic and _base_range > 0.0:
 		basic.range = _base_range
+	if basic and "cooldown" in basic and _base_cooldown >= 0.0:
+		basic.cooldown = _base_cooldown
+		_base_cooldown = -1.0
+	if basic and "miss_cooldown" in basic and _base_miss_cooldown >= 0.0:
+		basic.miss_cooldown = _base_miss_cooldown
+		_base_miss_cooldown = -1.0
 	_armed_fighter = null
 
 ## 지금 경봉을 들고 있는지 (UI·다른 스킬이 물어볼 수 있게 열어둔다)

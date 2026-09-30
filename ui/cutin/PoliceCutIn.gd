@@ -63,6 +63,14 @@ extends Node2D
 @export var head_closed_texture: Texture2D = null
 ## 종이가 다 올라온 뒤 이만큼 있다가 말하기 시작한다(초)
 @export var talk_delay: float = 0.12
+
+## --- 반대 손 경관봉 (2026-09-30) ---
+## 미란다 원칙을 읽는 동안 **종이 안 든 손이 경관봉을 들고 슥 올라온다.**
+## 언제부터 올라오는지(초, 컷인 시작 기준)와 다 올라오는 시각(초) — 기본은 0.6초에 시작해 컷인이 끝나는 1.3초에 제자리
+@export var baton_rise_start: float = 0.6
+@export var baton_rise_end: float = 1.3
+## 올라오기 전에 화면 아래 어디쯤 숨어 있는지(px). 손과 경봉이 같이 이만큼 내려가 있다
+@export var baton_start_below: float = 300.0
 ## 입을 벌리고 있는 시간 / 다물고 있는 시간(초)
 @export var talk_open_time: float = 0.13
 @export var talk_close_time: float = 0.1
@@ -70,6 +78,11 @@ extends Node2D
 @export var talk_nod: float = 4.0
 
 @onready var _bg: Sprite2D = $Bg
+@onready var _baton: Sprite2D = $Police/Baton
+@onready var _hand_r: Sprite2D = $Police/HandR
+## 경봉·손이 다 올라왔을 때의 자리 — 씬에 놓인 값을 그대로 쓴다
+var _baton_home: Vector2
+var _hand_home: Vector2
 ## 배경 제자리 — 엔진 진동이 여기서 벗어났다 돌아온다
 var _bg_home: Vector2
 @onready var _bg_color: ColorRect = $BgColor
@@ -96,6 +109,8 @@ func _ready() -> void:
 	_paper_home = _paper_group.position
 	_head_home = _head.position
 	_bg_home = _bg.position
+	_baton_home = _baton.position
+	_hand_home = _hand_r.position
 	_bg.visible = _bg.texture != null
 	_bg_color.visible = _bg.texture == null
 	if paper_texture != null:
@@ -122,6 +137,17 @@ func _process(delta: float) -> void:
 	_update_mouth()
 	_update_flash()
 	_update_engine_shake()
+	_update_baton()
+
+## 경관봉을 든 손이 아래에서 슥 올라온다 — 다 올라오면 씬에 놓인 자리에 딱 멈춘다
+func _update_baton() -> void:
+	var span: float = maxf(baton_rise_end - baton_rise_start, 0.01)
+	var t: float = clampf((_time - baton_rise_start) / span, 0.0, 1.0)
+	# 끝에서 부드럽게 멈춘다(처음엔 빠르게 올라오다 천천히 자리 잡음)
+	var eased: float = 1.0 - pow(1.0 - t, 3.0)
+	var drop := Vector2(0.0, baton_start_below * (1.0 - eased))
+	_baton.position = _baton_home + drop
+	_hand_r.position = _hand_home + drop
 
 ## 시동 걸린 차의 공회전 떨림. 세로가 가로보다 크다 — 차가 위아래로 잘게 들썩인다.
 ## 주파수 두 개를 겹쳐 같은 자리를 반복하지 않게 한다(한 개면 규칙적으로 튕겨 기계처럼 보인다)
