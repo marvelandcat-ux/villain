@@ -494,6 +494,10 @@ const FINISHER_AIR_DRAG := 500.0
 ## 3타로 날아가다 **처음** 땅에 튕길 때 때린 사람 반대쪽으로 날리는 옆 속도 = 처음 날아간 옆 속도 x 이 배율
 ## (2026-09-29 사용자 요청 "제자리에서 통통 튀면 추가타가 너무 쉽다" — 1.5배). 두 번째 튕김부턴 안 민다(매번 밀면 영영 안 멈춤)
 const FINISHER_GROUND_KICK := 1.5
+## 3타 날아가기 빨리감기 배율(2026-09-30 사용자 요청 "날아가는 시간 50% 줄여줘" — 2.0). 궤적·거리·높이는 그대로 두고 시간만 1/이 값.
+## 속도는 x배율, 중력·공중 감속·바닥 마찰은 x배율², 튕김 기준 속도는 x배율, 안전 한도 시간은 /배율로 같이 바꾼다.
+## 위 FINISHER_* 속도·감속 상수들은 전부 배율 1 기준 값이다
+const FINISHER_TIME_SCALE := 2.0
 
 ## 추가 피격을 받을 수 있는 남은 시간(= 남은 기절 시간) / 지금 날아가는 방향(+1 오른쪽)
 var _finisher_window: float = 0.0
@@ -532,9 +536,9 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	var time: float = stun * launch_scale + _finisher_extra_time
 	# 속도 크기는 예전 가로 속도 그대로, 방향은 FINISHER_LAUNCH_ANGLE_DEG 위로(2026-09-29). pop은 더 안 쓴다 —
 	# 위로 솟는 속도는 각도로 정하되 최고 높이(FINISHER_PEAK_PER_SCALE x 배율)를 넘지 않게 자른다
-	var total: float = speed * KNOCKBACK_MULTIPLIER * launch_scale
+	var total: float = speed * KNOCKBACK_MULTIPLIER * launch_scale * FINISHER_TIME_SCALE
 	var ang: float = deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)
-	_finisher_up_cap = sqrt(2.0 * gravity * FINISHER_GRAVITY_SCALE * FINISHER_PEAK_PER_SCALE * launch_scale)
+	_finisher_up_cap = sqrt(2.0 * _finisher_gravity() * FINISHER_PEAK_PER_SCALE * launch_scale)
 	_finisher_launch_vx = total * cos(ang)
 	velocity.x = d * _finisher_launch_vx
 	velocity.y = -minf(total * sin(ang), _finisher_up_cap)
@@ -554,7 +558,7 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 ## 3타에 맞고 날아가는 중(_finisher_window)에 벽에 부딪혔으면 반대쪽으로 튕겨 낸다 — apply_physics가 move_and_slide 직후 부른다.
 ## pre_vx는 **move_and_slide가 0으로 지우기 전의** 가로 속도. 튕긴 뒤엔 벽에서 멀어지므로 같은 벽에 또 걸리지 않는다
 func _try_finisher_wall_bounce(pre_vx: float) -> void:
-	if _finisher_window <= 0.0 or not is_on_wall() or absf(pre_vx) < FINISHER_WALL_MIN_SPEED:
+	if _finisher_window <= 0.0 or not is_on_wall() or absf(pre_vx) < FINISHER_WALL_MIN_SPEED * FINISHER_TIME_SCALE:
 		return
 	var normal: Vector2 = get_wall_normal()
 	# 벽 쪽으로 가던 중일 때만(벽에서 멀어지는 중인데 벽 판정만 남은 프레임은 무시)
@@ -581,12 +585,12 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 	if not _finisher_flying:
 		return
 	_finisher_fly_time += delta
-	if has_super_armor() or is_grabbed or _finisher_fly_time >= FINISHER_MAX_FLY_TIME:
+	if has_super_armor() or is_grabbed or _finisher_fly_time >= FINISHER_MAX_FLY_TIME / FINISHER_TIME_SCALE:
 		_end_finisher_flight()
 		return
 	# 첫 착지는 옆 속도와 상관없이 한 번은 튕긴다(사용자 결정) — 그 뒤로는 옆 속도가 남아 있을 때만
-	var can_bounce: bool = absf(velocity.x) >= FINISHER_WALL_MIN_SPEED or _finisher_ground_bounces == 0
-	if is_on_floor() and fall_speed > FINISHER_GROUND_MIN_FALL and can_bounce:
+	var can_bounce: bool = absf(velocity.x) >= FINISHER_WALL_MIN_SPEED * FINISHER_TIME_SCALE or _finisher_ground_bounces == 0
+	if is_on_floor() and fall_speed > FINISHER_GROUND_MIN_FALL * FINISHER_TIME_SCALE and can_bounce:
 		# 첫 땅 튕김은 제자리에서 통통 튀지 않고 때린 사람 반대쪽으로 세게 날아간다(추가타가 너무 쉬웠다, 사용자 요청)
 		if _finisher_ground_bounces == 0:
 			var away: float = _away_from_opponent()
@@ -615,6 +619,10 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 		_tumble_left = maxf(_tumble_left, 0.1)
 	if is_instance_valid(_finisher_stars):
 		_finisher_stars.extend(0.15)
+
+## 3타로 날아가는 동안의 중력 — 빨리감기 배율(FINISHER_TIME_SCALE)의 제곱을 곱한다
+func _finisher_gravity() -> float:
+	return gravity * FINISHER_GRAVITY_SCALE * FINISHER_TIME_SCALE * FINISHER_TIME_SCALE
 
 ## 상대(때린 사람)의 반대쪽 방향(+1 오른쪽 / -1 왼쪽). 같은 x거나 상대가 없으면 날아가던 방향
 func _away_from_opponent() -> float:
@@ -1254,6 +1262,8 @@ func apply_physics(delta: float) -> void:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
 		# 3타로 날아가는 중 공중에선 옆 속도를 덜 깎는다(포물선이 끝까지 이어지게) — 바닥에선 평소 마찰
 		var friction: float = FINISHER_AIR_DRAG if _finisher_flying and not is_on_floor() else HITSTUN_FRICTION
+		if _finisher_flying:
+			friction *= FINISHER_TIME_SCALE * FINISHER_TIME_SCALE
 		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 	# 크게 날아가는 중이면 몸이 빙글빙글 돈다 (시간이 다 되거나 바닥에 닿으면 알아서 일어선다)
 	if _tumble_left > 0.0:
@@ -1264,7 +1274,7 @@ func apply_physics(delta: float) -> void:
 		# 피격으로 떠 있는 동안엔 중력을 줄여 잠깐 더 체공하게 한다 (옆보다 위로 뜨는 넉백과 어울림)
 		var g: float = gravity
 		if _finisher_flying:
-			g *= FINISHER_GRAVITY_SCALE
+			g = _finisher_gravity()
 		elif _hitstun_time > 0.0:
 			g *= HIT_LAUNCH_GRAVITY_SCALE
 		elif velocity.y > 0.0:
