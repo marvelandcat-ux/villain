@@ -52,6 +52,7 @@ lunge_follows_pushback = true
 combo_lunge = Array[float]([0.0, 60.0, 120.0])
 combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
 combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
+finisher_windup = 0.223
 spin_flurry_enabled = true
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]

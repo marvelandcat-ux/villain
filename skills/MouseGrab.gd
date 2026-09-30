@@ -259,6 +259,8 @@ func _grab() -> void:
 	_bind_dir = signf(_opponent.global_position.x - _source.global_position.x)
 	if _bind_dir == 0.0:
 		_bind_dir = _dir
+	# 3타로 날아가는 중에 잡혔으면 날아가기를 먼저 끝낸다(안 그러면 아래 피해로 다시 튕겨 나간다)
+	_opponent.cancel_finisher_flight()
 	if _damage > 0:
 		_opponent.take_damage(_damage)
 	if _opponent.movement_override == null:

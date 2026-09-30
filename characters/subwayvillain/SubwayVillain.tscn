@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="9"]
@@ -8,12 +8,15 @@
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="21_hitbox"]
 [ext_resource type="Script" path="res://skills/TurnstileSkill.gd" id="4"]
 [ext_resource type="PackedScene" path="res://skills/Turnstile.tscn" id="5"]
-[ext_resource type="Script" path="res://skills/FearSkill.gd" id="6"]
+[ext_resource type="Script" path="res://skills/CounterSkill.gd" id="6"]
 [ext_resource type="Script" path="res://skills/TteokbokkiUltimate.gd" id="7"]
 [ext_resource type="PackedScene" path="res://skills/FirePlate.tscn" id="8"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_counter"]
+size = Vector2(44, 44)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -46,6 +49,13 @@ range = 42.0
 windup = 0.16
 cooldown = 0.3
 miss_cooldown = 1.0
+pushback_base = 6.0
+pushback_per_damage = 2.0
+lunge_follows_pushback = true
+combo_lunge = Array[float]([0.0, 60.0, 120.0])
+combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
+combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
+finisher_windup = 0.223
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
@@ -63,6 +73,16 @@ turnstile_scene = ExtResource("5")
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("6")
 cooldown = 9.0
+skill_name = "단소 카운터"
+description = "단소를 겨누고 잠깐 기다린다. 그 사이 공격을 받으면 피해 없이 상대 등 뒤로 순간이동해 벤다. 아무것도 안 오면 헛방이라 빈틈이 생긴다."
+
+[node name="Hitbox" type="Area2D" parent="Skill2"]
+monitoring = false
+monitorable = false
+script = ExtResource("21_hitbox")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="Skill2/Hitbox"]
+shape = SubResource("RectangleShape2D_counter")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("7")
