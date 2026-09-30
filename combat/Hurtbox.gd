@@ -26,5 +26,8 @@ func take_hit(damage: int, knockback: Vector2, source_fighter: Fighter, pop_over
 	if source_fighter == null:
 		fighter.take_map_damage(damage, knockback, pop_override)
 	else:
+		# 카운터 자세(CounterSkill)에 걸렸으면 맞지 않은 것으로 친다 — 데미지 숫자·스파크가 안 뜨고 때린 쪽은 헛친 게 된다
+		if fighter.has_method("try_counter") and fighter.try_counter():
+			return false
 		fighter.take_damage(damage, knockback, pop_override)
 	return true

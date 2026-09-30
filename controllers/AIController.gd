@@ -225,6 +225,9 @@ func _respond_to_threat(kind: String) -> void:
 		if _on_safe_spot() and fighter.can_guard() and randf() < guard_p:
 			fighter.start_guard()
 		return
+	# 카운터 스킬이 있으면 방어 대신 카운터 자세 — 막기만 하는 것보다 이득이다
+	if _try_counter_stance(guard_p):
+		return
 	if fighter.can_guard() and randf() < guard_p:
 		fighter.start_guard()
 		return
@@ -245,6 +248,18 @@ func _respond_to_threat(kind: String) -> void:
 				# 뒤가 막혔으면 상대를 뚫고 등 뒤로 빠진다(캐릭터끼리 몸 충돌이 없다)
 				var dir: float = away if _room_behind(away) > 150.0 else -away
 				fighter.dash(dir)
+
+## 스킬2가 카운터(CounterSkill)이고 쓸 수 있으면 chance 확률로 자세를 잡는다. 잡았으면 true
+func _try_counter_stance(chance: float) -> bool:
+	var s: Skill = fighter.skill_2
+	if s == null or s.get_script() == null or s.get_script().get_global_name() != "CounterSkill":
+		return false
+	if not s.can_use() or fighter.is_busy():
+		return false
+	if randf() >= chance:
+		return false
+	fighter.use_skill_2()
+	return true
 
 ## dir 쪽으로 벽까지 남은 거리(최대 220)
 func _room_behind(dir: float) -> float:
@@ -1022,6 +1037,9 @@ func _want_skill(skill: Skill) -> bool:
 			return level and d > 90.0 and d < 260.0 and signf(target.velocity.x) == -signf(target.global_position.x - fighter.global_position.x)
 		"FearSkill":
 			return level and open and d < float(skill.get("range")) * 0.85
+		"CounterSkill":
+			# 아무 때나 켜면 헛방 — 상대 공격을 읽었을 때만 _respond_to_threat()이 쓴다
+			return false
 		"TteokbokkiUltimate":
 			return level and d > 40.0 and d < 350.0
 		"BackSuplexSkill":

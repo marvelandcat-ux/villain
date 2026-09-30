@@ -38,10 +38,10 @@ const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 ## 마지막으로 맞은 방향의 반대쪽(=넉백 방향)으로 빙글 돌며 날아간다
 @export var knockout_effect: bool = true
 ## 이 연출을 쓸 캐릭터 이름 (CharacterStats.character_name). **비우면 전원**.
-## 지금은 스토리에서 잼민이가 쓰러질 때만 쓰기로 해서 촉법소년만 넣어 뒀다
-@export var knockout_characters: Array[String] = ["금쪽이"]
+## 2026-09-30 사용자 요청으로 전원·일반 대전에서도 켬(예전엔 스토리 잼민이 전용 ["금쪽이"])
+@export var knockout_characters: Array[String] = []
 ## 스토리 모드에서만 연출을 쓸지. 끄면 일반 대전에서도 나온다
-@export var knockout_story_only: bool = true
+@export var knockout_story_only: bool = false
 ## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다
 @export var knockout_time_scale: float = 0.35
 ## 맞은 순간 딱 멈춰 있는 시간(초) — 타격감을 주는 정지

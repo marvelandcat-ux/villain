@@ -156,6 +156,9 @@ var map_skill: Skill = null
 ## get_move_velocity_x()와 after_physics(fighter, delta)를 구현한 오브젝트여야 한다.
 ## 타입을 지정하지 않아야 서로 다른 스킬 클래스를 덕 타이핑으로 담을 수 있다
 var movement_override = null
+## 카운터 자세(`CounterSkill`)가 자신을 등록해두는 슬롯. 이게 있는 동안 캐릭터의 공격에 맞으면
+## 피해 대신 `trigger_counter(fighter)`가 불린다(`try_counter()`). 타입은 movement_override와 같은 이유로 비워 둔다
+var counter_stance = null
 
 ## 이동속도/점프력/공격력/쿨타임 진행속도 배수 — 버프·디버프 스킬이 일시적으로 바꾼다
 var move_speed_multiplier: float = 1.0
@@ -309,6 +312,10 @@ func take_map_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_overrid
 ## ignore_guard는 그쪽이 넘겨주는 값이라 바깥에서 직접 true로 주면 두 경로가 갈라진다
 func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0, ignore_guard: bool = false) -> void:
 	if is_invincible:
+		return
+	# 카운터 자세 중이면 피해 대신 반격 — 판정 없이 직접 피해를 주는 스킬(자전거 돌진 등)용.
+	# 판정이 때린 경우는 Hurtbox.take_hit()이 먼저 가로챈다. 맵 피해(ignore_guard)·넉백 없는 도트 틱은 카운터 못 함
+	if not ignore_guard and knockback != Vector2.ZERO and try_counter():
 		return
 	# 방어 중엔 캐릭터의 공격이 통하지 않는다 — 데미지도 넉백도 없다(무적과 같은 취급).
 	# **단 맵 기믹(지나가는 열차·화분 등)은 방어로 못 막는다** — ignore_guard로 그냥 통과한다.
@@ -644,7 +651,17 @@ func has_super_armor() -> bool:
 ## 방어 중(디버프 면역)이거나 슈퍼아머 중이면 못 잡는다 — 수플렉스하던 중에 다른 잡기에 끌려가면 기술이 끊긴다.
 ## `blocks_debuff()`에 아머를 섞지 않은 이유: 그러면 공포·도트까지 같이 막혀버리는데, 그 둘은 쓰던 기술을 끊지 않는다
 func can_be_grabbed() -> bool:
-	return not blocks_debuff() and not has_super_armor()
+	return not blocks_debuff() and not has_super_armor() and counter_stance == null
+
+## 카운터 자세 중이면 반격을 시작하고 true — 이번 피해는 없던 일이 된다. 자세가 아니면 false
+func try_counter() -> bool:
+	if counter_stance == null or not is_instance_valid(counter_stance):
+		counter_stance = null
+		return false
+	var stance = counter_stance
+	counter_stance = null
+	stance.trigger_counter(self)
+	return true
 
 ## duration초 동안 무적 상태로 만든다
 func grant_invincibility(duration: float) -> void:

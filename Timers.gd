@@ -10,11 +10,13 @@ extends RefCounted
 
 ## owner의 자식 Timer를 만들어 시작한다. cb를 주면 delay초 뒤 한 번 부르고 타이머 자신을 정리한다.
 ## cb 없이 반환된 Timer만 받아 `await timer.timeout`처럼 직접 기다려도 된다(그때는 호출자가
-## 다 쓴 뒤 timer.queue_free()를 불러줄 것)
-static func after(owner: Node, delay: float, cb: Callable = Callable()) -> Timer:
+## 다 쓴 뒤 timer.queue_free()를 불러줄 것).
+## real_time을 켜면 Engine.time_scale(슬로우 연출)과 상관없이 실제 초로 잰다(카운터 슬로우 연출)
+static func after(owner: Node, delay: float, cb: Callable = Callable(), real_time: bool = false) -> Timer:
 	var timer := Timer.new()
 	timer.wait_time = delay
 	timer.one_shot = true
+	timer.ignore_time_scale = real_time
 	owner.add_child(timer)
 	if cb.is_valid():
 		timer.timeout.connect(func() -> void:

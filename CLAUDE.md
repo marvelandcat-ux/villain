@@ -67,7 +67,12 @@
   - 금쪽이 자전거 속도 = 이동속도 x `dash_speed_multiplier` — 금쪽이 씬 `Skill1`에서 **1.7**(2026-09-26 사용자 요청으로 2.5 -> 2.1 -> 1.7, 스크립트 기본 2.5). `dash_duration` 0.9초는 그대로라 거리도 약 850 -> 578px로 같이 줄었다. `DashSkill`은 금쪽이만 씀
   - **상대를 들이받아도 자기 피해 없음**(`enemy_hit_self_damage` 0, 2026-09-28) — 튕겨 나오기만 한다. 0이면 `take_damage(0)` 대신 넉백·경직만 직접 준다(0 피해로 부르면 번쩍임·아픈 표정·콤보 수가 들어감). 벽 자해(`self_damage_on_wall`)는 그대로
   - **들이받으면 자전거가 부서지며 부품 하나만 튀어 바닥에 남는다**(`wreck_on_enemy_hit`, `combat/BikeWreck.gd`, 2026-09-28 사용자 요청·결정): **바퀴 / 안장 / 파란 몸체 중 하나를 랜덤**(`pick_one`), 나머지 자전거는 그 자리에서 사라진다(`BodyRig.break_bike()`). 조각 그림 `sprite/축법소년/자전거_조각_바퀴/안장/몸체.png`는 원본 `자전거.png`와 **같은 캔버스**라 자전거 자리에 그대로 겹쳐 시작한다 — 바퀴 = 앞바퀴 아래 절반을 180도 돌려 붙인 포크 없는 바퀴, 안장 = 안장+기둥, 몸체 = 바퀴 원(반지름 270)·안장을 뺀 파란 프레임(+핸들·페달). 알파 24 미만 점은 지워 둠(회전 중심 틀어짐 방지). 자전거 그림을 바꾸면 조각도 다시 만들 것. 조각은 튀어 올라 돌다 되튀고 미끄러져 멈춘 뒤 라운드 끝까지 남는다. **바닥 닿음은 그림 네모 상자가 아니라 색이 칠해진 부분의 볼록 껍질(`_hull_of`)로 잰다**(상자로 재면 돌아간 바퀴가 떠 있었다, 사용자 지적) + 바닥에 닿으면 무게중심이 낮아지는 쪽으로 넘어져 눕는다(`topple_speed`, 안장·몸체가 끝으로 서서 멈추지 않게). **그리기 순서는 z_index를 낮추지 말고 맵에서 첫 캐릭터 바로 앞으로 `move_child`** — z -1이면 배경이 z 0인 맵(헬스장)에서 배경 뒤로 숨었다. 다음 돌진엔 새 자전거가 나온다
-- `Fighter.is_feared`/`apply_fear(duration)`(`FearSkill.gd`): 이동은 되고 스킬·기본공격 전부 무시, `set_tint`로 표시
+- `Fighter.is_feared`/`apply_fear(duration)`(`FearSkill.gd`): 이동은 되고 스킬·기본공격 전부 무시, `set_tint`로 표시. `FearSkill`은 2026-09-30 지하철 스킬2에서 빠져 지금 쓰는 캐릭터 없음
+- **카운터 `skills/CounterSkill.gd`**(지하철 아저씨 스킬2, 2026-09-30 사용자 결정): 누르면 `stance_duration`(0.6초) 제자리 자세 + 하늘색. 자세는 리그 전용 `BodyRig.set_counter_stance()`(사용자 그림 — 창·당구 큐처럼 **두 손으로 단소를 얼굴 높이에 들고 앞 아래 21도로 찌를 듯 겨눔**, 몸은 똑바로): 앞손(오른손) 턱 앞 `counter_hand_r_*` / 뒷손(왼손)은 단소 뒤끝 `counter_hand_l_*` — **게임 단소가 짧아(약 47px, 앞손 기준 뒤 8 ~ 앞 36px) 두 손 간격이 좁다(사용자 결정)**, 뒷손은 자세 동안 z를 `attack_grip_hand_z`로 올려 머리 위로 보임 / 단소 방향으로 당겼다 내밀기 들썩임 `counter_poke_*` / 숙임 `counter_lean_deg`는 0(있으면 엉덩이 `counter_lean_pivot` 축으로 몸·머리·손 위치를 같이 돌리고 스프라이트 회전만 facing 부호 곱함). 첫 시도(허리 높이 + 한 손 치켜듦 + 20도 숙임)는 단소가 바닥까지 내려가 폐기. 그 사이 상대 공격(평타·스킬·투사체 전부, **맵 피해 제외**)에 맞으면 피해 없이 반격. 헛방이면 `whiff_lag` 더 굳음
+  - **반격 연출(사용자 결정):** 맞는 순간 `Engine.time_scale` = `slow_scale`(0.3)로 `slow_time`(실제 0.8초) + 화면 전체 검은 막(불투명 0.24 = "투명도 76%", 캐릭터까지 덮음) -> 상대 등 뒤로 순간이동(벽이면 벽 앞, 상대는 연출 동안 경직으로 묶음) -> 어둠 속 선글라스만 번쩍(`skills/CounterFlash.gd`, 맵에 z 95 + 번쩍임은 더하기 블렌드 자식, `Visual/Head/LensGlint` 위치를 따라감) -> 3타 베기 모션(후려치는 순간이 `slow_time`에 오게 역산) -> 시간 복귀 + 자식 `Hitbox` 데미지 20 -> **평타 3타처럼 날림**(`launch_finisher` + `LaunchTrail`, 값은 이 캐릭터 `BasicAttack`의 `finisher_*`)
+  - 연출 예약은 실제 시간(`Timers.after(..., real_time = true)` — 이때 추가한 옵션). 배속은 이미 0.5 미만이면 안 건드리고, 되돌릴 때 다른 연출이 바꿨으면 존중, `_exit_tree()`에서도 복구
+  - 가로채는 곳 두 군데, 둘 다 `Fighter.try_counter()`: ① `Hurtbox.take_hit()` — false를 돌려줘서 데미지 숫자·스파크 없음 + 때린 쪽 콤보는 헛친 것 ② `Fighter.take_damage()` — 판정 없이 직접 피해 주는 스킬(자전거·어깨치기)용, **넉백 있는 피해만**(도트 틱은 통과). 등록 슬롯은 `Fighter.counter_stance`(movement_override와 같은 덕 타이핑)
+  - 자세 중엔 잡기에 안 잡힘(`can_be_grabbed()`). AI는 아무 때나 안 쓰고(`_want_skill` false) 상대 공격을 읽었을 때 방어 대신 `_try_counter_stance()`
 - `Hitbox.pull_to_source`/`pull_strength`: 고정 넉백 대신 공격자 쪽으로 끌어당김(`VacuumSkill`)
 - `skills/AoeAttack.gd`: 자신 중심 원형 범위 공격, `slow_multiplier`/`slow_duration`으로 둔화(`apply_temp_multiplier`)
 - **주정뱅이 술 스택**(`DrinkSkill.max_stacks` 3): 토하기는 입에서 뻗는 **가로 기둥** — 길이 `base_range` + 스택 x `range_per_stack`, 두께 `base_height` + 스택 x `height_per_stack`(두께는 그림 몸통 비율에 맞춘 값). 풀스택은 벽에 붙어 쏴도 반대편 벽까지 닿음(의도)
@@ -93,7 +98,8 @@
   - **던지는 속도 2026-09-27 1.6배**(사용자 요청): `throw_speed` 500 -> 800, 되감기 800 -> 1280, 사거리 유지하려고 `throw_gravity` 900 -> 2304(= x1.6²). **속도를 바꾸면 중력은 배수의 제곱으로 같이** — 안 그러면 사거리가 늘어난다. 끌어오기 `reel_speed`는 그대로. 옛 실측값은 현재 값과 안 맞음(재측정 필요)
   - 젖히기(`throw_windup`)와 날아가기는 같은 식(`_draw_throw()`)이라 유선 길이가 안 튐. 팔은 `BodyRig.play_cast_motion(젖히는 시간, 돌아오는 시간)` — **젖히는 시간 = `throw_windup`**. 잡은 뒤 `set_reeling(true)`, `_release`/`_exit_tree`에서 끔
   - 크기 `mouse_length`/`coil_width`는 **`MouseGrab.new()` 후 `setup()` 전에 대입**(setup에서 그림 생성)
-- `Fighter.vault_jump`(지하철 아저씨): 기본공격 없음, 점프 시 `_play_vault_effect()` 회전 연출
+- `Fighter.vault_jump`(지하철 아저씨): 점프 시 `_play_vault_effect()` 회전 연출
+- **지하철 아저씨 평타 모션(2026-09-30 사용자 결정)** — `SubwayVillainRig.tscn` 루트 값: 1타 **두 손으로 단소 찌르기**(`attack_thrust` 기본값 + `attack_two_handed` + `grip_hit_index` 0 = 1타에만 두 손) / 2타 **발차기**(`attack_kick_hit` 1) / 3타 **앞손으로 칼처럼 베기**(`thrust3_*`, 머리 뒤 위로 감았다 앞 아래로) + `attack_smear`(발차기 타엔 잔상 안 남김). 단소 그림은 가로로 그려져 있고 제자리에서 약 -46도(앞 위) — 찌를 때 `attack_swing_deg` 46이 단소를 수평으로 눕힌다. 모든 타 모션 0.4초 = `windup` 0.16. 파고들기·푸시백은 악플러·금쪽이와 같은 값(`SubwayVillain.tscn` `BasicAttack` — `combo_lunge` 0/60/120, 시간 0/0.24/0.34, 발 먼저 0.3, 푸시백 6 + 데미지당 2)
 - **주의(add_child 함정):** `add_child(node)`는 `_ready()`를 **즉시 동기 실행** — 그 다음 줄에서 export를 세팅해도 `_ready()`는 기본값으로 끝난 뒤. `_ready()`에서 export를 캐싱하지 말고 **첫 `_physics_process`/`_process`(`_initialized` 플래그)** 로 미룰 것(`CatPet.gd`에서 겪음)
 - **촉법소년의 게임 표시 이름은 "금쪽이".** 표시 이름이 곧 키라 바꿀 땐 **전부 같이**: `GameState`(CHARACTERS·색·초상화·리그), `ChokbeopsonyeonStats.tres`, `CharacterSelect.tscn`, `CharacterDex.tscn`, `PortraitFrames.tscn` 노드 이름, `Stage.knockout_characters`, `sprite/도감/전신/금쪽이.png`. 내부 이름(`chokbeopsonyeon`/"촉법소년")은 그대로
 
@@ -108,11 +114,15 @@
 | 주정뱅이 | `ComboMeleeAttack` (술병) | `DrinkSkill` (술 스택) | `VomitSkill` (토 기둥) | `ScreamConeUltimate` (괴성) |
 | 고양이 아주머니 | `ComboMeleeAttack` | `TunaThrowSkill` | `TunaPlaceSkill` | `CatHutUltimate` |
 | 층간소음 청년 | `ComboMeleeAttack` | `AoeAttack` (기타, 둔화) | `VacuumSkill` (흡입) | `DunkUltimate` |
-| 지하철 아저씨 | **없음** (`vault_jump`) | `TurnstileSkill` | `FearSkill` | `TteokbokkiUltimate` |
+| 지하철 아저씨 | `ComboMeleeAttack` (단소: 두 손 찌르기 → 발차기 → 베기) | `TurnstileSkill` | `CounterSkill` (단소 카운터) | `TteokbokkiUltimate` |
 | 헬스장 빌런 | `ComboMeleeAttack` | `LivingShadowSkill` | `BackSuplexSkill` | **빈 `Skill.gd`** |
 | 일진 | `ComboMeleeAttack` (3타 가방) | `CigaretteSmokeSkill` | `ShoulderChargeSkill` | **빈 `Skill.gd`** (컷인만) |
 | 주인공(경찰, 훈련장 전용) | `ComboMeleeAttack` (경봉) | **빈** | **빈** | **빈** |
 
+- **개찰구 `skills/Turnstile.gd`/`.tscn`**(지하철 스킬1 장애물, 2026-09-30 그림): `sprite/지하철빌/개찰구.png`(닫힘, 빨간 날개·X) / `개찰구2.png`(열림, 초록 화살표) — **한 장에 마주 보는 개찰구 한 쌍**이라 가운데(x 768)에서 반으로 잘라(`region_rect`) 스킬의 장애물 2개가 각각 왼쪽·오른쪽 개찰구가 된다(사용자 결정). 어느 반을 쓸지는 `flap_dir`(`TurnstileSkill`이 **add_child 전에** 넣음 — 첫째는 먼 쪽, 둘째는 가까운 쪽을 가리켜 날개가 가운데서 맞물림)
+  - 배율 `visual_scale` 0.0734 = 그림 속 몸통 중심 간격 817px -> 장애물 간격 60px. **`TurnstileSkill.spacing`을 바꾸면 배율도 같이.** 충돌은 **예전 크기 40x45 그대로**(사용자 결정 — 그림 몸통은 약 21x50이라 양옆에 안 보이는 벽이 있다), 그림 바닥을 충돌 바닥에 맞춤, 스킬의 y 오프셋 7.5
+  - 몸통 가운데 x·바닥 y는 `Turnstile.CABINET_X`/`BOTTOM_Y` 상수 — 그림을 바꾸면 몸통만 있는 아래 줄(y 720~860)로 다시 잴 것
+  - 사라질 때(`lifetime` 5초) 열린 그림으로 바뀌고 충돌이 꺼진 뒤 `open_fade_time` 동안 흐려져 사라짐(사용자 결정)
 - `skills/DunkUltimate.gd`(층간소음 궁): 상대 쪽으로 도약 후 착지 지점 범위 공격, 도약 중 `movement_override`로 좌우 잠금
 - `skills/TteokbokkiUltimate.gd`(지하철 궁): `channel_duration` 동안 전진하며 `drop_interval`마다 `FirePlate` 흘림, 벽에 닿으면 종료
   - **오픈 이슈:** 기획은 "궁 키를 누르고 있는 동안 이동"인데 원샷 입력이라 고정 시간 채널로 단순화
@@ -231,6 +241,10 @@
   - ⚠️ 앵커는 프로펠러·턱 기준이면 흔들림 → **머리 공만** 잴 것(알파 1/4 축소 후 bbox 높이 22% 사각형 열림 연산, 무게중심·`2sqrt(넓이/pi)`). 그림 바꾸면 재측정
   - **악플러(2026-09-28)**: `sprite/악플러/몸/악플러 측면 1~3.png`(전부 왼쪽을 봄) + 정면은 선택창 초상화 `악플러정면머리.png`를 같이 씀. 앵커는 같은 열림 연산으로 잰 값, 방향 전환(`head_turn_on_face`)도 켬. 회전 타격·뒤통수는 없음(악플러는 회전 타격 안 함). 몸통 돌리기는 `악플러 몸 측면 2/3.png`(오른쪽을 봄) — 캔버스(887x887)·그린 크기가 원래 몸통(344x270)과 달라 **`body_turn_match_height`**(보이는 영역 높이를 원래 몸통에 맞춤)를 켰다
   - **주정뱅이(2026-09-29)**: `sprite/주정뱅이/몸/주정뱅이 측면1.png`·`주정뱅잉 측면2.png`(파일명 "잉" 오타 그대로)·`주정뱅이 측면 3.png` + 정면은 선택창 초상화 `주정뱅이얼굴정면.png`. **전부 오른쪽을 봄**(`head_turn_faces_left` 전부 false — 금쪽이·악플러와 반대). 앵커는 같은 열림 연산으로 잰 값, 방향 전환도 켬. 몸통 돌리기 그림은 없음(몸통은 정면 그대로). 소용돌이 눈(`SwirlEye`)은 기본 얼굴일 때만 그려져 도는 동안엔 그림 속 소용돌이가 보인다
+  - **지하철 아저씨(2026-09-30)**: `sprite/지하철빌/지하철 아저 씨측면 1.png`(파일명 띄어쓰기 오타 그대로)·`지하철 아저씨 측면 2.png`·`측면 3.png` + 정면은 선택창 초상화 `지하철빌런정면.png`. **전부 오른쪽을 봄**(faces_left 전부 false). 앵커는 같은 열림 연산으로 잰 값, 방향 전환 켬. 몸통 돌리기 그림 없음
+    - 앵커 재는 스크립트는 저장소에 없음 — 알파 1/4 축소 -> bbox 높이 22% 정사각형 열림 -> 무게중심·`2sqrt(넓이/pi)`(주정뱅이 기존 값으로 검증해 1px 안으로 일치)
+  - ⚠️ **주정뱅이 `측면 3.png`이 한때 몸통 그림으로 덮여 있었다**(커밋 `83404e4`에서 머리 파일에 몸통 그림을 덮어쓰고 `b24b4fe`에서 `몸 측면 3`으로 이름 변경 -> 2026-09-30 오전에 다시 `측면 3`으로 되돌리면서 몸통이 머리 자리에 들어감). 같은 날 원래 머리를 `57af1b3`에서 꺼내 복구하고 몸통은 `주정뱅이 몸 측면 3.png`로 분리. **머리/몸통 그림은 파일명이 비슷하니 덮어쓰기 전 내용을 볼 것**
+  - **주정뱅이 몸통 돌리기(2026-09-30)**: `body_turn_textures` = [`주정뱅이 몸 측면 2.png`(3/4), `몸 측면 3.png`(거의 정면)], 캔버스(1416x1111)가 원래 몸통(344x270)과 달라 `body_turn_match_height` 켬. **몸 측면 2는 왼쪽을 보고 그려져 있어**(목 구멍이 왼쪽, 옆 솔기가 오른쪽 — 악플러처럼 오른쪽을 보는 그림은 앞 무늬가 오른쪽으로 치우친다) 새 export **`body_turn_faces_left`**(칸마다, 비우면 전부 오른쪽) = [true, false]로 뒤집어 쓴다(사용자 결정 — 파일은 그대로)
   - 금쪽이 그림 `sprite/축법소년/`: 측면2 파일명이 `축법소년 픅면 2.png`(오타 그대로). 측면1·2·3은 왼쪽을 봄(뒤집어 씀). 뒤통수 그림도 `_is_turn_texture()`에 포함(안 넣으면 다른 표정으로 착각해 멈춤)
   - **몸통도 같이 돈다(2026-09-26, 금쪽이만)** — 머리만 돌고 몸통은 그대로라 "몸이 이상하다"는 지적으로. **평소 몸통은 정면 그대로**(사용자 결정 — 옆모습 몸통을 평소 몸통으로 써 봤다가 되돌림, `금쪽이 몸 측면.png`은 지금 안 씀). 머리가 **도는 도중에만** `body_turn_textures` = [`금쪽이 몸 측면 2.png`(3/4), `금쪾이 몸 측면3.png`(거의 정면 — 파일명 "쪾" 오타 그대로)]를 끼운다
     - `_set_head_frame()`이 `_set_body_frame(frame, dir)`도 부른다 — 머리가 옆(0)·정면(마지막)이면 원래 정면 몸통, 그 사이 단계만 그림을 내림 비율로 나눠 끼움(머리 측면1·2 -> 3/4, 측면3 -> 거의 정면). 뒤통수 순간·그 밖엔 원래 몸통(`_clear_head_frame()` -> `_clear_body_frame()`)
@@ -490,6 +504,7 @@
 - **라운드제:** `Stage._process()`가 KO/시간 초과(HP 높은 쪽 승, 동률 무승부) 감지 -> `_end_round(p1_won, is_draw)`. 승수는 `GameState.p1_round_wins`/`p2_round_wins`(오토로드라 유지). 미달이면 `MatchResult.show_round_result()` 후 `reload_current_scene()`, 도달이면 `show_result()`/`show_draw()`(스토리 승리는 위 `story_next_scene` 경로)
 - `CombatHUD`: `TimerFrame` > `TimerBox` > `TimerLabel` + `RoundLabel`, `Stage`가 `update_round_info(p1_wins, p2_wins, time_left)`로 매 프레임 갱신(HUD는 표시만). 시간 제한 0이면 `TimerFrame` 숨김, 10초 이하 빨강
 - `maps/Stage.gd`가 `_ready()`에서 `GameState` 캐릭터를 `PlayerSpawn1/2`에 생성. P1 `PlayerController`, P2는 story면 `ClaudeAIController`, pvp면 `PlayerController`(방 설정 "상대: 컴퓨터"면 `AIController`). 새 맵 필수 요소: 바닥·벽(or 링아웃 공간)·`PlayerSpawn1/2`·`Camera2D`(`maps/CameraRig.gd`)·`CombatHUD`
+- **KO 연출**(`Stage._play_knockout`, 0.35배속 + 눈 X 표정 + 빙글 돌며 날아감): 2026-09-30 사용자 요청으로 **전 캐릭터·일반 대전에서도 켬**(`knockout_characters` 빈 배열 = 전원, `knockout_story_only` false). 맵 씬에 덮어쓴 값 없음 — 기본값이 곧 전 맵. 눈 X 표정은 리그 `ko_head_texture`가 있는 캐릭터만
 - 승패는 `died` 시그널이 아니라 `_process()`에서 양쪽 `current_hp`를 한 번에 판정(시그널 순서로 동시 KO 승자가 임의로 갈리던 버그) — 양쪽 0이면 `show_draw()`. 링아웃은 `Stage.ring_out_y` 아래(벽 없는 맵에서만 의미)
 - 히트 이펙트: `Fighter._flash_hit()` + `Hitbox`가 `combat/HitSpark.tscn` 스폰
   - `_draw()` 세 겹(번쩍 + 넉백 방향 마름모 섬광 + 방향 쪽 불꽃, `direction_bias`). 세기 = 데미지 / `Hitbox.SPARK_POWER_DAMAGE`, 세기 1.5 이상이면 충격파 고리. 방어에 막히면 파랗게 작게

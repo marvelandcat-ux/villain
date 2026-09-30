@@ -13,6 +13,10 @@ func _execute(fighter: Fighter) -> void:
 	var parent: Node = fighter.get_parent()
 	for i in range(count):
 		var obstacle: Node2D = turnstile_scene.instantiate()
+		# 개찰구 한 쌍의 날개가 가운데서 맞물리게 — 첫째는 먼 쪽을, 둘째는 가까운 쪽을 가리킨다.
+		# Turnstile._ready()가 이 값으로 그림 반쪽을 고르므로 add_child 전에 넣는다
+		if "flap_dir" in obstacle:
+			obstacle.flap_dir = fighter.facing if i % 2 == 0 else -fighter.facing
 		parent.add_child(obstacle)
 		var dist: float = start_distance + spacing * i
 		# 캐릭터 발밑 높이에 맞춰 놓는다 (캐릭터 캡슐 절반 높이 30 - 장애물 절반 높이 22.5)
