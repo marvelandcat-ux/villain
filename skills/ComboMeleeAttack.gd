@@ -179,6 +179,8 @@ var _last_pushback: float = 0.0
 var _spin_active: bool = false
 var _spin_left: float = 0.0
 var _spin_saved_shape: Shape2D = null
+## 버프가 콤보 타마다 더해 주는 고정 데미지(악플러 열등감 +2). 배율 곱하기 전에 더하고, 회전 난무엔 안 붙는다
+var bonus_damage: int = 0
 
 ## 이만큼보다 짧은 시간에 파고들지는 않는다 — 예비동작이 0인 캐릭터가 한 프레임에 순간이동하지 않게
 const LUNGE_MIN_TIME := 0.08
@@ -539,13 +541,13 @@ func _fire(fighter: Fighter, step: int) -> void:
 	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
 	var push_scale: float = finisher_distance_scale if is_final else 1.0
 	if d != null:
-		hitbox.damage = fighter.compute_damage(d.damage)
+		hitbox.damage = fighter.compute_damage(d.damage + bonus_damage)
 		hitbox.knockback = Vector2(d.knockback.x * fighter.facing * push_scale, d.knockback.y)
 		hitbox.pop_override = d.pop
 		hitbox.hitstop_multiplier = d.hitstop_scale
 		hitbox.shake_multiplier = d.shake_scale
 	else:
-		hitbox.damage = fighter.compute_damage(combo_damage[step])
+		hitbox.damage = fighter.compute_damage(combo_damage[step] + bonus_damage)
 		hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing * push_scale, combo_knockback[step].y)
 		hitbox.pop_override = combo_pop[step]
 		hitbox.hitstop_multiplier = 1.0

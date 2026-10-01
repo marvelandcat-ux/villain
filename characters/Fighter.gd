@@ -750,9 +750,12 @@ func _flash_hit() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
 	if visual == null:
 		return
+	# 흰색이 아니라 걸려 있던 색조(열등감·공포 등)로 돌아간다 — 흰색으로 되돌리면 맞는 순간 색조가 지워졌다.
+	# 번쩍이는 사이 색조가 풀리거나 바뀔 수 있어서 끝나는 순간 한 번 더 맞춘다
 	var tween := create_tween()
 	tween.tween_property(visual, "modulate", Color(1, 0.3, 0.3), 0.05)
-	tween.tween_property(visual, "modulate", Color(1, 1, 1), 0.15)
+	tween.tween_property(visual, "modulate", _top_tint_color(), 0.15)
+	tween.tween_callback(_apply_top_tint)
 
 ## HP를 회복시킨다 (최대 HP를 넘지 않음)
 func heal(amount: int) -> void:
@@ -783,7 +786,11 @@ func _apply_top_tint() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
 	if visual == null:
 		return
-	visual.modulate = _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
+	visual.modulate = _top_tint_color()
+
+## 지금 보여야 할 색조 (걸린 게 없으면 원래 색)
+func _top_tint_color() -> Color:
+	return _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
 
 ## duration초 후 callback을 실행한다 (Timers.after 참고 — Fighter가 그 전에 사라지면 콜백째 정리된다)
 func _after(duration: float, callback: Callable) -> void:

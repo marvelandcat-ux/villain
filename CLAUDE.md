@@ -27,7 +27,7 @@
 - **`Skill.cooldown_override`**: 0보다 크면 `cooldown` 대신 사용(버프가 "몇 초로" 고정할 때, 끝나면 0으로). 배수 방식 `Fighter.attack_speed_multiplier`와 곱해짐
   - **쿨을 채우는 자리는 전부 `effective_cooldown()`을 거칠 것** — `Skill.use()`/`cancel_use()`, `ComboMeleeAttack._resolve()`, HUD `SkillCooldownIcon`. 한 곳이라도 `cooldown`을 직접 읽으면 그 경로만 안 먹음
   - 헛발 쿨도 묶어야 함(`ComboMeleeAttack._effective_miss_cooldown()`) — 안 묶으면 헛칠 때 원래 쿨이라 버프 체감이 없음
-- `skills/RageBuffSkill.gd`(악플러 열등감): `duration` 동안 기본공격 쿨을 `basic_attack_cooldown`으로 고정(발동 시 돌던 쿨도 `minf`로 깎음) + 붉은 `set_tint` + `set_action_face(true)` + `BodyRig.play_head_shake()`(`head_shake_time`; 버프 내내 떨게 하려면 `duration`과 같게). 복구는 자식 Timer
+- `skills/RageBuffSkill.gd`(악플러 열등감): `duration`(6초) 동안 기본공격 콤보 매 타 데미지 +`bonus_damage`(2) — `ComboMeleeAttack.bonus_damage`에 넣고 `compute_damage` 배율 전에 더함, 회전 난무엔 안 붙음(2026-10-01 사용자 요청 — 예전 "쿨 0.3초 고정"은 악플러 원래 쿨이 0.3이라 효과가 없었다) + 붉은 `set_tint` + `set_action_face(true)` + `BodyRig.play_head_shake()`(`head_shake_time`; 버프 내내 떨게 하려면 `duration`과 같게). 복구는 자식 Timer
 - **⚠️ 스킬에서 `Visual.scale`을 직접 트윈 금지 → `BodyRig.play_squash(배율)` 사용.** 리그는 왼쪽을 볼 때 `scale.x` 음수라 양수 목표로 트윈하면 0을 지나 오른쪽으로 뒤집히고 `_face_moving_direction()`과 싸움. `play_squash()`는 방향 부호를 곱해 적용·자동 복귀. 사용처: `HealSkill.heal_pop`, `ScreamConeUltimate.shout_squash`. 자기 자식 스프라이트 트윈(`FirePlate`)은 무관
 - `combat/Hitbox.gd`/`Hurtbox.gd`: `Hurtbox`(Fighter 자식 Area2D)가 피격 시 `take_damage()`, `Hitbox`는 겹치면 데미지(자기 자신 무시)
   - **허트박스는 머리 꼭대기까지**(사용자 요청): 캐릭터 씬 12개의 `HurtboxCollision`이 별도 `CapsuleShape2D_hurt`, 발끝 +30 고정·윗끝 = 머리 그림 꼭대기(높이 = 30 - 꼭대기, `position.y` = (30 + 꼭대기)/2; 금쪽이는 프로펠러 빼고 모자까지). **머리 그림을 바꾸면 다시 잴 것.** 몸 충돌 캡슐은 그대로. 이 때문에 `SpringJumpPad`는 몸 중심이 판정 아래면 무시
@@ -506,7 +506,7 @@
   - `RoundRow`/`CooldownRow`의 `Value`는 `LineEdit` — `text_submitted`/`focus_exited`에서 커밋, `is_valid_int()` 아니면 이전 값. 쿨타임 칸은 "숫자%" 표시, `trim_suffix("%")` 후 파싱
   - 프리셋: `PopupMenu` id 0 "현재 설정 저장..." -> `_show_save_preset_dialog()`(코드로 만든 오버레이) -> `GameState.save_room_preset(이름, data)` -> `user://settings.cfg` `[room_presets]`(7값: `rounds`/`time_index`/`cooldown_percent`/`clash_enabled`/`guard_enabled`/`dash_enabled`/`vs_ai`). 저장분은 `SAVED_PRESET_ID_BASE`(1)부터 나열, `_apply_saved_preset()`. 같은 이름 덮어씀. **삭제 UI 없음(TODO)**
   - 버튼 연결은 `.tscn` `[connection]`이 아니라 `_ready()` 코드로. 배경은 메인 메뉴와 같은 그림+흐림 셰이더. 뒤로가기는 왼쪽 아래 `flat` 글자("뒤로가기 (ESC)", 캐릭터·맵 선택과 통일)
-- **쿨타임 배율은 `Skill.effective_cooldown()` 한 곳에서 곱한다.** 예외로 챙긴 곳: `ComboMeleeAttack._effective_miss_cooldown()`, `RageBuffSkill._execute()` 즉시 클램프(`fighter.basic_attack.effective_cooldown()`), `LivingShadowSkill.use()` — **`cooldown`을 직접 읽는 경로를 새로 만들면 배율이 안 먹는다**
+- **쿨타임 배율은 `Skill.effective_cooldown()` 한 곳에서 곱한다.** 예외로 챙긴 곳: `ComboMeleeAttack._effective_miss_cooldown()`, `LivingShadowSkill.use()` — **`cooldown`을 직접 읽는 경로를 새로 만들면 배율이 안 먹는다**
 - 연타 미니게임 off: `SkillClashManager.request()` 맨 앞에서 `on_win.call()` 즉시 발동. 가드/대시 off: `Fighter.can_guard()`/`can_dash()` 맨 앞 — Player·AI 컨트롤러 둘 다 이걸 거치므로 한 곳으로 충분
 - **⚠️ 주아체(Jua)엔 기호 글리프가 거의 없다**(`◀ ▶ ● ○ · × ↑ ↓` 없음 -> 두부, `~ / ( ) - | , .`는 있음). 방 설정 화살표 버튼은 폰트 미지정(기본 폰트 대체). 주아체 라벨에 기호 넣기 전 글리프 확인
 
@@ -589,7 +589,7 @@
 - **⚠️ 히트스톱은 지금 꺼져 있다(사용자 요청)** — `Hitbox.hitstop_time` = 0이면 `_apply_hitstop()`이 즉시 리턴(데미지 비례분·`AttackData.hitstop_scale` 무시). 켜려면 0.022. KO 슬로모션(`Stage.knockout_*`)은 별개
   - 동작: `Engine.time_scale`을 `Hitbox.HITSTOP_SCALE`로 떨어뜨려 화면 전체 정지(경직 `_hitstun_time`과 별개). 시간 = `hitstop_time` + 데미지 x `hitstop_per_damage`, 상한 `hitstop_max`
   - `repeat_interval` 판정(열차·담배 연기)은 건너뜀 / 이미 `time_scale` < 0.5면 안 걸음(KO 슬로모션 배속을 1로 되돌려버림) / 복귀 타이머는 `ignore_time_scale = true` 필수
-- 색조: `Fighter.set_tint(id, color, duration)`/`clear_tint(id)` — 스택식(set_modifier와 같은 발상). 사용처: `DashSkill`·`BBGunSkill`·`HealSkill`·`RageBuffSkill`·`WeakenAuraUltimate`·`DrinkSkill`·`VomitSkill`·`ScreamConeUltimate`
+- 색조: `Fighter.set_tint(id, color, duration)`/`clear_tint(id)` — 스택식(set_modifier와 같은 발상). 사용처: `DashSkill`·`BBGunSkill`·`HealSkill`·`RageBuffSkill`·`WeakenAuraUltimate`·`DrinkSkill`·`VomitSkill`·`ScreamConeUltimate`. **피격 번쩍임(`_flash_hit`)은 흰색이 아니라 걸린 색조로 돌아간다**(2026-10-01 — 예전엔 맞으면 색조가 지워졌다)
 - 넉백: `Hitbox.knockback`을 `Fighter.take_damage`가 velocity에 더함. 스킬별 값은 전부 임시(세밀 조정 TODO)
 - `ui/RoundStart.tscn` 카운트다운 동안 컨트롤러 `is_active` false. ⚠️ `set_physics_process(false)`로 멈추면 관성으로 미끄러짐 — `apply_physics`는 계속 돌리고 `fighter.move(0.0)`으로 수평 속도 0 고정
 
