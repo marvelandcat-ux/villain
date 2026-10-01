@@ -9,6 +9,9 @@ extends Node2D
 
 ## 렌즈 크기(머리 그림 픽셀) — 렌즈 테두리 안쪽에 맞출 것(넘치면 안경테 위로 빛이 샌다)
 @export var lens_size: Vector2 = Vector2(200, 200)
+## **리그 밖에서도 그린다** — 컷인 클로즈업처럼 `BodyRig`가 아니라 그냥 Node2D에 머리가 달린 경우.
+## 평소에는 "리그의 기본 얼굴일 때만" 그리는데(대시 잔상 복제본에서 안 나오게), 그 규칙을 건너뛴다
+@export var always_show: bool = false
 ## 빛줄기 굵기(렌즈 너비 대비)와 기울기(세로로 내려갈수록 가로로 밀리는 정도)
 @export var band_width: float = 0.2
 @export var slant: float = 0.7
@@ -81,6 +84,9 @@ func _process(delta: float) -> void:
 
 ## 평소 얼굴이고, 스크립트가 달린 진짜 리그일 때만(대시 잔상처럼 스크립트를 뗀 복제본에선 안 나온다)
 func _can_show() -> bool:
+	# 컷인 클로즈업처럼 리그가 아닌 데 붙은 경우는 이 검사를 건너뛴다
+	if always_show:
+		return true
 	var head := get_parent() as Sprite2D
 	if head == null or head.texture != _base_texture:
 		return false

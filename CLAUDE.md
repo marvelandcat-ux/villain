@@ -93,6 +93,8 @@
 - **주의:** `Projectile`이 시전자 본인 Hurtbox/몸에 반응해 즉시 사라지던 문제 → `_on_area_entered`/`_on_body_entered`에서 `source_fighter` 무시. **판정을 키우거나 느리게 만들 때 재발 주의**
 - `AIController`는 원거리 판단에 `skill_2`의 `projectile_scene`과 **`beam_scene`**을 함께 본다(안 보면 주정뱅이가 근접처럼 돌진)
 - **주의:** 해제된 객체는 `== null`이 **true**(`is_instance_valid()`만 false) → `x != null and not is_instance_valid(x)`는 절대 발동 안 함. 시전자만 사라진 뒤 맵에 남은 판정이 타입 에러를 내서, `Hitbox.source_fighter`를 setter로 만들고 **주인 유무를 `_has_source`로 따로 기억**. 주인이 원래 없는 히트박스(열차)도 동작해야 하므로 `is_instance_valid`만으로 막지 말 것
+  - ⚠️ **같은 함정이 `skills/FirePlate.gd`에도 있었다**(2026-10-01, `Invalid type in function 'take_hit' ... argument 3 (previously freed)`). FirePlate는 `Hitbox`가 아니라 `Area2D`라 `Hitbox._try_hit`의 검사를 안 거치고 `take_hit()`을 직접 부른다 — 라운드가 끝나거나 훈련장에서 캐릭터를 바꾸면 Fighter만 해제되고 장판은 `lifetime`까지 남아 해제된 객체를 넘겼다. `_has_source` 패턴을 똑같이 넣고, 주인이 사라졌으면 `queue_free()`로 치운다
+  - **`take_hit()`을 직접 부르는 곳은 `Hitbox`와 `FirePlate` 둘뿐이다.** `Projectile`·`ThrownStone`·`ScreamCone`·`CigaretteSmoke`·`VomitBeam`은 전부 `Hitbox`를 상속해서 그 검사를 물려받는다 — **새로 `take_hit()`을 직접 부르는 노드를 만들면 이 검사를 꼭 같이 넣을 것**
 - **주의:** `Projectile` 수명 타이머를 `_ready()`에서 만들면 add_child 뒤에 넣은 `lifetime`이 무시됨 → `setup()`의 `_start_lifetime_timer()`로 옮김(아래 add_child 함정과 같은 건)
 - `skills/ScreamConeUltimate.gd` + `ScreamCone.tscn`(주정뱅이 궁 괴성): 맵에 띄운 **부채꼴** 판정(`Hitbox` 상속)으로 데미지+넉백+점프 디버프. 빨간 부채꼴(`RangeFill`/`RangeOutline`)은 판정 폴리곤과 **같은 점 배열**(보이는 범위 = 맞는 범위). 음파는 `wave_texture` 없으면 코드로 그린 호
   - **한 값은 한 곳에만**: 데미지·입 위치·디버프는 캐릭터 씬 `SkillUltimate`, `cone_range`·`half_angle_deg`·연출은 `ScreamCone.tscn` 루트(양쪽에 두면 한쪽이 덮여 안 먹음)
@@ -396,11 +398,34 @@
 - 컷인은 파츠를 코드로 흔들어 만든다 — `ui/cutin/CutInAnimation.gd`
 - **괴성은 컷인에서 지르지 않는다** — 컷인은 예비동작, 발성은 복귀 후 인게임 궁(판정 순간을 살리려고)
 
-- 컷인 있는 캐릭터: 주정뱅이·촉법소년·악플러·일진·경찰(`ui/cutin/<이름>CutIn.tscn`)
+- 컷인 있는 캐릭터: 주정뱅이·촉법소년·악플러·일진·경찰·지하철 아저씨(`ui/cutin/<이름>CutIn.tscn`)
 - **경찰 컷인은 1.3초**(`PoliceCutIn.cutin_duration`, 2026-09-29 사용자 지정 — 기본 1.0/잼민이 2.4와 달리 이 값이 우선한다)
 - **경찰 컷인(`ui/cutin/PoliceCutIn.tscn`)의 입은 얼굴 그림 두 장을 번갈아 끼워 움직인다** — `경찰정면.png`(벌린 입) / `경찰정면_입다문.png`. 두 장은 크기·위치가 같아야 한다
   - ⚠️ 2026-09-29: **`경찰정면_입다문.png` 캔버스 왼쪽 위(x 91~177, y 14~65)에 입 하나가 따로 그려져 있었다** — 입을 다물 때마다 머리 위 허공에 입이 뻐끔거렸다(사용자 신고). 그 자리를 투명하게 지워서 해결. 얼굴 그림을 새로 받으면 **캔버스 구석에 딴 게 묻어 있는지** 먼저 확인할 것(두 장의 알파 차이를 보면 바로 드러난다)
   - 같이 정리: 옛 방식이던 `ui/cutin/PoliceMouth.gd`(입을 직접 그리는 노드)와 씬의 `Police/Head/Mouth` 노드를 삭제했다. 얼굴 두 장 방식만 쓰므로 죽은 코드였다
+- **지하철 아저씨 컷인(`ui/cutin/SubwayVillainCutIn.tscn`)의 지나가는 열차** (2026-10-01 사용자 요청 "일자로 쭉 가되 떨리게 / 칸 사이로 실루엣")
+  - ⚠️ **`Metro!.png`는 몸통 무늬(창문·빨간 띠)가 오른쪽으로 갈수록 내려가게 그려져 있다**(2101px 폭에서 약 27px, 화면 기울기 0.0158rad). 그냥 깔면 열차가 **사선으로 흘러가는 것처럼** 보인다 — 칸마다 `rotation = -0.0158` + `skew = 0.0158`로 **x축만 들어올려** 무늬를 수평으로 맞춘다(지붕 실루엣은 원래 수평이라 대신 아주 살짝 기운다. 그림을 다시 그리면 이 값을 다시 잴 것)
+  - 그 전엔 Car0 y=89 / Car1 y=129로 **칸끼리 높이가 달라** 이음새에 턱이 졌다(기울기를 눈대중으로 보정하던 흔적). 기울기를 없앴으니 **모든 칸은 같은 y(89)** 여야 한다
+  - 경로는 `_apply_train`에서 **x만** 움직인다. 떨림은 `_rattle_cars`가 **칸마다 위상을 어긋내서 y로만** 넣는다(`train_rattle` 7px / `train_rattle_speed` 44). 진행 방향(x)으로 떨면 속도가 들쭉날쭉해 보여 "일자로 쭉"이 깨진다
+  - **칸 사이 틈으로 보이는 실루엣**: 아저씨(`BackPose`)는 씬에서 `Train`보다 **먼저** 그려지므로 열차에 가린다. `_apply_poses`가 열차 **앞머리**가 그를 지나친 순간부터 그를 세워 두고 `silhouette_color`로 까맣게 칠하므로, **칸 사이 틈이 지나갈 때만 저절로 번쩍** 보인다. 꼬리가 `reveal_margin`을 지나면 `silhouette_release`(320px) 동안 제 색으로 풀린다
+  - 칸 3량 + 틈 500px(= 피치 4243.58px, 칸 폭 2101 x 1.7818 = 3743.58). 틈이 그를 지나는 시간 = 틈 / 열차 속도 → 지금은 15000px / 1.2초 = 12500px/s라 **약 40ms(2~3프레임) 번쩍**. 더 오래 보이게 하려면 틈을 넓히거나 `train_time`을 늘린다
+  - **어두운 역 + 머리 위 조명**(2026-10-01 사용자 요청): 배경은 씬의 `World/Station` **노드 modulate**(0.4, 0.43, 0.55)로 깔아 어둡게 한다(스크립트가 안 건드리니 에디터에서 색만 바꾸면 된다). 열차는 일부러 안 어둡게 둔다 — 어두운 역에 밝은 열차라야 대비가 산다
+  - 조명은 `World/Spotlight`(삼각형 Polygon2D, 가산 블렌드). **켜고 끄는 건 따로 안 재고** `_apply_poses`의 `lit`(실루엣이 풀리는 정도)과 `out`(휙)을 그대로 쓴다 → "열차가 다 지나감 = 색이 돌아옴 = 조명 켜짐", "휙 = 조명 꺼짐"이 한 박자. 끌 때는 `pow(1 - out, 2)` — 휙이 0.06초라 선형이면 그가 사라진 뒤에도 빛이 한두 프레임 남는다. 세기는 `spotlight_alpha`(0.75)
+  - ⚠️ **`Polygon2D`는 `vertex_colors`가 있으면 `color`를 무시한다** — 빛 색을 `color`에만 넣었더니 흰 빛으로 나왔다. 색은 `vertex_colors`에 직접 넣을 것(지금 (1, 0.78, 0) 알파 위 0.75 / 아래 0.24)
+  - 씬에는 `visible = false`로 저장돼 있다(에디터에서 켜 놓고 자리를 잡아도 `play()`가 꺼 주므로 그대로 저장해도 안전)
+  - **선로**(2026-10-01): `World/Station/Rails` 아래에 `지하철선로.png`(region `Rect2(14, 287, 2143, 177)` — 맵 `SubwayPlatform`과 같은 조각) 세 장을 `centered = false`로 이어 붙였다. 한 장 폭 = 2143 x 1.2 = 2572라 x를 -3858 / -1286 / 1286에 두면 **틈 없이 딱 맞는다**(크기를 바꾸면 이 간격도 같이 다시 잡을 것). 자리·크기는 **`Rails` 부모 하나만 끌면** 세 장이 같이 움직인다. 자갈 바닥(`Ballast`) **뒤에 놓으면 안 된다** — 그 위에 깔려야 보인다
+  - 클로즈업(`ClosePose`)에도 발 두 짝(`FootL`/`FootR`, `발.png`)이 있다. 몸(`Body`) **앞 순서**라 몸이 발목을 덮는다. 자리·크기는 사용자가 에디터에서 잡는다
+    - **리코더·단소는 쥔 손의 자식이다**(`ClosePose/HandL/Recorder`, `ClosePose/HandR/Danso`, 2026-10-01 "손이랑 따로 논다"). 손만 흔들면 악기가 그대로 따라온다 — 따로 흔들면 각자 제 축으로 돌아서 손에서 떨어져 나와 보인다. 악기에 **`show_behind_parent = true`** 를 줘야 손이 쥔 자리를 덮는다
+    - 들썩임(`_apply_sway`)은 **손·발만** `_add_sway_part(파츠, 세기)`로 등록해서 흔든다. 제자리·각도는 `_ready` 때 값을 기억하므로 **씬에서 옮겨 놓은 자리가 그대로 기준**이 된다. 발만 `foot_sway_ratio`(0.5)로 절반만 흔든다 — 바닥을 딛고 있어서 손만큼 흔들면 붕 떠 보인다(2026-10-01)
+  - **클로즈업 선글라스 반짝**(2026-10-01, 붉은 안광을 뺀 얼굴로 바꾸면서 그 자리를 대신함): 리그에서 쓰던 `characters/LensGlint.gd`를 그대로 `ClosePose/Head` 아래 두 알(`LensGlintL`/`LensGlintR`)로 달았다. 자리·크기는 **머리 그림 픽셀**, 중심 기준 오프셋(지금 왼 (-224, 120) 300x150 / 오른 (209, 120) 320x150, 오른쪽만 ✦ `sparkle_size` 110)
+    - ⚠️ `LensGlint`는 원래 **`BodyRig`에 붙은 기본 얼굴일 때만** 그린다(대시 잔상 복제본에서 안 나오게). 컷인은 리그가 아니라서 아무것도 안 나왔다 → **`always_show = true`** 로 그 검사만 건너뛴다(기본값 false라 기존 리그 3종은 그대로)
+    - 혼자 랜덤으로 번쩍이지 않게 `interval_min`/`interval_max`를 99로 막아 두고, `_apply_glint()`가 들이닥친 뒤(`appear_at + glint_delay` 0.12초) **딱 한 번** `blink_now()`를 쏜다
+  - **벽 타일**은 `World/Station` 밑에 세 줄(`WallTileTop*` y=-979 / `WallTileA*` y=-470 / `WallTileB*` y=39), 한 줄에 네 장(x -1590/-795/0/795). 한 장이 1446 x 0.55 = 795.3px라 795 간격이면 0.3px 겹친다. **멀리 잡는 카메라는 월드 y -600까지 보이므로** 윗줄이 없으면 위쪽에 맨 `BackWall` 색이 드러난다(2026-10-01 사용자 신고)
+  - **배경 흐리기(거리감)**(2026-10-01 "배경 블러, 기차는 x"): `World/Station`을 **`CanvasGroup`** 으로 바꾸고 맵에서 쓰던 `maps/far_blur.gdshader`를 걸었다. 자식을 한 장으로 합쳐서 흐리므로 **타일 이음매가 따로 번지지 않는다.** 열차·아저씨·조명은 Station 밖이라 또렷하다
+    - 흐린 정도는 `_apply_camera`가 카메라 진행도로 `blur_far`(1.1) → `blur_near`(3.0)를 넣는다 — 실제 렌즈처럼 가까이 볼수록 배경이 더 날아간다. 재질은 `_ready`에서 `duplicate()` 한다(씬이 공유하는 자원이라)
+    - ⚠️ **`CanvasGroup`에서 `modulate`를 쓰면 두 번 어두워진다** — 자식에게 한 번, 합친 버퍼를 그릴 때 또 한 번. 어두운 역 색은 반드시 **`self_modulate`** 에 둘 것(이것 때문에 배경이 절반 밝기로 떨어졌었다)
+  - **바람 가르는 속도선**: `ui/cutin/WindStreaks.gd`(`World/Wind`). 그림 없이 `_draw()`로 가로줄을 그리고, **스스로 시간을 안 센다** — 컷인이 `power`(0~1)를 매 프레임 넣어 준다(`sin(PI × 열차진행도) × train_wind`, 흔들림과 같은 박자). 줄은 고정 씨앗으로 뽑아 매번 같은 모양이고, 양 끝이 투명해지는 띠 두 장으로 그려 끝이 뭉툭하지 않다. 에디터에서는 `preview`로 미리 본다
+  - ⚠️ 칸 수·틈을 바꾸면 `train_from_x`/`train_to_x`도 같이 키울 것 — **열차 반길이(지금 6116) + 화면 반폭(약 1032)** 보다 커야 화면 안에서 툭 나타나지 않는다. `_measure_train()`이 앞머리/꼬리를 자동으로 재므로 등장·실루엣 타이밍은 따라온다
 - ⚠️ 일진은 컷인만 있고 궁 효과 없음(`SkillUltimate` = 빈 `Skill.gd`) — 버그 아님
 - **교훈: 컷인에 캐릭터를 움직여 넣을 땐 러프를 오려내지 말고 `characters/<캐릭터>/<캐릭터>Rig.tscn`을 쓸 것**
 - **촉법소년**: 배경 한 장(`1번배경.png`) 고정 + 리그(`Runner`)가 3단계 연기(러프 플립북은 장마다 배경이 달라 폐기)

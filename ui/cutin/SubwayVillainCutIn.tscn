@@ -11,18 +11,36 @@
 [ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌/단소.png" id="10_danso"]
 [ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="11_hand"]
 [ext_resource type="Texture2D" uid="uid://b8378ej70u3ka" path="res://sprite/지하철빌/발.png" id="12_foot"]
-[ext_resource type="Texture2D" uid="uid://de7ller6pnoda" path="res://sprite/지하철빌/검은 선글라스 속 붉은 눈빛-Photoroom.png" id="14_cxx6g"]
+[ext_resource type="Texture2D" uid="uid://c8evn6xnhf0xb" path="res://sprite/지하철빌/선글라스 쓴 광기 어린 웃음-Photoroom.png" id="14_cxx6g"]
 [ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="14_frontbody"]
+[ext_resource type="Texture2D" uid="uid://8dsgnn757hfa" path="res://sprite/맵/지하철역/지하철선로.png" id="15_rail"]
+[ext_resource type="Script" uid="uid://c8qv88phqb0w8" path="res://characters/LensGlint.gd" id="16_glint"]
+[ext_resource type="Shader" path="res://maps/far_blur.gdshader" id="17_farblur"]
+[ext_resource type="Script" path="res://ui/cutin/WindStreaks.gd" id="18_wind"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow"]
 blend_mode = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_farblur"]
+resource_local_to_scene = true
+shader = ExtResource("17_farblur")
+shader_parameter/blur_px = 1.1
+shader_parameter/dim = 0.0
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_ai3lx"]
+light_mode = 1
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_ccml7"]
+light_mode = 1
 
 [node name="SubwayVillainCutIn" type="Node2D" unique_id=489158267]
 script = ExtResource("1")
 
 [node name="World" type="Node2D" parent="." unique_id=218861192]
 
-[node name="Station" type="Node2D" parent="World" unique_id=1401294805]
+[node name="Station" type="CanvasGroup" parent="World" unique_id=1401294805]
+self_modulate = Color(0.4, 0.43, 0.55, 1)
+material = SubResource("ShaderMaterial_farblur")
 
 [node name="BackWall" type="Polygon2D" parent="World/Station" unique_id=845764807]
 color = Color(0.85, 0.84, 0.82, 1)
@@ -54,6 +72,38 @@ region_rect = Rect2(44, 40, 1446, 926)
 
 [node name="WallTileA3" type="Sprite2D" parent="World/Station" unique_id=151626210]
 position = Vector2(795, -470)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("2_tile")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTileTop0" type="Sprite2D" parent="World/Station" unique_id=1903552010]
+position = Vector2(-1590, -979)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("2_tile")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTileTop1" type="Sprite2D" parent="World/Station" unique_id=1903552011]
+position = Vector2(-795, -979)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("2_tile")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTileTop2" type="Sprite2D" parent="World/Station" unique_id=1903552012]
+position = Vector2(0, -979)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("2_tile")
+centered = false
+region_enabled = true
+region_rect = Rect2(44, 40, 1446, 926)
+
+[node name="WallTileTop3" type="Sprite2D" parent="World/Station" unique_id=1903552013]
+position = Vector2(795, -979)
 scale = Vector2(0.55, 0.55)
 texture = ExtResource("2_tile")
 centered = false
@@ -93,13 +143,41 @@ region_enabled = true
 region_rect = Rect2(44, 40, 1446, 926)
 
 [node name="SignBoard" type="Sprite2D" parent="World/Station" unique_id=663743346]
-position = Vector2(-10.0000305, -194)
-scale = Vector2(0.79623616, 0.7962363)
+position = Vector2(-13.000005, -193)
+scale = Vector2(1.0236446, 1.0236448)
 texture = ExtResource("4_sign")
 
 [node name="Ballast" type="Polygon2D" parent="World/Station" unique_id=597595338]
+position = Vector2(3, 3)
 color = Color(0.09, 0.09, 0.11, 1)
 polygon = PackedVector2Array(-2000, 322, 2000, 322, 2000, 700, -2000, 700)
+
+[node name="Rails" type="Node2D" parent="World/Station" unique_id=1903552002]
+position = Vector2(0, 322)
+
+[node name="Rail0" type="Sprite2D" parent="World/Station/Rails" unique_id=1903552003]
+position = Vector2(-3858, 0)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("15_rail")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
+
+[node name="Rail1" type="Sprite2D" parent="World/Station/Rails" unique_id=1903552004]
+position = Vector2(-1286, 0)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("15_rail")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
+
+[node name="Rail2" type="Sprite2D" parent="World/Station/Rails" unique_id=1903552005]
+position = Vector2(1286, 0)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("15_rail")
+centered = false
+region_enabled = true
+region_rect = Rect2(14, 287, 2143, 177)
 
 [node name="BackPose" type="Node2D" parent="World" unique_id=2016815009]
 position = Vector2(0, 18)
@@ -154,12 +232,22 @@ position = Vector2(-115, 74)
 [node name="HandRRaised" type="Node2D" parent="World/BackPose" unique_id=1209526954]
 position = Vector2(136, 70)
 
+[node name="Spotlight" type="Polygon2D" parent="World" unique_id=1903552001]
+visible = false
+material = SubResource("CanvasItemMaterial_glow")
+position = Vector2(0, -560)
+color = Color(1, 0.78, 0, 1)
+polygon = PackedVector2Array(0, 0, 268, 890, -268, 890)
+vertex_colors = PackedColorArray(1, 0.78, 0, 0.75, 1, 0.78, 0, 0.24, 1, 0.78, 0, 0.24)
+
 [node name="Train" type="Node2D" parent="World" unique_id=1728115299]
-position = Vector2(5000, 0)
+position = Vector2(7500, 0)
 
 [node name="Car0" type="Sprite2D" parent="World/Train" unique_id=1821186434]
-position = Vector2(-1869, 89.00001)
+position = Vector2(-4244, 89)
+rotation = -0.0158
 scale = Vector2(1.7818096, 2.2080002)
+skew = 0.0158
 texture = ExtResource("5_car")
 region_enabled = true
 region_rect = Rect2(36, 221, 2101, 250)
@@ -170,15 +258,42 @@ position = Vector2(0, 3.17029)
 texture = ExtResource("6_glow")
 
 [node name="Car1" type="Sprite2D" parent="World/Train" unique_id=1431810115]
-position = Vector2(1861, 129)
+position = Vector2(0, 89)
+rotation = -0.0158
 scale = Vector2(1.7818096, 2.2080002)
+skew = 0.0158
 texture = ExtResource("5_car")
 region_enabled = true
 region_rect = Rect2(36, 221, 2101, 250)
 
 [node name="Glow1" type="Sprite2D" parent="World/Train/Car1" unique_id=464435125]
 material = SubResource("CanvasItemMaterial_glow")
+position = Vector2(0, 3.17029)
 texture = ExtResource("6_glow")
+
+[node name="Car2" type="Sprite2D" parent="World/Train" unique_id=1431810116]
+position = Vector2(4244, 89)
+rotation = -0.0158
+scale = Vector2(1.7818096, 2.2080002)
+skew = 0.0158
+texture = ExtResource("5_car")
+region_enabled = true
+region_rect = Rect2(36, 221, 2101, 250)
+
+[node name="Glow2" type="Sprite2D" parent="World/Train/Car2" unique_id=464435126]
+material = SubResource("CanvasItemMaterial_glow")
+position = Vector2(0, 3.17029)
+texture = ExtResource("6_glow")
+
+[node name="Wind" type="Node2D" parent="World" unique_id=1903552014]
+position = Vector2(0, 85)
+script = ExtResource("18_wind")
+count = 42
+area = Vector2(2600, 700)
+length_range = Vector2(220, 820)
+thickness_range = Vector2(3, 13)
+speed = 4200.0
+color = Color(1, 1, 1, 0.6)
 
 [node name="CamFar" type="Node2D" parent="World" unique_id=1750629342]
 position = Vector2(0, -20)
@@ -192,17 +307,18 @@ scale = Vector2(1.45, 1.45)
 visible = false
 position = Vector2(0, -130)
 
-[node name="Recorder" type="Sprite2D" parent="ClosePose" unique_id=391115213]
-position = Vector2(-492.00006, 109.999985)
-rotation = -2.3561945
-scale = Vector2(0.3207583, 0.3207583)
-texture = ExtResource("9_recorder")
+[node name="FootL" type="Sprite2D" parent="ClosePose" unique_id=1903552006]
+position = Vector2(52.999992, 590.9999)
+rotation = -2.151991
+scale = Vector2(1.6628941, 1.6628942)
+texture = ExtResource("12_foot")
+flip_h = true
 
-[node name="Danso" type="Sprite2D" parent="ClosePose" unique_id=59772661]
-position = Vector2(338, -91)
-rotation = -1.134464
-scale = Vector2(0.25932622, 0.25932622)
-texture = ExtResource("10_danso")
+[node name="FootR" type="Sprite2D" parent="ClosePose" unique_id=1903552007]
+position = Vector2(347, 418.00003)
+rotation = 0.6789331
+scale = Vector2(1.6337439, 1.6337439)
+texture = ExtResource("12_foot")
 
 [node name="Body" type="Sprite2D" parent="ClosePose" unique_id=828959392]
 position = Vector2(19.99999, 224.99998)
@@ -216,13 +332,51 @@ rotation = -0.4660029
 scale = Vector2(0.4410683, 0.4410683)
 texture = ExtResource("14_cxx6g")
 
+[node name="LensGlintL" type="Node2D" parent="ClosePose/Head" unique_id=1903552008]
+material = SubResource("CanvasItemMaterial_ai3lx")
+position = Vector2(-224, 120)
+script = ExtResource("16_glint")
+lens_size = Vector2(300, 150)
+always_show = true
+glint_color = Color(1, 1, 1, 1)
+sweep_time = 0.34
+interval_min = 99.0
+interval_max = 99.0
+
+[node name="LensGlintR" type="Node2D" parent="ClosePose/Head" unique_id=1903552009]
+material = SubResource("CanvasItemMaterial_ccml7")
+position = Vector2(209, 120)
+script = ExtResource("16_glint")
+lens_size = Vector2(320, 150)
+always_show = true
+glint_color = Color(1, 1, 1, 1)
+sparkle_size = 110.0
+sparkle_at = Vector2(0.28, -0.2)
+sweep_time = 0.34
+interval_min = 99.0
+interval_max = 99.0
+
 [node name="HandL" type="Sprite2D" parent="ClosePose" unique_id=861700453]
 position = Vector2(-327, 276)
 scale = Vector2(1.2362069, 1.2362069)
 texture = ExtResource("11_hand")
 flip_h = true
 
+[node name="Recorder" type="Sprite2D" parent="ClosePose/HandL" unique_id=391115213]
+show_behind_parent = true
+position = Vector2(-133.4654, -134.2744)
+rotation = -2.3561945
+scale = Vector2(0.2594697, 0.2594697)
+texture = ExtResource("9_recorder")
+
 [node name="HandR" type="Sprite2D" parent="ClosePose" unique_id=248194824]
 position = Vector2(271, 58)
 scale = Vector2(0.9534483, 0.95344824)
 texture = ExtResource("11_hand")
+
+[node name="Danso" type="Sprite2D" parent="ClosePose/HandR" unique_id=59772661]
+show_behind_parent = true
+position = Vector2(70.2713, -156.2764)
+rotation = -1.134464
+scale = Vector2(0.2719823, 0.2719823)
+texture = ExtResource("10_danso")
