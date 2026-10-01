@@ -584,6 +584,27 @@ extends Node2D
 ## 같은 오른손으로 총을 잡기 때문에 그대로 두면 총과 겹친다. 기본은 꺼짐(다른 캐릭터 영향 없음)
 @export var gun_hides_held_item: bool = false
 
+## --- 짜장면 먹기 (황근출 해병 스킬2, 2026-10-01) : 주머니에서 그릇을 꺼내 왼손에 받치고, 오른손으로 떠서 입에 넣는다 ---
+## 그릇 그림은 리그의 `EatBowl` 자식(Sprite2D, 평소 숨김). 없으면 동작 자체를 안 한다.
+## 순서: ① 빈손이 주머니로 ② 그릇을 꺼내 가슴 앞으로 ③ 왼손이 받치고 오른손이 그릇 <-> 입을 eat_bites번 ④ 다시 주머니로
+## 오른손이 그릇을 꺼내는 주머니 자리(리그 원점 기준)
+@export var eat_pocket_offset: Vector2 = Vector2(10, 12)
+## 전체 중 앞부분 비율 — 주머니에 손 넣기 + 그릇 꺼내기
+@export_range(0.05, 0.6, 0.05) var eat_pull_ratio: float = 0.25
+## 전체 중 끝부분 비율 — 그릇을 다시 주머니에 넣기
+@export_range(0.05, 0.6, 0.05) var eat_put_ratio: float = 0.2
+## 먹는 동안 그릇 가운데 자리(리그 원점 기준, 앞 = +x)
+@export var eat_bowl_offset: Vector2 = Vector2(15, 2)
+## 그릇을 받치는 왼손 자리(그릇 가운데 기준)
+@export var eat_hand_l_offset: Vector2 = Vector2(-2, 7)
+## 오른손이 떠 올리는 입 자리(리그 원점 기준)
+@export var eat_mouth_offset: Vector2 = Vector2(12, -20)
+## 먹는 구간 동안 입에 넣는 횟수
+@export var eat_bites: float = 3.0
+## 먹는 동안 고개를 숙이는 각도(도, 양수 = 앞으로 숙임)와 한 입마다 끄덕이는 폭(px)
+@export var eat_head_tilt_deg: float = 8.0
+@export var eat_head_bob: float = 2.0
+
 ## --- 백 서플렉스(주인공 스킬2): 손을 뻗어 잡고, 들어올려 버티다가, 등 뒤로 넘겨 꽂는다 ---
 ## 잡을 때 두 손이 함께 모이는 목표 위치(리그 원점 기준) — 옆으로, 머리 높이 정도로 뻗어서 겹쳐 잡는다
 @export var grab_reach_target: Vector2 = Vector2(45, -28)
@@ -818,6 +839,7 @@ extends Node2D
 @onready var _bike: Sprite2D = get_node_or_null("Bike")
 ## 총 노드(있으면 촉법소년) — 총 쏘는 스킬 중에만 보인다
 @onready var _gun: Sprite2D = get_node_or_null("Gun")
+@onready var _eat_bowl: Sprite2D = get_node_or_null("EatBowl")
 
 var _fighter: Fighter
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
@@ -941,6 +963,11 @@ var _gun_holster_time: float = 0.0
 var _gun_rest_scale: Vector2 = Vector2.ZERO
 ## 발사 반동 세기 0~1 — 쏠 때마다 1로 튀었다가 서서히 0으로 줄어든다
 var _recoil: float = 0.0
+## 짜장면 먹기 동작에 남은 시간·전체 길이(초). 0보다 크면 먹는 중이다
+var _eat_time: float = 0.0
+var _eat_duration: float = 1.0
+## 그릇 그림 원래 배율 — 꺼내고 넣을 때 작아졌다 커진다
+var _eat_bowl_rest_scale: Vector2 = Vector2.ONE
 ## 파일드라이버 동작에 남은 시간(초). 0보다 크면 잡기~내리꽂기 동작 중이다
 var _grab_time: float = 0.0
 var _grab_duration: float = 1.0
@@ -1067,6 +1094,12 @@ func _ready() -> void:
 	if _bike:
 		_bike_mounted_pos = _bike.position
 		_bike.visible = false
+	# 그릇은 몸 앞·두 손 뒤에 그린다 — 받친 왼손과 떠먹는 오른손이 그릇 위로 보이게
+	if _eat_bowl:
+		_eat_bowl_rest_scale = _eat_bowl.scale
+		_eat_bowl.visible = false
+		if _hand_l:
+			move_child(_eat_bowl, _hand_l.get_index())
 
 func _process(delta: float) -> void:
 	if _knocked_out:
@@ -1092,7 +1125,7 @@ func _process(delta: float) -> void:
 	if attack_two_handed:
 		var want_grip: bool = _attack_time > 0.0
 		# 평소에도 두 손으로 잡는 캐릭터(악플러) — 손을 따로 쓰는 스킬 중에만 푼다
-		if two_handed_always and _cast_time <= 0.0 and _reel_blend <= 0.01 and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _throw_time <= 0.0:
+		if two_handed_always and _cast_time <= 0.0 and _reel_blend <= 0.01 and _drink_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 and _throw_time <= 0.0:
 			want_grip = true
 		if weapon_on_final_hit:
 			want_grip = want_grip and _attack_variant >= final_hit_index
@@ -1135,6 +1168,10 @@ func _process(delta: float) -> void:
 		_gun_time = maxf(_gun_time - delta, 0.0)
 		if is_zero_approx(_gun_time) and _gun:
 			_gun.visible = false
+	if _eat_time > 0.0:
+		_eat_time = maxf(_eat_time - delta, 0.0)
+		if is_zero_approx(_eat_time):
+			stop_eat_motion()
 	# 발사 반동은 매 프레임 서서히 잦아든다
 	if _recoil > 0.0:
 		_recoil = maxf(_recoil - delta * gun_recoil_recover, 0.0)
@@ -1172,7 +1209,7 @@ func _process(delta: float) -> void:
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
 	# idle_gestures를 끄면 여기서 바로 false가 되어 아래 "취소" 가지로 빠진다 — 모션이 아예 안 나온다
 	# 카운터 자세 중엔 몸짓 금지 — 뒤돌아보기가 끼면 몸은 앞을 보는데 머리만 뒤를 봐서 단소가 뒤통수 뒤로 간 것처럼 보였다(2026-09-30)
-	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0 and _counter_target <= 0.0
+	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0 and _counter_target <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -1237,7 +1274,7 @@ func _process(delta: float) -> void:
 			_bike.visible = false
 
 	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
-	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 \
+	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 \
 		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 and _kneel_target <= 0.0 \
 		and _counter_target <= 0.0 and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
 	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
@@ -1399,6 +1436,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 총을 겨누는 중이면 두 손을 모아 총을 잡은 자세로 덮어쓴다 (걷기·공격보다 우선한다)
 	if _gun_time > 0.0:
 		_pose_gun()
+
+	# 짜장면을 먹는 중이면 두 손과 고개를 먹는 자세로 덮어쓴다
+	if _eat_time > 0.0:
+		_pose_eat()
 
 	# 파일드라이버 중이면 오른손과 몸 전체 기울기를 잡기~내리꽂기 자세로 덮어쓴다
 	if _grab_time > 0.0:
@@ -2634,6 +2675,20 @@ func play_gun_motion(duration: float, draw_time: float = -1.0, holster_time: flo
 func gun_recoil() -> void:
 	_recoil = 1.0
 
+## 짜장면 먹기 동작 시작 — JjajangEatSkill이 먹기 시작할 때 먹는 시간을 넘겨서 부른다. 그릇(EatBowl)이 없으면 아무 일도 안 한다
+func play_eat_motion(duration: float) -> void:
+	if _eat_bowl == null:
+		return
+	_eat_duration = maxf(duration, 0.05)
+	_eat_time = _eat_duration
+
+## 먹기 동작을 그 자리에서 끝낸다(다 먹었거나 맞아서 끊김) — 그릇을 숨기면 다음 프레임부터 원래 자세로 돌아간다
+func stop_eat_motion() -> void:
+	_eat_time = 0.0
+	if _eat_bowl:
+		_eat_bowl.visible = false
+		_eat_bowl.scale = _eat_bowl_rest_scale
+
 ## 백 서플렉스 동작 시작 — 손을 뻗어 잡고, 뒤로 젖히며 들어올려, 등 뒤로 넘겨 꽂는다.
 ## BackSuplexSkill이 잡기가 성립한 순간 세 구간(뻗기/들어올리기/넘겨꽂기)의 길이를 넘겨서 호출한다
 func play_grab_motion(reach_duration: float, hold_duration: float, slam_duration: float) -> void:
@@ -3114,6 +3169,77 @@ func _pose_gun() -> void:
 		if _gun_rest_scale != Vector2.ZERO:
 			_gun.scale = _gun_rest_scale * gun_pop
 
+## 짜장면 먹기 자세 — 앞 eat_pull_ratio: 빈손이 주머니로 갔다 그릇을 쥐고 가슴 앞으로 꺼낸다(작게 시작해 커짐),
+## 가운데: 왼손이 그릇 밑을 받치고 오른손이 그릇 <-> 입을 오가며 고개를 숙여 끄덕인다,
+## 끝 eat_put_ratio: 그릇을 다시 주머니로 넣고(작아지며 사라짐) 빈손이 제자리로
+func _pose_eat() -> void:
+	if _eat_bowl == null:
+		return
+	var p: float = 1.0 - _eat_time / maxf(_eat_duration, 0.001)
+	var pull: float = clampf(eat_pull_ratio, 0.05, 0.6)
+	var put: float = clampf(eat_put_ratio, 0.05, 0.6)
+	var rest_r: Vector2 = _rest_positions[_hand_r] if _hand_r else Vector2.ZERO
+	var rest_l: Vector2 = _rest_positions[_hand_l] if _hand_l else Vector2.ZERO
+	var bowl_at: Vector2 = eat_bowl_offset
+	var hand_r: Vector2 = eat_bowl_offset
+	var left_t: float = 1.0   # 왼손이 그릇 밑으로 와 있는 정도
+	var head_t: float = 1.0   # 고개를 숙인 정도
+	var bob: float = 0.0
+	var bowl_shown: bool = true
+	var pop: float = 1.0
+	if p < pull:
+		var k: float = p / pull
+		if k < 0.4:
+			# ① 빈손이 주머니로
+			var a: float = k / 0.4
+			hand_r = rest_r.lerp(eat_pocket_offset, a * a * (3.0 - 2.0 * a))
+			bowl_shown = false
+			left_t = 0.0
+		else:
+			# ② 그릇을 꺼내 가슴 앞으로 — 끝에서 감속
+			var a: float = (k - 0.4) / 0.6
+			var e: float = 1.0 - pow(1.0 - a, 3.0)
+			bowl_at = eat_pocket_offset.lerp(eat_bowl_offset, e)
+			hand_r = bowl_at
+			pop = lerpf(0.5, 1.0, e)
+			left_t = e
+		head_t = clampf((k - 0.4) / 0.6, 0.0, 1.0)
+	elif p > 1.0 - put:
+		var k: float = (p - (1.0 - put)) / put
+		if k < 0.6:
+			# ④ 그릇을 주머니로 — 처음엔 천천히, 넣을 때 쑥
+			var a: float = k / 0.6
+			bowl_at = eat_bowl_offset.lerp(eat_pocket_offset, a * a)
+			hand_r = bowl_at
+			pop = lerpf(1.0, 0.5, a)
+			left_t = 1.0 - clampf(a * 1.6, 0.0, 1.0)
+		else:
+			# 빈손이 제자리로
+			var a: float = (k - 0.6) / 0.4
+			hand_r = eat_pocket_offset.lerp(rest_r, a * a * (3.0 - 2.0 * a))
+			bowl_shown = false
+			left_t = 0.0
+		head_t = 1.0 - clampf(k / 0.6, 0.0, 1.0)
+	else:
+		# ③ 떠먹기 — 그릇(0) <-> 입(1)을 eat_bites번. 입에 닿는 순간 고개가 끄덕
+		var k: float = (p - pull) / maxf(1.0 - pull - put, 0.001)
+		var lift: float = 0.5 - 0.5 * cos(k * TAU * eat_bites)
+		hand_r = eat_bowl_offset.lerp(eat_mouth_offset, lift)
+		bob = lift * eat_head_bob
+	if _hand_r:
+		_hand_r.position = hand_r
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.position = rest_l.lerp(bowl_at + eat_hand_l_offset, left_t)
+		_hand_l.rotation = 0.0
+	if _head:
+		_head.rotation = deg_to_rad(eat_head_tilt_deg * head_t)
+		_head.position = _rest_positions[_head] + Vector2(0.0, bob)
+	_eat_bowl.visible = bowl_shown
+	_eat_bowl.position = bowl_at
+	_eat_bowl.rotation = 0.0
+	_eat_bowl.scale = _eat_bowl_rest_scale * pop
+
 ## 어퍼컷을 치는 동안 고개·상체가 점점 돌아가는 부분.
 ## **발은 건드리지 않는다**(러프: 발 위치 고정) — 돌아가는 건 상체와 고개뿐이다.
 ## 각도는 `scale.x = -1`로 좌우를 뒤집어도 같이 안 뒤집히므로, 바라보는 방향 부호를 곱해준다
@@ -3539,7 +3665,7 @@ func _face_turn_progress() -> float:
 
 ## 방향 전환을 그 자리에서 끝내야 하는 동작 중인지 — 손·몸을 따로 쓰는 동작이 시작되면 몸을 바로 새 방향으로 맞춘다
 func _face_turn_blocked() -> bool:
-	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
+	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _eat_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
 		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _kneel_target > 0.0 or _counter_target > 0.0 \
 		or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
 

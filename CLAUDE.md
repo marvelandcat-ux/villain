@@ -150,7 +150,7 @@
 - **금쪽이 = 촉법소년의 표시 이름.** 표시 이름이 키라 바꿀 땐 전부: `GameState`(CHARACTERS·색·초상화·리그), `ChokbeopsonyeonStats.tres`, `CharacterSelect.tscn`, `CharacterDex.tscn`, `PortraitFrames.tscn` 노드, `Stage.knockout_characters`, `sprite/도감/전신/금쪽이.png`. 내부 이름은 그대로
 - **새 캐릭터 크기 기준 = 악플러**(머리 ~53x52, 상한 55x55)
 - **숨겨진 캐릭터 `GameState.HIDDEN_CHARACTERS`**(2026-10-01): 캐릭터 선택창에서 **aaddssww**를 치면 아래 칸 줄이 숨겨진 캐릭터 칸으로 바뀌고 다시 치면 원래대로(`CharacterSelect._input`/`_toggle_hidden_mode`, 칸은 `_build_hidden_tiles()`가 코드로 만들어 줄 가운데에). 경로 찾기는 `GameState.character_path()`, `training_characters()`·`character_name_for_path()`도 숨겨진 캐릭터를 포함. 타이틀 구경·도감엔 안 나옴
-  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/`, 팔 파일명 `황 근충 해병 팔.png`·정면 `환근출 해병 정면.png` 오타 그대로): 스킬2·궁은 빈 껍데기(사용자 지시). **스킬1 `DropkickSkill`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 첫 포물선만 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김에서 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직임. 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(경찰 맨손 잽 재사용: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍음, `_pose_headbutt()`; 로컬 좌표라 facing 부호 안 곱함). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로
+  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/`, 팔 파일명 `황 근충 해병 팔.png`·정면 `환근출 해병 정면.png` 오타 그대로): 궁은 빈 껍데기(사용자 지시). **스킬2 `JjajangEatSkill`**(2026-10-01): 주머니에서 짜장면(리그 `EatBowl`, `play_eat_motion`/`_pose_eat`)을 꺼내 1초 먹고 잃은 체력의 50% 회복, 대신 이동속도 x0.7이 먹을 때마다 곱으로 쌓임(라운드 끝까지, 바닥 0.3, `custom_data["jjajang_eats"]`). 먹다 맞으면(`damaged`) 끊기고 회복·둔화 없음, 쿨 15. **스킬1 `DropkickSkill`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 첫 포물선만 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김에서 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직임. 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(경찰 맨손 잽 재사용: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍음, `_pose_headbutt()`; 로컬 좌표라 facing 부호 안 곱함). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로
 
 ### 금쪽이
 
@@ -267,7 +267,7 @@
   - 발판 길찾기: StaticBody2D 직사각형 충돌을 1초마다 모아 그래프. 원웨이는 밑에서 뚫고, 내려갈 땐 `drop_through_platform()`. **스프링 좌석 위에선 점프 안 누름.** 기울어진 충돌 밑에 끼이면 `_update_stuck`/`_run_detour`(`_head_clear`는 광선 3줄)
   - 발 높이 방해물은 `"ai_jump_over"` 그룹 + `ai_obstacle_position()`
   - 위험 기믹: `is_dangerous()` + `"ai_danger_zone"` 그룹 → `"ai_safe_spot"`(`maps/AISafeSpot.gd`)로 피함. 열차 중엔 피난처를 벗어나는 회피 안 함, 방어 안 함(`_hazard_active()`)
-  - `ClaudeAIController`(스토리)의 `guard_bias`는 방어 확률 배수
+  - `ClaudeAIController`(스토리)의 `guard_bias`는 방어 확률 배수. 스토리 AI는 `knows_follow_ups = false`(콤보 잇기·빈틈 파고들기·날아가는 상대 추격 안 함 — 한 대씩만)
   - `showcase`(타이틀 전용): 거리 벌리고 점프·대시하다 다가가 스킬이나 콤보 한 번. 화면 가장자리 `showcase_screen_margin` 밖으로 안 나감
 
 ## 맵

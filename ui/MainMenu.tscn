@@ -136,10 +136,10 @@ text = "트러블 메이커"
 
 [node name="Menu" type="Control" parent="." unique_id=2020288339]
 anchors_preset = 0
-offset_left = 4.0
-offset_top = -40.0
-offset_right = 704.0
-offset_bottom = 680.0
+offset_left = 6.0
+offset_top = -42.0
+offset_right = 706.0
+offset_bottom = 678.0
 mouse_filter = 2
 
 [node name="StoryItem" type="Button" parent="Menu" unique_id=754996950]

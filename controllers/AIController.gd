@@ -36,6 +36,9 @@ extends Node
 @export var dash_dodge_distance: float = 80.0
 ## 상대 사거리 바로 바깥에서 멈칫하며 헛손질을 유도할 확률(매 물리 프레임)
 @export_range(0.0, 0.2, 0.005) var bait_chance: float = 0.02
+## 후속타를 아는지 — 끄면(스토리 모드, 2026-10-01 사용자 요청 "후속타 개념을 모르게") 맞힌 뒤 따라가며 다음 타를 잇지 않고,
+## 상대 빈틈(경직·잠김)을 노려 파고들지 않고, 3타에 날아가는 상대를 쫓아 치지 않는다. 한 대씩 툭툭 치는 AI가 된다
+@export var knows_follow_ups: bool = true
 
 @export_group("길찾기·왕관")
 ## 발판 경로를 몇 초마다 다시 계산할지
@@ -738,7 +741,7 @@ func _decide_movement(delta: float) -> void:
 
 	var ba: Skill = fighter.basic_attack
 	# 1) 콤보 중 — 밀려난 상대를 따라가며 계속 누른다(휘두르는 중 누르면 예약돼서 맞으면 바로 다음 타)
-	if _in_combo():
+	if knows_follow_ups and _in_combo():
 		fighter.move(dir if dist > _melee_reach - 8.0 else 0.0)
 		fighter.facing = dir
 		if dist <= _melee_reach + 45.0 and dy < 60.0:
@@ -746,6 +749,9 @@ func _decide_movement(delta: float) -> void:
 		return
 
 	var can_hit: bool = ba != null and not fighter.is_basic_attack_locked() and not target.is_guarding
+	# 후속타를 모르면 콤보가 이어지는 동안(다음 타 대기)과 날아가는 상대에겐 안 친다 — 콤보가 끊긴 뒤 1타부터 다시
+	if not knows_follow_ups and (_in_combo() or target.is_finisher_flying()):
+		can_hit = false
 	# 2) 상대가 방어 중이거나 내 공격이 잠겼다 — 치면 손해다. 상대 사거리 바로 바깥에서 기다린다
 	if not can_hit:
 		var wait_at: float = _reach_of(target) + 45.0
@@ -758,7 +764,7 @@ func _decide_movement(delta: float) -> void:
 		fighter.facing = dir
 		return
 
-	var punish: bool = _target_vulnerable()
+	var punish: bool = knows_follow_ups and _target_vulnerable()
 	# 3) 원거리 캐릭터는 원거리 스킬이 준비됐을 때만 거리를 둔다(아니면 근접으로 싸운다)
 	if _is_ranged and not punish and fighter.skill_2 and fighter.skill_2.can_use():
 		if dist > ranged_distance + 20.0:
@@ -1007,6 +1013,9 @@ func _want_skill(skill: Skill) -> bool:
 			return level and open and d > 90.0 and d < 650.0
 		"HealSkill":
 			return hp < 0.5 or (hp < 0.7 and d > 300.0)
+		"JjajangEatSkill":
+			# 먹다 맞으면 끊기므로 멀리 떨어졌을 때만. 먹을수록 느려지니 체력이 꽤 깎였을 때만
+			return hp < 0.5 and d > 300.0
 		"MouseGrabSkill":
 			return level and fighter.is_on_floor() and target.can_be_grabbed() and d > 110.0 and d < 500.0
 		"RageBuffSkill":

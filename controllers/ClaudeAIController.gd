@@ -18,6 +18,8 @@ var _waiting_for_response: bool = false
 
 func _ready() -> void:
 	super._ready()
+	# 스토리 상대는 조금 약하게 — 후속타(콤보 잇기·빈틈 파고들기·날아가는 상대 추격)를 모른다
+	knows_follow_ups = false
 	_http = HTTPRequest.new()
 	add_child(_http)
 	_http.request_completed.connect(_on_request_completed)
