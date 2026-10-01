@@ -70,9 +70,11 @@ description = "무릎을 꿇고 잠깐 버틴 뒤(그동안 밀리지 않는다)
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("9")
 cooldown = 15.0
+heal_ratio = 0.3
 skill_name = "짜장면 먹기"
-description = "주머니에서 짜장면을 꺼내 먹는다. 다 먹으면 잃은 체력의 10%를 회복하지만, 먹을 때마다 대시 쿨타임이 2초씩 늘어난다(라운드 끝까지). 먹다가 맞으면 끊긴다."
+description = "주머니에서 짜장면을 꺼내 먹는다. 다 먹으면 잃은 체력의 30%를 회복하지만, 먹을 때마다 대시 쿨타임이 2초씩 늘어난다(라운드 끝까지). 먹다가 맞으면 끊긴다."
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")
+cooldown = 50.0
 start_on_cooldown = true
