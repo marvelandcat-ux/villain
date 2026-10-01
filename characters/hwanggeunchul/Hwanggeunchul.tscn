@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/HwanggeunchulStats.tres" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://skills/Skill.gd" id="6"]
 [ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulRig.tscn" id="7"]
 [ext_resource type="Script" path="res://skills/DropkickSkill.gd" id="8"]
+[ext_resource type="Script" path="res://skills/JjajangEatSkill.gd" id="9"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -67,8 +68,13 @@ skill_name = "드롭킥"
 description = "무릎을 꿇고 잠깐 버틴 뒤(그동안 밀리지 않는다) 앞으로 두 발을 모아 날아 찬다. 맞으면 상대가 멀리 날아가고, 빗나가면 한동안 일어나지 못한다."
 
 [node name="Skill2" type="Node" parent="."]
-script = ExtResource("6")
+script = ExtResource("9")
+cooldown = 15.0
+heal_ratio = 0.3
+skill_name = "짜장면 먹기"
+description = "주머니에서 짜장면을 꺼내 먹는다. 다 먹으면 잃은 체력의 30%를 회복하지만, 먹을 때마다 대시 쿨타임이 2초씩 늘어난다(라운드 끝까지). 먹다가 맞으면 끊긴다."
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("6")
+cooldown = 50.0
 start_on_cooldown = true

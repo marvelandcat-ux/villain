@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://cin0v3kl77266" path="res://characters/hwanggeunchul/HwanggeunchulRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="2_uniform"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병  몸 옷 측면 2.png" id="3_uniform_turn1"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 옷 측면3.png" id="4_uniform_turn2"]
+
+[node name="BodyRig" instance=ExtResource("1_rig")]
+body_turn_textures = Array[Texture2D]([ExtResource("3_uniform_turn1"), ExtResource("4_uniform_turn2")])
+
+[node name="Body" parent="." index="2"]
+position = Vector2(0.49, 1.78)
+scale = Vector2(0.02485, 0.03267)
+texture = ExtResource("2_uniform")

@@ -1,0 +1,166 @@
+[gd_scene format=3 uid="uid://b0h1sn4dme20o"]
+
+[ext_resource type="Script" uid="uid://dd2leeloamq2s" path="res://maps/Tutorial.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dhuojmg4a74wn" path="res://sprite/맵/튜토리얼/하늘.png" id="2_sky"]
+[ext_resource type="Texture2D" uid="uid://dgyxi3wogyypc" path="res://sprite/맵/튜토리얼/군대 잔디.png" id="3_ground"]
+[ext_resource type="Texture2D" uid="uid://d25eomhvyqiof" path="res://sprite/맵/튜토리얼/구름1.png" id="4_cloud1"]
+[ext_resource type="Texture2D" uid="uid://87ry8nwxvqvd" path="res://sprite/맵/튜토리얼/구름2.png" id="5_cloud2"]
+[ext_resource type="Texture2D" uid="uid://b2ykjqilm4nd7" path="res://sprite/맵/튜토리얼/구름3.png" id="6_cloud3"]
+[ext_resource type="Texture2D" uid="uid://bnhmhkb1g05wa" path="res://sprite/맵/튜토리얼/구름4.png" id="7_cloud4"]
+[ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="8_parallax"]
+[ext_resource type="Script" uid="uid://bdsmjjsqhucj2" path="res://maps/RandomCloudSpawner.gd" id="9_clouds"]
+[ext_resource type="Texture2D" uid="uid://c4x6hefqpv5ig" path="res://sprite/맵/튜토리얼/산.png" id="10_mountain"]
+[ext_resource type="Texture2D" uid="uid://ojetm06ba1ta" path="res://sprite/맵/튜토리얼/군대 숲.png" id="11_forest"]
+[ext_resource type="Texture2D" uid="uid://bu8i8yynoimxq" path="res://sprite/맵/튜토리얼/군대 막사.png" id="13_barracks"]
+[ext_resource type="Texture2D" uid="uid://bio3ekygknc8f" path="res://sprite/맵/튜토리얼/국기 1.png" id="14_flag1"]
+[ext_resource type="Shader" uid="uid://cct33r6314sp" path="res://maps/FlagFlutter.gdshader" id="15_flag_shader"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn" id="16_instructor"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flag"]
+shader = ExtResource("15_flag_shader")
+shader_parameter/hoist_x = 355.0
+shader_parameter/flag_width = 470.0
+shader_parameter/amplitude = 28.0
+shader_parameter/wave_speed = 4.0
+shader_parameter/wavelength = 320.0
+shader_parameter/stretch = 10.0
+shader_parameter/shade = 0.12
+
+[sub_resource type="RectangleShape2D" id="Shape_ground"]
+size = Vector2(3000, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_edge_wall"]
+size = Vector2(40, 1600)
+
+[node name="Tutorial" type="Node2D" unique_id=713366777]
+texture_filter = 4
+script = ExtResource("1_script")
+
+[node name="DecoSky" type="CanvasLayer" parent="." unique_id=1892789456]
+layer = -10
+
+[node name="Sky" type="TextureRect" parent="DecoSky" unique_id=1976464305]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_sky")
+expand_mode = 1
+
+[node name="DecoClouds" type="Node2D" parent="." unique_id=1016974394]
+script = ExtResource("8_parallax")
+factor = Vector2(0.2, 0.2)
+
+[node name="Spawner" type="Node2D" parent="DecoClouds" unique_id=804790012]
+script = ExtResource("9_clouds")
+textures = Array[Texture2D]([ExtResource("4_cloud1"), ExtResource("5_cloud2"), ExtResource("6_cloud3"), ExtResource("7_cloud4")])
+
+[node name="DecoMountains" type="Node2D" parent="." unique_id=164595634]
+script = ExtResource("8_parallax")
+factor = Vector2(0.3, 0.3)
+
+[node name="Mountain1" type="Sprite2D" parent="DecoMountains" unique_id=1908315243]
+position = Vector2(-2100, 149)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("10_mountain")
+
+[node name="Mountain2" type="Sprite2D" parent="DecoMountains" unique_id=667476293]
+position = Vector2(-700, 149)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("10_mountain")
+flip_h = true
+
+[node name="Mountain3" type="Sprite2D" parent="DecoMountains" unique_id=2136877826]
+position = Vector2(700, 149)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("10_mountain")
+
+[node name="Mountain4" type="Sprite2D" parent="DecoMountains" unique_id=321393619]
+position = Vector2(2100, 149)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("10_mountain")
+flip_h = true
+
+[node name="DecoForest" type="Node2D" parent="." unique_id=1150175366]
+script = ExtResource("8_parallax")
+factor = Vector2(0.6, 0.6)
+
+[node name="Forest" type="Sprite2D" parent="DecoForest" unique_id=1749138763]
+texture_repeat = 2
+position = Vector2(-1275, 103)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("11_forest")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 8000, 724)
+
+[node name="DecoBuildings" type="Node2D" parent="." unique_id=2020939152]
+
+[node name="BarracksLeft" type="Sprite2D" parent="DecoBuildings" unique_id=1259575179]
+position = Vector2(-920, 317)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("13_barracks")
+
+[node name="BarracksRight" type="Sprite2D" parent="DecoBuildings" unique_id=199273063]
+position = Vector2(920, 317)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("13_barracks")
+
+[node name="Flag" type="Sprite2D" parent="DecoBuildings" unique_id=718610870]
+material = SubResource("ShaderMaterial_flag")
+position = Vector2(-567, 267)
+scale = Vector2(0.18, 0.18)
+texture = ExtResource("14_flag1")
+
+[node name="Instructor" type="Node2D" parent="." unique_id=2040561113]
+position = Vector2(250, 363)
+scale = Vector2(-1, 1)
+
+[node name="Rig" parent="Instructor" unique_id=1510562629 instance=ExtResource("16_instructor")]
+
+[node name="Ground" type="StaticBody2D" parent="." unique_id=325628157]
+position = Vector2(0, 300)
+
+[node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=343819707]
+position = Vector2(0, 113)
+shape = SubResource("Shape_ground")
+
+[node name="GroundVisual" type="Sprite2D" parent="Ground" unique_id=662167374]
+texture_repeat = 2
+position = Vector2(-1468, 78)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("3_ground")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 40, 6000, 728)
+
+[node name="GroundVisual2" type="Sprite2D" parent="Ground" unique_id=1543941372]
+texture_repeat = 2
+position = Vector2(330, 78)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("3_ground")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 40, 6000, 728)
+
+[node name="LeftWall" type="StaticBody2D" parent="." unique_id=1019975765]
+position = Vector2(-1200, -500)
+
+[node name="Collision" type="CollisionShape2D" parent="LeftWall" unique_id=2058702363]
+shape = SubResource("Shape_edge_wall")
+
+[node name="RightWall" type="StaticBody2D" parent="." unique_id=1105649306]
+position = Vector2(1200, -500)
+
+[node name="Collision" type="CollisionShape2D" parent="RightWall" unique_id=1399198582]
+shape = SubResource("Shape_edge_wall")
+
+[node name="PlayerSpawn" type="Marker2D" parent="." unique_id=728178402]
+position = Vector2(0, 250)
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1422592261]
+position = Vector2(0, 150)
+limit_left = -1200
+limit_right = 1200

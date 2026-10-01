@@ -131,7 +131,9 @@
 | 주인공(경찰) | `ComboMeleeAttack` (**맨손 잽** / 경봉 모드면 경봉) | `TaserGunSkill` (테이저건) | `StoneThrowSkill` (돌 던지기) | `BatonModeUltimate` (경관봉 15초) |
 
 - **숨겨진 캐릭터 `GameState.HIDDEN_CHARACTERS`**(2026-10-01, mtem): 캐릭터 선택창에서 **aaddssww**를 치면 아래 칸 줄이 숨겨진 캐릭터 칸으로 바뀌고, 다시 치면 원래대로(`CharacterSelect._input`/`_toggle_hidden_mode`, 칸은 `_build_hidden_tiles()`가 코드로 만들어 줄 가운데에 둔다). 경로 찾기는 `GameState.character_path()`, `training_characters()`·`character_name_for_path()`도 숨겨진 캐릭터를 포함한다. **타이틀 구경·도감에는 안 나온다**
-  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/` — 팔 `황 근충 해병 팔.png`, 정면 `환근출 해병 정면.png` 오타 그대로): 스킬2·궁은 빈 껍데기(사용자 지시)
+  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/` — 팔 `황 근충 해병 팔.png`, 정면 `환근출 해병 정면.png` 오타 그대로): **궁만** 빈 껍데기(사용자 지시)
+  - **스킬2 `skills/JjajangEatSkill.gd`**(2026-10-01, mtem): 주머니에서 짜장면(리그 `EatBowl`, `play_eat_motion`/`_pose_eat`)을 꺼내 1초 먹고 **잃은 체력의 30% 회복**(씬 `heal_ratio`). 대신 **대시 쿨이 먹을 때마다 +2초씩 쌓인다**(라운드 끝까지, `Fighter.dash_cooldown_bonus` → `effective_dash_cooldown()`, `custom_data["jjajang_eats"]`). 먹다 맞으면(`damaged`) 끊기고 회복·쿨 증가 없음, 쿨 15
+    - ⚠️ `EatBowl` 순서는 **씬의 `index="3"`으로** 잡을 것 — `_ready()`에서 `move_child`하면 대시 잔상(`duplicate()`)이 자식 속성을 순서로 복사해 **머리가 커진다**
   - **스킬1 `skills/DropkickSkill.gd`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 **첫 포물선만** 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김부터는 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직인다
   - 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(**경찰 맨손 잽 재사용**: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍는다, `_pose_headbutt()`; 로컬 좌표라 facing 부호를 안 곱한다). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림은 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로다
 
@@ -167,6 +169,7 @@
   - 열차가 오는 중엔 피난처를 벗어나는 회피(대시·점프)를 안 하고 피난처에 선 뒤에만 방어한다 — 상대 고양이를 피하려다 의자에서 떨어져 열차에 맞았었다. 피난처 위에서 상대가 코앞이면 제자리에서 때린다
   - **검증(2026-09-27, 옛 AI와 같은 캐릭터 미러전, 편의점·지하철·놀이터 x 8캐릭터 x 좌우 = 48판):** 1차 38승 9패 1무 -> 열차 회피·끼임 탈출·그네 넘기 수정 뒤 **47승 1패**(평균 남은 체력 차 +59%p). 놀이터에서 꼭대기 왕관까지 올라감 확인. 옛 AI는 git 이력(`controllers/AIController.gd`, 2026-09-27 이전)
   - 기믹(열차) 중엔 방어 안 함(`_hazard_active()`). `ClaudeAIController`의 `guard_bias`는 방어 확률 배수로 그대로 쓰임
+  - **스토리 AI는 후속타를 모른다**(2026-10-01, mtem): `ClaudeAIController._ready()`가 `knows_follow_ups = false`로 켠다 — 끄면 맞힌 뒤 따라가며 다음 타를 잇지 않고(`_in_combo()`), 상대 빈틈을 노려 파고들지 않고(`_target_vulnerable()`), 3타에 날아가는 상대를 쫓아 치지 않는다. **한 대씩 툭툭 치는 AI**가 된다
   - ⚠️ `Fighter.move()`/`dash()`가 `facing`도 바꿈 → 후퇴·뒤로 대시 직후 `fighter.facing`을 강제로 되돌릴 것(안 하면 투사체가 반대로 나감)
 - 조작키 — `project.godot` InputMap:
 
@@ -377,6 +380,14 @@
   - 미리보기(`_scale_of()`/`_whole_offset_of()`)와 게임(`VomitSkill.spawn_offset()`/`scale_for()`)은 같은 식 — **항상 같이 고칠 것**
 - ⚠️ 에디터에선 @tool 아닌 스크립트 메서드 호출 불가(placeholder 에러) -> export 값을 직접 읽을 것
 - `VomitBeam`/`ScreamCone`은 @tool -> 트윈·레이캐스트는 `setup()`에만 둘 것
+
+## 튜토리얼 `maps/Tutorial.tscn` (2026-10-01, mtem — 뼈대)
+
+- 그림 `sprite/맵/튜토리얼/`: 하늘(`DecoSky` CanvasLayer -10 화면 꽉), 구름1~4(`DecoClouds`(ParallaxFollow 0.2) / `Spawner` = `maps/RandomCloudSpawner.gd` — 그림·크기·높이·속도를 랜덤으로 뽑아 왼쪽 밖에서 만들어 오른쪽으로 흘리고 나가면 지움), 산(`DecoMountains` 0.3, 4장 번갈아 반전)·숲(`DecoForest` 0.6, region 반복), `DecoBuildings`(양옆 막사, 국기 = `국기 1.png` 한 장 + `maps/FlagFlutter.gdshader` — 깃대 `hoist_x` 오른쪽 천만 위아래로 출렁이고 끝으로 갈수록 크게. 늘어진 깃발용은 `ui/story/FlagWave.gdshader`), 땅 `군대 잔디.png`(배율 0.5 반복, 바닥 윗면 y=280), 벽 ±1200
+  - ⚠️ `texture_repeat`는 **위아래로도 반복돼** 윗변에 아랫줄 흙색이 한 줄 번진다 → `region_rect`를 투명한 윗부분 40px 아래부터 시작할 것
+- 훈련 더미를 P1이 조작(stats 복제 후 `player_move_speed`). ESC = 메인 메뉴. 군인 설명은 TODO
+- **교관 = 황근출 해병(옷 입은 버전)** `Instructor`(Node2D, `scale.x` -1로 왼쪽 봄) > `characters/hwanggeunchul/HwanggeunchulUniformRig.tscn`(황근출 리그 상속, `Body`만 `황근출 해병 몸 옷.png`로 — 배율은 맨몸 그림과 **보이는 영역이 같게** 역산, 몸통 돌리기도 옷 측면 2·3). Fighter가 아니라 리그만 — 판정·조작 없음. 원점 y = 바닥 윗면 - 30
+- **처음 켠 사람만** 타이틀 → 튜토리얼(`GameState.tutorial_seen`, settings.cfg `[progress]`, 들어올 때 저장). 메뉴 훈련장 버튼 = `ConfirmPopup.open_choice()` 두 갈래(훈련장 / 튜토리얼 다시, 둘째 버튼 = `alternate_chosen`, ESC = `cancelled`)
 
 ## 훈련장 (값 조정용)
 

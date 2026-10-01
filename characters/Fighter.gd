@@ -129,6 +129,8 @@ var _dash_time: float = 0.0
 var _dash_dir: float = 0.0
 var _dash_cooldown_left: float = 0.0
 var _dash_trail_timer: float = 0.0
+## 이 캐릭터만 대시 쿨에 더하는 초(황근출 짜장면 먹기가 먹을 때마다 늘림, 라운드 끝까지)
+var dash_cooldown_bonus: float = 0.0
 ## 날아갈 때 잔상이 남은 시간 / 다음 잔상까지 남은 시간 (start_air_trail이 켠다)
 var _air_trail_left: float = 0.0
 var _air_trail_timer: float = 0.0
@@ -239,7 +241,11 @@ func guard_cooldown_ratio() -> float:
 func dash_cooldown_ratio() -> float:
 	if _dash_cooldown_left <= 0.0:
 		return 1.0
-	return 1.0 - _dash_cooldown_left / maxf(dash_cooldown, 0.001)
+	return 1.0 - _dash_cooldown_left / maxf(effective_dash_cooldown(), 0.001)
+
+## 이 캐릭터의 실제 대시 쿨타임(공용 dash_cooldown + 개인 추가분 dash_cooldown_bonus)
+func effective_dash_cooldown() -> float:
+	return dash_cooldown + dash_cooldown_bonus
 
 ## 기본공격 잠금(방어에 막힘)이 얼마나 풀렸는지(0 = 방금 막힘, 1 = 때릴 수 있음). 쿨 파이의 X 표시가 읽는다
 func blocked_attack_ratio() -> float:
@@ -995,7 +1001,8 @@ func dash(direction: float) -> bool:
 		return false
 	_dash_dir = signf(direction)
 	facing = _dash_dir
-	_dash_cooldown_left = dash_cooldown
+	# 쿨은 가로채든 말든 똑같이 돈다(mtem: 짜장면을 먹을수록 늘어나는 개인 추가분까지 포함)
+	_dash_cooldown_left = effective_dash_cooldown()
 	# 가로채는 스킬이 있으면 평소 대시는 아예 시작하지 않는다(그래야 첫 프레임이 안 튄다)
 	if dash_override != null and dash_override.has_method("take_over_dash"):
 		dash_override.take_over_dash(self, _dash_dir)
