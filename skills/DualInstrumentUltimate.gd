@@ -11,13 +11,26 @@ extends Skill
 ## 대시는 이 동안 **지나가며 베는 공격**이 된다 — 아래 `_dash_hitbox`를 대시 중에만 켠다
 
 ## 악기를 들고 있는 시간(초). **궁을 쓴 순간부터 센다**
-@export var duration: float = 15.0
+@export var duration: float = 30.0
 ## 그동안 기본공격 데미지에 곱하는 배수
 @export var damage_multiplier: float = 1.5
 
+@export_group("궁 중 강화")
+## 궁을 쓴 동안 **방어가 이만큼 더 오래 버틴다**(초). 기본 1.0초 + 0.5 = 1.5초.
+## 이 캐릭터에게만 걸린다(`Fighter.guard_duration_bonus`) — 상대 방어는 그대로 1초다
+@export var guard_duration_bonus: float = 0.5
+## 돌진하는 **동안 무적**이 되는지. 끄면 지나가며 때리기만 한다
+@export var dash_invincible: bool = true
+## 돌진이 끝난 뒤 **마무리 자세**를 유지하는 시간(초). 이 동안 리그에 구간 2를 알려 준다
+@export var dash_end_hold: float = 0.18
+## 궁을 쓴 동안 **기본공격 콤보가 이만큼 길어진다**. 1이면 3타 → 4타가 된다.
+## **지금은 0이다(3타 그대로)** — 2026-10-02에 "리코더가 바로 돌아오니 다시 3콤보"로 정했다.
+## 늘리면 늘어난 타의 데미지·넉백은 마지막 타와 같고, 자세만 몸의 4타 포즈 씬이 따로 맡는다
+@export var bonus_combo_hits: int = 0
+
 @export_group("대시 공격")
 ## 대시로 지나가며 주는 피해와 밀어내는 힘
-@export var dash_damage: int = 12
+@export var dash_damage: int = 8
 @export var dash_knockback: Vector2 = Vector2(190, -170)
 ## 대시 판정 상자 크기(캐릭터 중심 기준)
 @export var dash_hitbox_size: Vector2 = Vector2(74, 86)
@@ -44,6 +57,10 @@ var _rush_phase: int = 0
 ## 이번 구간에서 남은 거리(px)와 돌진 방향
 var _rush_left: float = 0.0
 var _rush_dir: float = 1.0
+## 돌진이 끝난 뒤 마무리 자세를 유지할 남은 시간(초)
+var _end_hold_left: float = 0.0
+## 지금 이 스킬이 무적을 걸어 둔 상태인지 (중복으로 걸고 안 풀리는 걸 막는다)
+var _invincible_on: bool = false
 
 func _ready() -> void:
 	super._ready()
@@ -59,6 +76,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	super._process(delta)
 	_update_dash_hitbox()
+	# 돌진이 끝난 뒤 마무리 자세를 잠깐 유지한다 — 이동은 이미 풀려 있어서 움직이면 그냥 섞여 사라진다
+	if _end_hold_left > 0.0:
+		_end_hold_left -= delta
+		if _end_hold_left <= 0.0:
+			_set_rig_phase(0.0)
 	if _left <= 0.0:
 		return
 	_left -= delta
@@ -77,7 +99,13 @@ func take_over_dash(fighter: Fighter, direction: float) -> void:
 	_rush_phase = -1
 	_rush_left = dash_back_distance
 	fighter.movement_override = self
+	_end_hold_left = 0.0
 	_set_rig_phase(-1.0)
+	# 돌진하는 동안은 상대 몸을 **뚫고 지나간다** — 막혀 서면 "베고 지나갔다"가 성립하지 않는다
+	fighter.pass_through_fighters = true
+	# 물러나는 준비동작부터 다 지나갈 때까지 통째로 무적이다 — 지나가며 베는 게 이 궁의 값이므로,
+	# 교차하는 순간 서로 맞고 끊기면 "지나갔다"가 성립하지 않는다
+	_set_invincible(true)
 
 ## `Fighter.movement_override` 인터페이스 — 이 동안 가로 속도는 전부 이쪽이 정한다
 func get_move_velocity_x() -> float:
@@ -111,9 +139,30 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 func _end_rush(fighter: Fighter) -> void:
 	_rush_phase = 0
 	_rush_left = 0.0
-	_set_rig_phase(0.0)
+	_set_invincible(false)
+	if is_instance_valid(fighter):
+		fighter.pass_through_fighters = false
+	# 마무리 자세(구간 2)를 dash_end_hold 동안 유지한다. 0이면 곧바로 평소 자세로 돌아간다
+	_end_hold_left = maxf(dash_end_hold, 0.0)
+	_set_rig_phase(2.0 if _end_hold_left > 0.0 else 0.0)
 	if is_instance_valid(fighter) and fighter.movement_override == self:
 		fighter.movement_override = null
+
+## 돌진 무적을 켜고 끈다 — 개수로 세는 쪽(`push/pop_invincible`)을 쓰므로
+## 다른 스킬의 시간제 무적이 중간에 끝나도 이쪽이 안 풀린다
+func _set_invincible(on: bool) -> void:
+	if on and not dash_invincible:
+		return
+	if on == _invincible_on:
+		return
+	if not is_instance_valid(_armed_fighter):
+		_invincible_on = false
+		return
+	_invincible_on = on
+	if on:
+		_armed_fighter.push_invincible()
+	else:
+		_armed_fighter.pop_invincible()
 
 ## 리그에 지금 어느 구간인지 알려 준다(자세용) — -1 물러남 / 1 내지름 / 0 평소
 func _set_rig_phase(value: float) -> void:
@@ -135,7 +184,11 @@ func _update_dash_hitbox() -> void:
 			_dash_hitbox.set_deferred("monitorable", false)
 		return
 	_dash_hitbox.global_position = _armed_fighter.global_position
-	_dash_hitbox.damage = _armed_fighter.compute_damage(dash_damage)
+	# ⚠️ **이 궁이 자기한테 건 공격력 배수(damage_multiplier)는 돌진에서 도로 나눈다.**
+	#    그 배수는 "기본공격이 세진다"는 뜻인데, 안 빼면 돌진 피해에도 곱해져서
+	#    여기 적은 8이 실제로는 12로 들어간다(실측). 약화 같은 **다른** 디버프는 그대로 먹는다
+	var own: float = maxf(damage_multiplier, 0.01)
+	_dash_hitbox.damage = maxi(int(round(float(_armed_fighter.compute_damage(dash_damage)) / own)), 1)
 	_dash_hitbox.knockback = Vector2(dash_knockback.x * _armed_fighter.facing, dash_knockback.y)
 	_dash_hitbox.source_fighter = _armed_fighter
 	if not _dash_hitbox.monitoring:
@@ -152,6 +205,10 @@ func _execute(fighter: Fighter) -> void:
 	_armed_fighter = fighter
 	_left = duration
 	fighter.set_modifier("attack_debuff_multiplier", MODIFIER_ID, damage_multiplier)
+	# 궁 중에는 방어가 더 오래 버틴다 (1.0 → 1.5초)
+	fighter.guard_duration_bonus = guard_duration_bonus
+	# 궁 중에는 평타가 한 타 더 나간다 (3타 → 4타)
+	_set_bonus_hits(fighter, bonus_combo_hits)
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and "held_item_l_armed" in visual:
 		visual.held_item_l_armed = true
@@ -163,6 +220,11 @@ func _disarm() -> void:
 	_left = 0.0
 	if _rush_phase != 0:
 		_end_rush(_armed_fighter)
+	_set_invincible(false)
+	_end_hold_left = 0.0
+	# 마무리 자세를 유지하던 중에 시간이 다 됐을 수도 있다 — 구간을 0으로 돌려놔야
+	# 다음에 다시 궁을 썼을 때 가만히 서 있는데 마무리 자세가 나오지 않는다
+	_set_rig_phase(0.0)
 	if _dash_hitbox:
 		_dash_hitbox.set_deferred("monitoring", false)
 		_dash_hitbox.set_deferred("monitorable", false)
@@ -170,12 +232,23 @@ func _disarm() -> void:
 		_armed_fighter = null
 		return
 	_armed_fighter.clear_modifier("attack_debuff_multiplier", MODIFIER_ID)
+	_armed_fighter.guard_duration_bonus = 0.0
+	_armed_fighter.pass_through_fighters = false
+	_set_bonus_hits(_armed_fighter, 0)
 	if _armed_fighter.dash_override == self:
 		_armed_fighter.dash_override = null
 	var visual: Node2D = _armed_fighter.get_node_or_null("Visual")
 	if visual and "held_item_l_armed" in visual:
 		visual.held_item_l_armed = false
 	_armed_fighter = null
+
+## 기본공격 콤보의 타 수를 늘리거나 되돌린다. 콤보형 기본공격이 아니면 조용히 넘어간다
+func _set_bonus_hits(fighter: Fighter, amount: int) -> void:
+	if not is_instance_valid(fighter):
+		return
+	var basic: Node = fighter.basic_attack
+	if basic != null and "bonus_hits" in basic:
+		basic.bonus_hits = amount
 
 ## 지금 쌍 악기를 들고 있는지 (UI·다른 스킬이 물어볼 수 있게 열어둔다)
 func is_armed() -> bool:

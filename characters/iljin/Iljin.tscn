@@ -14,6 +14,9 @@
 [ext_resource type="PackedScene" path="res://characters/iljin/IljinGirlfriend.tscn" id="13_girlfriend"]
 [ext_resource type="Texture2D" uid="uid://cl80226s80f5m" path="res://sprite/일진/신남일진.png" id="7_action_face"]
 [ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smoke_face"]
+[ext_resource type="Texture2D" path="res://sprite/일진/스킬로고/흡연스킬로고.png" id="20_logo1"]
+[ext_resource type="Texture2D" path="res://sprite/일진/스킬로고/일진어깨빵스킬로고.png" id="21_logo2"]
+[ext_resource type="Texture2D" path="res://sprite/일진/스킬로고/일진궁극기로고.png" id="22_logoult"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -59,6 +62,7 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("7")
+icon = ExtResource("20_logo1")
 cooldown = 10.0
 smoke_scene = ExtResource("8")
 smoke_face = ExtResource("10_smoke_face")
@@ -66,12 +70,14 @@ smoke_face_scale = Vector2(0.0448, 0.0448)
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("9")
+icon = ExtResource("21_logo2")
 cooldown = 6.0
 charge_face = ExtResource("7_action_face")
 charge_face_scale = Vector2(0.0486, 0.0486)
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("11")
+icon = ExtResource("22_logoult")
 cooldown = 50.0
 start_on_cooldown = true
 friend_scene = ExtResource("12_friend")

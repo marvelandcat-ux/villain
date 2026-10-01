@@ -10,6 +10,10 @@
 [ext_resource type="PackedScene" path="res://skills/Turnstile.tscn" id="5"]
 [ext_resource type="Script" path="res://skills/CounterSkill.gd" id="6"]
 [ext_resource type="Script" path="res://skills/DualInstrumentUltimate.gd" id="7"]
+[ext_resource type="Script" path="res://skills/RecorderThrow.gd" id="30_throw"]
+[ext_resource type="PackedScene" path="res://skills/ThrownRecorder.tscn" id="31_recorder"]
+[ext_resource type="Script" path="res://skills/XSlashFinisher.gd" id="32_xslash"]
+[ext_resource type="PackedScene" path="res://combat/XSlashTrail.tscn" id="33_xtrail"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
@@ -49,6 +53,7 @@ shape = SubResource("CapsuleShape2D_hurt")
 script = ExtResource("20_combo")
 range = 42.0
 windup = 0.16
+dual_combo_windup = Array[float]([0.0, 0.24, 0.0])
 cooldown = 0.3
 miss_cooldown = 1.0
 pushback_base = 6.0
@@ -58,6 +63,15 @@ combo_lunge = Array[float]([0.0, 60.0, 120.0])
 combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
 combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
 finisher_windup = 0.223
+
+[node name="RecorderThrow" type="Node" parent="BasicAttack"]
+script = ExtResource("30_throw")
+catch_step = 1
+recorder_scene = ExtResource("31_recorder")
+
+[node name="XSlashFinisher" type="Node" parent="BasicAttack"]
+script = ExtResource("32_xslash")
+trail_scene = ExtResource("33_xtrail")
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false

@@ -138,6 +138,9 @@ var _air_trail_timer: float = 0.0
 var is_guarding: bool = false
 ## 방어가 유지되는 남은 시간 / 다음 방어까지 남은 쿨타임
 var _guard_time: float = 0.0
+## 이 캐릭터만 **추가로 더 버티는** 방어 시간(초). 지하철 아저씨 궁이 +0.5를 걸어 1.0 → 1.5초가 된다.
+## 공용 `guard_duration`은 static(모두 공유)이라 거기 더하면 상대 방어까지 같이 길어진다
+var guard_duration_bonus: float = 0.0
 var _guard_cooldown_left: float = 0.0
 ## 기본공격이 막혀서 기본공격이 잠겨 있는 남은 시간(초)
 var _blocked_attack_left: float = 0.0
@@ -179,8 +182,19 @@ var cooldown_rate_multiplier: float = 1.0
 var attack_speed_multiplier: float = 1.0
 ## 받는 데미지 감소율 (0.0=없음, 1.0=완전 무효) — 가드 스킬 등이 사용
 var damage_reduction: float = 0.0
-## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중)
-var is_invincible: bool = false
+## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중).
+## **읽을 때는 아래 두 가지를 합쳐서 본다** — 시간제 무적(`grant_invincibility`)과
+## "이 동작이 끝날 때까지" 무적(`push_invincible`)을 따로 세야 서로를 꺼버리지 않는다.
+## 예전처럼 `is_invincible = true/false`로 써도 그대로 동작한다(시간제 깃발을 건드린다)
+var is_invincible: bool:
+	get:
+		return _invincible_flag or _invincible_locks > 0
+	set(value):
+		_invincible_flag = value
+## 시간제 무적이 켜 둔 깃발
+var _invincible_flag: bool = false
+## "동작이 끝날 때까지" 걸어 둔 무적의 개수. 0보다 크면 무적이다(겹쳐 걸려도 서로 안 꺼진다)
+var _invincible_locks: int = 0
 ## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철 아저씨 공포 단소 등
 var is_feared: bool = false
 ## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
@@ -247,6 +261,10 @@ func dash_cooldown_ratio() -> float:
 func effective_dash_cooldown() -> float:
 	return dash_cooldown + dash_cooldown_bonus
 
+## 이 캐릭터의 실제 방어 시간(공용 guard_duration + 개인 추가분 guard_duration_bonus)
+func effective_guard_duration() -> float:
+	return maxf(guard_duration + guard_duration_bonus, 0.05)
+
 ## 기본공격 잠금(방어에 막힘)이 얼마나 풀렸는지(0 = 방금 막힘, 1 = 때릴 수 있음). 쿨 파이의 X 표시가 읽는다
 func blocked_attack_ratio() -> float:
 	if _blocked_attack_left <= 0.0:
@@ -267,6 +285,11 @@ func _ignore_other_fighters() -> void:
 		add_collision_exception_with(other)
 		other.add_collision_exception_with(self)
 
+## 켜 두면 **상대 캐릭터를 뚫고 지나간다** — 서로 밀어내기(`_separate_from_others`)를 끈다.
+## 지하철 아저씨 쌍 악기 돌진이 켠다: "베고 지나간다"가 되려면 상대 몸에 막혀 서면 안 된다.
+## 몸 충돌 자체는 원래부터 예외 처리돼 있어서, 길을 막던 건 가로 밀어내기뿐이다
+var pass_through_fighters: bool = false
+
 ## 캐릭터끼리 서로 밀어내 겹치지 않게 하는 최소 가로 간격(px). 몸 반지름(20)의 두 배쯤
 const BODY_PUSH_WIDTH := 38.0
 ## 세로로 이만큼 넘게 벌어져 있으면(상대가 위에 있으면) 안 밀어낸다 — 점프로 넘어갈 수 있게
@@ -277,8 +300,15 @@ const BODY_PUSH_HEIGHT := 46.0
 ## 여기서는 가로로만 밀어낸다. 두 캐릭터가 각자 절반씩 밀어내므로 한두 프레임 안에 딱 붙어 떨어진다.
 ## move_and_collide로 밀어서 벽은 뚫지 않는다(상대에게 몰리면 벽에 막혀 코너에 갇힌다)
 func _separate_from_others() -> void:
+	# 지금 상대를 **뚫고 지나가는 중**이면 밀어내지 않는다 (지하철 아저씨 쌍 악기 돌진).
+	# 몸 충돌은 이미 예외 처리돼 있어서, 실제로 길을 막는 건 아래 가로 밀어내기뿐이었다
+	if pass_through_fighters:
+		return
 	for other in get_tree().get_nodes_in_group("fighters"):
 		if other == self or not is_instance_valid(other):
+			continue
+		# **상대가** 뚫고 지나가는 중이어도 안 밀어낸다 — 한쪽만 멈춰 봐야 반대쪽이 도로 밀어내서 막힌다
+		if other is Fighter and other.pass_through_fighters:
 			continue
 		if absf(global_position.y - other.global_position.y) > BODY_PUSH_HEIGHT:
 			continue
@@ -894,6 +924,16 @@ func grant_invincibility(duration: float) -> void:
 	is_invincible = true
 	_after(duration, func(): is_invincible = false)
 
+## **동작이 끝날 때까지** 무적을 걸어 둔다 — 반드시 `pop_invincible()`과 짝으로 쓴다.
+## 시간이 아니라 개수로 세므로, 시간제 무적이 중간에 끝나도 이쪽 무적은 안 풀린다
+## (지하철 아저씨 쌍 악기 돌진이 이걸로 "지나가는 동안만" 무적이 된다)
+func push_invincible() -> void:
+	_invincible_locks += 1
+
+## 걸어 둔 무적 하나를 거둔다. 0 밑으로는 안 내려간다(짝이 어긋나도 영구 무적이 안 된다)
+func pop_invincible() -> void:
+	_invincible_locks = maxi(_invincible_locks - 1, 0)
+
 ## 지금 이 캐릭터에게 디버프(둔화·공포·그랩 등)를 걸 수 있는지. true면 튕겨낸다.
 ##
 ## **방어 중에는 어떤 디버프도 안 걸린다** — 데미지·넉백만 막고 둔화·공포·그랩이 그대로 들어가면
@@ -937,7 +977,7 @@ func start_guard() -> bool:
 	if not can_guard():
 		return false
 	is_guarding = true
-	_guard_time = guard_duration
+	_guard_time = effective_guard_duration()
 	velocity.x = 0.0
 	if _shield == null:
 		_shield = GUARD_SHIELD_SCRIPT.new()
@@ -1383,7 +1423,7 @@ func apply_physics(delta: float) -> void:
 		_guard_time = maxf(_guard_time - delta, 0.0)
 		velocity.x = 0.0
 		if _shield:
-			_shield.set_remain(_guard_time / maxf(guard_duration, 0.001))
+			_shield.set_remain(_guard_time / maxf(effective_guard_duration(), 0.001))
 		if is_zero_approx(_guard_time):
 			is_guarding = false
 			_guard_cooldown_left = guard_cooldown

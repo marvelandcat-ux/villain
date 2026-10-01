@@ -241,6 +241,9 @@ extends Node2D
 ## **왼손에도 악기를 들었는지.** 궁(`DualInstrumentUltimate`)이 켜고 끈다 —
 ## 켜면 `HandLHold` 자식(검은 리코더)이 보이고, 서 있기·걷기·방어·대시 자세가 통째로 바뀐다
 @export var held_item_l_armed: bool = false
+## **왼손 물건을 지금 던져서 손에 없다.** 켜면 `held_item_l_armed`여도 리코더가 안 보인다 —
+## 던진 리코더(`ThrownRecorder`)가 날아가는 동안 켜지고, 품에 돌아오면 그쪽이 다시 끈다
+var held_item_l_thrown: bool = false
 ## 자세가 섞여 드는 속도(1/초). 궁을 켠 순간 뚝 바뀌지 않고 스르르 잡힌다
 @export var dual_blend_speed: float = 11.0
 ## **서 있기·걷기** — 단소(오른손)는 뒤로 낮게, 리코더(왼손)는 앞 위로 세운다(사용자 그림 3)
@@ -266,6 +269,63 @@ extends Node2D
 @export var dual_hold_l_z: int = 2
 ## 단소(오른손 쪽)도 같이 올린다 — X자로 교차할 때 한쪽만 머리에 가리면 X가 안 읽힌다
 @export var dual_hold_r_z: int = 2
+## **오른손도 머리 앞으로 올린다.** 리그 그리는 순서가 …오른손 → 머리라서, 안 올리면
+## 손을 머리 높이로 들어올리는 자세(3타 X자)에서 **오른손만 머리 뒤에 숨는다**(실측).
+## 왼손은 `dual_hand_l_z`가 이미 올리고 있었는데 오른손만 빠져 있었다
+@export var dual_hand_r_z: int = 3
+
+## --- 자세를 **씬 파일로** 잡기 (2026-10-02) ---
+## 아래 네 자세는 숫자 export 대신 **포즈 씬**으로 잡는다. 씬 안에서 머리·몸·두 손·두 발·
+## 리코더·단소를 직접 끌어다 놓으면 그 **위치와 각도**가 그대로 게임에 쓰인다.
+## 비워 두면 위쪽 숫자 export(`dual_guard_*`, `dual_dash_*`)로 돌아간다 — 그래서 중간에 지워도 안 깨진다.
+## 크기(scale)는 안 읽는다 — 걷기·머리 돌리기가 크기를 건드리기 때문에 서로 싸우게 된다
+@export var dual_guard_pose: PackedScene = null
+## 돌진 **준비**(뒤로 물러나는 동안) / **돌진 중**(앞으로 내지르는 동안) / **끝난 직후**(마무리) 세 장
+@export var dual_dash_ready_pose: PackedScene = null
+@export var dual_dash_run_pose: PackedScene = null
+@export var dual_dash_end_pose: PackedScene = null
+
+@export_group("평타 자세 씬")
+## **기본공격 1·2·3타**를 각각 세 장으로 잡는다 — 준비(ready) → 중간(mid) → 마무리(end).
+## 세 장을 **키프레임**으로 두고 그 사이를 이어 붙여 궤도를 만든다(중간 장이 궤도를 정한다).
+##
+## 비워 둔 칸은 그냥 건너뛴다 — 두 장만 채우면 그 둘 사이를 잇고, 한 장만 채우면 치는 내내 그 자세로 굳고,
+## 한 타를 통째로 비우면 그 타는 **원래 휘두르기 동작** 그대로 간다. 9장을 다 안 써도 된다.
+## 채워 둔 타는 발차기·무기 돌리기 같은 기본 동작을 덮어쓴다(씬에 잡아 둔 게 전부 이긴다)
+@export var hit1_ready_pose: PackedScene = null
+@export var hit1_mid_pose: PackedScene = null
+@export var hit1_end_pose: PackedScene = null
+@export var hit2_ready_pose: PackedScene = null
+@export var hit2_mid_pose: PackedScene = null
+@export var hit2_end_pose: PackedScene = null
+@export var hit3_ready_pose: PackedScene = null
+@export var hit3_mid_pose: PackedScene = null
+@export var hit3_end_pose: PackedScene = null
+## **4타는 궁(쌍 악기)을 쓴 동안에만 나온다** — 평소 콤보는 3타에서 끝난다.
+## 늘리는 건 `ComboMeleeAttack.bonus_hits`가 하고, 여기는 그 타의 자세만 맡는다
+@export var hit4_ready_pose: PackedScene = null
+@export var hit4_mid_pose: PackedScene = null
+@export var hit4_end_pose: PackedScene = null
+
+## **세 장을 곡선으로 잇는다(기본).** 끄면 장과 장 사이를 곧은 선으로 잇는다.
+## 켜면 세 점을 지나는 부드러운 곡선이 되어 **반원을 그리며 휘두르는 궤도**가 나온다 —
+## 단, 곡선도 세 장을 **지나가는** 것이라 **가운데 장이 곧 호(弧)의 바닥**이어야 한다.
+## 가운데 장을 몸 옆에 두면 곡선이든 직선이든 몸 아래로 안 내려간다
+@export var attack_pose_curve: bool = true
+
+@export_group("평타 자세 씬 (쌍 악기 = 궁 중)")
+## **궁(쌍 악기)을 쓴 동안의 평타 자세.** 위 칸과 똑같은 구조인데, 왼손에 리코더가 있는 동안만 이쪽을 쓴다.
+## 평소 콤보(발차기·단소)와 궁 콤보(리코더 던지기·두 손 가격·한 바퀴)는 동작이 아예 달라서 따로 잡는다.
+## **비워 두면 위의 평소 칸을 그대로 쓴다** — 궁 중에만 바뀌는 타만 채우면 된다
+@export var dual_hit1_ready_pose: PackedScene = null
+@export var dual_hit1_mid_pose: PackedScene = null
+@export var dual_hit1_end_pose: PackedScene = null
+@export var dual_hit2_ready_pose: PackedScene = null
+@export var dual_hit2_mid_pose: PackedScene = null
+@export var dual_hit2_end_pose: PackedScene = null
+@export var dual_hit3_ready_pose: PackedScene = null
+@export var dual_hit3_mid_pose: PackedScene = null
+@export var dual_hit3_end_pose: PackedScene = null
 
 ## 잽을 **정면으로 곧게** 내지른다 — 살짝 당겼다가(raise) 앞으로 쭉. 위아래로 안 흔들린다
 @export var jab_raise_off: Vector2 = Vector2(-7, 0)
@@ -973,6 +1033,8 @@ var _lookback_time: float = 0.0
 var _attack_time: float = 0.0
 ## 지금 재생 중인 스윙 종류 (콤보 평타의 타 번호). 0=기본 내려찍기, 1=앞으로 후려치기, 2=크게 올려치기
 var _attack_variant: int = 0
+## 이번 프레임에 **평타 포즈 씬**이 자세를 잡았는지. true면 발차기·무기 돌리기 같은 기본 동작을 건너뛴다
+var _attack_pose_on: bool = false
 ## 지금 스윙의 전체 길이(초) — 발차기 타는 kick_duration, 나머지는 attack_duration
 var _attack_len: float = 0.4
 ## 뒤돌기 전에 루트 scale.x가 얼마였는지 — 다음 프레임 시작에 되돌려야 _face_moving_direction이
@@ -1111,6 +1173,8 @@ var _body_rest_scale: Vector2
 static var _opaque_rect_cache: Dictionary = {}
 ## 씬에 저장돼 있던 각 조각의 제자리 위치 {Sprite2D: Vector2}
 var _rest_positions: Dictionary = {}
+## 손에 든 악기의 제자리 {Node2D: [위치, 각도]} — 포즈 씬이 건드린 뒤 되돌리는 데 쓴다
+var _held_rest: Dictionary = {}
 
 func _ready() -> void:
 	# Visual로 붙는 자리가 Fighter의 자식이라 부모가 곧 조종 대상이다.
@@ -1119,6 +1183,13 @@ func _ready() -> void:
 	for part in [_foot_l, _foot_r, _body, _head, _hand_l, _hand_r]:
 		if part:
 			_rest_positions[part] = part.position
+	# 손에 든 악기(리코더·단소)의 제자리 값도 따로 기억한다.
+	# **포즈 씬이 이 둘의 자리까지 바꾸기 때문이다** — 안 기억해 두면 던지는 자세(1타)가 리코더를
+	# 손에서 멀찍이 밀어 놓은 그 자리에 **영영 남아서**, 돌아와도 손에 안 붙은 것처럼 보인다
+	for part_name in ["Recorder", "Danso"]:
+		var held: Node2D = _pose_part(part_name)
+		if held:
+			_held_rest[held] = [held.position, held.rotation]
 	# 토하기가 끝나면 되돌릴 수 있게 원래 머리 그림/배율을 기억해둔다
 	if _head:
 		_head_rest_texture = _head.texture
@@ -1356,6 +1427,9 @@ func _process(delta: float) -> void:
 	_update_fan_ghosts(delta)
 
 func _apply_pose(speed_ratio: float) -> void:
+	# **손에 든 악기를 먼저 제자리로 되돌린다.** 발·손처럼 매 프레임 제자리에서 다시 계산되는 조각과 달리
+	# 리코더·단소는 아무도 안 건드리면 지난 포즈가 남긴 자리에 그대로 굳는다
+	_reset_held_items()
 	# 지난 프레임에 뒤돌기로 얇게 눌러둔 가로 크기를 먼저 되돌린다
 	if _spin_applied:
 		scale.x = _spin_base_x
@@ -1432,14 +1506,19 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _step_time > 0.0:
 		_pose_lunge_step()
 
-	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
+	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다.
+	# **그 타에 포즈 씬을 잡아 뒀으면 그게 이긴다** — 머리부터 발까지 씬에 잡아 둔 그대로 간다
+	_attack_pose_on = false
 	if _attack_time > 0.0:
-		_pose_attack_hand()
+		_attack_pose_on = _pose_attack_scenes()
+		if not _attack_pose_on:
+			_pose_attack_hand()
 	# 맨손 잽이면 반대 손을 얼굴 앞에 올린다 — 한 손은 막고 한 손은 뻗는 권투 자세.
 	# 지금 자세(걷기·잽) 위에 블렌드만큼 섞어서, 타가 바뀌거나 끝날 때 손이 미끄러지듯 오간다
-	_blend_jab_guard(_hand_l, _jab_guard_l)
-	_blend_jab_guard(_hand_r, _jab_guard_r)
-	if _attack_time > 0.0:
+	if not _attack_pose_on:
+		_blend_jab_guard(_hand_l, _jab_guard_l)
+		_blend_jab_guard(_hand_r, _jab_guard_r)
+	if _attack_time > 0.0 and not _attack_pose_on:
 		# 어퍼컷이면 고개와 상체가 치는 내내 점점 돌아간다
 		if _is_headbutt():
 			_pose_headbutt()
@@ -1481,7 +1560,7 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	# 그 타가 발차기면 두 발·몸통도 차는 자세로 덮어쓴다 (손은 위에서 이미 균형 자세를 잡았다).
 	# 드롭킥이 돌고 있으면 건너뛴다 — 아래 드롭킥 자세가 두 발을 따로 잡으므로 두 번 손대면 싸운다
-	if _attack_time > 0.0 and attack_kick_hit >= 0 and _attack_variant == attack_kick_hit and _dk_blend <= 0.001:
+	if _attack_time > 0.0 and not _attack_pose_on and attack_kick_hit >= 0 and _attack_variant == attack_kick_hit and _dk_blend <= 0.001:
 		_pose_kick()
 
 	# 마시는 중이면 머리와 오른손을 술 마시는 자세로 덮어쓴다 (공격보다 나중이라 우선한다)
@@ -1604,21 +1683,29 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _hand_l_hold and _hand_l:
 		_hand_l_hold.position = _hand_l.position
 		_hand_l_hold.rotation = _hand_l.rotation
+		# 던져서 손에 없는 동안은 안 보인다 — 손에도 있고 날아가기도 하면 두 개가 된다
+		var show_l: bool = held_item_l_armed and not held_item_l_thrown
 		for child in _hand_l_hold.get_children():
-			if child is CanvasItem and child.visible != held_item_l_armed:
-				child.visible = held_item_l_armed
+			if child is CanvasItem and child.visible != show_l:
+				child.visible = show_l
 		# 머리 앞으로 올렸다 되돌린다 — 위로 세운 리코더가 머리에 안 가리게
 		_hand_l_hold.z_index = dual_hold_l_z if held_item_l_armed else _hand_l_hold_rest_z
 		if _hand_l and _grip_blend <= 0.5:
 			_hand_l.z_index = dual_hand_l_z if held_item_l_armed else _hand_l_rest_z
-		if _hand_r_hold and _attack_time <= 0.0:
+		# 오른손도 같은 규칙으로 올린다(두 손 잡기 중에는 아래 잡기 쪽이 z를 정하므로 건드리지 않는다)
+		if _hand_r and _grip_blend <= 0.5:
+			_hand_r.z_index = dual_hand_r_z if held_item_l_armed else _hand_r_rest_z
+		# 쌍 악기를 든 동안엔 **치는 중에도** 단소를 머리 앞에 둔다 —
+		# 손만 앞이고 단소는 뒤면 3타 X자에서 한 획이 머리에 잘린다.
+		# 쌍 악기가 아닐 때는 예전 그대로(치는 중엔 안 건드린다)
+		if _hand_r_hold and (_attack_time <= 0.0 or held_item_l_armed):
 			_hand_r_hold.z_index = dual_hold_r_z if held_item_l_armed else _hand_r_hold_rest_z
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
 		# 무기 스핀 타(악플러 3타) — 오른손 위치를 축으로 HandRHold를 통째로 돌린다.
 		# HandRHold 원점 = 오른손이라, 자식 무기가 오른손 주위를 공전하며 한 바퀴 돈다(손·몸은 안 돎)
-		if _attack_time > 0.0 and weapon_spin_hit >= 0 and _attack_variant == weapon_spin_hit:
+		if _attack_time > 0.0 and not _attack_pose_on and weapon_spin_hit >= 0 and _attack_variant == weapon_spin_hit:
 			var sp: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 			_hand_r_hold.rotation += weapon_spin_dir * TAU * weapon_spin_turns * clampf(sp, 0.0, 1.0)
 		# 선풍기 회전 — 손이 무기 중심을 잡고 그 자리에서 돌리는 느낌(봉 돌리기).
@@ -3870,6 +3957,166 @@ func _pose_lookback() -> void:
 func set_guarding(on: bool) -> void:
 	_guard_target = 1.0 if on else 0.0
 
+## 포즈 씬에서 읽어 오는 조각 이름들. 씬에 같은 이름의 노드가 있으면 그 자리·각도를 쓰고, 없으면 안 건드린다
+const POSE_PART_NAMES: Array[String] = ["FootL", "FootR", "Body", "Head", "HandL", "HandR", "Recorder", "Danso"]
+## 이미 읽어 둔 포즈 {씬 경로: {조각 이름: [위치, 각도]}} — 리그끼리 공유해 씬마다 한 번만 읽는다
+static var _pose_cache: Dictionary = {}
+
+## 포즈 씬을 읽어 조각별 자리·각도를 뽑아낸다. **씬을 화면에 올리지 않는다** —
+## 복제본을 만들어 좌표만 베끼고 바로 버리므로 스크립트(@tool 미리보기)도 돌지 않는다
+static func read_pose(scene: PackedScene) -> Dictionary:
+	if scene == null:
+		return {}
+	var key: String = scene.resource_path
+	if key != "" and _pose_cache.has(key):
+		return _pose_cache[key]
+	var out: Dictionary = {}
+	var root: Node = scene.instantiate()
+	if root:
+		for part_name in POSE_PART_NAMES:
+			var part := root.find_child(part_name, true, false) as Node2D
+			if part:
+				out[part_name] = [part.position, part.rotation]
+		root.free()
+	if key != "":
+		_pose_cache[key] = out
+	return out
+
+## 포즈에 적힌 이름을 실제 리그 조각으로 바꿔 준다. 없는 조각은 null
+func _pose_part(part_name: String) -> Node2D:
+	match part_name:
+		"FootL":
+			return _foot_l
+		"FootR":
+			return _foot_r
+		"Body":
+			return _body
+		"Head":
+			return _head
+		"HandL":
+			return _hand_l
+		"HandR":
+			return _hand_r
+		"Recorder":
+			return _hand_l_hold.get_node_or_null("Recorder") as Node2D if _hand_l_hold else null
+		"Danso":
+			return _hand_r_hold.get_node_or_null("Danso") as Node2D if _hand_r_hold else null
+	return null
+
+## 손에 든 악기(리코더·단소)를 씬에 저장돼 있던 제자리로 돌려놓는다
+func _reset_held_items() -> void:
+	for held in _held_rest:
+		if not is_instance_valid(held):
+			continue
+		var rest: Array = _held_rest[held]
+		held.position = rest[0] as Vector2
+		held.rotation = rest[1] as float
+
+## 읽어 둔 포즈를 지금 자세에 t만큼 섞는다. 0이면 평소 자세, 1이면 포즈 그대로.
+##
+## `shortest`는 각도를 어느 쪽으로 돌릴지다.
+##  - true(기본): **짧은 쪽으로** 돈다. 걷다가 막는 자세로 넘어갈 때처럼 "지금 각도에서 목표 각도까지"
+##    자연스럽게 가야 하는 경우에 쓴다.
+##  - false: **적어 둔 숫자 그대로** 보간한다. 평타 키프레임 사이에 쓴다 —
+##    짧은 쪽으로 돌면 0도 → 180도 → 360도로 적어 둔 **한 바퀴 돌기**가 도로 되감긴다
+func _apply_pose_scene(pose: Dictionary, t: float, shortest: bool = true) -> void:
+	for part_name in pose:
+		var part: Node2D = _pose_part(part_name)
+		if part == null:
+			continue
+		var data: Array = pose[part_name]
+		var target: float = data[1] as float
+		part.position = part.position.lerp(data[0] as Vector2, t)
+		part.rotation = lerp_angle(part.rotation, target, t) if shortest else lerpf(part.rotation, target, t)
+
+## 돌진 구간에 맞는 포즈 씬 — -1 준비 / 1 돌진 중 / 2 끝난 직후. 안 넣어 둔 칸은 null
+func _dual_dash_pose(phase: float) -> PackedScene:
+	if phase < -0.5:
+		return dual_dash_ready_pose
+	if phase > 1.5:
+		return dual_dash_end_pose
+	return dual_dash_run_pose
+
+## 세 장(시작·가운데·끝)을 **다 지나는 곡선**으로 자세를 잡는다.
+##
+## 2차 베지에를 쓰되 조종점을 `2*P1 - (P0+P2)/2`로 잡아서, t=0.5일 때 정확히 가운데 장을 지난다.
+## 그래서 가운데 장을 몸 아래에 두면 손이 **몸 아래로 둥글게 쓸고 지나간다**(직선 두 토막이면 V자로 꺾인다).
+## 각도도 같은 식으로 잇는다 — 짧은 쪽으로 안 돌리므로 적어 둔 숫자 그대로 돈다
+func _apply_pose_curve(a: Dictionary, b: Dictionary, c: Dictionary, t: float) -> void:
+	var u: float = 1.0 - t
+	var w0: float = u * u
+	var w1: float = 2.0 * u * t
+	var w2: float = t * t
+	for part_name in a:
+		var part: Node2D = _pose_part(part_name)
+		if part == null or not b.has(part_name) or not c.has(part_name):
+			continue
+		var p0: Vector2 = a[part_name][0]
+		var p1: Vector2 = b[part_name][0]
+		var p2: Vector2 = c[part_name][0]
+		part.position = p0 * w0 + (p1 * 2.0 - (p0 + p2) * 0.5) * w1 + p2 * w2
+		var r0: float = a[part_name][1]
+		var r1: float = b[part_name][1]
+		var r2: float = c[part_name][1]
+		part.rotation = r0 * w0 + (r1 * 2.0 - (r0 + r2) * 0.5) * w1 + r2 * w2
+
+## 그 타(0=1타 … 3=4타)에 잡아 둔 세 장. 다른 타 번호(베기·특수)는 빈 배열.
+## **궁(쌍 악기) 중이면 쌍 악기용 칸을 먼저 본다** — 거기 비어 있는 자리는 평소 칸으로 메운다
+func _attack_pose_set(variant: int) -> Array:
+	var normal: Array = []
+	var dual: Array = []
+	match variant:
+		0:
+			normal = [hit1_ready_pose, hit1_mid_pose, hit1_end_pose]
+			dual = [dual_hit1_ready_pose, dual_hit1_mid_pose, dual_hit1_end_pose]
+		1:
+			normal = [hit2_ready_pose, hit2_mid_pose, hit2_end_pose]
+			dual = [dual_hit2_ready_pose, dual_hit2_mid_pose, dual_hit2_end_pose]
+		2:
+			normal = [hit3_ready_pose, hit3_mid_pose, hit3_end_pose]
+			dual = [dual_hit3_ready_pose, dual_hit3_mid_pose, dual_hit3_end_pose]
+		3:
+			normal = [hit4_ready_pose, hit4_mid_pose, hit4_end_pose]
+	if not held_item_l_armed:
+		return normal
+	var out: Array = []
+	for i in range(normal.size()):
+		var pick: PackedScene = dual[i] if i < dual.size() and dual[i] != null else normal[i]
+		out.append(pick)
+	return out
+
+## 평타 자세를 포즈 씬으로 잡는다. 잡았으면 true(그 타의 기본 동작은 건너뛴다).
+##
+## 채워 둔 장만 모아서 **치는 시간에 균등하게 펼친다** — 세 장이면 0 / 0.5 / 1 지점에 놓이고
+## 그 사이를 이어 붙인다. 이어 붙일 때 양 끝에서 속도를 줄여서(smoothstep) 장과 장이 툭툭 안 끊긴다
+func _pose_attack_scenes() -> bool:
+	var keys: Array[PackedScene] = []
+	for scene in _attack_pose_set(_attack_variant):
+		if scene != null:
+			keys.append(scene)
+	if keys.is_empty():
+		return false
+	if keys.size() == 1:
+		_apply_pose_scene(read_pose(keys[0]), 1.0)
+		return true
+	var progress: float = clampf(1.0 - _attack_time / maxf(_attack_len, 0.001), 0.0, 1.0)
+	# 세 장이면 **세 점을 다 지나는 곡선**으로 잇는다 — 직선 두 토막이면 가운데서 꺾여서
+	# "반원을 그리며 휘두른다"가 안 나온다
+	if keys.size() == 3 and attack_pose_curve:
+		var eased: float = progress * progress * (3.0 - 2.0 * progress)
+		_apply_pose_curve(read_pose(keys[0]), read_pose(keys[1]), read_pose(keys[2]), eased)
+		return true
+	var span: float = progress * float(keys.size() - 1)
+	var i: int = clampi(int(span), 0, keys.size() - 2)
+	var t: float = clampf(span - float(i), 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	# 앞 장을 그대로 놓고(1.0) 뒤 장을 t만큼 섞으면 두 장 사이를 t로 오가는 것과 같다.
+	# **뒤 장은 짧은 쪽으로 안 돌린다**(shortest=false) — 앞 장을 이미 정확히 놓았으므로
+	# 적어 둔 각도 차이가 그대로 궤도가 된다. 그래야 "한 바퀴 돌며 치기"를 씬으로 잡을 수 있다
+	_apply_pose_scene(read_pose(keys[i]), 1.0)
+	_apply_pose_scene(read_pose(keys[i + 1]), t, false)
+	return true
+
 ## 쌍 악기 자세 — 궁을 쓴 동안의 **서 있기·걷기**와 **대시**.
 ## 두 손 자리·각도만 잡는다. 손을 따라 `HandRHold`(단소)·`HandLHold`(리코더)가 같이 돈다.
 ## 방어는 `_pose_guard`가 뒤에서 덮어쓴다 — 막는 자세가 이겨야 하므로 순서를 바꾸지 말 것
@@ -3877,8 +4124,17 @@ func _pose_dual() -> void:
 	var t: float = _dual_blend
 	# 돌진 자세는 궁이 넣어 주는 `dual_dash_phase`가 우선이다 — 평소 대시(0.04초)보다 훨씬 오래 간다
 	var dashing: bool = absf(dual_dash_phase) > 0.01
+	var phase_now: float = dual_dash_phase
 	if not dashing:
 		dashing = _fighter != null and is_instance_valid(_fighter) and _fighter.has_method("is_dashing") and _fighter.is_dashing()
+		if dashing:
+			phase_now = 1.0   # 평소 대시(가로채기 없는 짧은 대시)는 "돌진 중"으로 본다
+	# 포즈 씬을 넣어 뒀으면 그게 이긴다 — 머리부터 발까지 씬에 잡아 둔 그대로 간다
+	if dashing:
+		var dash_pose: PackedScene = _dual_dash_pose(phase_now)
+		if dash_pose != null:
+			_apply_pose_scene(read_pose(dash_pose), t)
+			return
 	var r_pos: Vector2 = dual_dash_hand_r_pos if dashing else dual_hand_r_pos
 	var r_deg: float = dual_dash_hand_r_deg if dashing else dual_hand_r_deg
 	var l_pos: Vector2 = dual_dash_hand_l_pos if dashing else dual_hand_l_pos
@@ -3911,6 +4167,10 @@ func _pose_guard() -> void:
 	var t: float = _guard_blend
 	# 쌍 악기를 들었으면 두 악기를 X자로 교차해 막는다(숙이는 건 아래에서 그대로)
 	var dual: bool = held_item_l_armed
+	# 쌍 악기 방어 자세를 포즈 씬으로 잡아 뒀으면 그게 이긴다
+	if dual and dual_guard_pose != null:
+		_apply_pose_scene(read_pose(dual_guard_pose), t)
+		return
 	var r_pos: Vector2 = dual_guard_hand_r_pos if dual else guard_hand_r_pos
 	var r_deg: float = dual_guard_hand_r_deg if dual else guard_hand_deg
 	var l_pos: Vector2 = dual_guard_hand_l_pos if dual else guard_hand_l_pos

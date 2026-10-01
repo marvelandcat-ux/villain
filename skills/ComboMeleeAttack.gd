@@ -17,6 +17,26 @@ extends MeleeAttack
 ## 아직 옮기지 않은 캐릭터는 예전과 똑같이 동작한다
 @export var hits: Array[AttackData] = []
 
+## **평소 타 수에 더해지는 추가 타.** 버프가 켜고 끈다 — 지하철 아저씨 쌍 악기 궁이 1을 걸어 3타 → 4타가 된다.
+## 늘어난 타는 적어 둔 칸이 없으므로 **데미지·넉백·파고들기 모두 마지막 칸 값을 그대로 쓴다**.
+## 자세는 따로다 — 몸(`BodyRig`)의 4타 포즈 씬을 채워 두면 그쪽이 쓰인다
+var bonus_hits: int = 0
+
+## **부가 장치가 가져간 타**가 "맞았다/헛쳤다"를 기다리는 시간(초).
+## 던진 물건이 날아가 상대에게 닿을 시간이 필요해서 몸 판정(active_duration)보다 길게 잡는다
+@export var projectile_active_duration: float = 0.9
+## 이번 타를 부가 장치(던지기 등)가 가져갔는지 — 가져간 타는 몸 판정을 안 켠다
+var _external_hit: bool = false
+
+## **타별 예비동작 시간(초)** — 그 타를 시작하고 몇 초 뒤에 판정이 켜지는지.
+## 비워 두거나 0 이하면 평소 규칙(`windup`, 마무리는 `finisher_windup`)을 쓴다.
+## 어떤 타만 늦게/빨리 치게 하고 싶을 때 쓴다 — 지하철 아저씨 2타가 던진 리코더를 기다린다
+@export var combo_windup: Array[float] = []
+## **왼손에도 물건을 든 동안**(지하철 아저씨 쌍 악기 궁) 대신 쓰는 타별 예비동작.
+## 여기 값이 0보다 크면 위 `combo_windup`보다 이게 이긴다 —
+## 궁 중 2타는 던진 리코더가 손에 돌아오길 기다려야 해서 늦고, 평소 2타는 그럴 이유가 없다
+@export var dual_combo_windup: Array[float] = []
+
 ## 타별 데미지 (총 3타) — hits가 비어 있을 때만 쓴다
 @export var combo_damage: Array[int] = [3, 4, 7]
 ## 타별 넉백 (x는 앞 방향 자동반전, y는 띄우기)
@@ -291,19 +311,60 @@ const LUNGE_MIN_TIME := 0.08
 ## --- 타별 값 읽기 (hits가 있으면 파일에서, 없으면 옛 배열에서) ---
 
 func _hit_count() -> int:
-	return hits.size() if not hits.is_empty() else combo_damage.size()
+	var base: int = hits.size() if not hits.is_empty() else combo_damage.size()
+	return base + maxi(bonus_hits, 0)
 
 func _is_final(step: int) -> bool:
 	return step >= _hit_count() - 1
 
 func _hit_data(step: int) -> AttackData:
-	if hits.is_empty() or step < 0 or step >= hits.size():
+	if hits.is_empty() or step < 0:
 		return null
-	return hits[step]
+	# 늘어난 타(bonus_hits)는 적어 둔 칸이 없으므로 **마지막 칸 값을 그대로 쓴다**
+	return hits[mini(step, hits.size() - 1)]
+
+## 늘어난 타가 배열 범위를 넘어가면 마지막 칸을 보게 한다 — 안 그러면 4타에서 튕긴다.
+## 데미지·넉백·팝업처럼 **반드시 값이 있어야 하는** 배열에만 쓴다
+func _clamp_step(step: int, count: int) -> int:
+	return clampi(step, 0, maxi(count - 1, 0))
+
+## 평소 타 수(늘어난 몫을 뺀 값)
+func _base_hit_count() -> int:
+	return hits.size() if not hits.is_empty() else combo_damage.size()
+
+## 있어도 되고 없어도 되는 배열(파고들기 등)에서 이 타가 쓸 칸 번호. 없으면 -1.
+## **늘어난 타만** 마지막 칸으로 당긴다 — 평소 타는 예전과 똑같이, 칸이 모자라면 없는 것으로 친다
+func _slot(step: int, count: int) -> int:
+	if step < count:
+		return step
+	if bonus_hits > 0 and count > 0 and step >= _base_hit_count():
+		return count - 1
+	return -1
+
+## 그 타에만 따로 적어 둔 예비동작 시간. 0 이하면 "안 적었다"는 뜻이라 평소 규칙을 쓴다
+func _step_windup(step: int) -> float:
+	if _dual_armed():
+		var j: int = _slot(step, dual_combo_windup.size())
+		if j >= 0 and dual_combo_windup[j] > 0.0:
+			return dual_combo_windup[j]
+	var i: int = _slot(step, combo_windup.size())
+	return combo_windup[i] if i >= 0 else 0.0
+
+## 왼손에도 물건을 들고 있는지(= 쌍 악기 궁 중인지) 몸에게 물어본다
+func _dual_armed() -> bool:
+	if not is_instance_valid(_fighter):
+		return false
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	return visual != null and "held_item_l_armed" in visual and bool(visual.held_item_l_armed)
 
 ## 이 타를 누른 뒤 몇 초 뒤에 판정을 켤지.
 ## 새 방식은 몸에게 물어본다 — 모션 길이만 바꿔도 판정이 따라오게(예전엔 finisher_windup을 손으로 맞춰야 했다)
 func _windup_for(step: int, fighter: Fighter) -> float:
+	# 타별로 따로 적어 둔 값이 있으면 그게 제일 세다 (지하철 아저씨 2타:
+	# 던진 리코더가 손에 돌아온 **뒤에** 쳐야 해서 판정을 늦춘다)
+	var own: float = _step_windup(step)
+	if own > 0.0:
+		return own
 	var d: AttackData = _hit_data(step)
 	if d != null:
 		var visual: Node = fighter.get_node_or_null("Visual") if is_instance_valid(fighter) else null
@@ -331,6 +392,9 @@ func _on_hitbox_connected(victim: Node) -> void:
 		# _swing_step을 바꿔버려, 뒤에 부르면 "몇 번째 타였는지"를 잘못 보게 된다
 		_hold_for_next_hit(victim)
 		_launch_finisher(victim)
+		# **넉백을 다 먹인 뒤** 알린다 — 연출이 "날아가는 동안"을 잡으려면 속도가 이미 실려 있어야 한다.
+		# _resolve보다 먼저여야 한다(_resolve는 바로 다음 타를 시작하며 _swing_step을 바꾼다)
+		_announce_hit(victim)
 		_resolve(true)
 
 ## 앞 타(1·2타)가 맞았을 때 — 다음 타가 들어갈 때까지 상대가 못 움직이게 경직을 보장한다.
@@ -574,6 +638,7 @@ func _resolve(hit: bool) -> void:
 	_resolved = true
 	_swinging = false
 	_active_left = 0.0
+	_external_hit = false
 	# 명중 시그널(area_entered) 콜백 안에서 호출될 수 있는데, 그때 monitoring을 바로 끄면
 	# Godot이 물리 연산 중이라 막아버려 히트박스가 켜진 채 남는다(그 자리를 지나가면 계속 맞는 버그).
 	# set_deferred로 물리 스텝이 끝난 뒤에 안전하게 끈다
@@ -620,6 +685,8 @@ func _final_swing_duration(step: int, visual: Node) -> float:
 
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:
+	# 판정이 켜지기 **전**(예비동작 시작)에 먼저 알린다 — 연출이 들고 있는 동안을 잡을 수 있게
+	_announce_swing(fighter, step)
 	var d: AttackData = _hit_data(step)
 	var visual := fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_attack_swing"):
@@ -653,13 +720,17 @@ func _fire(fighter: Fighter, step: int) -> void:
 				lunge_time = d.lunge_time
 			lead = d.lunge_foot_lead
 		else:
-			lunge = combo_lunge[step] if step < combo_lunge.size() else 0.0
+			# 늘어난 타(bonus_hits)는 마지막 칸 값을 그대로 쓴다 — 4타만 제자리에서 치면 어색하다
+			var li: int = _slot(step, combo_lunge.size())
+			lunge = combo_lunge[li] if li >= 0 else 0.0
 			follows = lunge_follows_pushback
 			# 옛 배열도 타별 파고드는 시간·발 동작을 줄 수 있다(비면 windup·0 = 예전 동작)
-			if step < combo_lunge_time.size() and combo_lunge_time[step] > 0.0:
-				lunge_time = combo_lunge_time[step]
-			if step < combo_lunge_lead.size():
-				lead = combo_lunge_lead[step]
+			var ti: int = _slot(step, combo_lunge_time.size())
+			if ti >= 0 and combo_lunge_time[ti] > 0.0:
+				lunge_time = combo_lunge_time[ti]
+			var ldi: int = _slot(step, combo_lunge_lead.size())
+			if ldi >= 0:
+				lead = combo_lunge_lead[ldi]
 		# 직전 타에 밀린 만큼 따라붙는다 (1타는 직전 타가 없으니 칸 값만)
 		if follows and step > 0:
 			lunge += _last_pushback
@@ -688,11 +759,21 @@ func _fire(fighter: Fighter, step: int) -> void:
 		hitbox.hitstop_multiplier = d.hitstop_scale
 		hitbox.shake_multiplier = d.shake_scale
 	else:
-		hitbox.damage = fighter.compute_damage(combo_damage[step] + bonus_damage)
-		hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing * push_scale, combo_knockback[step].y)
-		hitbox.pop_override = combo_pop[step]
+		# 늘어난 타는 마지막 칸 값을 쓴다 (배열마다 길이가 다를 수 있어 각각 따로 자른다)
+		var di: int = _clamp_step(step, combo_damage.size())
+		var ki: int = _clamp_step(step, combo_knockback.size())
+		var pi: int = _clamp_step(step, combo_pop.size())
+		hitbox.damage = fighter.compute_damage(combo_damage[di] + bonus_damage)
+		hitbox.knockback = Vector2(combo_knockback[ki].x * fighter.facing * push_scale, combo_knockback[ki].y)
+		hitbox.pop_override = combo_pop[pi]
 		hitbox.hitstop_multiplier = 1.0
 		hitbox.shake_multiplier = 1.0
+	# **콤보가 늘어나(bonus_hits) 마무리가 아니게 된 타는 상대를 안 띄운다.**
+	# 적어 둔 띄우기 값은 "이게 마지막 타"라는 전제로 잡은 것이라, 3타가 더 이상 마지막이 아닐 때
+	# 그대로 걸면 상대가 공중으로 떠서 **4타가 허공을 친다**(실측: 4타 피해 0).
+	# 이 파일이 combo_pop에 적어 둔 규칙("앞 타를 띄우면 다음 타가 헛친다")을 늘어난 콤보에도 그대로 적용하는 것이다
+	if bonus_hits > 0 and not is_final and hitbox.pop_override < 0.0:
+		hitbox.pop_override = 0.0
 	# 경관봉 2타는 때리는 게 아니라 **띄우는 타**다 — 넉백·팝업을 따로 쓴다
 	if _armed_mode() and step == ARMED_LIFT_STEP:
 		hitbox.knockback = Vector2(armed_lift_knockback.x * fighter.facing, armed_lift_knockback.y)
@@ -707,6 +788,13 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.debris_enabled = (not debris_final_hit_only) or is_final
 	hitbox.source_fighter = fighter
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
+	# **부가 장치가 이 타를 가져갔으면 몸 판정은 안 켠다** — 날아간 물건이 대신 때린다
+	# (지하철 아저씨: 1타에 리코더를 던지고, 3타에 돌아오는 길이 판정이 된다).
+	# 피해·넉백·띄우기는 위에서 히트박스에 다 넣어 뒀고, 날아가는 물건이 그걸 그대로 베껴 간다
+	_external_hit = _offer_strike(fighter, step)
+	if _external_hit:
+		_active_left = projectile_active_duration
+		return
 	# 이미 겹쳐 있는 상대도 이번 타에 다시 맞도록 잠깐 껐다 켜서 area_entered가 새로 발생하게 한다
 	hitbox.monitoring = false
 	hitbox.monitorable = false
@@ -714,6 +802,33 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.monitoring = true
 	hitbox.monitorable = true
 	_active_left = d.active_time if d != null else active_duration
+
+## 자식으로 달린 **부가 장치**(예: 리코더 던지기)에게 이 타를 맡을지 물어본다.
+## 하나라도 true를 돌려주면 몸 판정을 안 켜고 그쪽 결과를 기다린다
+func _offer_strike(fighter: Fighter, step: int) -> bool:
+	for child in get_children():
+		if child.has_method("on_combo_strike") and child.on_combo_strike(fighter, step, hitbox):
+			return true
+	return false
+
+## 자식으로 달린 부가 장치에게 **그 타가 시작됐다**고 알린다(예비동작 시작, 판정 켜지기 전)
+func _announce_swing(fighter: Fighter, step: int) -> void:
+	for child in get_children():
+		if child.has_method("on_combo_swing"):
+			child.on_combo_swing(fighter, step)
+
+## 자식으로 달린 부가 장치에게 **그 타가 맞았다**고 알린다. victim은 맞은 쪽
+func _announce_hit(victim: Node) -> void:
+	for child in get_children():
+		if child.has_method("on_combo_hit"):
+			child.on_combo_hit(_fighter, _swing_step, victim)
+
+## **밖에서 들어온 명중을 이번 타의 명중으로 친다** — 날아간 리코더가 상대에게 닿았을 때 부른다.
+## 몸 판정이 맞은 것과 똑같은 길을 타므로 콤보도 그대로 이어진다
+func report_external_hit(victim: Node) -> void:
+	if not _external_hit:
+		return
+	_on_hitbox_connected(victim)
 
 func _reset(cd: float) -> void:
 	_step = 0
