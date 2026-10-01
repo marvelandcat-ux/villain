@@ -100,6 +100,8 @@ var _enter_time: float = 0.0
 
 ## 확인 창에서 "확인"을 눌렀을 때 실행할 함수. 취소하면 버려진다
 var _pending: Callable = Callable()
+## 두 갈래 창(open_choice)에서 두 번째 버튼을 눌렀을 때 실행할 함수
+var _pending_alternate: Callable = Callable()
 
 ## 지금 떠 있는 설정 팝업 (없으면 null) — 메인 메뉴 위에 덮어 씌우는 방식이라 scene 전환을 안 한다
 var _settings_popup: Settings = null
@@ -113,7 +115,10 @@ func _ready() -> void:
 	_build_menu()
 	_screen_fade.color.a = 1.0
 	_confirm.confirmed.connect(_on_confirmed)
-	_confirm.cancelled.connect(func(): _pending = Callable())
+	_confirm.cancelled.connect(func():
+		_pending = Callable()
+		_pending_alternate = Callable())
+	_confirm.alternate_chosen.connect(_on_alternate_chosen)
 	# 키보드/패드로 바로 위아래 이동이 되도록 첫 항목에 포커스를 준다
 	if not _menu_items.is_empty():
 		_menu_items[0].grab_focus()
@@ -366,6 +371,7 @@ func _on_confirmed() -> void:
 	if _pending.is_valid():
 		_pending.call()
 	_pending = Callable()
+	_pending_alternate = Callable()
 
 ## 스토리 모드 — 2026-09-12 새로 짜는 중. 지금은 검은 화면 장면(ui/story/)이 페이드로 이어지는 뼈대만 있다.
 ## 옛 흐름(에피소드 선택 -> 캐릭터 선택 -> 대전 -> 개과천선 -> 클리어)은 통째로 걷어냈다
@@ -382,9 +388,17 @@ func _start_versus() -> void:
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
-## 훈련장은 되돌릴 게 없어서 확인 창 없이 바로 들어간다 (스토리/대전만 진행도를 건드린다)
+## 훈련장 버튼은 두 갈래 — 훈련장 / 튜토리얼 다시(2026-10-01). ESC면 아무 데도 안 감
 func _on_training_pressed() -> void:
-	get_tree().change_scene_to_file("res://maps/TrainingGround.tscn")
+	_pending = func(): get_tree().change_scene_to_file("res://maps/TrainingGround.tscn")
+	_pending_alternate = func(): get_tree().change_scene_to_file("res://maps/Tutorial.tscn")
+	_confirm.open_choice("어디로 갈까요?", "훈련장", "튜토리얼 다시")
+
+func _on_alternate_chosen() -> void:
+	_pending = Callable()
+	if _pending_alternate.is_valid():
+		_pending_alternate.call()
+	_pending_alternate = Callable()
 
 ## 가이드 = 조작 방법 + 도감을 묶은 갈림길 화면(2026-09-30).
 ## 둘 다 "읽어보는 것"이라 메뉴에서 한 줄씩 차지할 이유가 없었다

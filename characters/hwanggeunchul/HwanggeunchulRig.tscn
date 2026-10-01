@@ -48,8 +48,8 @@ position = Vector2(-0.58, -36.93)
 scale = Vector2(0.058, 0.058)
 texture = ExtResource("2_head")
 
-[node name="EatBowl" type="Sprite2D" parent="."]
+[node name="EatBowl" type="Sprite2D" parent="." index="3"]
 visible = false
 position = Vector2(15, 2)
-scale = Vector2(0.027, 0.027)
+scale = Vector2(0.0333, 0.0333)
 texture = ExtResource("90_bowl")

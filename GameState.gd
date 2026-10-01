@@ -225,6 +225,9 @@ var sfx_volume: float = DEFAULT_SFX_VOLUME
 ## 세션이 아니라 저장 파일(user://settings.cfg)에 남긴다 — 껐다 켤 때마다 다시 배우라고 할 이유가 없고,
 ## 새 PC에서 처음 켠 심사위원은 반드시 보게 된다
 var dialogue_hint_seen: bool = false
+## 튜토리얼에 한 번이라도 들어가 봤는지(2026-10-01). false면 타이틀 다음에 메인 메뉴 대신 튜토리얼로 간다.
+## 들어가는 순간 저장한다 — 중간에 ESC로 나가도 다음부턴 안 뜬다. 다시 보려면 메뉴 > 훈련장 > 튜토리얼 다시
+var tutorial_seen: bool = false
 
 ## PortraitFrames.tscn에서 읽어둔 캐릭터별 초상화 텍스처와, 프레임 대비 얼굴 네모의
 ## 중심·크기 비율(둘 다 Vector2). _ready에서 채운다
@@ -326,6 +329,7 @@ func _load_settings() -> void:
 	set_music_volume(config.get_value("audio", "music_volume", music_volume))
 	set_sfx_volume(config.get_value("audio", "sfx_volume", sfx_volume))
 	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
+	tutorial_seen = config.get_value("progress", "tutorial_seen", tutorial_seen)
 	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 
 ## user://settings.cfg의 한 항목을 갱신한다. 매번 새로 열고 닫아서 다른 항목을 덮어쓰지 않는다
@@ -432,6 +436,13 @@ func mark_dialogue_hint_seen() -> void:
 		return
 	dialogue_hint_seen = true
 	_save_setting("progress", "dialogue_hint_seen", true)
+
+## 튜토리얼을 봤다고 기록한다 (Tutorial.gd가 들어올 때 부른다)
+func mark_tutorial_seen() -> void:
+	if tutorial_seen:
+		return
+	tutorial_seen = true
+	_save_setting("progress", "tutorial_seen", true)
 
 ## 지금 소리가 꺼져 있어야 하는 상태인지 (내보낸 빌드 + MUTE_IN_BUILD).
 ## `OS.has_feature("editor")`는 에디터에서 실행할 때만 true라 빌드와 구분된다

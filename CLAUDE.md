@@ -150,7 +150,7 @@
 - **금쪽이 = 촉법소년의 표시 이름.** 표시 이름이 키라 바꿀 땐 전부: `GameState`(CHARACTERS·색·초상화·리그), `ChokbeopsonyeonStats.tres`, `CharacterSelect.tscn`, `CharacterDex.tscn`, `PortraitFrames.tscn` 노드, `Stage.knockout_characters`, `sprite/도감/전신/금쪽이.png`. 내부 이름은 그대로
 - **새 캐릭터 크기 기준 = 악플러**(머리 ~53x52, 상한 55x55)
 - **숨겨진 캐릭터 `GameState.HIDDEN_CHARACTERS`**(2026-10-01): 캐릭터 선택창에서 **aaddssww**를 치면 아래 칸 줄이 숨겨진 캐릭터 칸으로 바뀌고 다시 치면 원래대로(`CharacterSelect._input`/`_toggle_hidden_mode`, 칸은 `_build_hidden_tiles()`가 코드로 만들어 줄 가운데에). 경로 찾기는 `GameState.character_path()`, `training_characters()`·`character_name_for_path()`도 숨겨진 캐릭터를 포함. 타이틀 구경·도감엔 안 나옴
-  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/`, 팔 파일명 `황 근충 해병 팔.png`·정면 `환근출 해병 정면.png` 오타 그대로): 궁은 빈 껍데기(사용자 지시). **스킬2 `JjajangEatSkill`**(2026-10-01): 주머니에서 짜장면(리그 `EatBowl`, `play_eat_motion`/`_pose_eat`)을 꺼내 1초 먹고 잃은 체력의 50% 회복, 대신 이동속도 x0.7이 먹을 때마다 곱으로 쌓임(라운드 끝까지, 바닥 0.3, `custom_data["jjajang_eats"]`). 먹다 맞으면(`damaged`) 끊기고 회복·둔화 없음, 쿨 15. **스킬1 `DropkickSkill`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 첫 포물선만 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김에서 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직임. 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(경찰 맨손 잽 재사용: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍음, `_pose_headbutt()`; 로컬 좌표라 facing 부호 안 곱함). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로
+  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/`, 팔 파일명 `황 근충 해병 팔.png`·정면 `환근출 해병 정면.png` 오타 그대로): 궁은 빈 껍데기(사용자 지시). **스킬2 `JjajangEatSkill`**(2026-10-01): 주머니에서 짜장면(리그 `EatBowl`, `play_eat_motion`/`_pose_eat`)을 꺼내 1초 먹고 잃은 체력의 10% 회복, 대신 대시 쿨이 먹을 때마다 +2초씩 쌓임(라운드 끝까지, `Fighter.dash_cooldown_bonus` → `effective_dash_cooldown()`, `custom_data["jjajang_eats"]`). 먹다 맞으면(`damaged`) 끊기고 회복·쿨 증가 없음, 쿨 15. ⚠️ `EatBowl` 순서는 씬의 `index="3"`으로 — `_ready()`에서 `move_child`하면 대시 잔상(`duplicate()`)이 자식 속성을 순서로 복사해 머리가 커진다. **스킬1 `DropkickSkill`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 첫 포물선만 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김에서 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직임. 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(경찰 맨손 잽 재사용: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍음, `_pose_headbutt()`; 로컬 좌표라 facing 부호 안 곱함). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로
 
 ### 금쪽이
 
@@ -365,6 +365,13 @@
 - **3번·11번 장면은 도장만 다른 같은 구조 — 새 사건은 둘을 복사해 문구·도장만 교체.** 사건 파일 원본 PSD를 고치면 PNG로도 내보낼 것
 - 구름 노드 순서 = 포토샵 역순. 게임 글자는 "비비탄"으로 통일
 - 일시정지 메뉴 오른쪽 스토리 목록은 보여주기만, 미클리어는 자물쇠(`LockIcon.gd`). 설정은 위에 얹음(`overlay_mode`)
+
+## 튜토리얼 `maps/Tutorial.tscn`(2026-10-01, 뼈대)
+
+- 그림 `sprite/맵/튜토리얼/`: 하늘(`DecoSky` CanvasLayer -10 화면 꽉), 구름1~4(`DecoClouds`(ParallaxFollow 0.2)/`Spawner` = `maps/RandomCloudSpawner.gd` — 그림·크기·높이·속도 랜덤으로 왼쪽 밖에서 만들어 오른쪽으로 흘리고 나가면 지움), 산(`DecoMountains` 0.3, 4장 번갈아 반전)·숲(`DecoForest` 0.6, region 반복), `DecoBuildings`(양옆 막사, 국기 = `국기 1.png` 한 장 + `maps/FlagFlutter.gdshader`(깃대 `hoist_x` 오른쪽 천만 위아래로 출렁, 끝으로 갈수록 크게. 늘어진 깃발용은 `ui/story/FlagWave.gdshader`)), 땅 `군대 잔디.png`(배율 0.5 반복, 바닥 윗면 y=280. ⚠️ `texture_repeat`는 위아래로도 반복돼 윗변에 아랫줄 흙색이 한 줄 번진다 → `region_rect`를 투명한 윗부분 40px 아래부터 시작), 벽 ±1200
+- 훈련 더미를 P1이 조작(stats 복제 후 `player_move_speed`). ESC = 메인 메뉴. 군인 설명은 TODO
+- **교관 = 황근출 해병(옷 입은 버전)** `Instructor`(Node2D, scale.x -1로 왼쪽 봄) > `characters/hwanggeunchul/HwanggeunchulUniformRig.tscn`(황근출 리그 상속, `Body`만 `황근출 해병 몸 옷.png`로 — 배율은 맨몸 그림과 보이는 영역이 같게 역산, 몸통 돌리기도 옷 측면 2·3). Fighter 아닌 리그만 — 판정·조작 없음. 원점 y = 바닥 윗면 - 30
+- **처음 켠 사람만** 타이틀 → 튜토리얼(`GameState.tutorial_seen`, settings.cfg `[progress]`, 들어올 때 저장). 메뉴 훈련장 버튼 = `ConfirmPopup.open_choice()` 두 갈래(훈련장 / 튜토리얼 다시, 둘째 버튼 = `alternate_chosen`, ESC = `cancelled`)
 
 ## 훈련장 `maps/TrainingGround.tscn`
 

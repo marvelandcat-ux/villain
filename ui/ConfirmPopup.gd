@@ -19,9 +19,12 @@ extends Control
 signal confirmed
 ## 취소를 누르거나 ESC를 눌렀을 때
 signal cancelled
+## 두 갈래 창(open_choice)에서 두 번째 버튼을 눌렀을 때 — 이때 ESC는 여전히 cancelled
+signal alternate_chosen
 
 @onready var _message: Label = $Center/Panel/VBox/MessageLabel
 @onready var _confirm_button: Button = $Center/Panel/VBox/ButtonRow/ConfirmButton
+@onready var _cancel_button: Button = $Center/Panel/VBox/ButtonRow/CancelButton
 @onready var _panel: PanelContainer = $Center/Panel
 @onready var _backdrop: ColorRect = $Backdrop
 
@@ -35,6 +38,8 @@ var _anim_time: float = -1.0
 var _opening: bool = true
 ## 닫는 연출이 끝나면 보낼 신호 ("confirmed" / "cancelled")
 var _closing_result: String = ""
+## 두 갈래 창으로 열렸는지 — 두 번째 버튼이 "취소" 대신 alternate_chosen을 보낸다
+var _choice_mode: bool = false
 
 func _ready() -> void:
 	# **화면 전체 크기로 다시 잡아 준다.** 부모 씬에 인스턴스로 놓다가 앵커가 좌상단(preset 0)으로
@@ -47,6 +52,16 @@ func _ready() -> void:
 
 ## 창을 띄운다. 닫히면 confirmed 또는 cancelled 중 하나가 반드시 나온다
 func open(message: String) -> void:
+	_open_with(message, "확인", "취소", false)
+
+## 버튼 두 개 중 하나를 고르는 창. 첫 버튼 = confirmed, 둘째 버튼 = alternate_chosen, ESC = cancelled
+func open_choice(message: String, first_text: String, second_text: String) -> void:
+	_open_with(message, first_text, second_text, true)
+
+func _open_with(message: String, confirm_text: String, cancel_text: String, choice_mode: bool) -> void:
+	_choice_mode = choice_mode
+	_confirm_button.text = confirm_text
+	_cancel_button.text = cancel_text
 	_message.text = message
 	# 취소하면 원래 누르던 버튼으로 포커스가 돌아가야 방향키 조작이 안 끊긴다
 	_return_focus = get_viewport().gui_get_focus_owner()
@@ -86,6 +101,8 @@ func _finish_close() -> void:
 	hide()
 	if _closing_result == "confirmed":
 		confirmed.emit()
+	elif _closing_result == "alternate":
+		alternate_chosen.emit()
 	else:
 		# 취소하면 원래 누르던 버튼으로 포커스를 돌려줘야 방향키 조작이 안 끊긴다
 		if is_instance_valid(_return_focus):
@@ -108,7 +125,7 @@ func _on_confirm_pressed() -> void:
 	_start_close("confirmed")
 
 func _on_cancel_pressed() -> void:
-	_start_close("cancelled")
+	_start_close("alternate" if _choice_mode else "cancelled")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:

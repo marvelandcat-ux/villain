@@ -1014,7 +1014,7 @@ func _want_skill(skill: Skill) -> bool:
 		"HealSkill":
 			return hp < 0.5 or (hp < 0.7 and d > 300.0)
 		"JjajangEatSkill":
-			# 먹다 맞으면 끊기므로 멀리 떨어졌을 때만. 먹을수록 느려지니 체력이 꽤 깎였을 때만
+			# 먹다 맞으면 끊기므로 멀리 떨어졌을 때만. 먹을수록 대시 쿨이 느니 체력이 꽤 깎였을 때만
 			return hp < 0.5 and d > 300.0
 		"MouseGrabSkill":
 			return level and fighter.is_on_floor() and target.can_be_grabbed() and d > 110.0 and d < 500.0

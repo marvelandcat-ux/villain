@@ -2,18 +2,16 @@ class_name JjajangEatSkill
 extends Skill
 
 ## 짜장면 먹기 (황근출 해병 스킬2, 2026-10-01) — 주머니에서 짜장면 그릇을 꺼내 먹는다.
-## 다 먹으면 **잃은 체력의 heal_ratio**만큼 회복하고, 대신 이동속도가 slow_per_eat만큼 줄어든다.
-## 둔화는 **먹을 때마다 곱으로 쌓이고 라운드 끝까지 남는다**(0.7 -> 0.49 -> …, min_speed_multiplier 아래로는 안 내려감).
-## 먹는 도중 피해를 받으면 그릇을 넣고 끊긴다 — 회복도 둔화도 없고 쿨은 그대로 돈다
+## 다 먹으면 **잃은 체력의 heal_ratio**만큼 회복하고, 대신 대시 쿨타임이 dash_cooldown_per_eat초 늘어난다.
+## 늘어난 쿨은 **먹을 때마다 더해지고 라운드 끝까지 남는다**(2026-10-01 사용자 요청: 이동속도 둔화 -> 대시 쿨 증가).
+## 먹는 도중 피해를 받으면 그릇을 넣고 끊긴다 — 회복도 쿨 증가도 없고 스킬 쿨은 그대로 돈다
 
 ## 먹는 시간(초). 이동은 되고 다른 스킬·기본공격은 막힌다
 @export var eat_duration: float = 1.0
 ## 잃은 체력 중 회복하는 비율
-@export_range(0.0, 1.0, 0.05) var heal_ratio: float = 0.5
-## 한 번 먹을 때마다 이동속도에 곱하는 값(0.7 = 30% 감소)
-@export_range(0.1, 1.0, 0.05) var slow_per_eat: float = 0.7
-## 둔화가 쌓여도 이 배수 밑으로는 안 내려간다
-@export_range(0.05, 1.0, 0.05) var min_speed_multiplier: float = 0.3
+@export_range(0.0, 1.0, 0.05) var heal_ratio: float = 0.1
+## 한 번 먹을 때마다 대시 쿨타임에 더하는 초
+@export var dash_cooldown_per_eat: float = 2.0
 
 var _fighter_ref: Fighter
 ## 남은 먹는 시간(0이면 안 먹는 중)
@@ -50,8 +48,7 @@ func _finish_eating() -> void:
 		_fighter_ref.heal(roundi(lost * heal_ratio))
 	var eats: int = int(_fighter_ref.custom_data.get("jjajang_eats", 0)) + 1
 	_fighter_ref.custom_data["jjajang_eats"] = eats
-	_fighter_ref.set_modifier("move_speed_multiplier", "jjajang",
-		maxf(pow(slow_per_eat, eats), min_speed_multiplier))
+	_fighter_ref.dash_cooldown_bonus = eats * dash_cooldown_per_eat
 
 ## 먹다가 맞으면 끊긴다
 func _on_damaged(_amount: int, _knockback: Vector2) -> void:

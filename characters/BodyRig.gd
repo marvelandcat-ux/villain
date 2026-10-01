@@ -1094,12 +1094,11 @@ func _ready() -> void:
 	if _bike:
 		_bike_mounted_pos = _bike.position
 		_bike.visible = false
-	# 그릇은 몸 앞·두 손 뒤에 그린다 — 받친 왼손과 떠먹는 오른손이 그릇 위로 보이게
+	# 그릇은 몸 앞·두 손 뒤에 그린다 — 순서는 씬 파일에서 HandL 앞(index)에 둘 것.
+	# ⚠️ 여기서 move_child로 옮기면 duplicate()(대시 잔상)가 자식 속성을 순서로 복사해 잔상 머리가 커진다
 	if _eat_bowl:
 		_eat_bowl_rest_scale = _eat_bowl.scale
 		_eat_bowl.visible = false
-		if _hand_l:
-			move_child(_eat_bowl, _hand_l.get_index())
 
 func _process(delta: float) -> void:
 	if _knocked_out:

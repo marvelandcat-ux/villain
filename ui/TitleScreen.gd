@@ -282,7 +282,9 @@ func _process(delta: float) -> void:
 		# 구경 모드 표시를 지운다 — 메뉴에서 모드를 고르면 다시 정해지지만, 남아 있으면 헷갈린다
 		GameState.game_mode = "pvp"
 		_restore_cooldown()
-		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+		# 처음 켠 사람(튜토리얼을 한 번도 안 봄)은 메인 메뉴 대신 튜토리얼로
+		var next_scene: String = "res://ui/MainMenu.tscn" if GameState.tutorial_seen else "res://maps/Tutorial.tscn"
+		get_tree().change_scene_to_file(next_scene)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _leaving:
