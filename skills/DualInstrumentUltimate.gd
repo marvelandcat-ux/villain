@@ -254,6 +254,12 @@ func _set_bonus_hits(fighter: Fighter, amount: int) -> void:
 func is_armed() -> bool:
 	return _left > 0.0
 
+## 쌍 악기가 남은 비율(1 → 0). 안 들고 있으면 -1 — 쿨타임 표시가 이걸 보고 남은 시간을 그린다
+func active_ratio() -> float:
+	if _left <= 0.0:
+		return -1.0
+	return clampf(_left / maxf(duration, 0.001), 0.0, 1.0)
+
 ## 악기를 든 채 라운드가 끝나면 배수가 남을 수 있어서, 사라질 때 확실히 푼다
 func _exit_tree() -> void:
 	_disarm()

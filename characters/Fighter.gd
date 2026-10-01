@@ -257,6 +257,25 @@ func dash_cooldown_ratio() -> float:
 		return 1.0
 	return 1.0 - _dash_cooldown_left / maxf(effective_dash_cooldown(), 0.001)
 
+## 궁극기가 **지금 효과 중이면** 남은 비율(1 → 0), 아니면 -1
+func ultimate_active_ratio() -> float:
+	if skill_ultimate == null:
+		return -1.0
+	return skill_ultimate.active_ratio()
+
+## 궁극기 표시 칸(`CooldownPies`)이 읽는 값.
+## **효과 중이면 남은 시간이 줄어들고(1 → 0), 아니면 쿨타임이 차오른다(0 → 1).**
+## 둘 다 아니면(쓸 수 있는 상태) 1 — 다 찬 것으로 쳐서 표시가 사라진다
+func ultimate_timer_ratio() -> float:
+	var active: float = ultimate_active_ratio()
+	if active >= 0.0:
+		return active
+	if skill_ultimate == null:
+		return 1.0
+	if skill_ultimate.cooldown_left <= 0.0:
+		return 1.0
+	return 1.0 - skill_ultimate.cooldown_left / maxf(skill_ultimate.effective_cooldown(), 0.001)
+
 ## 이 캐릭터의 실제 대시 쿨타임(공용 dash_cooldown + 개인 추가분 dash_cooldown_bonus)
 func effective_dash_cooldown() -> float:
 	return dash_cooldown + dash_cooldown_bonus

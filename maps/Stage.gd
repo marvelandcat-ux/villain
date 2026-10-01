@@ -48,6 +48,14 @@ const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 @export var hud_panels_top: bool = false
 ## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다
 @export var knockout_time_scale: float = 0.35
+## 라운드 승리 띠(평행사변형 배너) 장면. 비워 두면 기본 띠(`ui/RoundWinBanner.tscn`)를 쓴다
+@export var round_banner_scene: PackedScene = null
+## **승리 띠 미리보기 키.** 싸우는 중에 이 키를 누르면 라운드를 안 끝내고 띠만 한 번 지나간다 —
+## 누를 때마다 P1 쪽·P2 쪽이 번갈아 나온다. 자리 잡을 때 쓰라고 둔 것이라 끄려면 false로.
+## 띠가 지나가는 동안에도 조작은 그대로 되고 라운드 진행에는 아무 영향이 없다
+@export var debug_banner_preview: bool = true
+## 그 키(기본 B)
+@export var debug_banner_key: Key = KEY_B
 ## 맞은 순간 딱 멈춰 있는 시간(초) — 타격감을 주는 정지
 @export var knockout_hitstop: float = 0.07
 ## 날아가는 시간(초)과 가로/세로 거리(px). 세로는 음수가 위로 뜨는 양이다
@@ -59,6 +67,12 @@ const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 
 var _p1: Fighter
 var _p2: Fighter
+## 라운드 승리 띠의 기본 장면
+const DEFAULT_ROUND_BANNER := "res://ui/RoundWinBanner.tscn"
+
+## 미리보기 키를 누를 때 번갈아 보여 줄 쪽
+var _banner_preview_p1: bool = false
+
 var _round_over: bool = false
 ## 처치 연출을 재생하는 중 — 끝날 때까지 승패 판정을 멈춰둔다
 var _knockout_playing: bool = false
@@ -261,14 +275,37 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 	if _combat_hud:
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win or GameState.p2_round_wins >= GameState.rounds_to_win
-	var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
-	add_child(result_screen)
 	if match_decided:
+		var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
+		add_child(result_screen)
 		_show_final_result(result_screen, p1_won, is_draw)
-	else:
-		result_screen.show_round_result(p1_won, is_draw, GameState.p1_round_wins, GameState.p2_round_wins)
-		await get_tree().create_timer(2.0).timeout
-		get_tree().reload_current_scene()
+		return
+	# **라운드 중간은 결과창 대신 띠 하나가 지나간다** — 창이 뜨면 흐름이 끊겨서
+	# "로그가 찍힌다"는 느낌이 났다(2026-10-02 사용자 요청)
+	await _play_round_banner(p1_won, is_draw)
+	if not is_inside_tree():
+		return   # 띠가 지나가는 사이에 맵이 사라졌으면(메뉴로 나감 등) 아무 것도 안 한다
+	get_tree().reload_current_scene()
+
+## 라운드 승리 띠를 띄우고 끝날 때까지 기다린다. 띠를 못 찾으면 잠깐 쉬고 넘어간다
+func _play_round_banner(p1_won: bool, is_draw: bool) -> void:
+	var scene: PackedScene = round_banner_scene
+	if scene == null and ResourceLoader.exists(DEFAULT_ROUND_BANNER):
+		scene = load(DEFAULT_ROUND_BANNER)
+	var band: Node = null
+	var banner: Node = null
+	if scene != null:
+		banner = scene.instantiate()
+		add_child(banner)
+		band = banner.get_node_or_null("Band")
+	if band == null or not band.has_method("play"):
+		if banner:
+			banner.queue_free()
+		await get_tree().create_timer(1.2).timeout
+		return
+	band.play(p1_won, is_draw)
+	await band.finished
+	banner.queue_free()
 
 func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool) -> void:
 	if is_draw:
@@ -306,6 +343,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				_debug_skip_story_battle()
 				return
+	# 승리 띠 미리보기 — 라운드는 그대로 두고 띠만 한 번 띄운다
+	if debug_banner_preview and event is InputEventKey:
+		var bk: InputEventKey = event
+		var hit: bool = bk.keycode == debug_banner_key or bk.physical_keycode == debug_banner_key
+		if bk.pressed and not bk.echo and hit:
+			get_viewport().set_input_as_handled()
+			_banner_preview_p1 = not _banner_preview_p1
+			_play_round_banner(_banner_preview_p1, false)
+			return
 	if event.is_action_pressed("ui_cancel"):
 		open_pause_menu()
 

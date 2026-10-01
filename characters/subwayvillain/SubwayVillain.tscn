@@ -14,6 +14,9 @@
 [ext_resource type="PackedScene" path="res://skills/ThrownRecorder.tscn" id="31_recorder"]
 [ext_resource type="Script" path="res://skills/XSlashFinisher.gd" id="32_xslash"]
 [ext_resource type="PackedScene" path="res://combat/XSlashTrail.tscn" id="33_xtrail"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/개찰구.png" id="40_logo1"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아재반격스킬로고.png" id="41_logo2"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아저씨궁극기로고.png" id="42_logoult"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
@@ -83,11 +86,13 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("4")
+icon = ExtResource("40_logo1")
 cooldown = 8.0
 turnstile_scene = ExtResource("5")
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("6")
+icon = ExtResource("41_logo2")
 cooldown = 9.0
 skill_name = "단소 카운터"
 description = "단소를 겨누고 잠깐 기다린다. 그 사이 공격을 받으면 피해 없이 상대 등 뒤로 순간이동해 벤다. 아무것도 안 오면 헛방이라 빈틈이 생긴다."
@@ -102,6 +107,7 @@ shape = SubResource("RectangleShape2D_counter")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("7")
+icon = ExtResource("42_logoult")
 cooldown = 24.0
 start_on_cooldown = true
 

@@ -8,6 +8,8 @@ extends CanvasLayer
 @onready var _round_label: Label = $RoundLabel
 @onready var _timer_frame: ColorRect = $TimerFrame
 @onready var _timer_label: Label = $TimerFrame/TimerBox/TimerLabel
+## 스코어보드(평행사변형 세 칸). 있으면 점수·시간을 이쪽으로 보내고 옛 표시는 숨긴다
+@onready var _score_board: ScoreBoard = get_node_or_null("ScoreBoard")
 
 @export_group("선수 판 자리")
 ## 켜면 두 선수 판(체력·스킬)을 **화면 위쪽 좌·우 구석**으로 올린다.
@@ -57,6 +59,14 @@ func setup(p1: Fighter, p2: Fighter) -> void:
 ## 시간은 GameState.time_limit_seconds(방 설정에서 고른 값)에서 Stage가 깎아 내려주는 값이라
 ## 여기서는 따로 계산하지 않는다. 시간 제한 없음(0)이면 시간 박스 자체를 숨긴다
 func update_round_info(p1_wins: int, p2_wins: int, time_left: float) -> void:
+	# 스코어보드를 달아 뒀으면 거기 한 군데에 점수와 시간이 다 들어간다 —
+	# 옛 표시(가운데 숫자판 + 라운드 글자)는 숨긴다. 스코어보드를 빼면 예전 모습으로 돌아간다
+	if _score_board:
+		_score_board.set_score(p1_wins, p2_wins)
+		_score_board.set_time(time_left)
+		_round_label.visible = false
+		_timer_frame.visible = false
+		return
 	_round_label.text = "%d : %d" % [p1_wins, p2_wins]
 	_timer_frame.visible = time_left > 0.0
 	if time_left > 0.0:
