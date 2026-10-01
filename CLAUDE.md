@@ -27,7 +27,8 @@
 - **`Skill.cooldown_override`**: 0보다 크면 `cooldown` 대신 사용(버프가 "몇 초로" 고정할 때, 끝나면 0으로). 배수 방식 `Fighter.attack_speed_multiplier`와 곱해짐
   - **쿨을 채우는 자리는 전부 `effective_cooldown()`을 거칠 것** — `Skill.use()`/`cancel_use()`, `ComboMeleeAttack._resolve()`, HUD `SkillCooldownIcon`. 한 곳이라도 `cooldown`을 직접 읽으면 그 경로만 안 먹음
   - 헛발 쿨도 묶어야 함(`ComboMeleeAttack._effective_miss_cooldown()`) — 안 묶으면 헛칠 때 원래 쿨이라 버프 체감이 없음
-- `skills/RageBuffSkill.gd`(악플러 열등감): `duration` 동안 기본공격 쿨을 `basic_attack_cooldown`으로 고정(발동 시 돌던 쿨도 `minf`로 깎음) + 붉은 `set_tint` + `set_action_face(true)` + `BodyRig.play_head_shake()`(`head_shake_time`; 버프 내내 떨게 하려면 `duration`과 같게). 복구는 자식 Timer
+- `skills/RageBuffSkill.gd`(악플러 열등감): `duration` 동안 **기본공격 콤보 매 타에 +`bonus_damage`(2)**(`ComboMeleeAttack.bonus_damage`에 꽂는다 — `compute_damage` 배율보다 **먼저** 더해진다) + 붉은 `set_tint` + `set_action_face(true)` + `BodyRig.play_head_shake()`(`head_shake_time`; 버프 내내 떨게 하려면 `duration`과 같게). 복구는 자식 Timer
+  - ⚠️ 2026-10-01에 **쿨 고정 방식에서 바뀌었다** — 예전엔 기본공격 쿨을 0.3초로 묶었는데 악플러 원래 쿨이 이미 0.3초라 헛칠 때 말고는 체감이 없었다. 옛 export `basic_attack_cooldown`·`attack_speed_multiplier`는 삭제됐다
 - **⚠️ 스킬에서 `Visual.scale`을 직접 트윈 금지 → `BodyRig.play_squash(배율)` 사용.** 리그는 왼쪽을 볼 때 `scale.x` 음수라 양수 목표로 트윈하면 0을 지나 오른쪽으로 뒤집히고 `_face_moving_direction()`과 싸움. `play_squash()`는 방향 부호를 곱해 적용·자동 복귀. 사용처: `HealSkill.heal_pop`, `ScreamConeUltimate.shout_squash`. 자기 자식 스프라이트 트윈(`FirePlate`)은 무관
 - `combat/Hitbox.gd`/`Hurtbox.gd`: `Hurtbox`(Fighter 자식 Area2D)가 피격 시 `take_damage()`, `Hitbox`는 겹치면 데미지(자기 자신 무시)
   - **허트박스는 머리 꼭대기까지**(사용자 요청): 캐릭터 씬 12개의 `HurtboxCollision`이 별도 `CapsuleShape2D_hurt`, 발끝 +30 고정·윗끝 = 머리 그림 꼭대기(높이 = 30 - 꼭대기, `position.y` = (30 + 꼭대기)/2; 금쪽이는 프로펠러 빼고 모자까지). **머리 그림을 바꾸면 다시 잴 것.** 몸 충돌 캡슐은 그대로. 이 때문에 `SpringJumpPad`는 몸 중심이 판정 아래면 무시
@@ -129,6 +130,11 @@
 | 헬스장 빌런 | `ComboMeleeAttack` | `LivingShadowSkill` | `BackSuplexSkill` | **빈 `Skill.gd`** |
 | 일진 | `ComboMeleeAttack` (3타 가방) | `CigaretteSmokeSkill` | `ShoulderChargeSkill` | **빈 `Skill.gd`** (컷인만) |
 | 주인공(경찰) | `ComboMeleeAttack` (**맨손 잽** / 경봉 모드면 경봉) | `TaserGunSkill` (테이저건) | `StoneThrowSkill` (돌 던지기) | `BatonModeUltimate` (경관봉 15초) |
+
+- **숨겨진 캐릭터 `GameState.HIDDEN_CHARACTERS`**(2026-10-01, mtem): 캐릭터 선택창에서 **aaddssww**를 치면 아래 칸 줄이 숨겨진 캐릭터 칸으로 바뀌고, 다시 치면 원래대로(`CharacterSelect._input`/`_toggle_hidden_mode`, 칸은 `_build_hidden_tiles()`가 코드로 만들어 줄 가운데에 둔다). 경로 찾기는 `GameState.character_path()`, `training_characters()`·`character_name_for_path()`도 숨겨진 캐릭터를 포함한다. **타이틀 구경·도감에는 안 나온다**
+  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/` — 팔 `황 근충 해병 팔.png`, 정면 `환근출 해병 정면.png` 오타 그대로): 스킬2·궁은 빈 껍데기(사용자 지시)
+  - **스킬1 `skills/DropkickSkill.gd`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 **첫 포물선만** 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김부터는 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직인다
+  - 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(**경찰 맨손 잽 재사용**: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍는다, `_pose_headbutt()`; 로컬 좌표라 facing 부호를 안 곱한다). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림은 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로다
 
 - **개찰구 `skills/Turnstile.gd`/`.tscn`**(지하철 스킬1 장애물, 2026-09-30 그림): `sprite/지하철빌/개찰구.png`(닫힘, 빨간 날개·X) / `개찰구2.png`(열림, 초록 화살표) — **한 장에 마주 보는 개찰구 한 쌍**이라 가운데(x 768)에서 반으로 잘라(`region_rect`) 스킬의 장애물 2개가 각각 왼쪽·오른쪽 개찰구가 된다(사용자 결정). 어느 반을 쓸지는 `flap_dir`(`TurnstileSkill`이 **add_child 전에** 넣음 — 첫째는 먼 쪽, 둘째는 가까운 쪽을 가리켜 날개가 가운데서 맞물림)
   - 배율 `visual_scale` 0.0954 = 그림 속 몸통 중심 간격 817px -> 장애물 간격(`TurnstileSkill.spacing`) 78px (2026-09-30 "조금 키워줘"로 0.0734/60에서 1.3배). **둘 중 하나를 바꾸면 다른 것도 같이**(spacing = 817 x 배율). 충돌은 **예전 크기 40x45 그대로**(사용자 결정 — 그림 몸통은 약 21x50이라 양옆에 안 보이는 벽이 있다), 그림 바닥을 충돌 바닥에 맞춤, 스킬의 y 오프셋 7.5
@@ -255,6 +261,7 @@
   - **악플러(2026-09-28)**: `sprite/악플러/몸/악플러 측면 1~3.png`(전부 왼쪽을 봄) + 정면은 선택창 초상화 `악플러정면머리.png`를 같이 씀. 앵커는 같은 열림 연산으로 잰 값, 방향 전환(`head_turn_on_face`)도 켬. 회전 타격·뒤통수는 없음(악플러는 회전 타격 안 함). 몸통 돌리기는 `악플러 몸 측면 2/3.png`(오른쪽을 봄) — 캔버스(887x887)·그린 크기가 원래 몸통(344x270)과 달라 **`body_turn_match_height`**(보이는 영역 높이를 원래 몸통에 맞춤)를 켰다
   - **주정뱅이(2026-09-29)**: `sprite/주정뱅이/몸/주정뱅이 측면1.png`·`주정뱅잉 측면2.png`(파일명 "잉" 오타 그대로)·`주정뱅이 측면 3.png` + 정면은 선택창 초상화 `주정뱅이얼굴정면.png`. **전부 오른쪽을 봄**(`head_turn_faces_left` 전부 false — 금쪽이·악플러와 반대). 앵커는 같은 열림 연산으로 잰 값, 방향 전환도 켬. 몸통 돌리기 그림은 없음(몸통은 정면 그대로). 소용돌이 눈(`SwirlEye`)은 기본 얼굴일 때만 그려져 도는 동안엔 그림 속 소용돌이가 보인다
   - **지하철 아저씨(2026-09-30)**: `sprite/지하철빌/지하철 아저 씨측면 1.png`(파일명 띄어쓰기 오타 그대로)·`지하철 아저씨 측면 2.png`·`측면 3.png` + 정면은 선택창 초상화 `지하철빌런정면.png`. **전부 오른쪽을 봄**(faces_left 전부 false). 앵커는 같은 열림 연산으로 잰 값, 방향 전환 켬. 몸통 돌리기 그림 없음
+  - **황근출 해병(2026-10-01, mtem)**: `sprite/황근출 해병/황근출 해병 측면 1~3.png` + 정면 `환근출 해병 정면.png`. **전부 오른쪽을 봄**(faces_left 전부 false). 몸통 돌리기도 있다 — `body_turn_textures` = [`황근출 해병 몸 측면 2.png`, `황근축 해병 몸 측면 3.png`(파일명 "축" 오타 그대로)] + `body_turn_match_height` 켬. 얼굴이 검은 실루엣인 건 그림 그대로다
     - 앵커 재는 스크립트는 저장소에 없음 — 알파 1/4 축소 -> bbox 높이 22% 정사각형 열림 -> 무게중심·`2sqrt(넓이/pi)`(주정뱅이 기존 값으로 검증해 1px 안으로 일치)
   - ⚠️ **주정뱅이 `측면 3.png`이 한때 몸통 그림으로 덮여 있었다**(커밋 `83404e4`에서 머리 파일에 몸통 그림을 덮어쓰고 `b24b4fe`에서 `몸 측면 3`으로 이름 변경 -> 2026-09-30 오전에 다시 `측면 3`으로 되돌리면서 몸통이 머리 자리에 들어감). 같은 날 원래 머리를 `57af1b3`에서 꺼내 복구하고 몸통은 `주정뱅이 몸 측면 3.png`로 분리. **머리/몸통 그림은 파일명이 비슷하니 덮어쓰기 전 내용을 볼 것**
   - **주정뱅이 몸통 돌리기(2026-09-30)**: `body_turn_textures` = [`주정뱅이 몸 측면 2.png`(3/4), `몸 측면 3.png`(거의 정면)], 캔버스(1416x1111)가 원래 몸통(344x270)과 달라 `body_turn_match_height` 켬. **몸 측면 2는 왼쪽을 보고 그려져 있어**(목 구멍이 왼쪽, 옆 솔기가 오른쪽 — 악플러처럼 오른쪽을 보는 그림은 앞 무늬가 오른쪽으로 치우친다) 새 export **`body_turn_faces_left`**(칸마다, 비우면 전부 오른쪽) = [true, false]로 뒤집어 쓴다(사용자 결정 — 파일은 그대로)
@@ -340,6 +347,7 @@
 
 - 등록: 주정뱅이·촉법소년만(`sprite/<캐릭터>/스킬로고/`). 파일명 G/H = 스킬1/스킬2
 - **로고는 투명 여백을 잘라 넣을 것** — `_fit_bar()`가 원본 크기 전체를 맞춰 넣어 작아지고 치우치며 물높이도 어긋남
+- **쿨 파이 `combat/CooldownPies.gd`**(2026-10-01, mtem): 캐릭터 **등 뒤**에 뜨는 작은 원 두 개 — 방어 하늘색 / 대시 라임. 먼저 시작한 쿨이 위 슬롯, unshaded라 맵 조명을 안 받는다. 비율은 `Fighter.guard_cooldown_ratio()`/`dash_cooldown_ratio()`. 타이틀 구경에선 숨긴다
 
 ## 스킬 범위 미리보기 (에디터 전용)
 
@@ -478,7 +486,7 @@
 ### 설정 > 조작 탭 = 키보드 그림(`ui/KeyboardMap.gd`, 2026-09-29)
 - **키보드를 통째로 그려 놓고 키를 끌어다 다른 키에 놓아서 배정한다.** 예전의 "조작 이름 + [키] 16줄 / 칸을 누르고 새 키 입력" 방식은 없앴다(`Settings.gd`의 `_fill_key_rows`·`_listening_action`·`_unhandled_key_input` 삭제)
 - 색이 곧 주인이다 — 아무도 안 쓰는 키 **회색**, 1P **파랑**, 2P **빨강**. 키 위에 조작 이름이 같이 적힌다(긴 이름은 `_fit_size()`가 글자를 줄여 키 폭에 맞춘다)
-- **텐키리스 배열**(숫자패드 없음). 자리는 `LAYOUT`(한 줄 15u) + `ARROWS`(방향키) + `EXTRAS`(PrtSc/ScrLk/Pause, Ins/Home/PgUp, Del/End/PgDn — 2026-09-29 추가). 키마다 노드를 만들지 않고 Control 한 장에 `_draw()`로 그린다 — 60개 노드를 놓으면 끌어놓는 동안 "지금 어느 키 위인지"를 판단하기가 오히려 어렵다
+- **풀배열**(2026-10-01 숫자패드 추가 — 그 전엔 텐키리스였다). 자리는 `LAYOUT`(한 줄 15u) + `ARROWS`(방향키, 18.5u까지) + `EXTRAS`(PrtSc/ScrLk/Pause, Ins/Home/PgUp, Del/End/PgDn — 2026-09-29 추가) + `NUMPAD`(편집 뭉치 오른쪽, 전체 폭 `TOTAL_WIDTH_U` 23u). 숫자패드 키코드는 `KEY_KP_*`라 **위쪽 숫자줄(`KEY_1` …)과 따로 배정된다**. `+`와 숫자패드 Enter는 두 줄짜리, `0`은 두 칸짜리. 키마다 노드를 만들지 않고 Control 한 장에 `_draw()`로 그린다 — 60개 노드를 놓으면 끌어놓는 동안 "지금 어느 키 위인지"를 판단하기가 오히려 어렵다
 - **놓는 자리에 다른 조작이 있으면 서로 자리를 바꾼다**(덮어쓰지 않는다) — 덮어쓰면 그 조작이 키를 잃고, 뭘 잃었는지도 모른다
 - 키보드 밖에서 손을 떼는 경우가 있어서 `_gui_input`(칸 안)과 `_input`(칸 밖) 둘 다에서 놓기를 받는다. 안 그러면 딱지가 마우스에 붙어 남는다
   - 그래도 놓기 신호가 아예 안 오는 경우(창 밖에서 떼기, 다른 창이 입력을 가져감)가 있어서 **끄는 동안만 도는 `_process` 감시**가 마지막 보루다 — 버튼이 눌린 걸 한 번 본 뒤(`_drag_held`) 떨어지면 마지막으로 알던 자리에 그대로 넣는다. `_drag_held` 빗장이 없으면 누른 프레임에 아직 눌림 상태가 안 올라와 있어서 **집자마자 제자리에 놓아버린다**

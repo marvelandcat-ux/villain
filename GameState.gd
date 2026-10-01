@@ -20,12 +20,23 @@ const TRAINING_ONLY_CHARACTERS := {
 	"주인공": "res://characters/police/Police.tscn",
 }
 
-## 훈련장 드롭다운에 쓰는 전체 목록 = 대전 로스터 + 훈련장 전용.
+## **숨겨진 캐릭터** — 캐릭터 선택창에서 aaddssww를 치면 아래 칸이 이 목록으로 바뀐다(다시 치면 원래대로).
+## 타이틀 구경 모드·도감 같은 CHARACTERS 전용 목록엔 안 나온다
+const HIDDEN_CHARACTERS := {
+	"황근출 해병": "res://characters/hwanggeunchul/Hwanggeunchul.tscn",
+}
+
+## 훈련장 드롭다운에 쓰는 전체 목록 = 대전 로스터 + 훈련장 전용 + 숨겨진 캐릭터.
 ## Dictionary는 넣은 순서를 지키므로 드롭다운 순서와 인덱스가 항상 같다
 func training_characters() -> Dictionary:
 	var all: Dictionary = CHARACTERS.duplicate()
 	all.merge(TRAINING_ONLY_CHARACTERS)
+	all.merge(HIDDEN_CHARACTERS)
 	return all
+
+## 표시 이름으로 캐릭터 씬 경로를 찾는다(로스터·훈련장 전용·숨겨진 캐릭터 전부). 없으면 빈 문자열
+func character_path(character_name: String) -> String:
+	return str(training_characters().get(character_name, ""))
 
 ## 아직 캐릭터별 초상화가 없어서, 구분이 되도록 캐릭터마다 고정 색을 하나씩 지정해둔다.
 ## CharacterSelect(선택 화면)와 FighterPanel(대전 중 HUD)이 같이 쓴다. 목록에 없는 캐릭터는 DEFAULT_COLOR로 표시된다
@@ -38,6 +49,7 @@ const CHARACTER_COLORS := {
 	"층간소음 청년": Color(0.3, 0.5, 0.85),
 	"일진": Color(0.25, 0.3, 0.5),
 	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
+	"황근출 해병": Color(0.4, 0.45, 0.35),   # 숨겨진 캐릭터
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
@@ -51,6 +63,7 @@ const PORTRAITS := {
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
 	"일진": "res://sprite/일진/정면일진.png",
+	"황근출 해병": "res://sprite/황근출 해병/환근출 해병 정면.png",
 }
 
 ## 실제 대전에서 쓰는 몸(BodyRig) 씬 — 캐릭터 선택창의 큰 미리보기 칸에 "인게임 캐릭터 전신"으로 띄운다.
@@ -63,6 +76,7 @@ const CHARACTER_RIGS := {
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoiseRig.tscn",
+	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulRig.tscn",
 }
 
 ## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.
@@ -520,8 +534,9 @@ func character_rig_scene(character_name: String) -> PackedScene:
 ## p1_character_path/p2_character_path처럼 저장된 씬 경로로 CHARACTERS에서 표시 이름을 역으로 찾는다.
 ## 못 찾으면 빈 문자열
 func character_name_for_path(scene_path: String) -> String:
-	for character_name in CHARACTERS:
-		if CHARACTERS[character_name] == scene_path:
+	var roster: Dictionary = training_characters()
+	for character_name in roster:
+		if roster[character_name] == scene_path:
 			return character_name
 	return ""
 

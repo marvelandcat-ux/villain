@@ -31,7 +31,7 @@ texture = ExtResource("4")
 monitoring = false
 monitorable = false
 script = ExtResource("2")
-damage = 12
+damage = 5
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="Body/Hitbox"]
 shape = SubResource("RectangleShape2D_train")

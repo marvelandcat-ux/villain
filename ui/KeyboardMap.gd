@@ -12,7 +12,7 @@ extends Control
 ## 키마다 노드를 만들면 씬이 지저분해지고, 끌어다 놓는 동안 노드 사이로 마우스가 새어나가서
 ## "지금 어느 키 위인지"를 판단하기가 오히려 까다로워진다.
 ##
-## 숫자패드는 없는 배열(텐키리스)이다 — 방향키까지만 있다.
+## 풀배열이다 — 방향키 뭉치 오른쪽에 숫자패드까지 있다(2026-10-01 추가).
 
 ## 키 배정이 바뀌었을 때(끌어놓기·되돌리기) 알린다. 설정 화면이 다른 표시를 갱신하는 데 쓴다
 signal binding_changed
@@ -47,7 +47,7 @@ const ACTION_LABELS := {
 	"map_skill": "맵 전용",
 }
 
-## 키 한 칸(1u)의 크기와 키 사이 틈(px). 한 줄은 15u, 방향키까지 넣으면 18.5u다
+## 키 한 칸(1u)의 크기와 키 사이 틈(px). 한 줄은 15u, 방향키까지 18.5u, 숫자패드까지 넣으면 23u다
 @export var unit: float = 52.0:
 	set(value):
 		unit = value
@@ -138,6 +138,22 @@ const ARROWS := [
 	["▶", KEY_RIGHT, 17.5, 5],
 ]
 
+## 숫자패드 — 편집 뭉치 오른쪽에 반 칸 띄운다. [이름, 키코드, x(u), 줄 번호, 폭(u), 높이(줄)]
+## +와 숫자패드 Enter는 두 줄짜리, 0은 두 칸짜리. 키코드는 KEY_KP_* — 위쪽 숫자줄(KEY_1 …)과 따로 배정된다
+const NUMPAD := [
+	["Num", KEY_NUMLOCK, 19.0, 1, 1, 1], ["/", KEY_KP_DIVIDE, 20.0, 1, 1, 1],
+	["*", KEY_KP_MULTIPLY, 21.0, 1, 1, 1], ["-", KEY_KP_SUBTRACT, 22.0, 1, 1, 1],
+	["7", KEY_KP_7, 19.0, 2, 1, 1], ["8", KEY_KP_8, 20.0, 2, 1, 1], ["9", KEY_KP_9, 21.0, 2, 1, 1],
+	["+", KEY_KP_ADD, 22.0, 2, 1, 2],
+	["4", KEY_KP_4, 19.0, 3, 1, 1], ["5", KEY_KP_5, 20.0, 3, 1, 1], ["6", KEY_KP_6, 21.0, 3, 1, 1],
+	["1", KEY_KP_1, 19.0, 4, 1, 1], ["2", KEY_KP_2, 20.0, 4, 1, 1], ["3", KEY_KP_3, 21.0, 4, 1, 1],
+	["Enter", KEY_KP_ENTER, 22.0, 4, 1, 2],
+	["0", KEY_KP_0, 19.0, 5, 2, 1], [".", KEY_KP_PERIOD, 21.0, 5, 1, 1],
+]
+
+## 키보드 전체 폭(u) — 숫자패드 오른쪽 끝
+const TOTAL_WIDTH_U := 23.0
+
 ## 그려 둔 키들 — {"rect": Rect2, "code": 키코드, "name": 표시 이름}
 var _keys: Array = []
 ## 키코드 -> 그 키에 걸린 액션 이름들(["p1_jump", ...]). 매번 InputMap에서 다시 만든다
@@ -186,7 +202,17 @@ func _build_keys() -> void:
 			"loc": 0,
 			"name": str(a[0]),
 		})
-	custom_minimum_size = Vector2(18.5 * (uw + gap) - gap, LAYOUT.size() * (unit + gap) - gap)
+	for n in NUMPAD:
+		var w: float = float(n[4])
+		var h: float = float(n[5])
+		_keys.append({
+			"rect": Rect2(float(n[2]) * (uw + gap), float(n[3]) * (unit + gap),
+				w * uw + (w - 1.0) * gap, h * unit + (h - 1.0) * gap),
+			"code": int(n[1]),
+			"loc": 0,
+			"name": str(n[0]),
+		})
+	custom_minimum_size = Vector2(TOTAL_WIDTH_U * (uw + gap) - gap, LAYOUT.size() * (unit + gap) - gap)
 
 ## InputMap에 지금 들어 있는 배정을 읽어 색을 다시 칠한다.
 ## **게임이 실제로 쓰는 값이 곧 화면이다** — 이 화면은 따로 사본을 들고 있지 않는다
@@ -241,7 +267,7 @@ func _draw_key(index: int) -> void:
 
 	var face: Color = _color_for(actions)
 	# 한 칸짜리 키는 그림으로, 옆으로 긴 키는 네모로 그린다
-	if use_keycap_sprite and rect.size.x <= unit * key_aspect + 1.0:
+	if use_keycap_sprite and rect.size.x <= unit * key_aspect + 1.0 and rect.size.y <= unit + 1.0:
 		draw_texture_rect_region(KEYCAP, rect, KEYCAP_REGION,
 			Color(face.r / KEYCAP_FACE, face.g / KEYCAP_FACE, face.b / KEYCAP_FACE, 1.0))
 	else:

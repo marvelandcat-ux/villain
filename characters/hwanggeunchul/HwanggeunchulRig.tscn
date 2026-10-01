@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://cin0v3kl77266"]
+
+[ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" uid="uid://yddqfaytn2lo" path="res://sprite/황근출 해병/황근출 해병.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://cg4fw7r64kwqt" path="res://sprite/황근출 해병/황근출 해병 몸.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://cfltoaj28thag" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="4_hand"]
+[ext_resource type="Texture2D" uid="uid://da6imh6for67v" path="res://sprite/황근출 해병/황근출 해병 다리.png" id="5_foot"]
+[ext_resource type="Texture2D" uid="uid://c4sbpuksw2w8d" path="res://sprite/황근출 해병/환근출 해병 정면.png" id="86_front"]
+[ext_resource type="Texture2D" uid="uid://bkiy3hv150eyv" path="res://sprite/황근출 해병/황근출 해병 측면 3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://bsqm3pwyitqeh" path="res://sprite/황근출 해병/황근출 해병 측면 2.png" id="88_turn2"]
+[ext_resource type="Texture2D" uid="uid://b44y1mo2grrh1" path="res://sprite/황근출 해병/황근출 해병 측면 1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://blb1lphxy4ghn" path="res://sprite/황근출 해병/황근출 해병 몸 측면 2.png" id="85_body_turn1"]
+[ext_resource type="Texture2D" uid="uid://bcr7yrftk4mjd" path="res://sprite/황근출 해병/황근축 해병 몸 측면 3.png" id="84_body_turn2"]
+
+[node name="BodyRig" unique_id=1713883176 instance=ExtResource("1_rig")]
+held_item_armed = false
+unarmed_thrust = true
+unarmed_guard_hand = true
+unarmed_headbutt = true
+head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
+head_turn_anchors = Array[Vector3]([Vector3(684, 600, 855), Vector3(682, 555, 881), Vector3(685, 569, 884), Vector3(683, 577, 908), Vector3(685, 575, 957)])
+head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_turn_on_face = true
+body_turn_textures = Array[Texture2D]([ExtResource("85_body_turn1"), ExtResource("84_body_turn2")])
+body_turn_match_height = true
+
+[node name="FootL" parent="." index="0" unique_id=1982953737]
+texture = ExtResource("5_foot")
+
+[node name="FootR" parent="." index="1" unique_id=1509249644]
+texture = ExtResource("5_foot")
+
+[node name="Body" parent="." index="2" unique_id=1277525598]
+position = Vector2(0.72, 1.46)
+scale = Vector2(0.0262, 0.0299)
+texture = ExtResource("3_body")
+
+[node name="HandL" parent="." index="3" unique_id=927525538]
+texture = ExtResource("4_hand")
+
+[node name="HandR" parent="." index="4" unique_id=1459708461]
+texture = ExtResource("4_hand")
+
+[node name="Head" parent="." index="6" unique_id=1394957076]
+position = Vector2(-0.58, -36.93)
+scale = Vector2(0.058, 0.058)
+texture = ExtResource("2_head")

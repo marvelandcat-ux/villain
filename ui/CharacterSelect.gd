@@ -9,6 +9,12 @@ const PREVIEW_RIG_SCALE := 2.8
 ## 상자 안에서 리그 원점이 놓일 자리 — x는 가운데, y는 발이 상자 아래쪽 근처(이름표 아래)에 오도록 잡은 값
 const PREVIEW_RIG_ORIGIN := Vector2(150, 210)
 
+## 이 순서로 키를 치면 아래 칸이 숨겨진 캐릭터(GameState.HIDDEN_CHARACTERS)로 바뀌고, 다시 치면 원래대로
+const SECRET_CODE := "aaddssww"
+## 숨겨진 캐릭터 칸 크기·겹침 — 씬에 놓인 일반 칸(150x90, 옆 칸과 50 겹침)과 같게
+const HIDDEN_TILE_SIZE := Vector2(150, 90)
+const HIDDEN_TILE_STEP := 100.0
+
 ## P1/P2 차례에 따라 바뀌는 배경 그림
 const P1_BACKGROUND := "res://sprite/대전모드/배경.png"
 const P2_BACKGROUND := "res://sprite/대전모드/배경2.png"
@@ -41,6 +47,12 @@ var _is_spinning: bool = false
 ## 지금 P1/P2 미리보기 상자에 떠 있는 리그 인스턴스 — 캐릭터가 바뀌면 이걸 지우고 새로 만든다
 var _p1_rig: Node2D = null
 var _p2_rig: Node2D = null
+## 씬에 놓인 원래 칸들(랜덤 칸 포함) / 코드로 만든 숨겨진 캐릭터 칸들
+var _normal_tiles: Array[FanTile] = []
+var _hidden_tiles: Array[FanTile] = []
+var _hidden_mode: bool = false
+## 최근에 친 글자들 — 끝이 SECRET_CODE와 같으면 전환
+var _typed: String = ""
 
 ## 씬에 미리 놓아둔 FanTile들을 훑어서 character_key로 어떤 캐릭터인지 확인하고 클릭 시그널을 연결한다.
 ## 칸의 모양·위치는 전부 씬(.tscn)에 이미 정해져 있으므로 여기서는 안 건드린다
@@ -49,6 +61,7 @@ func _ready() -> void:
 		if not (child is FanTile):
 			continue
 		var tile: FanTile = child
+		_normal_tiles.append(tile)
 		if tile.character_key == "":
 			tile.pressed.connect(_on_random_pressed)
 		else:
@@ -56,8 +69,69 @@ func _ready() -> void:
 			tile.gui_input.connect(_on_tile_gui_input.bind(tile.character_key))
 			_thumb_buttons[tile.character_key] = tile
 
+	_build_hidden_tiles()
 	_status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
 	background.texture = load(P1_BACKGROUND)
+
+## 숨겨진 캐릭터 칸을 미리 만들어 숨겨 둔다 — 원래 칸 줄(ThumbRow) 가운데에 같은 모양으로 늘어선다
+func _build_hidden_tiles() -> void:
+	var names: Array = GameState.HIDDEN_CHARACTERS.keys()
+	var total_width: float = HIDDEN_TILE_SIZE.x + HIDDEN_TILE_STEP * (names.size() - 1)
+	var start_x: float = (_thumb_row.custom_minimum_size.x - total_width) / 2.0
+	for i in names.size():
+		var character_name: String = names[i]
+		var tile := FanTile.new()
+		tile.position = Vector2(start_x + HIDDEN_TILE_STEP * i, 0.0)
+		tile.size = HIDDEN_TILE_SIZE
+		tile.fill_color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
+		if GameState.PORTRAITS.has(character_name):
+			tile.portrait_texture = load(GameState.PORTRAITS[character_name])
+		tile.name_text = character_name
+		tile.character_key = character_name
+		tile.visible = false
+		_thumb_row.add_child(tile)
+		tile.pressed.connect(_on_character_picked.bind(character_name))
+		tile.gui_input.connect(_on_tile_gui_input.bind(character_name))
+		_hidden_tiles.append(tile)
+
+## 원래 칸 <-> 숨겨진 캐릭터 칸을 바꿔 보여 준다. 고르던(확정 전) 캐릭터는 지운다
+func _toggle_hidden_mode() -> void:
+	_hidden_mode = not _hidden_mode
+	for tile in _normal_tiles:
+		tile.visible = not _hidden_mode
+	for tile in _hidden_tiles:
+		tile.visible = _hidden_mode
+	_thumb_buttons.clear()
+	for tile in (_hidden_tiles if _hidden_mode else _normal_tiles):
+		if tile.character_key != "":
+			_thumb_buttons[tile.character_key] = tile
+	if _pending_character != "":
+		_pending_character = ""
+		_confirm_button.disabled = true
+		if _picking_p1:
+			_p1_preview_label.text = "?"
+			if is_instance_valid(_p1_rig):
+				_p1_rig.queue_free()
+			_p1_rig = null   # 지운 걸 들고 있으면 다음 미리보기 때 "previously freed" 타입 에러가 난다
+		else:
+			_p2_preview_label.text = "?"
+			if is_instance_valid(_p2_rig):
+				_p2_rig.queue_free()
+			_p2_rig = null
+	_update_highlight()
+
+## 비밀 코드 입력 — 한글 입력 상태에서도 되게 물리 키로 본다
+func _input(event: InputEvent) -> void:
+	if _is_spinning or not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	var key: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+	if key < KEY_A or key > KEY_Z:
+		_typed = ""
+		return
+	_typed = (_typed + char(key).to_lower()).right(SECRET_CODE.length())
+	if _typed == SECRET_CODE:
+		_typed = ""
+		_toggle_hidden_mode()
 
 ## 목록에서 캐릭터를 눌러도 바로 확정되지 않고, 미리보기 칸에만 반영된다.
 ## 실제로 P1/P2에 배정되는 건 "확정" 버튼을 눌렀을 때(_on_confirm_pressed)뿐이다
@@ -160,7 +234,7 @@ func _on_confirm_pressed() -> void:
 	var confirmed_tile: FanTile = _thumb_buttons.get(_pending_character)
 	if confirmed_tile:
 		SelectionRipple.spawn(confirmed_tile, confirmed_tile.ripple_corners())
-	var path: String = GameState.CHARACTERS[_pending_character]
+	var path: String = GameState.character_path(_pending_character)
 	if _picking_p1:
 		GameState.p1_character_path = path
 		_picking_p1 = false

@@ -191,9 +191,17 @@ func _build_ui() -> void:
 	panel.custom_minimum_size = Vector2(430, 0)
 	layer.add_child(panel)
 
+	# 항목이 화면보다 길어지면 잘리므로 스크롤 안에 넣는다 — 휠·스크롤바·빈 곳 끌기로 내린다
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(430, get_viewport().get_visible_rect().size.y - 32.0)
+	scroll.gui_input.connect(_on_panel_scroll_input.bind(scroll))
+	panel.add_child(scroll)
+
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
 
 	var title := Label.new()
 	title.text = "훈련장 — 기본 수치 조절"
@@ -292,6 +300,13 @@ func _build_ui() -> void:
 	var hint := Label.new()
 	hint.text = "이동 A/D · 점프 W · 공격 F · 스킬 G/H · 궁극기 R\nESC: 메인 메뉴로"
 	box.add_child(hint)
+
+## 패널 빈 곳(글자·여백)을 마우스 왼쪽으로 잡고 위아래로 끌면 스크롤한다.
+## 버튼·슬라이더는 클릭을 먼저 먹으므로 끌기와 겹치지 않는다
+func _on_panel_scroll_input(event: InputEvent, scroll: ScrollContainer) -> void:
+	if event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT):
+		scroll.scroll_vertical -= int(event.relative.y)
+		scroll.accept_event()
 
 ## 슬라이더 하나를 만들어 붙이고 그 슬라이더를 돌려준다
 func _add_slider(parent: VBoxContainer, min_value: float, max_value: float, step: float,

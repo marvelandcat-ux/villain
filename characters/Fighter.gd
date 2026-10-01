@@ -36,18 +36,20 @@ const DEFAULT_JUMP_VELOCITY: float = -478.0
 const DEFAULT_AIR_JUMP_VELOCITY: float = -519.0
 
 ## --- 방향키 두 번 대시 (전 캐릭터 공용, 스킬이 아니라 기본 조작이다) ---
-## 대시하는 동안의 수평 속도(px/초). 걷기(240~275)의 약 다섯 배.
+## 대시하는 동안의 수평 속도(px/초). 걷기(240~275)의 약 열 배.
 ## **2026-09-14에 700 -> 1400으로 올렸다**(사용자 요청 "훨씬 빠르게") — 700은 걷기의 2.6배뿐이라
 ## 순간이동하듯 "슉" 빠지는 맛이 없었다
-const DEFAULT_DASH_SPEED: float = 1400.0
-## 대시가 유지되는 시간(초). **속도 x 시간이 곧 이동 거리다** — 1400 x 0.16 = 224px(몸통 폭의 약 5.6배).
+## **2026-10-01 1400 -> 2800**(사용자 요청 "거리 50%, 2배 빨리") — 시간은 1/4로 줄여 거리 224 -> 112px
+const DEFAULT_DASH_SPEED: float = 2800.0
+## 대시가 유지되는 시간(초). **속도 x 시간이 곧 이동 거리다** — 2800 x 0.04 = 112px(몸통 폭의 약 2.8배, 60fps 약 2~3프레임).
+## (예전 1400 x 0.16 = 224px)
 ## 속도를 올리면서 시간을 0.18에서 줄인 이유: 그대로 두면 252px까지 가서 화면의 5분의 1을 한 번에 건너뛰고,
 ## 조작이 돌아오기까지도 그만큼 오래 걸린다
-const DEFAULT_DASH_DURATION: float = 0.16
+const DEFAULT_DASH_DURATION: float = 0.04
 ## 다음 대시까지 기다리는 시간(초)
-const DEFAULT_DASH_COOLDOWN: float = 3.0
-## 대시 중 잔상을 남기는 간격(초)
-const DASH_TRAIL_INTERVAL: float = 0.04
+const DEFAULT_DASH_COOLDOWN: float = 2.5
+## 대시 중 잔상을 남기는 간격(초). 대시가 0.04초뿐이라 매 물리 프레임 남긴다(0.04면 시작 잔상 하나만 나왔다)
+const DASH_TRAIL_INTERVAL: float = 0.015
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
 ## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
 const AIR_TRAIL_INTERVAL: float = 0.04
@@ -64,6 +66,8 @@ const DEFAULT_GUARD_COOLDOWN: float = 5.0
 const DEFAULT_BLOCKED_ATTACK_LOCK: float = 3.0
 ## 방어할 때 몸을 감싸는 원형 보호막
 const GUARD_SHIELD_SCRIPT := preload("res://combat/GuardShield.gd")
+## 방어·대시 쿨타임을 캐릭터 등 뒤에 원형 파이로 보여주는 표시
+const COOLDOWN_PIES_SCRIPT := preload("res://combat/CooldownPies.gd")
 
 ## --- 착지 먼지 (전 캐릭터 공용) ---
 ## **모든 착지**에서 발 양옆으로 먼지 뭉치가 나가고, 크기는 떨어진 높이에 비례한다(2026-09-26 사용자 요청).
@@ -219,6 +223,25 @@ func _ready() -> void:
 		skill_ultimate = get_node_or_null("SkillUltimate")
 	if basic_attack == null:
 		basic_attack = get_node_or_null("BasicAttack")
+	add_child(COOLDOWN_PIES_SCRIPT.new())
+
+## 방어 쿨타임이 얼마나 돌았는지(0 = 방금 쿨 시작, 1 = 쓸 수 있음). 쿨 파이 표시가 읽는다
+func guard_cooldown_ratio() -> float:
+	if _guard_cooldown_left <= 0.0:
+		return 1.0
+	return 1.0 - _guard_cooldown_left / maxf(guard_cooldown, 0.001)
+
+## 대시 쿨타임이 얼마나 돌았는지(0 = 방금 쿨 시작, 1 = 쓸 수 있음). 쿨 파이 표시가 읽는다
+func dash_cooldown_ratio() -> float:
+	if _dash_cooldown_left <= 0.0:
+		return 1.0
+	return 1.0 - _dash_cooldown_left / maxf(dash_cooldown, 0.001)
+
+## 기본공격 잠금(방어에 막힘)이 얼마나 풀렸는지(0 = 방금 막힘, 1 = 때릴 수 있음). 쿨 파이의 X 표시가 읽는다
+func blocked_attack_ratio() -> float:
+	if _blocked_attack_left <= 0.0:
+		return 1.0
+	return 1.0 - _blocked_attack_left / maxf(blocked_attack_lock, 0.001)
 
 ## 캐릭터끼리는 서로의 몸을 밟고 올라설 수 없게 몸 충돌을 무시한다.
 ## 충돌 레이어를 통째로 바꾸지 않고 add_collision_exception_with로 "상대 캐릭터"만 예외 처리하는 이유:
@@ -525,11 +548,17 @@ var _finisher_ground_bounces: int = 0
 var _finisher_launch_vx: float = 0.0
 ## 날아가는 동안 머리 위에 띄운 기절 별 — 멈출 때까지 늘리고, 멈추면 지운다
 var _finisher_stars: StunStars = null
+## 이번 날아가기의 **첫 포물선 모양 배율**(launch_finisher의 shape) — 체공 시간 배수 / 중력 배수.
+## 기본 3타는 둘 다 1. 첫 땅 튕김에서 1로 돌아간다(그 뒤 튕김은 보통 3타와 같다)
+var _finisher_air_mult: float = 1.0
+var _finisher_gravity_mult: float = 1.0
 
 ## 3타 공격에 맞아 dir 쪽으로 기절한 채 돌면서 날아간다.
 ## speed/pop/stun/turns는 **잃은 체력 0일 때** 값이고, 잃은 체력 비율만큼 max_scale배 쪽으로 커진다
-## (전부 잃었으면 max_scale배, 반이면 그 중간). 히트박스 넉백으로 붙은 속도는 덮어쓴다
-func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: float, max_scale: float) -> void:
+## (전부 잃었으면 max_scale배, 반이면 그 중간). 히트박스 넉백으로 붙은 속도는 덮어쓴다.
+## shape(선택): 첫 포물선을 보통 3타에 비해 바꾼다 — "speed"(옆 속도 배수), "peak"(최고 높이 배수), "airtime"(체공 시간 배수).
+## 체공·높이를 맞추려고 중력은 peak / airtime², 공중 감속은 1 / airtime로 바꾼다(포물선이 같은 모양으로 늘어남). 황근출 드롭킥이 쓴다
+func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: float, max_scale: float, shape: Dictionary = {}) -> void:
 	if has_super_armor() or is_zero_approx(dir):
 		return
 	# 아직 날아가는 중(window > 0)이면 추가 피격으로 이어지는 것이라 누적 시간을 유지하고,
@@ -546,10 +575,17 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	# 위로 솟는 속도는 각도로 정하되 최고 높이(FINISHER_PEAK_PER_SCALE x 배율)를 넘지 않게 자른다
 	var total: float = speed * KNOCKBACK_MULTIPLIER * launch_scale * FINISHER_TIME_SCALE
 	var ang: float = deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)
-	_finisher_up_cap = sqrt(2.0 * _finisher_gravity() * FINISHER_PEAK_PER_SCALE * launch_scale)
-	_finisher_launch_vx = total * cos(ang) * FINISHER_HORIZONTAL_SCALE
+	var airtime: float = maxf(float(shape.get("airtime", 1.0)), 0.01)
+	var peak_mult: float = float(shape.get("peak", 1.0))
+	_finisher_air_mult = airtime
+	_finisher_gravity_mult = peak_mult / (airtime * airtime)
+	_finisher_up_cap = sqrt(2.0 * _finisher_gravity() * FINISHER_PEAK_PER_SCALE * launch_scale * peak_mult)
+	_finisher_launch_vx = total * cos(ang) * FINISHER_HORIZONTAL_SCALE * float(shape.get("speed", 1.0))
 	velocity.x = d * _finisher_launch_vx
 	velocity.y = -minf(total * sin(ang), _finisher_up_cap)
+	# 모양을 바꾼 날아가기는 정확히 그 높이까지 솟는다 — 안 그러면 체공 배수가 안 맞는다
+	if not shape.is_empty():
+		velocity.y = -_finisher_up_cap
 	_finisher_ground_bounces = 0
 	_launch_momentum = true
 	# 새로 날아가는 것이므로 남은 경직과 상관없이 이번 시간으로 다시 잡는다
@@ -561,7 +597,7 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	_finisher_dir = d
 	# 날아가며 기절해 있는 동안 계속 추가 피격을 받을 수 있다(감지 시간 = 남은 기절 시간)
 	_finisher_window = time
-	_finisher_params = {"speed": speed, "pop": pop, "stun": stun, "turns": turns, "max_scale": max_scale}
+	_finisher_params = {"speed": speed, "pop": pop, "stun": stun, "turns": turns, "max_scale": max_scale, "shape": shape}
 
 ## 3타에 맞고 날아가는 중(_finisher_window)에 벽에 부딪혔으면 반대쪽으로 튕겨 낸다 — apply_physics가 move_and_slide 직후 부른다.
 ## pre_vx는 **move_and_slide가 0으로 지우기 전의** 가로 속도. 튕긴 뒤엔 벽에서 멀어지므로 같은 벽에 또 걸리지 않는다
@@ -593,7 +629,7 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 	if not _finisher_flying:
 		return
 	_finisher_fly_time += delta
-	if has_super_armor() or is_grabbed or _finisher_fly_time >= FINISHER_MAX_FLY_TIME / FINISHER_TIME_SCALE:
+	if has_super_armor() or is_grabbed or _finisher_fly_time >= FINISHER_MAX_FLY_TIME / FINISHER_TIME_SCALE * _finisher_air_mult:
 		_end_finisher_flight()
 		return
 	# 첫 착지는 옆 속도와 상관없이 한 번은 튕긴다(사용자 결정) — 그 뒤로는 옆 속도가 남아 있을 때만
@@ -601,6 +637,12 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 	if is_on_floor() and fall_speed > FINISHER_GROUND_MIN_FALL * FINISHER_TIME_SCALE and can_bounce:
 		# 첫 땅 튕김은 제자리에서 통통 튀지 않고 때린 사람 반대쪽으로 세게 날아간다(추가타가 너무 쉬웠다, 사용자 요청)
 		if _finisher_ground_bounces == 0:
+			# 모양을 바꾼 첫 포물선(드롭킥)은 여기까지 — 튕긴 뒤로는 보통 3타 물리로 돌아간다
+			if _finisher_air_mult != 1.0 or _finisher_gravity_mult != 1.0:
+				_finisher_air_mult = 1.0
+				_finisher_gravity_mult = 1.0
+				_finisher_fly_time = 0.0
+				_finisher_params["shape"] = {}
 			var away: float = _away_from_opponent()
 			velocity.x = away * _finisher_launch_vx * FINISHER_GROUND_KICK
 			if signf(_tumble_speed) != away:
@@ -630,7 +672,7 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 
 ## 3타로 날아가는 동안의 중력 — 빨리감기 배율(FINISHER_TIME_SCALE)의 제곱을 곱한다
 func _finisher_gravity() -> float:
-	return gravity * FINISHER_GRAVITY_SCALE * FINISHER_TIME_SCALE * FINISHER_TIME_SCALE
+	return gravity * FINISHER_GRAVITY_SCALE * FINISHER_TIME_SCALE * FINISHER_TIME_SCALE * _finisher_gravity_mult
 
 ## 상대(때린 사람)의 반대쪽 방향(+1 오른쪽 / -1 왼쪽). 같은 x거나 상대가 없으면 날아가던 방향
 func _away_from_opponent() -> float:
@@ -654,6 +696,8 @@ func cancel_finisher_flight() -> void:
 ## 3타 날아가기가 끝났다(멈춤·잡힘·안전 한도) — 기절을 풀고 구르기·기절 별을 정리한다
 func _end_finisher_flight() -> void:
 	_finisher_flying = false
+	_finisher_air_mult = 1.0
+	_finisher_gravity_mult = 1.0
 	_hitstun_time = 0.0
 	_finisher_window = 0.0
 	if _tumble_left > 0.0:
@@ -671,7 +715,7 @@ func _rebound_finisher(hit_dir: float, vy_before: float) -> void:
 	var p: Dictionary = _finisher_params
 	_finisher_extra_time += FINISHER_EXTRA_TIME
 	var d: float = signf(hit_dir) if not is_zero_approx(hit_dir) else _finisher_dir
-	launch_finisher(d, p.speed, p.pop, p.stun, p.turns, p.max_scale)
+	launch_finisher(d, p.speed, p.pop, p.stun, p.turns, p.max_scale, p.get("shape", {}))
 	velocity.y = vy_before
 
 ## 맞았을 때 잠깐 아파하는 얼굴로 바꾼다 (그 표정이 있는 캐릭터만 — 없으면 그냥 넘어간다)
@@ -750,9 +794,12 @@ func _flash_hit() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
 	if visual == null:
 		return
+	# 흰색이 아니라 걸려 있던 색조(열등감·공포 등)로 돌아간다 — 흰색으로 되돌리면 맞는 순간 색조가 지워졌다.
+	# 번쩍이는 사이 색조가 풀리거나 바뀔 수 있어서 끝나는 순간 한 번 더 맞춘다
 	var tween := create_tween()
 	tween.tween_property(visual, "modulate", Color(1, 0.3, 0.3), 0.05)
-	tween.tween_property(visual, "modulate", Color(1, 1, 1), 0.15)
+	tween.tween_property(visual, "modulate", _top_tint_color(), 0.15)
+	tween.tween_callback(_apply_top_tint)
 
 ## HP를 회복시킨다 (최대 HP를 넘지 않음)
 func heal(amount: int) -> void:
@@ -783,7 +830,11 @@ func _apply_top_tint() -> void:
 	var visual: CanvasItem = get_node_or_null("Visual")
 	if visual == null:
 		return
-	visual.modulate = _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
+	visual.modulate = _top_tint_color()
+
+## 지금 보여야 할 색조 (걸린 게 없으면 원래 색)
+func _top_tint_color() -> Color:
+	return _tints[_tint_order[-1]] if not _tint_order.is_empty() else Color(1, 1, 1)
 
 ## duration초 후 callback을 실행한다 (Timers.after 참고 — Fighter가 그 전에 사라지면 콜백째 정리된다)
 func _after(duration: float, callback: Callable) -> void:
@@ -1280,7 +1331,7 @@ func apply_physics(delta: float) -> void:
 		_hitstun_time = maxf(_hitstun_time - delta, 0.0)
 		# 3타로 날아가는 중 공중에선 옆 속도를 비율로 깎는다(0이 안 돼서 끝까지 둥근 포물선) — 바닥에선 평소 마찰
 		if _finisher_flying and not is_on_floor():
-			velocity.x *= exp(-FINISHER_AIR_DRAG_RATE * FINISHER_TIME_SCALE * delta)
+			velocity.x *= exp(-FINISHER_AIR_DRAG_RATE * FINISHER_TIME_SCALE / _finisher_air_mult * delta)
 		else:
 			var friction: float = HITSTUN_FRICTION
 			if _finisher_flying:

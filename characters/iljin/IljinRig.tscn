@@ -9,6 +9,10 @@
 [ext_resource type="Texture2D" uid="uid://v278b34j7a86" path="res://sprite/일진/담배.png" id="9_cig"]
 [ext_resource type="Texture2D" uid="uid://due14ovild2at" path="res://sprite/일진/담배 일진.png" id="10_smokeface"]
 [ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
+[ext_resource type="Texture2D" uid="uid://hhaoshckxf20" path="res://sprite/일진/일진 측면 1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://dgmxlcy63mtee" path="res://sprite/일진/일진 측면 2.png" id="88_turn2"]
+[ext_resource type="Texture2D" uid="uid://ba0ssc6e7lwnh" path="res://sprite/일진/일진 측면 3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="86_front"]
 
 [node name="BodyRig" unique_id=650163351 instance=ExtResource("1_rig")]
 attack_two_handed = true
@@ -21,6 +25,10 @@ hurt_head_texture = ExtResource("5_hurt")
 hurt_head_scale = Vector2(0.0434, 0.0434)
 action_head_texture = ExtResource("10_smokeface")
 action_head_scale = Vector2(0.0448, 0.0448)
+head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
+head_turn_anchors = Array[Vector3]([Vector3(630, 636, 993), Vector3(635, 629, 950), Vector3(638, 626, 973), Vector3(629, 621, 988), Vector3(622, 612, 1077)])
+head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_turn_on_face = true
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("8_foot")
