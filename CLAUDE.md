@@ -143,8 +143,12 @@
 - **`skills/DualInstrumentUltimate.gd`(지하철 궁, 2026-10-01 — 옛 "떡볶이 국물"을 통째로 대체. `TteokbokkiUltimate`·`FirePlate`는 삭제됨)**
   - 쓰면 **비어 있던 왼손에 검은 리코더**를 꺼내 양손잡이가 된다(`duration` 15초). 그동안 기본공격 데미지 x`damage_multiplier`(1.5)
   - **상태만 바꾼다** — 자세는 리그가, 때리는 건 기본공격과 **대시**가 한다(경찰 경관봉 모드와 같은 꼴)
-  - **대시가 그대로 공격이 된다**: 궁의 자식 `Hitbox`를 `Fighter.is_dashing()`인 동안만 켜서 몸에 붙여 둔다(`dash_damage` 12 → 배수 포함 18 실측). 대시가 시작될 때마다 `clear_repeat_state()`로 다시 맞게 한다
-  - ⚠️ **대시 거리는 전역 값**(`Fighter.dash_speed` 2800 x `dash_duration` 0.04 = 약 112px, 방 설정에서 바뀜)이라 궁 중에만 늘리려면 따로 손봐야 한다
+  - **대시가 "뒤로 물러났다 앞으로 내지르는" 돌진 공격이 된다**(2026-10-01 사용자 요청): 준비동작으로 **캐릭터 두 칸(`dash_back_distance` 110px)만큼 뒤로** 물러났다가 `dash_forward_distance`(330px)만큼 앞으로 내지른다. 실측 뒤로 117 / 앞으로 340 / 제자리 기준 +223px
+    - 이동은 `Fighter.movement_override`로 통째로 가져간다(두 구간을 `after_physics`에서 거리로 센다). 벽에 막히면 그 구간은 거기서 끝낸다 — 안 그러면 벽에 붙어 영영 안 끝난다
+    - 판정(`Hitbox`)은 **앞으로 내지르는 구간에서만** 켠다(`dash_damage` 12 → 배수 포함 18 실측). 뒤로 물러나는 준비동작에 맞으면 이상하다
+    - 상체 기울기도 구간을 따라간다 — 리그 `dual_dash_phase`(-1 물러남 = 뒤로 젖힘 / 1 내지름 = 앞으로)
+  - ⚠️ **대시를 가로챌 땐 `Fighter.dash_override`를 쓸 것**(2026-10-01 추가). 처음엔 `_process`에서 "대시 중인지" 보고 가로챘는데, **한 프레임 늦어서 그 사이에 평소 대시가 약 47px 앞으로 튀어 나갔다**(헤드리스 실측). `dash_override`가 있으면 `Fighter.dash()`가 평소 대시를 **아예 시작하지 않고** `take_over_dash(fighter, 방향)`으로 넘긴다
+  - 평소 대시는 `Fighter.dash_speed` 2800 x `dash_duration` 0.04 = 약 112px(전역 값, 방 설정에서 바뀜)
   - **개찰구(스킬1)만 그대로다** — 나머지 모션은 전부 바뀐다
   - **오픈 이슈:** 기획은 "궁 키를 누르고 있는 동안 이동"인데 원샷 입력이라 고정 시간 채널로 단순화
 - **빈 껍데기(헬스장·일진 궁, 주인공 스킬 3칸)는 의도된 미구현.** 로스터 여부는 `GameState.CHARACTERS` / `TRAINING_ONLY_CHARACTERS`로 가름(주인공만 훈련장 전용)

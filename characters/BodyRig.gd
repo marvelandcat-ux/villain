@@ -1046,6 +1046,9 @@ var _head_aim: float = 0.0
 var _guard_blend: float = 0.0
 ## 쌍 악기 자세가 섞인 정도(0~1)
 var _dual_blend: float = 0.0
+## 돌진 공격이 어느 구간인지 — **궁(`DualInstrumentUltimate`)이 넣어 준다.**
+## -1 = 준비동작으로 뒤로 물러나는 중(상체가 뒤로 젖혀진다) / 1 = 앞으로 내지르는 중 / 0 = 평소
+var dual_dash_phase: float = 0.0
 var _guard_target: float = 0.0
 var _counter_blend: float = 0.0
 var _counter_target: float = 0.0
@@ -3747,7 +3750,10 @@ func set_guarding(on: bool) -> void:
 ## 방어는 `_pose_guard`가 뒤에서 덮어쓴다 — 막는 자세가 이겨야 하므로 순서를 바꾸지 말 것
 func _pose_dual() -> void:
 	var t: float = _dual_blend
-	var dashing: bool = _fighter != null and is_instance_valid(_fighter) and _fighter.has_method("is_dashing") and _fighter.is_dashing()
+	# 돌진 자세는 궁이 넣어 주는 `dual_dash_phase`가 우선이다 — 평소 대시(0.04초)보다 훨씬 오래 간다
+	var dashing: bool = absf(dual_dash_phase) > 0.01
+	if not dashing:
+		dashing = _fighter != null and is_instance_valid(_fighter) and _fighter.has_method("is_dashing") and _fighter.is_dashing()
 	var r_pos: Vector2 = dual_dash_hand_r_pos if dashing else dual_hand_r_pos
 	var r_deg: float = dual_dash_hand_r_deg if dashing else dual_hand_r_deg
 	var l_pos: Vector2 = dual_dash_hand_l_pos if dashing else dual_hand_l_pos
@@ -3765,7 +3771,9 @@ func _pose_dual() -> void:
 	var sgn: float = 1.0
 	if _fighter != null and is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
 		sgn = signf(_fighter.facing)
-	var lean: float = deg_to_rad(dual_dash_lean_deg) * t * sgn
+	# 뒤로 물러나는 준비동작에선 상체가 **반대로** 젖혀진다(phase -1) — 활시위를 당기는 모양
+	var phase: float = dual_dash_phase if absf(dual_dash_phase) > 0.01 else 1.0
+	var lean: float = deg_to_rad(dual_dash_lean_deg) * t * sgn * phase
 	if _body:
 		_body.rotation += lean
 	if _head:

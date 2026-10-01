@@ -21,6 +21,14 @@ extends Skill
 @export var dash_knockback: Vector2 = Vector2(190, -170)
 ## 대시 판정 상자 크기(캐릭터 중심 기준)
 @export var dash_hitbox_size: Vector2 = Vector2(74, 86)
+## **준비동작 — 캐릭터 두 칸만큼 뒤로 물러났다가**(2026-10-01 사용자 요청) 앞으로 내지른다.
+## 평소 대시(`Fighter.dash_speed` x `dash_duration` = 약 112px)는 "지나간다"가 안 살아서,
+## 궁 중에는 이동을 통째로 가로채(`movement_override`) 두 구간으로 굴린다
+@export var dash_back_distance: float = 110.0
+@export var dash_back_speed: float = 780.0
+## 뒤로 다 물러난 뒤 앞으로 내지르는 거리·속도
+@export var dash_forward_distance: float = 330.0
+@export var dash_forward_speed: float = 1700.0
 
 ## 데미지 배수를 걸 때 쓰는 이름표. 같은 이름으로 걸고 풀어야 다른 버프와 안 싸운다
 const MODIFIER_ID := "dual_instrument"
@@ -31,6 +39,11 @@ var _armed_fighter: Fighter = null
 var _left: float = 0.0
 ## 대시용 판정 — 씬의 자식 `Hitbox`(없으면 대시 공격만 조용히 빠진다)
 @onready var _dash_hitbox: Hitbox = get_node_or_null("Hitbox")
+## 돌진이 어느 구간인지 — 0 안 함 / -1 뒤로 물러나는 중 / 1 앞으로 내지르는 중
+var _rush_phase: int = 0
+## 이번 구간에서 남은 거리(px)와 돌진 방향
+var _rush_left: float = 0.0
+var _rush_dir: float = 1.0
 
 func _ready() -> void:
 	super._ready()
@@ -52,11 +65,70 @@ func _process(delta: float) -> void:
 	if _left <= 0.0:
 		_disarm()
 
-## 대시하는 동안에만 판정을 켜고 몸에 붙여 둔다 — 지나가면서 닿는 상대를 한 번씩 친다
+## `Fighter.dash_override` 인터페이스 — 대시 키가 눌린 **그 프레임에** 불린다.
+## 평소 대시를 아예 시작하지 않고 "뒤로 물러났다 앞으로 내지르기"로 바꿔 굴린다.
+## ⚠️ 이걸 `_process`에서 "대시 중인지 보고 가로채는" 식으로 하면 한 프레임 늦어서
+## 그 사이에 평소 대시가 이미 약 47px 앞으로 튀어 나간다(헤드리스 실측)
+func take_over_dash(fighter: Fighter, direction: float) -> void:
+	if _left <= 0.0 or fighter.movement_override != null:
+		return
+	_armed_fighter = fighter
+	_rush_dir = signf(direction)
+	_rush_phase = -1
+	_rush_left = dash_back_distance
+	fighter.movement_override = self
+	_set_rig_phase(-1.0)
+
+## `Fighter.movement_override` 인터페이스 — 이 동안 가로 속도는 전부 이쪽이 정한다
+func get_move_velocity_x() -> float:
+	if _rush_phase < 0:
+		# 뒤로 물러나는 동안에도 **보는 방향은 그대로다**(상대를 보며 뒷걸음질 = 준비동작)
+		return -_rush_dir * dash_back_speed
+	if _rush_phase > 0:
+		return _rush_dir * dash_forward_speed
+	return 0.0
+
+## `Fighter.movement_override` 인터페이스 — 매 물리 프레임 끝에 불린다. 간 거리를 세서 구간을 넘긴다
+func after_physics(fighter: Fighter, delta: float) -> void:
+	if _rush_phase == 0:
+		return
+	var speed: float = dash_back_speed if _rush_phase < 0 else dash_forward_speed
+	_rush_left -= speed * delta
+	# 벽에 막히면 그 구간은 거기서 끝낸다(벽에 붙어 영영 안 끝나는 걸 막는다)
+	var blocked: bool = fighter.is_on_wall()
+	if _rush_left > 0.0 and not blocked:
+		return
+	if _rush_phase < 0:
+		# 다 물러났으니 이제 앞으로 내지른다
+		_rush_phase = 1
+		_rush_left = dash_forward_distance
+		_set_rig_phase(1.0)
+		fighter.start_air_trail(dash_forward_distance / maxf(dash_forward_speed, 1.0))
+	else:
+		_end_rush(fighter)
+
+## 돌진을 끝내고 이동 권한을 돌려준다
+func _end_rush(fighter: Fighter) -> void:
+	_rush_phase = 0
+	_rush_left = 0.0
+	_set_rig_phase(0.0)
+	if is_instance_valid(fighter) and fighter.movement_override == self:
+		fighter.movement_override = null
+
+## 리그에 지금 어느 구간인지 알려 준다(자세용) — -1 물러남 / 1 내지름 / 0 평소
+func _set_rig_phase(value: float) -> void:
+	if not is_instance_valid(_armed_fighter):
+		return
+	var visual: Node2D = _armed_fighter.get_node_or_null("Visual")
+	if visual and "dual_dash_phase" in visual:
+		visual.dual_dash_phase = value
+
+## 돌진하는 동안에만 판정을 켜고 몸에 붙여 둔다 — 지나가면서 닿는 상대를 한 번씩 친다.
+## **앞으로 내지르는 구간에서만 켠다** — 뒤로 물러나는 준비동작에 맞으면 이상하다
 func _update_dash_hitbox() -> void:
 	if _dash_hitbox == null:
 		return
-	var on: bool = _left > 0.0 and is_instance_valid(_armed_fighter) and _armed_fighter.is_dashing()
+	var on: bool = _left > 0.0 and is_instance_valid(_armed_fighter) and _rush_phase > 0
 	if not on:
 		if _dash_hitbox.monitoring:
 			_dash_hitbox.set_deferred("monitoring", false)
@@ -83,10 +155,14 @@ func _execute(fighter: Fighter) -> void:
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and "held_item_l_armed" in visual:
 		visual.held_item_l_armed = true
+	# 이 동안 대시는 이 스킬이 가로챈다
+	fighter.dash_override = self
 
 ## 악기를 도로 집어넣는다 — 시간이 다 됐거나 캐릭터가 사라질 때
 func _disarm() -> void:
 	_left = 0.0
+	if _rush_phase != 0:
+		_end_rush(_armed_fighter)
 	if _dash_hitbox:
 		_dash_hitbox.set_deferred("monitoring", false)
 		_dash_hitbox.set_deferred("monitorable", false)
@@ -94,6 +170,8 @@ func _disarm() -> void:
 		_armed_fighter = null
 		return
 	_armed_fighter.clear_modifier("attack_debuff_multiplier", MODIFIER_ID)
+	if _armed_fighter.dash_override == self:
+		_armed_fighter.dash_override = null
 	var visual: Node2D = _armed_fighter.get_node_or_null("Visual")
 	if visual and "held_item_l_armed" in visual:
 		visual.held_item_l_armed = false

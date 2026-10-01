@@ -160,6 +160,10 @@ var map_skill: Skill = null
 ## get_move_velocity_x()와 after_physics(fighter, delta)를 구현한 오브젝트여야 한다.
 ## 타입을 지정하지 않아야 서로 다른 스킬 클래스를 덕 타이핑으로 담을 수 있다
 var movement_override = null
+## **대시를 가로채는 스킬**(있으면 평소 대시 대신 그쪽이 굴린다). 타입은 movement_override와 같은 이유로 비워 둔다.
+## 지하철 아저씨 쌍 악기 궁이 "뒤로 물러났다 앞으로 내지르기"로 바꿔 쓴다 —
+## ⚠️ 한 프레임 늦게 가로채면 그 사이에 평소 대시가 이미 한 프레임치(약 47px) 튀어 나간다
+var dash_override = null
 ## 카운터 자세(`CounterSkill`)가 자신을 등록해두는 슬롯. 이게 있는 동안 캐릭터의 공격에 맞으면
 ## 피해 대신 `trigger_counter(fighter)`가 불린다(`try_counter()`). 타입은 movement_override와 같은 이유로 비워 둔다
 var counter_stance = null
@@ -991,8 +995,12 @@ func dash(direction: float) -> bool:
 		return false
 	_dash_dir = signf(direction)
 	facing = _dash_dir
-	_dash_time = dash_duration
 	_dash_cooldown_left = dash_cooldown
+	# 가로채는 스킬이 있으면 평소 대시는 아예 시작하지 않는다(그래야 첫 프레임이 안 튄다)
+	if dash_override != null and dash_override.has_method("take_over_dash"):
+		dash_override.take_over_dash(self, _dash_dir)
+		return true
+	_dash_time = dash_duration
 	_dash_trail_timer = 0.0
 	_spawn_dash_afterimage()
 	return true
