@@ -15,20 +15,23 @@ extends Control
 ## 값은 `set_score(p1, p2)`와 `set_time(초)`로 넣는다. 시간이 0 이하면 가운데 칸 글자를 비운다
 
 @export_group("모양")
-## 보드 전체 크기(px). Control의 크기와 같게 두면 된다 — 비워 두면(0) Control 크기를 쓴다
-@export var board_size: Vector2 = Vector2(520, 76):
+## 보드 전체 크기(px). **기본은 (0,0)이라 노드 크기를 그대로 따라간다** —
+## 에디터에서 네모를 끌어 키우거나 옮기면 그림·글자 자리가 알아서 따라온다.
+## 값을 직접 넣으면 노드 크기와 상관없이 그 크기로 그린다(거의 쓸 일 없다)
+@export var board_size: Vector2 = Vector2.ZERO:
 	set(value):
 		board_size = value
 		_refresh()
-## 가운데 평행사변형의 **아래쪽 변** 너비(px)
-@export var center_width: float = 170.0:
+## 가운데 평행사변형의 **아래쪽 변 너비 ÷ 보드 너비**(0~1).
+## px가 아니라 **비율**이라, 보드를 키우거나 줄여도 세 칸 비율이 그대로 유지된다
+@export_range(0.05, 0.9, 0.001) var center_ratio: float = 0.327:
 	set(value):
-		center_width = value
+		center_ratio = value
 		_refresh()
-## 비스듬한 정도(px). 위쪽이 아래쪽보다 이만큼 오른쪽으로 밀린다
-@export var lean: float = 46.0:
+## 비스듬한 정도 **÷ 보드 높이**. 이것도 비율이라 보드 높이가 바뀌어도 기울기가 똑같이 보인다
+@export_range(0.0, 2.0, 0.01) var lean_ratio: float = 0.6:
 	set(value):
-		lean = value
+		lean_ratio = value
 		_refresh()
 
 @export_group("색")
@@ -143,6 +146,14 @@ func set_time(seconds: float) -> void:
 func _board() -> Vector2:
 	return board_size if board_size.x > 1.0 and board_size.y > 1.0 else size
 
+## 지금 보드 크기에서 가운데 칸이 실제로 몇 px인지
+func _center_px() -> float:
+	return _board().x * clampf(center_ratio, 0.0, 1.0)
+
+## 지금 보드 크기에서 기울기가 실제로 몇 px인지
+func _lean_px() -> float:
+	return _board().y * lean_ratio
+
 func _refresh() -> void:
 	queue_redraw()
 	_place_labels()
@@ -150,10 +161,11 @@ func _refresh() -> void:
 func _draw() -> void:
 	var b: Vector2 = _board()
 	var h: float = b.y
-	var slant: float = lean * 0.5
+	var slant: float = _lean_px() * 0.5
 	# 가운데 평행사변형의 아래 변 좌우 x
-	var c0: float = b.x * 0.5 - center_width * 0.5
-	var c1: float = b.x * 0.5 + center_width * 0.5
+	var half_center: float = _center_px() * 0.5
+	var c0: float = b.x * 0.5 - half_center
+	var c1: float = b.x * 0.5 + half_center
 	if shadow_color.a > 0.0:
 		draw_rect(Rect2(shadow_offset, b), shadow_color, true)
 	# 왼쪽 칸(P1) — 위쪽 변이 기울어 사다리꼴이 된다
@@ -176,8 +188,9 @@ func _draw() -> void:
 ## 세 글자를 각 칸 가운데에 놓는다
 func _place_labels() -> void:
 	var b: Vector2 = _board()
-	var c0: float = b.x * 0.5 - center_width * 0.5
-	var c1: float = b.x * 0.5 + center_width * 0.5
+	var half_center: float = _center_px() * 0.5
+	var c0: float = b.x * 0.5 - half_center
+	var c1: float = b.x * 0.5 + half_center
 	_center_label(_p1_label, Vector2(c0 * 0.5, b.y * 0.5) + score_offset)
 	_center_label(_time_label, Vector2(b.x * 0.5, b.y * 0.5) + time_offset)
 	_center_label(_p2_label, Vector2((c1 + b.x) * 0.5, b.y * 0.5) + score_offset)

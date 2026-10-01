@@ -264,8 +264,9 @@ func ultimate_active_ratio() -> float:
 	return skill_ultimate.active_ratio()
 
 ## 궁극기 표시 칸(`CooldownPies`)이 읽는 값.
-## **효과 중이면 남은 시간이 줄어들고(1 → 0), 아니면 쿨타임이 차오른다(0 → 1).**
-## 둘 다 아니면(쓸 수 있는 상태) 1 — 다 찬 것으로 쳐서 표시가 사라진다
+## **지속형 궁이 돌아가는 동안 남은 시간이 줄어든다(1 → 0).** 그 외에는 쿨타임 비율을 돌려주지만,
+## 표시 쪽이 기본으로 쿨타임을 안 보여 주므로(`show_ultimate_cooldown`) 평소엔 안 뜬다 —
+## 쿨타임은 HUD 스킬 칸이 이미 차오르며 보여 준다
 func ultimate_timer_ratio() -> float:
 	var active: float = ultimate_active_ratio()
 	if active >= 0.0:
