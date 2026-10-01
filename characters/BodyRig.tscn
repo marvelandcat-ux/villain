@@ -29,6 +29,8 @@ scale = Vector2(0.11, 0.11)
 texture = ExtResource("2_hand")
 flip_h = true
 
+[node name="HandLHold" type="Node2D" parent="."]
+
 [node name="HandR" type="Sprite2D" parent="." unique_id=1459708461]
 position = Vector2(27, 3)
 scale = Vector2(0.11, 0.11)

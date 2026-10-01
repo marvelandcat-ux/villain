@@ -168,6 +168,9 @@ extends Node2D
 @export var attack_grip_speed: float = 12.0
 ## 두 손으로 잡을 때 왼손이 오른손에서 떨어져 있는 거리(px). 오른손보다 살짝 뒤·아래를 잡는다
 @export var attack_grip_offset: Vector2 = Vector2(-10, 4)
+## 켜면 위 간격을 **오른손이 돌아간 만큼 같이 돌린다** — 경봉처럼 긴 막대를 머리 위로 넘겨 잡을 때,
+## 간격이 고정이면 왼손이 손잡이가 아니라 허공을 잡는다. 거의 안 도는 무기(악플러 키보드)는 끌 것
+@export var grip_offset_follows_rotation: bool = false
 ## 두 손으로 잡는 동안 왼손이 올라가는 z_index. 악플러 키보드가 z_index 1이라, 왼손이 그 뒤에 그려져
 ## "한 손으로 잡은" 것처럼 보이던 문제를 막는다 — 잡는 동안만 키보드보다 앞(2)으로 올리고 끝나면 원래대로.
 ## 안경 올리기(z 3)와 동시에 나올 일이 없어 서로 안 싸운다. 대시 잔상(Visual째 z -2 복제)은 잡는 중이 아닐 때 나와 무관
@@ -233,6 +236,36 @@ extends Node2D
 ## 가드 자세로 들고 내리는 빠르기(초당 블렌드 양) — 10이면 0.1초에 다 올라간다.
 ## 손이 가드 자리로 한 프레임에 순간이동하지 않게, 잽을 뻗던 손도 가드에서 출발해 뻗는다
 @export var unarmed_guard_blend_speed: float = 10.0
+
+@export_group("쌍 악기 자세 (지하철 아저씨 궁)")
+## **왼손에도 악기를 들었는지.** 궁(`DualInstrumentUltimate`)이 켜고 끈다 —
+## 켜면 `HandLHold` 자식(검은 리코더)이 보이고, 서 있기·걷기·방어·대시 자세가 통째로 바뀐다
+@export var held_item_l_armed: bool = false
+## 자세가 섞여 드는 속도(1/초). 궁을 켠 순간 뚝 바뀌지 않고 스르르 잡힌다
+@export var dual_blend_speed: float = 11.0
+## **서 있기·걷기** — 단소(오른손)는 뒤로 낮게, 리코더(왼손)는 앞 위로 세운다(사용자 그림 3)
+@export var dual_hand_r_pos: Vector2 = Vector2(20, 4)
+@export var dual_hand_r_deg: float = -127.0
+@export var dual_hand_l_pos: Vector2 = Vector2(10, -8)
+@export var dual_hand_l_deg: float = -45.0
+## **방어** — 두 악기를 몸 앞에서 X자로 교차한다(사용자 그림 1). 숙이는 정도는 평소 방어(`guard_crouch`)와 같다
+@export var dual_guard_hand_r_pos: Vector2 = Vector2(20, 2)
+@export var dual_guard_hand_r_deg: float = -92.0
+@export var dual_guard_hand_l_pos: Vector2 = Vector2(-12, 2)
+@export var dual_guard_hand_l_deg: float = -40.0
+## **대시(돌진 공격)** — 몸을 앞으로 기울이고 두 악기를 뒤로 눕혀 지나간다(사용자 그림 2 첫 프레임)
+@export var dual_dash_hand_r_pos: Vector2 = Vector2(6, -2)
+@export var dual_dash_hand_r_deg: float = -168.0
+@export var dual_dash_hand_l_pos: Vector2 = Vector2(-10, -6)
+@export var dual_dash_hand_l_deg: float = -176.0
+## 대시 중 상체가 앞으로 기우는 각도(도). **facing 부호는 코드가 곱한다**
+@export var dual_dash_lean_deg: float = 26.0
+## ⚠️ 쌍 악기 동안 **왼손과 리코더를 머리 앞으로** 올리는 z. 리그 순서가 …왼손 → 머리라서,
+## 안 올리면 위로 세운 리코더가 머리 그림에 통째로 가린다(실측). 손이 악기보다 앞이다
+@export var dual_hand_l_z: int = 3
+@export var dual_hold_l_z: int = 2
+## 단소(오른손 쪽)도 같이 올린다 — X자로 교차할 때 한쪽만 머리에 가리면 X가 안 읽힌다
+@export var dual_hold_r_z: int = 2
 
 ## 잽을 **정면으로 곧게** 내지른다 — 살짝 당겼다가(raise) 앞으로 쭉. 위아래로 안 흔들린다
 @export var jab_raise_off: Vector2 = Vector2(-7, 0)
@@ -814,6 +847,9 @@ extends Node2D
 @onready var _hand_r: Sprite2D = get_node_or_null("HandR")
 ## 오른손이 든 물건(소주병 등)을 매다는 빈 노드 — 손의 위치·회전을 그대로 따라간다
 @onready var _hand_r_hold: Node2D = get_node_or_null("HandRHold")
+## 왼손에 드는 물건걸이 — 오른손 것과 같은 방식으로 왼손을 따라간다(지하철 아저씨 검은 리코더).
+## 평소에는 비어 있고, `held_item_l_armed`가 켜질 때만 자식 그림이 보인다
+@onready var _hand_l_hold: Node2D = get_node_or_null("HandLHold")
 ## 자전거 노드(있으면 촉법소년) — 돌진 중에만 보인다
 @onready var _bike: Sprite2D = get_node_or_null("Bike")
 ## 총 노드(있으면 촉법소년) — 총 쏘는 스킬 중에만 보인다
@@ -908,6 +944,7 @@ var _hand_l_rest_z: int = 0
 ## 오른손의 원래 z_index — 선풍기 회전 중 두 손을 키보드 앞으로 올렸다가 끝나면 되돌린다
 var _hand_r_rest_z: int = 0
 var _hand_r_hold_rest_z: int = 0
+var _hand_l_hold_rest_z: int = 0
 ## 뒤돌아보는 동작에 남은 시간(초). 0보다 크면 돌아보는 중이다
 var _lookback_time: float = 0.0
 ## 기본공격 스윙에 남은 시간(초). 0보다 크면 휘두르는 중이다
@@ -1007,6 +1044,8 @@ var _head_shake_span: float = 0.0
 var _head_aim: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
+## 쌍 악기 자세가 섞인 정도(0~1)
+var _dual_blend: float = 0.0
 var _guard_target: float = 0.0
 var _counter_blend: float = 0.0
 var _counter_target: float = 0.0
@@ -1063,6 +1102,8 @@ func _ready() -> void:
 		_hand_r_rest_z = _hand_r.z_index
 	if _hand_r_hold:
 		_hand_r_hold_rest_z = _hand_r_hold.z_index
+	if _hand_l_hold:
+		_hand_l_hold_rest_z = _hand_l_hold.z_index
 	# 자전거는 평소엔 숨기고, "탄 위치"를 기억해둔다 (여기서 뒤로 밀어 슬라이드 연출)
 	if _bike:
 		_bike_mounted_pos = _bike.position
@@ -1091,6 +1132,10 @@ func _process(delta: float) -> void:
 	# weapon_on_final_hit이 켜져 있으면 **마지막 타에만** 왼손이 합류한다(앞 타는 한 손 주먹)
 	if attack_two_handed:
 		var want_grip: bool = _attack_time > 0.0
+		# **없는 무기를 두 손으로 잡을 수는 없다** — 경찰처럼 무기를 넣었다 뺐다 하는 캐릭터는
+		# 맨손일 때 두 손 잡기를 풀어야 권투 자세(unarmed_guard_hand)와 안 싸운다
+		if weapon_switch and not held_item_armed:
+			want_grip = false
 		# 평소에도 두 손으로 잡는 캐릭터(악플러) — 손을 따로 쓰는 스킬 중에만 푼다
 		if two_handed_always and _cast_time <= 0.0 and _reel_blend <= 0.01 and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 and _throw_time <= 0.0:
 			want_grip = true
@@ -1106,6 +1151,8 @@ func _process(delta: float) -> void:
 				_hand_l.z_index = attack_grip_hand_z
 			elif _hand_l.z_index == attack_grip_hand_z:
 				_hand_l.z_index = _hand_l_rest_z
+	# 베는 동안엔 손·무기를 머리 앞으로 올린다(머리 위로 넘기는 구간에서 안 가려지게). 끝나면 되돌린다
+	_apply_slash_z(_attack_time > 0.0 and _attack_variant >= SLASH_VARIANT_BASE)
 
 	if _attack_time > 0.0:
 		_attack_time = maxf(_attack_time - delta, 0.0)
@@ -1149,6 +1196,9 @@ func _process(delta: float) -> void:
 	# 줄 당기는 자세는 목표로 서서히 오가고, 당기는 박자는 그 자세일 때만 진행된다
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
+	# 쌍 악기 자세는 궁을 켠 동안 1로 차오른다. 공격 중에는 손을 스윙이 가져가야 하므로 잠깐 0으로 빠진다
+	var dual_want: float = 1.0 if (held_item_l_armed and _attack_time <= 0.0) else 0.0
+	_dual_blend = move_toward(_dual_blend, dual_want, delta * dual_blend_speed)
 	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
 	_kneel_blend = move_toward(_kneel_blend, _kneel_target, delta * kneel_blend_speed)
 	_counter_blend = move_toward(_counter_blend, _counter_target, delta * counter_blend_speed)
@@ -1354,6 +1404,9 @@ func _apply_pose(speed_ratio: float) -> void:
 		# 어퍼컷이면 고개와 상체가 치는 내내 점점 돌아간다
 		if _is_headbutt():
 			_pose_headbutt()
+		elif _attack_variant >= SLASH_VARIANT_BASE:
+			# 베기는 상체가 같이 넘어간다 — 손만 움직이면 "툭 친다"로 보인다
+			_pose_slash_lean()
 		elif unarmed_uppercut and not held_item_armed and _attack_variant >= final_hit_index:
 			_pose_uppercut_lean()
 	# 몸통 그림 갈아 끼우기 — 치는 타가 목록에 있으면 그 그림, 아니면 원래대로.
@@ -1436,6 +1489,9 @@ func _apply_pose(speed_ratio: float) -> void:
 
 	# 방어 중이면 두 손을 몸 앞으로 올려 막는다 (다른 자세보다 나중이라 우선한다 —
 	# 방어 중에는 이동·공격·스킬이 다 막히므로 실제로 겹칠 일도 거의 없다)
+	# 쌍 악기(궁) 자세 — 서 있기·걷기·대시. 방어보다 **먼저** 섞는다(막는 자세가 이겨야 한다)
+	if _dual_blend > 0.001:
+		_pose_dual()
 	if _guard_blend > 0.001:
 		_pose_guard()
 
@@ -1500,6 +1556,20 @@ func _apply_pose(speed_ratio: float) -> void:
 		_pose_keyboard_fan()
 
 	# 손에 든 물건이 손을 그대로 따라가게 한다
+	# 왼손 물건걸이도 왼손을 그대로 따라간다(오른손 것과 같은 방식).
+	# 보이고 안 보이고는 **매 프레임 확인한다** — 씬에 저장된 상태나 setter 순서에 안 휘둘린다
+	if _hand_l_hold and _hand_l:
+		_hand_l_hold.position = _hand_l.position
+		_hand_l_hold.rotation = _hand_l.rotation
+		for child in _hand_l_hold.get_children():
+			if child is CanvasItem and child.visible != held_item_l_armed:
+				child.visible = held_item_l_armed
+		# 머리 앞으로 올렸다 되돌린다 — 위로 세운 리코더가 머리에 안 가리게
+		_hand_l_hold.z_index = dual_hold_l_z if held_item_l_armed else _hand_l_hold_rest_z
+		if _hand_l and _grip_blend <= 0.5:
+			_hand_l.z_index = dual_hand_l_z if held_item_l_armed else _hand_l_rest_z
+		if _hand_r_hold and _attack_time <= 0.0:
+			_hand_r_hold.z_index = dual_hold_r_z if held_item_l_armed else _hand_r_hold_rest_z
 	if _hand_r_hold and _hand_r:
 		_hand_r_hold.position = _hand_r.position
 		_hand_r_hold.rotation = _hand_r.rotation
@@ -1703,6 +1773,53 @@ func _pose_lead_step(t: float) -> void:
 ## Fighter가 기본공격을 실제로 발동시킨 순간 호출한다
 ## duration: 이 타의 모션 길이(초). 0 이하면 리그 설정값(attack_duration / kick_duration / spin_duration)을 쓴다.
 ## spin: 켜면 이 타는 한 바퀴 돌면서 친다. 꺼져 있어도 spin_hit_index 번째 타면 돈다(옛 방식)
+## --- 검사처럼 긋는 베기 (경찰 경관봉 난무, 2026-10-01 "모션 좀 맛있게") ---
+## 평범한 내려찍기를 반복하면 "툭툭 친다"로 보인다. 베는 방향을 돌아가며 바꿔야 칼싸움처럼 보여서
+## 궤도가 다른 베기를 차례로 돌려 쓴다. **각도 부호는 스윙과 같다** — 감을 땐 `-raise_deg`,
+## 후릴 땐 `+swing_deg`(음수 = 반시계 = 무기가 위로 / 양수 = 시계 = 아래로).
+## `arc`는 손이 지나는 길이 바깥으로 휘는 정도, `slash_deg`는 그 베기의 **참격 자국 기울기**(도)다.
+## 값을 바꾸고 싶으면 이 표만 고치면 된다 — 칸을 더 넣으면 그만큼 돌아가며 나온다
+const SLASHES := [
+	# ① 내려찍기 ↓ — **머리 위로 두 손으로 넘겼다가 앞 아래로 강하게 내려친다**(2026-10-01 사용자 그림).
+	# 감았을 때 경봉이 뒤로 수평(그림 1프레임), 내려쳤을 때 앞 아래를 향한다(그림 2프레임).
+	# 경봉 그림은 손에서 -38도(앞 위쪽)를 보고 있어서, 손 각도 = 원하는 각도 + 38이 된다
+	{"raise_deg": 142.0, "swing_deg": 98.0, "raise_off": Vector2(-18, -66), "slam_off": Vector2(12, 18), "arc": 26.0, "slash_deg": 40.0, "lean_deg": 18.0},
+	# ② 올려베기 ↗ — 아래 뒤로 감았다가 앞 위로 쳐올린다(각도 부호가 ①의 반대)
+	{"raise_deg": -74.0, "swing_deg": -104.0, "raise_off": Vector2(-16, 30), "slam_off": Vector2(44, -36), "arc": -20.0, "slash_deg": -30.0, "lean_deg": -12.0},
+	# ③ 수평 베기 → — 허리에서 앞으로 쭉 긋는다. 호 없이 곧게 지나간다
+	{"raise_deg": 54.0, "swing_deg": 66.0, "raise_off": Vector2(-36, -2), "slam_off": Vector2(50, -6), "arc": 0.0, "slash_deg": 86.0, "lean_deg": 10.0},
+	# ④ 역사선 ↙ — 바깥 위에서 안쪽 아래로 짧고 빠르게 긋는다
+	{"raise_deg": 96.0, "swing_deg": 86.0, "raise_off": Vector2(14, -36), "slam_off": Vector2(34, 18), "arc": -14.0, "slash_deg": 54.0, "lean_deg": 13.0},
+]
+## 베기 번호를 `_attack_variant`에 담을 때 더하는 값 — 평소 콤보 타 번호(0·1·2…)와 섞이지 않게 멀리 띄운다
+const SLASH_VARIANT_BASE := 100
+
+## 베기 전체 크기 배수 — 한 번에 키우거나 줄이고 싶을 때
+@export var slash_scale: float = 1.0
+## 베는 동안 **무기와 두 손을 머리보다 앞으로** 올리는 z. 머리 위로 넘기는 동작은 이게 없으면
+## 머리 그림에 가려 경봉이 통째로 사라진다(리그 순서가 …손 → 머리라서). 손이 무기보다 앞이다
+@export var slash_weapon_z: int = 2
+@export var slash_hand_z: int = 3
+## 벨 때 상체가 따라 넘어가는 정도의 배수. 0이면 몸은 가만히 있고 손만 움직인다(밋밋해진다)
+@export var slash_lean_scale: float = 1.0
+
+## 베는 동안 손·무기 z를 올렸다 되돌린다
+func _apply_slash_z(on: bool) -> void:
+	if _hand_r_hold:
+		_hand_r_hold.z_index = slash_weapon_z if on else _hand_r_hold_rest_z
+	if _hand_r:
+		_hand_r.z_index = slash_hand_z if on else _hand_r_rest_z
+	if _hand_l and on:
+		_hand_l.z_index = slash_hand_z
+
+## 베기 한 번. index는 위 SLASHES 차례(넘치면 처음으로 돌아간다)
+func play_weapon_slash(index: int, duration: float = -1.0) -> void:
+	play_attack_swing(SLASH_VARIANT_BASE + (index % SLASHES.size()), duration)
+
+## 이번 베기의 참격 자국 기울기(라디안) — 자국을 뿌리는 쪽이 물어본다
+static func slash_angle(index: int) -> float:
+	return deg_to_rad(float(SLASHES[index % SLASHES.size()]["slash_deg"]))
+
 func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = false) -> void:
 	_attack_len = attack_duration
 	if attack_kick_hit >= 0 and variant == attack_kick_hit and kick_duration > 0.0:
@@ -2000,6 +2117,16 @@ func _build_smears() -> void:
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
 ## 각도 부호: 음수=반시계(무기가 위로), 양수=시계(아래로)
 func _attack_variant_params() -> Dictionary:
+	# 베기(경관봉 난무)는 제일 먼저 가로챈다 — 잽·어퍼컷 같은 맨손 규칙을 타면 안 된다
+	if _attack_variant >= SLASH_VARIANT_BASE:
+		var sl: Dictionary = SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+		return {
+			"raise_deg": sl["raise_deg"],
+			"swing_deg": sl["swing_deg"],
+			"raise_off": sl["raise_off"] * slash_scale,
+			"slam_off": sl["slam_off"] * slash_scale,
+			"arc": sl["arc"] * slash_scale,
+		}
 	# 발로 차는 타에서는 손에 든 무기를 휘두르지 않는다 — 팔은 균형만 잡는다
 	if attack_kick_hit >= 0 and _attack_variant == attack_kick_hit:
 		return _kick_arm_params()
@@ -2314,7 +2441,10 @@ func _pose_grip_hand() -> void:
 	if _attack_time > 0.0 and weapon_spin_hit >= 0 and _attack_variant == weapon_spin_hit:
 		var sp: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 		grip *= 1.0 - _weapon_spin_release(sp)
-	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + attack_grip_offset, grip)
+	var off: Vector2 = attack_grip_offset
+	if grip_offset_follows_rotation:
+		off = off.rotated(_hand_r.rotation)
+	_hand_l.position = _rest_positions[_hand_l].lerp(_hand_r.position + off, grip)
 	_hand_l.rotation = _hand_r.rotation * grip
 
 ## 무기 스핀 중 왼손을 떼는 정도(0=잡음, 1=완전히 뗌). 가운데(도는 구간)엔 1, 시작·끝 15%엔 서서히 다시 잡는다
@@ -3117,6 +3247,33 @@ func _pose_gun() -> void:
 ## 어퍼컷을 치는 동안 고개·상체가 점점 돌아가는 부분.
 ## **발은 건드리지 않는다**(러프: 발 위치 고정) — 돌아가는 건 상체와 고개뿐이다.
 ## 각도는 `scale.x = -1`로 좌우를 뒤집어도 같이 안 뒤집히므로, 바라보는 방향 부호를 곱해준다
+## 베기 한 번 동안 상체·고개가 따라 넘어간다 — 감을 땐 뒤로 젖혔다가 후릴 때 확 넘어가고 천천히 돌아온다.
+## 손 궤도(`_pose_attack_hand`)와 **같은 구간 비율**(40% / 62%)을 쓰므로 둘이 따로 놀지 않는다
+func _pose_slash_lean() -> void:
+	var sl: Dictionary = SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var t: float
+	if progress < ATTACK_STRIKE_START:
+		# ① 감기 — 반대쪽으로 살짝 젖힌다
+		t = -0.55 * (progress / ATTACK_STRIKE_START)
+	elif progress < ATTACK_STRIKE_END:
+		# ② 후리기 — 젖힌 데서 확 넘어간다(가속 곡선이라 손과 같은 박자)
+		var p: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
+		t = lerpf(-0.55, 1.0, p * p)
+	else:
+		# ③ 복귀
+		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		t = lerpf(1.0, 0.0, p)
+	# **기울기에 facing 부호를 곱한다** — 좌우 반전이 scale.x = -1이라 각도는 그대로 남는다(발차기·돌진과 같은 이유)
+	var sgn: float = 1.0
+	if _fighter != null and is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
+		sgn = signf(_fighter.facing)
+	var lean: float = deg_to_rad(float(sl.get("lean_deg", 12.0)) * slash_lean_scale) * t * sgn
+	if _body:
+		_body.rotation += lean
+	if _head:
+		_head.rotation += lean * 0.6
+
 func _pose_uppercut_lean() -> void:
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var sgn: float = signf(_fighter.facing) if (_fighter != null and is_instance_valid(_fighter)) else 1.0
@@ -3585,17 +3742,52 @@ func _pose_lookback() -> void:
 func set_guarding(on: bool) -> void:
 	_guard_target = 1.0 if on else 0.0
 
+## 쌍 악기 자세 — 궁을 쓴 동안의 **서 있기·걷기**와 **대시**.
+## 두 손 자리·각도만 잡는다. 손을 따라 `HandRHold`(단소)·`HandLHold`(리코더)가 같이 돈다.
+## 방어는 `_pose_guard`가 뒤에서 덮어쓴다 — 막는 자세가 이겨야 하므로 순서를 바꾸지 말 것
+func _pose_dual() -> void:
+	var t: float = _dual_blend
+	var dashing: bool = _fighter != null and is_instance_valid(_fighter) and _fighter.has_method("is_dashing") and _fighter.is_dashing()
+	var r_pos: Vector2 = dual_dash_hand_r_pos if dashing else dual_hand_r_pos
+	var r_deg: float = dual_dash_hand_r_deg if dashing else dual_hand_r_deg
+	var l_pos: Vector2 = dual_dash_hand_l_pos if dashing else dual_hand_l_pos
+	var l_deg: float = dual_dash_hand_l_deg if dashing else dual_hand_l_deg
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(r_pos, t)
+		_hand_r.rotation = lerp_angle(_hand_r.rotation, deg_to_rad(r_deg), t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(l_pos, t)
+		_hand_l.rotation = lerp_angle(_hand_l.rotation, deg_to_rad(l_deg), t)
+	if not dashing:
+		return
+	# 돌진하는 동안 상체가 앞으로 기운다. **facing 부호를 곱한다** — 좌우 반전이 scale.x = -1이라
+	# 각도는 그대로 남아서, 안 곱하면 왼쪽으로 돌진할 때 뒤로 넘어간다(발차기·클래시와 같은 이유)
+	var sgn: float = 1.0
+	if _fighter != null and is_instance_valid(_fighter) and not is_zero_approx(_fighter.facing):
+		sgn = signf(_fighter.facing)
+	var lean: float = deg_to_rad(dual_dash_lean_deg) * t * sgn
+	if _body:
+		_body.rotation += lean
+	if _head:
+		_head.rotation += lean * 0.7
+
 ## 방어 자세 — 두 손을 몸 앞으로 올려 막고, 몸과 머리를 살짝 움츠린다.
 ## 오른손은 얼굴 앞 높이, 왼손은 그보다 낮은 가슴 앞이라 권투 가드처럼 위아래로 어긋난다.
 ## 지금 값에서 목표 자세로 lerp하므로, 걷다가 막아도 그 자리에서 자연스럽게 이어진다
 func _pose_guard() -> void:
 	var t: float = _guard_blend
+	# 쌍 악기를 들었으면 두 악기를 X자로 교차해 막는다(숙이는 건 아래에서 그대로)
+	var dual: bool = held_item_l_armed
+	var r_pos: Vector2 = dual_guard_hand_r_pos if dual else guard_hand_r_pos
+	var r_deg: float = dual_guard_hand_r_deg if dual else guard_hand_deg
+	var l_pos: Vector2 = dual_guard_hand_l_pos if dual else guard_hand_l_pos
+	var l_deg: float = dual_guard_hand_l_deg if dual else -guard_hand_deg
 	if _hand_r:
-		_hand_r.position = _hand_r.position.lerp(guard_hand_r_pos, t)
-		_hand_r.rotation = lerpf(_hand_r.rotation, deg_to_rad(guard_hand_deg), t)
+		_hand_r.position = _hand_r.position.lerp(r_pos, t)
+		_hand_r.rotation = lerp_angle(_hand_r.rotation, deg_to_rad(r_deg), t)
 	if _hand_l:
-		_hand_l.position = _hand_l.position.lerp(guard_hand_l_pos, t)
-		_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(-guard_hand_deg), t)
+		_hand_l.position = _hand_l.position.lerp(l_pos, t)
+		_hand_l.rotation = lerp_angle(_hand_l.rotation, deg_to_rad(l_deg), t)
 	# 몸과 머리를 같이 내려서 움츠린 느낌을 준다 (머리만 내리면 목이 들어간 것처럼 보인다)
 	if _body:
 		_body.position.y = lerpf(_body.position.y, _rest_positions[_body].y + guard_crouch, t)

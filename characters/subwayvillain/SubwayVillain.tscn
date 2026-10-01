@@ -9,11 +9,13 @@
 [ext_resource type="Script" path="res://skills/TurnstileSkill.gd" id="4"]
 [ext_resource type="PackedScene" path="res://skills/Turnstile.tscn" id="5"]
 [ext_resource type="Script" path="res://skills/CounterSkill.gd" id="6"]
-[ext_resource type="Script" path="res://skills/TteokbokkiUltimate.gd" id="7"]
-[ext_resource type="PackedScene" path="res://skills/FirePlate.tscn" id="8"]
+[ext_resource type="Script" path="res://skills/DualInstrumentUltimate.gd" id="7"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dash"]
+size = Vector2(74, 86)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_counter"]
 size = Vector2(44, 44)
@@ -88,4 +90,11 @@ shape = SubResource("RectangleShape2D_counter")
 script = ExtResource("7")
 cooldown = 24.0
 start_on_cooldown = true
-plate_scene = ExtResource("8")
+
+[node name="Hitbox" type="Area2D" parent="SkillUltimate"]
+monitoring = false
+monitorable = false
+script = ExtResource("21_hitbox")
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="SkillUltimate/Hitbox"]
+shape = SubResource("RectangleShape2D_dash")

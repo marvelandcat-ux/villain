@@ -979,6 +979,11 @@ func can_dash() -> bool:
 		return false
 	return _hitstun_time <= 0.0 and not is_grabbed and not is_guarding and movement_override == null and _landing_lag <= 0.0
 
+## 지금 대시로 미끄러지는 중인지 — 스킬·연출이 대시에 맞춰 반응할 때 쓴다
+## (지하철 아저씨 쌍 악기 모드: 대시가 그대로 공격이 된다)
+func is_dashing() -> bool:
+	return _dash_time > 0.0
+
 ## 방향키를 두 번 눌렀을 때 그 방향으로 짧게 미끄러진다. 실제로 나갔으면 true.
 ## 스킬이 아니라 기본 조작이라 스킬 클래시·is_busy()와 무관하게 동작한다
 func dash(direction: float) -> bool:

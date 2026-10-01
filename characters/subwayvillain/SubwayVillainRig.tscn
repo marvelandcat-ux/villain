@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://b8378ej70u3ka" path="res://sprite/지하철빌/발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="5_hand"]
 [ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌/단소.png" id="6_danso"]
+[ext_resource type="Texture2D" uid="uid://dii1b8b11t64l" path="res://sprite/지하철빌/검은리코더.png" id="7_recorder"]
 [ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
 [ext_resource type="Texture2D" uid="uid://bfqo4v0j70ero" path="res://sprite/지하철빌/지하철 아저 씨측면 1.png" id="89_turn1"]
 [ext_resource type="Texture2D" uid="uid://dp1kw8845ingg" path="res://sprite/지하철빌/지하철 아저씨 측면 2.png" id="88_turn2"]
@@ -51,6 +52,12 @@ texture = ExtResource("5_hand")
 
 [node name="HandR" parent="." index="4" unique_id=1459708461]
 texture = ExtResource("5_hand")
+
+[node name="Recorder" type="Sprite2D" parent="HandLHold" index="0"]
+visible = false
+position = Vector2(14, 0)
+scale = Vector2(0.024, 0.024)
+texture = ExtResource("7_recorder")
 
 [node name="Danso" type="Sprite2D" parent="HandRHold" index="0" unique_id=625026749]
 position = Vector2(8.000001, -12.000001)

@@ -43,6 +43,9 @@ const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 @export var knockout_characters: Array[String] = []
 ## 스토리 모드에서만 연출을 쓸지. 끄면 일반 대전에서도 나온다
 @export var knockout_story_only: bool = false
+## 체력·스킬 판(`CombatHUD`의 선수 판 둘)을 **화면 위쪽 좌·우 구석**으로 올릴지.
+## 놀이터처럼 아래쪽에 발판·모래밭이 있어서 평소 자리(아래)에 두면 바닥 기믹을 가리는 맵에서 켠다
+@export var hud_panels_top: bool = false
 ## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다
 @export var knockout_time_scale: float = 0.35
 ## 맞은 순간 딱 멈춰 있는 시간(초) — 타격감을 주는 정지
@@ -101,6 +104,8 @@ func _ready() -> void:
 
 	_combat_hud = get_node_or_null("CombatHUD")
 	if _combat_hud:
+		if _combat_hud.has_method("set_panels_top"):
+			_combat_hud.set_panels_top(hud_panels_top)
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 
@@ -348,6 +353,9 @@ func _debug_skip_story_battle() -> void:
 func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool, player_index: int) -> Fighter:
 	var scene: PackedScene = load(character_path)
 	var fighter: Fighter = scene.instantiate()
+	# ⚠️ 체력·공격력 손보기는 **add_child 전에** 해야 한다 — Fighter._ready()가 current_hp를 stats.max_hp로 잡는다
+	if is_ai and GameState.game_mode == "story":
+		_apply_story_handicap(fighter)
 	add_child(fighter)
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
@@ -355,7 +363,9 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	if is_ai:
 		# 스토리는 Claude API가 전략을 얹는 AI, 대전 모드 컴퓨터 상대는 규칙 기반 AI만(사용자 결정 — API 비용 없음)
 		if GameState.game_mode == "story":
-			fighter.add_child(ClaudeAIController.new())
+			var brain := ClaudeAIController.new()
+			_tune_story_ai(brain)
+			fighter.add_child(brain)
 		else:
 			fighter.add_child(AIController.new())
 	else:
@@ -367,6 +377,39 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 		fighter.add_child(skill)
 		fighter.map_skill = skill
 	return fighter
+
+## 스토리 상대의 체력·공격력을 그 에피소드가 정한 배수로 조정한다.
+## ⚠️ **`stats`는 씬이 공유하는 Resource라 반드시 복제해서 고친다** — 그냥 고치면 훈련장·대전에서
+## 같은 캐릭터를 골랐을 때도 체력이 두 배인 채로 나온다(디스크의 .tres까지 더럽혀질 수 있다)
+func _apply_story_handicap(fighter: Fighter) -> void:
+	var hp_scale: float = GameState.story_enemy_hp_scale
+	var dmg_scale: float = GameState.story_enemy_damage_scale
+	if fighter.stats == null or (is_equal_approx(hp_scale, 1.0) and is_equal_approx(dmg_scale, 1.0)):
+		return
+	fighter.stats = fighter.stats.duplicate()
+	fighter.stats.max_hp = maxi(int(round(fighter.stats.max_hp * hp_scale)), 1)
+	# 공격력은 `compute_damage()`가 곱하는 `stats.attack_multiplier`로 깎는다 —
+	# 임시 디버프(`attack_debuff_multiplier`)에 걸면 다른 스킬이 풀어 버릴 수 있다
+	fighter.stats.attack_multiplier *= dmg_scale
+
+## 스토리 상대 AI의 솜씨를 `GameState.story_ai_skill`(0~1)로 낮춘다.
+## **1이면 평소 대전 AI 그대로**, 0이면 아래 "둔한 값"까지 쭉 끌어내린다.
+## 값 하나로 반응속도·방어·회피·스킬 사용을 한꺼번에 움직여야 "조금만 약하게"가 쉬워진다
+func _tune_story_ai(ai: ClaudeAIController) -> void:
+	var skill: float = clampf(GameState.story_ai_skill, 0.0, 1.0)
+	if is_equal_approx(skill, 1.0):
+		return
+	# 사람 반응속도가 0.2~0.25초다. 기본 0.09는 사람보다 빠르다 — 둔하게 하려면 그보다 한참 늦춘다
+	ai.reaction_time = lerpf(0.45, ai.reaction_time, skill)
+	ai.guard_react_chance = lerpf(0.10, ai.guard_react_chance, skill)
+	ai.dodge_react_chance = lerpf(0.15, ai.dodge_react_chance, skill)
+	ai.skill_commit_chance = lerpf(0.15, ai.skill_commit_chance, skill)
+	ai.skill_think_interval = lerpf(0.60, ai.skill_think_interval, skill)
+	ai.bait_chance = lerpf(0.0, ai.bait_chance, skill)
+	# 멀어도 잘 안 달려든다 — 플레이어가 거리를 잡을 틈이 생긴다
+	ai.dash_approach_distance = lerpf(520.0, ai.dash_approach_distance, skill)
+	# Claude에게 전략을 묻는 주기도 늘린다(판단이 늦게 갱신 = 상황 대응이 굼뜸)
+	ai.decision_interval = lerpf(6.0, ai.decision_interval, skill)
 
 func _freeze_controllers() -> void:
 	_set_controllers_active(false)

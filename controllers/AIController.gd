@@ -1040,8 +1040,9 @@ func _want_skill(skill: Skill) -> bool:
 		"CounterSkill":
 			# 아무 때나 켜면 헛방 — 상대 공격을 읽었을 때만 _respond_to_threat()이 쓴다
 			return false
-		"TteokbokkiUltimate":
-			return level and d > 40.0 and d < 350.0
+		"DualInstrumentUltimate":
+			# 쌍 악기 모드는 **걸어두는 버프**라 거리와 상관없이 켜고 본다
+			return true
 		"BackSuplexSkill":
 			return level and target.can_be_grabbed() and d < float(skill.get("fallback_grab_range")) + 15.0
 		"CigaretteSmokeSkill":
