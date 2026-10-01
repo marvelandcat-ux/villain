@@ -16,8 +16,15 @@ extends Skill
 @export var default_dust_color: Color = Color(0.3, 0.26, 0.22, 0.9)
 ## 뒷바퀴 위치(캐릭터 원점 기준) — x는 진행 반대쪽(뒤)이라 음수, y는 바닥 높이. x는 진행 방향으로 반전된다
 @export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
-## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출). 끄면 예전처럼 잔상·먼지만
-@export var wind_lines: bool = true
+## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출).
+## 2026-10-01 사용자 요청으로 꺼짐 — 대신 출발 바람(takeoff_wind)이 돌진 내내 반복해서 나온다
+@export var wind_lines: bool = false
+## 뒷바퀴 자리에 점프할 때와 같은 바람 줄기(combat/JumpWind.gd)를 진행 방향으로 뻗는다 — 출발 순간 + 돌진 내내 takeoff_wind_interval마다(2026-10-01 사용자 요청)
+@export var takeoff_wind: bool = true
+## 돌진 중 출발 바람을 몇 초마다 다시 뻗을지. 0이면 출발 순간 한 번만
+@export var takeoff_wind_interval: float = 0.12
+## 출발 바람 줄기의 높이(캐릭터 원점 기준). 발바닥(+30)에 두면 가로 줄기 아래 절반이 땅에 묻혀 보여서 조금 올린다
+@export var takeoff_wind_y: float = 20.0
 
 ## 적을 들이받으면 적이 입는 데미지
 @export var enemy_hit_damage: int = 10
@@ -51,6 +58,7 @@ extends Skill
 ## 못 찾아서 파싱 에러가 난다(ShoulderChargeSkill이 ChargeWind를 가져오는 것과 같은 이유)
 const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
 const BIKE_WRECK := preload("res://combat/BikeWreck.gd")
+const JUMP_WIND := preload("res://combat/JumpWind.gd")
 var _wind = null
 
 var _time_left: float = 0.0
@@ -62,6 +70,8 @@ var _dash_speed: float = 0.0
 var _hit_enemy: bool = false
 ## 다음 스키드 먼지까지 남은 시간, 돌진 시작 때 잡아둔 바닥 색
 var _skid_timer: float = 0.0
+## 다음 출발 바람까지 남은 시간
+var _takeoff_wind_timer: float = 0.0
 var _ground_color: Color = Color.WHITE
 
 func _execute(fighter: Fighter) -> void:
@@ -86,6 +96,20 @@ func _execute(fighter: Fighter) -> void:
 			visual.set_action_face(true)
 	_spawn_afterimage(fighter)
 	_start_wind(fighter)
+	_spawn_takeoff_wind(fighter)
+	_takeoff_wind_timer = takeoff_wind_interval
+
+## 출발 순간 뒷바퀴 자리에 점프 바람 줄기를 진행 방향으로 뻗는다 — 맵에 붙여 제자리에 남는다(뛴 자리에 남는 점프 바람과 같다)
+func _spawn_takeoff_wind(fighter: Fighter) -> void:
+	if not takeoff_wind:
+		return
+	var parent: Node = fighter.get_parent()
+	if parent == null:
+		return
+	var wind := JUMP_WIND.new()
+	parent.add_child(wind)
+	wind.global_position = fighter.global_position + Vector2(rear_wheel_offset.x * _direction, takeoff_wind_y)
+	wind.setup(Vector2(_direction, 0.0), false)
 
 ## 몸 주위로 흐르는 바람 줄을 띄운다 — **맵에 붙이고 시전자를 따라다니게 한다**
 ## (캐릭터의 자식으로 달면 좌우 반전에 같이 뒤집혀서 바람이 진행 방향과 반대로 흐른다)
@@ -115,6 +139,12 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 	if _skid_timer <= 0.0 and fighter.is_on_floor():
 		_skid_timer = skid_interval
 		_spawn_skid(fighter)
+	# 출발 바람을 돌진 내내 반복 (바닥에 붙어 있을 때만 — 뒷바퀴 자리에서 뻗는 바람이라)
+	if takeoff_wind_interval > 0.0:
+		_takeoff_wind_timer -= delta
+		if _takeoff_wind_timer <= 0.0 and fighter.is_on_floor():
+			_takeoff_wind_timer = takeoff_wind_interval
+			_spawn_takeoff_wind(fighter)
 	# 적 충돌은 벽 충돌보다 먼저 검사한다 — 적도 물리 바디라 부딪히면 is_on_wall이 켜질 수 있어서,
 	# 여기서 안 걸러내면 벽 자해 코드가 대신 터진다
 	if not _hit_enemy:

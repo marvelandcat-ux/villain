@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="CharacterStats" format=3]
+
+[ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_name = "황근출 해병"
+move_speed = 425.25

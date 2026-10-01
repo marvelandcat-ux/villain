@@ -98,7 +98,7 @@ extends MeleeAttack
 
 ## --- 키보드 회전 난무 (악플러: 그랩으로 끌어온 직후 다음 기본공격) ---
 ## 켜면, 상대를 그랩으로 끌어온 직후(custom_data["keyboard_spin_charged"]가 켜져 있을 때) 다음 기본공격이
-## 두 손으로 무기를 빙빙 돌리는 회전 난무로 바뀐다 — 몸 주변 원형 다단히트, 도는 동안 좌우 이동 가능.
+## 두 손으로 무기를 빙빙 돌리는 회전 난무로 바뀐다 — 바라보는 쪽 반원 다단히트, 도는 동안 좌우 이동 가능.
 ## 기본 꺼짐(다른 캐릭터 영향 없음). 시각은 BodyRig.play_keyboard_fan이 맡는다
 @export var spin_flurry_enabled: bool = false
 ## 회전 난무가 지속되는 시간(초)
@@ -107,16 +107,29 @@ extends MeleeAttack
 @export var spin_flurry_interval: float = 0.18
 ## 한 번의 타격 데미지
 @export var spin_flurry_damage: int = 2
-## 판정 반경(px) — 도는 무기가 닿는 몸 주변 원
+## 판정 반경(px) — 바라보는 쪽 반원(등 뒤는 안 맞음, 2026-10-01)
 @export var spin_flurry_radius: float = 70.0
 ## 한 대마다의 넉백(x는 바라보는 쪽 자동반전, y는 띄우기) — 원형이라 세게 밀면 상대가 판정 밖으로
 ## 나가 다음 타가 헛치므로 살짝만 준다
 @export var spin_flurry_knockback: Vector2 = Vector2(30, 0)
+## 도는 동안 회전 축(몸 앞) 둘레에 점프 바람 줄기(combat/JumpWind.gd)를 돌아가며 뿌린다 — 금쪽이 자전거 바람과 같은 그림(2026-10-01 사용자 요청)
+@export var spin_wind: bool = true
+## 바람 줄기를 몇 초마다 하나씩 뿌릴지
+@export var spin_wind_interval: float = 0.05
+## 회전 축(캐릭터 원점 기준, x는 바라보는 쪽 자동반전) — 리그 fan_hand_pos와 맞춤
+@export var spin_wind_center: Vector2 = Vector2(8, -6)
+## 축에서 줄기가 나오는 거리(px) / 뿌리는 자리가 도는 속도(도/초, 바라보는 쪽이 오른쪽이면 시계 방향)
+@export var spin_wind_radius: float = 36.0
+@export var spin_wind_turn_speed: float = 900.0
+## 회전 바람 줄기 굵기·테두리(px) — 점프 바람(14·2)보다 훨씬 가늘게(2026-10-01 사용자 요청 "엄청 얇게")
+@export var spin_wind_width: float = 2.5
+@export var spin_wind_outline_px: float = 0.7
 
 ## 타입을 안 붙이고 preload로 가져온다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다 (Fighter._shield, ShoulderChargeSkill의 ChargeWind와 같은 이유)
 const LAUNCH_SMOKE := preload("res://combat/LaunchSmoke.gd")
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
+const JUMP_WIND := preload("res://combat/JumpWind.gd")
 
 ## --- 드롭킥 마무리 (촉법소년 3타) ---
 ## 켜면 마무리 타가 "뛰어올라 두 발로 차고 넘어졌다 일어나는" 드롭킥이 된다.
@@ -179,6 +192,13 @@ var _last_pushback: float = 0.0
 var _spin_active: bool = false
 var _spin_left: float = 0.0
 var _spin_saved_shape: Shape2D = null
+## 회전 난무 앞쪽 반원 판정(오른쪽용·왼쪽용) / 지금 끼워 둔 쪽 — 도는 중에 돌아서면 바꿔 끼운다
+var _spin_shape_right: ConvexPolygonShape2D = null
+var _spin_shape_left: ConvexPolygonShape2D = null
+var _spin_shape_facing: float = 0.0
+## 회전 바람 — 다음 줄기까지 남은 시간 / 지금 뿌리는 자리의 각도(라디안)
+var _spin_wind_timer: float = 0.0
+var _spin_wind_angle: float = 0.0
 ## 버프가 콤보 타마다 더해 주는 고정 데미지(악플러 열등감 +2). 배율 곱하기 전에 더하고, 회전 난무엔 안 붙는다
 var bonus_damage: int = 0
 
@@ -409,8 +429,10 @@ func _process(delta: float) -> void:
 			return
 		hitbox.global_position = _fighter.global_position
 		hitbox.knockback = Vector2(spin_flurry_knockback.x * _fighter.facing, spin_flurry_knockback.y)
+		_apply_spin_shape(_fighter.facing)
 		# 범위에 든 상대 투사체는 반토막 내서 땅에 떨어뜨린다
 		_slice_projectiles_in_range()
+		_update_spin_wind(delta)
 		_spin_left = maxf(_spin_left - delta, 0.0)
 		if _spin_left <= 0.0:
 			_end_spin_flurry()
@@ -585,13 +607,15 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 	_step = 0
 	# 다른 공격·스킬은 막고 이동은 계속 가능하게(start_busy 규칙) — 도는 동안 좌우로 움직일 수 있다
 	fighter.start_busy(spin_flurry_duration)
-	# 히트박스를 몸 주변 원형 다단히트로 바꾼다(끝나면 _end_spin_flurry가 원래 모양으로 복구)
+	# 히트박스를 바라보는 쪽 반원 다단히트로 바꾼다(끝나면 _end_spin_flurry가 원래 모양으로 복구).
+	# 2026-10-01 사용자 요청으로 몸 주변 원 -> 앞쪽 반원(등 뒤는 안 맞음)
 	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
 	if shape_node:
 		_spin_saved_shape = shape_node.shape
-		var circle := CircleShape2D.new()
-		circle.radius = spin_flurry_radius
-		shape_node.shape = circle
+		_spin_shape_right = _make_front_half_circle(1.0)
+		_spin_shape_left = _make_front_half_circle(-1.0)
+		_spin_shape_facing = 0.0
+		_apply_spin_shape(fighter.facing)
 	hitbox.damage = fighter.compute_damage(spin_flurry_damage)
 	hitbox.knockback = Vector2(spin_flurry_knockback.x * fighter.facing, spin_flurry_knockback.y)
 	hitbox.pop_override = 0.0            # 원형 난무는 위로 안 띄운다(뜨면 판정 밖으로 빠진다)
@@ -606,6 +630,33 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 	var visual: Node = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_keyboard_fan"):
 		visual.play_keyboard_fan(spin_flurry_duration)
+	_spin_wind_timer = 0.0
+	_spin_wind_angle = randf() * TAU
+
+## 회전 축 둘레를 도는 자리에서 접선 방향(도는 방향)으로 바람 줄기를 하나씩 뿌린다 — 맵에 붙여 제자리에 남는다
+func _update_spin_wind(delta: float) -> void:
+	if not spin_wind or spin_wind_interval <= 0.0:
+		return
+	var dir_sign: float = _fighter.facing
+	_spin_wind_angle += deg_to_rad(spin_wind_turn_speed) * dir_sign * delta
+	_spin_wind_timer -= delta
+	if _spin_wind_timer > 0.0:
+		return
+	_spin_wind_timer = spin_wind_interval
+	var parent: Node = _fighter.get_parent()
+	if parent == null:
+		return
+	var center: Vector2 = _fighter.global_position + Vector2(spin_wind_center.x * dir_sign, spin_wind_center.y)
+	var radial := Vector2(cos(_spin_wind_angle), sin(_spin_wind_angle))
+	# 각도가 늘어나는 쪽(dir_sign)의 접선 = 도는 방향
+	var tangent := Vector2(-radial.y, radial.x) * dir_sign
+	var wind := JUMP_WIND.new()
+	wind.width = spin_wind_width
+	wind.outline_px = spin_wind_outline_px
+	wind.jagged = 0.2
+	parent.add_child(wind)
+	wind.global_position = center + radial * spin_wind_radius
+	wind.setup(tangent, true)
 
 ## 회전 난무를 끝내고 히트박스를 원래 상태(사각형 · 단발)로 되돌린다
 func _end_spin_flurry() -> void:
@@ -623,6 +674,9 @@ func _end_spin_flurry() -> void:
 		if shape_node:
 			shape_node.shape = _spin_saved_shape
 		_spin_saved_shape = null
+	_spin_shape_right = null
+	_spin_shape_left = null
+	_spin_shape_facing = 0.0
 	_reset(effective_cooldown())
 	var visual: Node = _fighter.get_node_or_null("Visual") if is_instance_valid(_fighter) else null
 	if visual and visual.has_method("end_keyboard_fan"):
@@ -640,8 +694,34 @@ func _slice_projectiles_in_range() -> void:
 		# 자기(악플러)가 쏜 투사체는 안 자른다 — 상대 것만
 		if "source_fighter" in p and p.source_fighter == _fighter:
 			continue
-		if center.distance_to(p.global_position) <= spin_flurry_radius:
+		# 판정과 같게 앞쪽 반원만 — 등 뒤에서 오는 투사체는 안 잘린다
+		var rel: Vector2 = p.global_position - center
+		if rel.length() <= spin_flurry_radius and rel.x * _fighter.facing >= 0.0:
 			p.slice_in_half()
+
+## 바라보는 쪽(dir = 1 오른쪽 / -1 왼쪽)으로 열린 반지름 spin_flurry_radius의 반원 판정을 만든다
+func _make_front_half_circle(dir: float) -> ConvexPolygonShape2D:
+	var points := PackedVector2Array()
+	var steps: int = 16
+	for i in range(steps + 1):
+		# 12시(위) -> 앞 -> 6시(아래)
+		var a: float = -PI * 0.5 + PI * float(i) / float(steps)
+		points.append(Vector2(cos(a) * dir, sin(a)) * spin_flurry_radius)
+	var shape := ConvexPolygonShape2D.new()
+	shape.points = points
+	return shape
+
+## 바라보는 방향에 맞는 반원 판정을 끼운다(방향이 바뀔 때만 갈아끼움)
+func _apply_spin_shape(dir: float) -> void:
+	if _spin_shape_right == null or is_zero_approx(dir):
+		return
+	var side: float = signf(dir)
+	if side == _spin_shape_facing:
+		return
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node:
+		shape_node.shape = _spin_shape_right if side > 0.0 else _spin_shape_left
+		_spin_shape_facing = side
 
 ## --- 파고들기 (combo_lunge) ---
 ## 예비동작 동안 distance만큼 앞으로 미끄러진다. 이동 권한을 잠깐 가져가므로 그동안 걷기·대시는 안 먹는다

@@ -230,6 +230,9 @@ extends Node2D
 ## 그때 반대 손이 가는 자리(쉬는 자리 기준)와 각도(도)
 @export var unarmed_guard_offset: Vector2 = Vector2(10, -14)
 @export var unarmed_guard_deg: float = -25.0
+## 가드 자세로 들고 내리는 빠르기(초당 블렌드 양) — 10이면 0.1초에 다 올라간다.
+## 손이 가드 자리로 한 프레임에 순간이동하지 않게, 잽을 뻗던 손도 가드에서 출발해 뻗는다
+@export var unarmed_guard_blend_speed: float = 10.0
 
 ## 잽을 **정면으로 곧게** 내지른다 — 살짝 당겼다가(raise) 앞으로 쭉. 위아래로 안 흔들린다
 @export var jab_raise_off: Vector2 = Vector2(-7, 0)
@@ -303,6 +306,23 @@ extends Node2D
 ## 어퍼컷은 낮췄다가 올라오는 힘으로 치는 동작이라, 몸통이 같이 내려갔다 올라와야 맛이 산다(러프 2->3프레임)
 @export var uppercut_crouch: float = 9.0
 @export var uppercut_rise: float = 12.0
+## --- 맨손 마무리 = 박치기 (황근출 해병 3타, 2026-10-01) ---
+## 켜면 맨손일 때 **마무리 타(`final_hit_index` 이상)**가 주먹 대신 박치기가 된다 —
+## 상체를 뒤로 젖혀 머리를 치켜들었다가(감기) 앞 아래로 내리찍고(치기) 돌아온다. 어퍼컷보다 먼저 본다
+@export var unarmed_headbutt: bool = false
+## 상체(몸통·머리·두 손)를 통째로 돌리는 축(리그 기준, 엉덩이 근처) — 발은 안 움직인다
+@export var headbutt_pivot: Vector2 = Vector2(0, 22)
+## 감을 때 뒤로 젖히는 각도(도, 음수 = 뒤) / 박을 때 앞으로 숙이는 각도(도, 양수 = 앞 아래)
+@export var headbutt_back_deg: float = -22.0
+@export var headbutt_slam_deg: float = 30.0
+## 머리만 더 끄덕이는 각도(도) — 박는 순간 고개가 한 번 더 꺾여 "쿵" 하는 맛을 낸다
+@export var headbutt_nod_deg: float = 12.0
+## 젖힐 때 솟는 높이(px) / 박을 때 앞으로 나가는 거리(px)
+@export var headbutt_rise: float = 4.0
+@export var headbutt_forward: float = 8.0
+## 박는 동안 치는 손은 뒤로 젖혀 균형을 잡는다(쉬는 자리에서 더하는 값)
+@export var headbutt_hand_back: Vector2 = Vector2(-8, 3)
+
 ## 마지막 타에만 오른손 무기를 쥔다 — 평소·앞 타에는 `idle_weapon`(반대 손에 늘어뜨린 물건)이 보인다.
 ## 일진처럼 "가방을 옆에 들고 다니다 주먹으로 때리고, 마지막에 가방으로 후려치는" 캐릭터용
 @export var weapon_on_final_hit: bool = false
@@ -704,6 +724,23 @@ extends Node2D
 @export var charge_lean_deg: float = 15.0
 ## 자세가 섞이는 빠르기(1/초)
 @export var charge_blend_speed: float = 16.0
+## --- 무릎 꿇기 (황근출 드롭킥 준비) ---
+## 몸통·머리·손이 내려가는 양(px)
+@export var kneel_depth: float = 14.0
+## 상체가 앞으로 숙이는 각도(도, 양수 = 앞)
+@export var kneel_lean_deg: float = 14.0
+## 상체를 숙이는 축(리그 기준, 엉덩이 근처)
+@export var kneel_pivot: Vector2 = Vector2(0, 22)
+## 앞발(오른발)이 가는 자리(쉬는 자리 기준)와 각도 — 무릎을 세운 다리
+@export var kneel_front_foot: Vector2 = Vector2(6.0, -2.0)
+@export var kneel_front_foot_deg: float = -10.0
+## 뒷발(왼발)이 가는 자리와 각도 — 무릎을 땅에 댄 다리(뒤로 빼고 눕힌다)
+@export var kneel_back_foot: Vector2 = Vector2(-12.0, 2.0)
+@export var kneel_back_foot_deg: float = 20.0
+## 두 손이 가는 자리(쉬는 자리 기준, 내려가는 양은 따로 더한다) — 무릎 위로 내린다
+@export var kneel_hand_offset: Vector2 = Vector2(4.0, 6.0)
+## 자세가 섞이는 빠르기(1/초)
+@export var kneel_blend_speed: float = 12.0
 ## 줄을 잡은 두 손이 돌아가는 각도(도)
 @export var reel_hand_deg: float = -22.0
 ## 마우스를 던지고 줄을 당기는 동안 손에 든 물건(악플러 키보드 등)을 숨긴다 —
@@ -834,6 +871,9 @@ var _smear_prev: Dictionary = {}
 ## 끊어 치기가 출발하는 손 자세 — 앞 타가 끝나기 전에 다음 타가 나가도 손이 제자리로 툭 튀지 않게
 var _swing_from_off := Vector2.ZERO
 var _swing_from_deg: float = 0.0
+## 맨손 잽 가드 블렌드(손마다 0 = 원래 자세, 1 = 가드 자세)
+var _jab_guard_l: float = 0.0
+var _jab_guard_r: float = 0.0
 ## 대치 자세가 얼마나 들어가 있는지(0~1)
 var _stance_blend: float = 0.0
 ## 착지 경직 자세 남은 시간 / 전체 시간(초)
@@ -974,6 +1014,9 @@ var _counter_phase: float = 0.0
 ## 돌진 자세 섞임(0~1)과 목표값
 var _charge_blend: float = 0.0
 var _charge_target: float = 0.0
+## 무릎 꿇기 자세 섞임(0~1)과 목표값
+var _kneel_blend: float = 0.0
+var _kneel_target: float = 0.0
 ## 드롭킥 단계 (0=안 함, 1=공중에서 두 발 뻗기, 2=넘어졌다 일어나는 중)
 var _dk_stage: int = 0
 ## 드롭킥 자세 섞임(0~1) / 몸이 누운 각도(라디안) / 몸이 내려간 양
@@ -1107,6 +1150,7 @@ func _process(delta: float) -> void:
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
 	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
+	_kneel_blend = move_toward(_kneel_blend, _kneel_target, delta * kneel_blend_speed)
 	_counter_blend = move_toward(_counter_blend, _counter_target, delta * counter_blend_speed)
 	_counter_phase = _counter_phase + delta * counter_poke_speed if _counter_blend > 0.001 else 0.0
 	_update_dropkick(delta)
@@ -1194,13 +1238,20 @@ func _process(delta: float) -> void:
 
 	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
 	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _grab_time <= 0.0 \
-		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 \
+		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 and _kneel_target <= 0.0 \
 		and _counter_target <= 0.0 and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
 	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
 
 	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
 	_clash_blend = move_toward(_clash_blend, _clash_target, delta * clash_blend_speed)
 	_tick_clash_punches(delta)
+
+	# 맨손 잽 가드 — 이번 타의 반대 손만 가드로, 나머지는 원래 자세로 서서히
+	var guard_hand_now: Sprite2D = null
+	if _attack_time > 0.0 and unarmed_guard_hand and not held_item_armed and not _is_headbutt():
+		guard_hand_now = _guard_hand()
+	_jab_guard_l = move_toward(_jab_guard_l, 1.0 if guard_hand_now != null and guard_hand_now == _hand_l else 0.0, delta * unarmed_guard_blend_speed)
+	_jab_guard_r = move_toward(_jab_guard_r, 1.0 if guard_hand_now != null and guard_hand_now == _hand_r else 0.0, delta * unarmed_guard_blend_speed)
 
 	if on_floor and speed_ratio > 0.05:
 		_phase += delta * step_speed * maxf(speed_ratio, 0.3)
@@ -1295,14 +1346,15 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 휘두르는 중이면 오른손 자세를 공격 동작으로 덮어쓴다
 	if _attack_time > 0.0:
 		_pose_attack_hand()
-		# 맨손 잽이면 반대 손을 얼굴 앞에 올린다 — 한 손은 막고 한 손은 뻗는 권투 자세
-		if unarmed_guard_hand and not held_item_armed:
-			var guard_hand: Sprite2D = _guard_hand()
-			if guard_hand and _rest_positions.has(guard_hand):
-				guard_hand.position = _rest_positions[guard_hand] + unarmed_guard_offset
-				guard_hand.rotation = deg_to_rad(unarmed_guard_deg)
+	# 맨손 잽이면 반대 손을 얼굴 앞에 올린다 — 한 손은 막고 한 손은 뻗는 권투 자세.
+	# 지금 자세(걷기·잽) 위에 블렌드만큼 섞어서, 타가 바뀌거나 끝날 때 손이 미끄러지듯 오간다
+	_blend_jab_guard(_hand_l, _jab_guard_l)
+	_blend_jab_guard(_hand_r, _jab_guard_r)
+	if _attack_time > 0.0:
 		# 어퍼컷이면 고개와 상체가 치는 내내 점점 돌아간다
-		if unarmed_uppercut and not held_item_armed and _attack_variant >= final_hit_index:
+		if _is_headbutt():
+			_pose_headbutt()
+		elif unarmed_uppercut and not held_item_armed and _attack_variant >= final_hit_index:
 			_pose_uppercut_lean()
 	# 몸통 그림 갈아 끼우기 — 치는 타가 목록에 있으면 그 그림, 아니면 원래대로.
 	# 매 프레임 확인한다(공격이 도중에 끊겨도 원래 그림으로 돌아오게)
@@ -1394,6 +1446,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 어깨 들이박기 — 두 손을 앞으로 모으고 몸·머리를 앞으로 기울인다 (방어 자세 다음이라 우선한다)
 	if _charge_blend > 0.001:
 		_pose_charge()
+
+	# 무릎 꿇기(드롭킥 준비) — 앞발은 세우고 뒷발은 무릎을 땅에 대고 몸을 낮춘다
+	if _kneel_blend > 0.001:
+		_pose_kneel()
 
 	# 드롭킥 — 두 발을 모아 앞으로 뻗고 두 손은 뒤로 뺀다 (몸을 눕히는 건 맨 아래에서 한꺼번에)
 	if _dk_blend > 0.001:
@@ -1692,6 +1748,13 @@ func _attack_hand() -> Sprite2D:
 func _guard_hand() -> Sprite2D:
 	return _hand_r if _attack_hand() == _hand_l else _hand_l
 
+func _blend_jab_guard(hand: Sprite2D, blend: float) -> void:
+	if blend <= 0.001 or hand == null or not _rest_positions.has(hand):
+		return
+	var w: float = smoothstep(0.0, 1.0, blend)
+	hand.position = hand.position.lerp(_rest_positions[hand] + unarmed_guard_offset, w)
+	hand.rotation = lerp_angle(hand.rotation, deg_to_rad(unarmed_guard_deg), w)
+
 func _pose_attack_hand() -> void:
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	# 타별로 감는 각도·내려치는 각도·손 이동 경로가 달라진다 (콤보 1·2·3타 스윙 변주)
@@ -1940,6 +2003,15 @@ func _attack_variant_params() -> Dictionary:
 	# 발로 차는 타에서는 손에 든 무기를 휘두르지 않는다 — 팔은 균형만 잡는다
 	if attack_kick_hit >= 0 and _attack_variant == attack_kick_hit:
 		return _kick_arm_params()
+	# 맨손 박치기 — 치는 손은 앞으로 안 나가고 뒤로 젖혀 균형만 잡는다(몸은 _pose_headbutt가 돌린다)
+	if _is_headbutt():
+		return {
+			"raise_deg": 0.0,
+			"swing_deg": 0.0,
+			"raise_off": headbutt_hand_back * 0.5,
+			"slam_off": headbutt_hand_back,
+			"arc": 0.0,
+		}
 	# 맨손 마무리는 어퍼컷 — 잽보다 먼저 판단한다(마무리 타만 궤도가 다르다)
 	if unarmed_uppercut and not held_item_armed and _attack_variant >= final_hit_index:
 		var up_hand: Sprite2D = _attack_hand()
@@ -3112,6 +3184,54 @@ func _pose_uppercut_lean() -> void:
 		var step_t: float = clampf(reach / 0.5, 0.0, 1.0)
 		_foot_r.position.x = _rest_positions[_foot_r].x + uppercut_step * step_t * sgn
 
+## 이번 타가 맨손 박치기인지
+func _is_headbutt() -> bool:
+	return unarmed_headbutt and not held_item_armed and _attack_time > 0.0 and _attack_variant >= final_hit_index
+
+## 박치기 동안 상체(몸통·머리·두 손)를 엉덩이 축으로 통째로 돌린다 — 뒤로 젖혀 머리를 치켜들었다가
+## 앞 아래로 내리찍고 돌아온다. 발은 안 건드린다.
+## 조각의 **로컬 좌표**에서 돌리므로 좌우 반전(리그 scale.x = -1)에 저절로 맞는다 — 방향 부호를 곱하면 안 된다(_lay_down과 같은 이유)
+func _pose_headbutt() -> void:
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var turn_deg: float
+	var lift: float
+	var reach: float
+	var nod: float = 0.0
+	if progress < ATTACK_STRIKE_START:
+		# 감기 — 뒤로 젖히며 살짝 솟는다(끝으로 갈수록 천천히)
+		var w: float = progress / ATTACK_STRIKE_START
+		w = 1.0 - (1.0 - w) * (1.0 - w)
+		turn_deg = headbutt_back_deg * w
+		lift = -headbutt_rise * w
+		reach = 0.0
+	elif progress < ATTACK_STRIKE_END:
+		# 치기 — 젖힌 몸을 앞 아래로 확 내리찍는다(끝으로 갈수록 빨라짐)
+		var k: float = (progress - ATTACK_STRIKE_START) / (ATTACK_STRIKE_END - ATTACK_STRIKE_START)
+		k = k * k
+		turn_deg = lerpf(headbutt_back_deg, headbutt_slam_deg, k)
+		lift = lerpf(-headbutt_rise, 0.0, k)
+		reach = k
+		nod = k
+	else:
+		# 복귀 — 숙인 자세에서 천천히 일어난다
+		var r: float = clampf((progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END), 0.0, 1.0)
+		var e: float = r * r * (3.0 - 2.0 * r)
+		turn_deg = lerpf(headbutt_slam_deg, 0.0, e)
+		lift = 0.0
+		reach = 1.0 - e
+		nod = 1.0 - e
+	var angle: float = deg_to_rad(turn_deg)
+	var pivot: Vector2 = headbutt_pivot
+	var shift := Vector2(headbutt_forward * reach, lift)
+	for part in [_body, _head, _hand_l, _hand_r]:
+		if part == null:
+			continue
+		var here: Vector2 = part.position + shift
+		part.position = pivot + (here - pivot).rotated(angle)
+		part.rotation += angle
+	if _head:
+		_head.rotation += deg_to_rad(headbutt_nod_deg * nod)
+
 ## 어퍼컷 궤도를 눈으로 보여준다 — `uppercut_debug_path`를 켜면 시작점(초록)·끝점(빨강)과
 ## 휘어 가는 길(노랑)을 그린다. 값을 고치고 바로 확인하라고 만든 것이라 게임에서는 꺼 둔다
 func _draw() -> void:
@@ -3420,7 +3540,7 @@ func _face_turn_progress() -> float:
 ## 방향 전환을 그 자리에서 끝내야 하는 동작 중인지 — 손·몸을 따로 쓰는 동작이 시작되면 몸을 바로 새 방향으로 맞춘다
 func _face_turn_blocked() -> bool:
 	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
-		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _counter_target > 0.0 \
+		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _kneel_target > 0.0 or _counter_target > 0.0 \
 		or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
 
 ## 방향 전환 머리 돌리기 — 앞 절반은 몸이 옛 방향인 채 머리가 측면1 -> ... -> 정면으로 돌고,
@@ -3542,6 +3662,32 @@ func swap_held_texture(tex: Texture2D) -> void:
 ## 어깨 들이박기 자세를 켜고 끈다 (일진 스킬2). 자세는 _charge_blend로 서서히 섞인다
 func set_charging(on: bool) -> void:
 	_charge_target = 1.0 if on else 0.0
+
+## 무릎 꿇는 자세를 켜고 끈다(DropkickSkill 준비 동작). 자세는 _kneel_blend로 서서히 섞인다
+func set_kneeling(on: bool) -> void:
+	_kneel_target = 1.0 if on else 0.0
+
+## 무릎 꿇기 — 손을 무릎 위로 내린 뒤, 상체(몸통·머리·두 손)를 엉덩이 축(kneel_pivot)으로 **통째로** 앞으로 숙이고 낮춘다.
+## 조각의 **로컬 좌표**에서 돌리므로 좌우 반전(리그 scale.x = -1)에 저절로 맞는다 — 방향 부호를 곱하면 안 된다(_pose_headbutt와 같은 이유)
+func _pose_kneel() -> void:
+	var t: float = _kneel_blend
+	for hand in [_hand_r, _hand_l]:
+		if hand and _rest_positions.has(hand):
+			hand.position = hand.position.lerp(_rest_positions[hand] + kneel_hand_offset, t)
+			hand.rotation = lerpf(hand.rotation, 0.0, t)
+	var angle: float = deg_to_rad(kneel_lean_deg) * t
+	var down := Vector2(0.0, kneel_depth * t)
+	for part in [_body, _head, _hand_r, _hand_l]:
+		if part == null:
+			continue
+		part.position = kneel_pivot + (part.position - kneel_pivot).rotated(angle) + down
+		part.rotation += angle
+	if _foot_r and _rest_positions.has(_foot_r):
+		_foot_r.position = _foot_r.position.lerp(_rest_positions[_foot_r] + kneel_front_foot, t)
+		_foot_r.rotation = lerpf(_foot_r.rotation, deg_to_rad(kneel_front_foot_deg), t)
+	if _foot_l and _rest_positions.has(_foot_l):
+		_foot_l.position = _foot_l.position.lerp(_rest_positions[_foot_l] + kneel_back_foot, t)
+		_foot_l.rotation = lerpf(_foot_l.rotation, deg_to_rad(kneel_back_foot_deg), t)
 
 ## 카운터 자세를 켜고 끈다(CounterSkill). 자세는 _counter_blend로 서서히 섞인다
 func set_counter_stance(on: bool) -> void:

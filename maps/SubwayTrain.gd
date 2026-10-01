@@ -20,7 +20,7 @@ extends Node2D
 ## 열차 속도(px/초)
 @export var speed: float = 950.0
 ## 한 번 부딪힐 때 데미지 (hit_interval마다 반복해서 들어간다)
-@export var damage: int = 12
+@export var damage: int = 5
 ## 부딪혀 있는 동안 다시 맞기까지의 간격(초)
 @export var hit_interval: float = 0.35
 ## 넉백 — 열차가 가는 쪽으로 미는 힘
