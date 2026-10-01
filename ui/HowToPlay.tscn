@@ -51,8 +51,8 @@ layout_mode = 2
 texture_filter = 4
 script = ExtResource("2_keyboard")
 read_only = true
-unit = 48.0
-gap = 5.0
+unit = 41.0
+gap = 4.0
 key_aspect = 1.2
 
 [node name="ExtraLabel" type="Label" parent="Center/VBox"]

@@ -9,6 +9,8 @@
 [ext_resource type="Texture2D" uid="uid://bkiy3hv150eyv" path="res://sprite/황근출 해병/황근출 해병 측면 3.png" id="87_turn3"]
 [ext_resource type="Texture2D" uid="uid://bsqm3pwyitqeh" path="res://sprite/황근출 해병/황근출 해병 측면 2.png" id="88_turn2"]
 [ext_resource type="Texture2D" uid="uid://b44y1mo2grrh1" path="res://sprite/황근출 해병/황근출 해병 측면 1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://blb1lphxy4ghn" path="res://sprite/황근출 해병/황근출 해병 몸 측면 2.png" id="85_body_turn1"]
+[ext_resource type="Texture2D" uid="uid://bcr7yrftk4mjd" path="res://sprite/황근출 해병/황근축 해병 몸 측면 3.png" id="84_body_turn2"]
 
 [node name="BodyRig" unique_id=1713883176 instance=ExtResource("1_rig")]
 held_item_armed = false
@@ -19,6 +21,8 @@ head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_
 head_turn_anchors = Array[Vector3]([Vector3(684, 600, 855), Vector3(682, 555, 881), Vector3(685, 569, 884), Vector3(683, 577, 908), Vector3(685, 575, 957)])
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
 head_turn_on_face = true
+body_turn_textures = Array[Texture2D]([ExtResource("85_body_turn1"), ExtResource("84_body_turn2")])
+body_turn_match_height = true
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("5_foot")

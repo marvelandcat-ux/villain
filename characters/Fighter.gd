@@ -237,6 +237,12 @@ func dash_cooldown_ratio() -> float:
 		return 1.0
 	return 1.0 - _dash_cooldown_left / maxf(dash_cooldown, 0.001)
 
+## 기본공격 잠금(방어에 막힘)이 얼마나 풀렸는지(0 = 방금 막힘, 1 = 때릴 수 있음). 쿨 파이의 X 표시가 읽는다
+func blocked_attack_ratio() -> float:
+	if _blocked_attack_left <= 0.0:
+		return 1.0
+	return 1.0 - _blocked_attack_left / maxf(blocked_attack_lock, 0.001)
+
 ## 캐릭터끼리는 서로의 몸을 밟고 올라설 수 없게 몸 충돌을 무시한다.
 ## 충돌 레이어를 통째로 바꾸지 않고 add_collision_exception_with로 "상대 캐릭터"만 예외 처리하는 이유:
 ## 레이어를 바꾸면 바닥·벽·발판까지 같이 영향을 받는다. 여기서 빼는 건 몸(CharacterBody2D)끼리의

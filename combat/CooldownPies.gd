@@ -1,6 +1,7 @@
 extends Node2D
 
 ## 방어·대시 쿨타임을 캐릭터 등 뒤(바라보는 방향 반대편)에 작은 원형 파이로 보여준다.
+## 기본공격이 방어에 막혀 잠긴 동안은 같은 슬롯에 빨간 X가 뜨고, 풀릴수록 빨간 부분이 위에서 아래로 줄어든다.
 ## 쿨이 도는 동안만 보이고, 다시 쓸 수 있게 될수록 12시 방향부터 시계 방향으로 차오른다
 ## (HUD 스킬 아이콘처럼 "차오르면 준비 완료"). 다 차면 살짝 커졌다가 사라진다.
 ## **슬롯:** 먼저 쿨이 시작된 것이 1번 슬롯(맨 위), 그 사이에 시작된 것은 아래 2번 슬롯에 쌓인다.
@@ -26,6 +27,11 @@ extends Node2D
 @export var guard_color: Color = Color(0.55, 0.85, 1.0, 0.95)
 ## 대시 파이 색 — 라임
 @export var dash_color: Color = Color(0.7, 1.0, 0.2, 0.95)
+## 기본공격 잠금 X 색 — 막힌 무기가 깜빡이는 빨강
+@export var blocked_color: Color = Color(1.0, 0.2, 0.2, 0.95)
+## X 팔 하나의 길이(중심에서 끝까지)·반 굵기(px). 끝까지 높이 = (길이 + 반 굵기) / √2 — 기본값이면 원 반지름과 비슷
+@export var x_arm_length: float = 8.5
+@export var x_arm_half_width: float = 2.8
 ## 테두리 색·굵기 (밝은 배경에서도 보이게)
 @export var edge_color: Color = Color(1.0, 1.0, 1.0, 0.9)
 @export var edge_width: float = 1.5
@@ -41,10 +47,13 @@ class Pie:
 	var cooling: bool = false
 	## 지금 그려지는 슬롯 위치(0 = 1번 슬롯). 목표 슬롯으로 미끄러진다
 	var slot_pos: float = 0.0
+	## true면 원 대신 X 모양(기본공격 잠금)
+	var cross: bool = false
 
-	func _init(m: String, c: Color) -> void:
+	func _init(m: String, c: Color, is_cross := false) -> void:
 		method = m
 		color = c
+		cross = is_cross
 
 ## 모든 파이 / 지금 화면에 떠 있는 파이(쿨이 먼저 시작된 순서 = 슬롯 순서)
 var _pies: Array[Pie] = []
@@ -55,7 +64,12 @@ var _side: float = -1.0
 func _ready() -> void:
 	z_index = 6   # 보호막(5)보다 앞
 	visible = false
-	_pies = [Pie.new("guard_cooldown_ratio", guard_color), Pie.new("dash_cooldown_ratio", dash_color)]
+	# 맵 조명(CanvasModulate·PointLight2D)에 안 어두워지게 — 어느 맵에서든 같은 색으로 보이는 UI
+	var mat := CanvasItemMaterial.new()
+	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	material = mat
+	_pies = [Pie.new("guard_cooldown_ratio", guard_color), Pie.new("dash_cooldown_ratio", dash_color),
+		Pie.new("blocked_attack_ratio", blocked_color, true)]
 
 func _process(delta: float) -> void:
 	var fighter := get_parent()
@@ -111,6 +125,9 @@ func _draw_pie(pie: Pie) -> void:
 		var t: float = 1.0 - pie.pop_left / maxf(ready_pop_time, 0.001)
 		r *= 1.0 + 0.4 * t
 		alpha = 1.0 - t
+	if pie.cross:
+		_draw_cross(pie, center, r / radius, alpha)
+		return
 	var back := back_color
 	back.a *= alpha
 	draw_circle(center, r, back)
@@ -133,3 +150,59 @@ func _draw_sector(center: Vector2, r: float, ratio: float, color: Color) -> void
 		var p := center + Vector2(cos(a), sin(a)) * r
 		draw_primitive(PackedVector2Array([center, prev, p]), PackedColorArray([color, color, color]), PackedVector2Array())
 		prev = p
+
+## X 표시: 어두운 바탕 X 위에 빨간 X를 그리되, ratio만큼 위쪽을 잘라 낸다(풀릴수록 빨강이 아래로 내려감).
+## X 외곽선 12점은 가운데에서 보면 별 모양(어디서 봐도 가려지지 않음)이라 가운데 기준 삼각형 부채로 칠할 수 있다
+func _draw_cross(pie: Pie, center: Vector2, scale_k: float, alpha: float) -> void:
+	var outline := _cross_outline(center, scale_k)
+	var back := back_color
+	back.a *= alpha
+	var fill := pie.color
+	fill.a *= alpha
+	var half_h: float = (x_arm_length + x_arm_half_width) * scale_k / sqrt(2.0)
+	var cut_y: float = center.y - half_h + 2.0 * half_h * pie.ratio
+	for i in outline.size():
+		var a: Vector2 = outline[i]
+		var b: Vector2 = outline[(i + 1) % outline.size()]
+		_draw_poly_fan(PackedVector2Array([center, a, b]), back)
+		if pie.ratio < 0.999:
+			_draw_poly_fan(_clip_below(PackedVector2Array([center, a, b]), cut_y), fill)
+	var edge := edge_color
+	edge.a *= alpha
+	var closed := outline.duplicate()
+	closed.append(outline[0])
+	draw_polyline(closed, edge, edge_width, true)
+
+## X 외곽선 12점 — 팔 넷(대각선 방향)마다 끝 모서리 둘 + 팔 사이 안쪽 꺾인 점 하나
+func _cross_outline(center: Vector2, scale_k: float) -> PackedVector2Array:
+	var arm: float = x_arm_length * scale_k
+	var w: float = x_arm_half_width * scale_k
+	var pts := PackedVector2Array()
+	for k in 4:
+		var theta: float = -PI * 0.25 + PI * 0.5 * float(k)
+		var u := Vector2(cos(theta), sin(theta))
+		var p := Vector2(-u.y, u.x)
+		pts.append(center + u * arm - p * w)
+		pts.append(center + u * arm + p * w)
+		pts.append(center + Vector2(cos(theta + PI * 0.25), sin(theta + PI * 0.25)) * w * sqrt(2.0))
+	return pts
+
+## 볼록 다각형에서 y >= cut_y 부분만 남긴다(가로선 한 줄로 자르기)
+func _clip_below(poly: PackedVector2Array, cut_y: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i in poly.size():
+		var a: Vector2 = poly[i]
+		var b: Vector2 = poly[(i + 1) % poly.size()]
+		var a_in: bool = a.y >= cut_y
+		var b_in: bool = b.y >= cut_y
+		if a_in:
+			out.append(a)
+		if a_in != b_in:
+			var t: float = (cut_y - a.y) / (b.y - a.y)
+			out.append(a.lerp(b, t))
+	return out
+
+## 볼록 다각형을 첫 점 기준 삼각형들로 칠한다(점이 3개 미만이면 안 그림)
+func _draw_poly_fan(poly: PackedVector2Array, color: Color) -> void:
+	for i in range(1, poly.size() - 1):
+		draw_primitive(PackedVector2Array([poly[0], poly[i], poly[i + 1]]), PackedColorArray([color, color, color]), PackedVector2Array())

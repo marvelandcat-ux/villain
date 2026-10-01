@@ -118,7 +118,8 @@
   - 자세 `BodyRig.set_guarding()`. 손은 머리 앞 끝(x=25)보다 앞(얼굴에 붙이려면 y를 올릴 것), `guard_hand_deg`는 음수
   - 막히면 "BLOCK" 팝업 + `blocked_attack_lock` 동안 기본공격 잠김 + 무기 빨강 깜빡임·안쪽 테두리(`BlockedOutline.gdshader`). 막힘 판정은 `Hitbox._try_hit()`에서 **한 번만**(`_is_blocked_by_guard()`)
   - 가드/대시 off는 `can_guard()`/`can_dash()` 맨 앞
-- **쿨 파이 `combat/CooldownPies.gd`**: 캐릭터 등 뒤 작은 원(방어 하늘색 / 대시 라임), 먼저 시작한 쿨이 위 슬롯. `guard_cooldown_ratio()`/`dash_cooldown_ratio()`. 타이틀에선 숨김
+- **쿨 파이 `combat/CooldownPies.gd`**: 캐릭터 등 뒤 작은 원(방어 하늘색 / 대시 라임), 먼저 시작한 쿨이 위 슬롯, unshaded라 맵 조명 무시. `guard_cooldown_ratio()`/`dash_cooldown_ratio()`. 타이틀에선 숨김
+  - 기본공격이 막혀 잠긴 동안(`blocked_attack_ratio()`)은 같은 슬롯에 **빨간 X**(원 없음, 흰 테두리 동일) — 풀릴수록 빨강이 위에서 아래로 줄어듦(`_draw_cross`, 가로선 자르기 `_clip_below`)
 - **플랫폼 내려가기**: 레이어를 끄지 말고 발판에 `add_collision_exception_with`, `DROP_THROUGH_DURATION` 뒤 복구. 발판 판별 `get_one_way_floor()`(공개). 예외는 **바디 전체** → 한 바디에 막힘 충돌을 섞지 말 것
 - **올라갈 수 있는 발판은 `one_way_collision = true`**(밑에 끼어 눌림). 밑 공간 없는 장애물은 예외
 
@@ -229,8 +230,8 @@
   - 방향 전환 `head_turn_on_face`: 고개 먼저, 정면인 순간 몸 뒤집기. `Fighter.facing`은 즉시 바뀌므로 공격·스킬·방어·피격이 시작되면 `_face_turn_blocked()`로 즉시 끝냄
   - 회전 타격 `spin_uses_head_turn`: 뒤 반 바퀴는 뒤통수 `head_back_texture`(금쪽이만). `spin_back_flip + spin_back_show` < `spin_strike`
   - 앵커 재는 법(스크립트는 저장소에 없음): 알파 1/4 축소 → bbox 높이 22% 정사각형 열림 연산 → 무게중심·`2sqrt(넓이/pi)`. 프로펠러·턱 말고 머리 공만
-  - 몸통 돌리기 `body_turn_textures`(금쪽이·악플러·주정뱅이): 도는 도중에만, 평소엔 정면 몸통. 캔버스가 다르면 `body_turn_match_height`, 왼쪽 보는 그림은 `body_turn_faces_left`. 영역은 `_opaque_rect_of()`(알파 절반 이상 — `get_used_rect()`는 알파 1짜리 점에도 늘어남)
-  - 파일명 오타는 그대로 둠: `축법소년 픅면 2.png`, `금쪾이 몸 측면3.png`, `주정뱅잉 측면2.png`, `지하철 아저 씨측면 1.png`
+  - 몸통 돌리기 `body_turn_textures`(금쪽이·악플러·주정뱅이·황근출): 도는 도중에만, 평소엔 정면 몸통. 캔버스가 다르면 `body_turn_match_height`, 왼쪽 보는 그림은 `body_turn_faces_left`. 영역은 `_opaque_rect_of()`(알파 절반 이상 — `get_used_rect()`는 알파 1짜리 점에도 늘어남)
+  - 파일명 오타는 그대로 둠: `축법소년 픅면 2.png`, `금쪾이 몸 측면3.png`, `주정뱅잉 측면2.png`, `지하철 아저 씨측면 1.png`, `황근축 해병 몸 측면 3.png`
   - ⚠️ 주정뱅이 머리 `측면 3.png`이 몸통 그림으로 덮인 적 있음 — **머리/몸통 파일명이 비슷하니 덮어쓰기 전 내용을 볼 것**
 - **표정**: 잠깐 표정 피격 > 토하기, 기본 머리 액션 > 취함 > 지침 > 맨정신(`_apply_base_head()`). `set_action_face`/`set_drunk_head`는 `_restore_head()`로 복귀. `hurt_head_scale` (0,0)이면 원래 배율. `_update_hp_face()`는 `take_damage`/`heal`/`ring_out` 세 군데 전부
 - **눈 생동감**(전부 `Head`의 자식, 좌표는 머리 그림 픽셀, 기본 얼굴일 때만, 잔상엔 안 함):
@@ -321,7 +322,7 @@
 - 일러스트(파츠 분리): 파츠는 원본 캔버스 그대로(Trim 끔) → `centered = false` + `position = -축`, 감싼 Node2D가 축. 번호 작을수록 위 레이어. Control이 아니라 Sprite2D. **큰 동작은 파츠 회전보다 자세 그림 교체**
   - 잼민이 총 팔 축은 팔 단면 / 캣맘 `Post` 미리 켜지 말 것, 턱 고치면 원본에서 파생 3장 재생성 / 지하철 `danso_deg` 2도 이하, `hand_push` 1.0 이상
 - 가이드 `ui/Guide.tscn`(조작 방법 + 도감, `FanTile`). `HowToPlay`는 설정과 같은 키보드 그림(`KeyboardMap`, `read_only`)
-- **설정 > 조작 `ui/KeyboardMap.gd`**: 텐키리스 키보드를 `_draw()`로 그리고 키를 끌어 놓아 배정(다른 조작이 있으면 자리 바꿈). 회색/1P 파랑/2P 빨강
+- **설정 > 조작 `ui/KeyboardMap.gd`**: 풀배열 키보드(숫자패드 `NUMPAD` 포함, 폭 `TOTAL_WIDTH_U` 23u)를 `_draw()`로 그리고 키를 끌어 놓아 배정(다른 조작이 있으면 자리 바꿈). 회색/1P 파랑/2P 빨강
   - 놓는 자리: 커서가 든 키 → 없으면 딱지와 가장 많이 겹친 키(`_drop_target`), 틈은 반 칸 안이면 가까운 키
   - ⚠️ `_input`에서 `get_local_mouse_position()` 금지(창 배율 어긋남) → `_local_of(event)`. 커서 자리는 `_process`에서 매 프레임 읽음. 놓기 신호 누락 대비 `_process` 감시(`_drag_held` 빗장 필수)
   - ⚠️ **`refresh()`는 마지막에 반드시 `queue_redraw()`**

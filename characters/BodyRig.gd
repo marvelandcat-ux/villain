@@ -726,17 +726,17 @@ extends Node2D
 @export var charge_blend_speed: float = 16.0
 ## --- 무릎 꿇기 (황근출 드롭킥 준비) ---
 ## 몸통·머리·손이 내려가는 양(px)
-@export var kneel_depth: float = 14.0
+@export var kneel_depth: float = 6.0
 ## 상체가 앞으로 숙이는 각도(도, 양수 = 앞)
 @export var kneel_lean_deg: float = 14.0
 ## 상체를 숙이는 축(리그 기준, 엉덩이 근처)
 @export var kneel_pivot: Vector2 = Vector2(0, 22)
 ## 앞발(오른발)이 가는 자리(쉬는 자리 기준)와 각도 — 무릎을 세운 다리
-@export var kneel_front_foot: Vector2 = Vector2(6.0, -2.0)
-@export var kneel_front_foot_deg: float = -10.0
+@export var kneel_front_foot: Vector2 = Vector2(14.0, 0.0)
+@export var kneel_front_foot_deg: float = 0.0
 ## 뒷발(왼발)이 가는 자리와 각도 — 무릎을 땅에 댄 다리(뒤로 빼고 눕힌다)
-@export var kneel_back_foot: Vector2 = Vector2(-12.0, 2.0)
-@export var kneel_back_foot_deg: float = 20.0
+@export var kneel_back_foot: Vector2 = Vector2(-12.0, 0.0)
+@export var kneel_back_foot_deg: float = 12.0
 ## 두 손이 가는 자리(쉬는 자리 기준, 내려가는 양은 따로 더한다) — 무릎 위로 내린다
 @export var kneel_hand_offset: Vector2 = Vector2(4.0, 6.0)
 ## 자세가 섞이는 빠르기(1/초)

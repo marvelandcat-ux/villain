@@ -543,16 +543,16 @@ theme_override_font_sizes/font_size = 24
 text = "2P"
 
 [node name="Keyboard" type="Control" parent="Card/ControlsPanel" unique_id=288456711]
-custom_minimum_size = Vector2(1108.7, 301)
+custom_minimum_size = Vector2(1192, 260)
 anchors_preset = 0
-offset_left = 86.0
+offset_left = 44.0
 offset_top = 246.0
-offset_right = 1195.0
-offset_bottom = 547.0
+offset_right = 1236.0
+offset_bottom = 506.0
 texture_filter = 4
 script = ExtResource("7_keyboard")
-unit = 46.0
-gap = 5.0
+unit = 40.0
+gap = 4.0
 
 [node name="ResetButton" type="Button" parent="Card/ControlsPanel" unique_id=934742503]
 layout_mode = 0
