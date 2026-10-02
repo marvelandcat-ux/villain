@@ -69,8 +69,11 @@ func _physics_process(delta: float) -> void:
 					fighter.jump()
 			# 맵 전용 스킬(내리찍기 등)은 **전용 키**다(2026-09-30 사용자 지정: P1 E / P2 [).
 			# 예전에는 공중에서 아래 키였는데, 아래 키가 방어·발판 통과까지 겸해서 헷갈렸다.
-			# 공중에서만 나간다 — 맵에 스킬이 없으면 use_map_skill()이 그냥 아무 효과 없이 리턴한다
-			if Input.is_action_just_pressed(_action("map_skill")) and not fighter.is_on_floor():
+			# **지상/공중을 여기서 가리지 않는다**(2026-10-02) — 공사현장 내리찍기는 공중 전용이고
+			# 헬스장 운동은 지상 전용이라, 어디서 쓸 수 있는지는 **스킬이 스스로 판단한다**
+			# (`GroundPoundSkill`은 지상이면 _execute에서 그냥 돌아간다).
+			# 맵에 스킬이 없으면 use_map_skill()이 아무 효과 없이 리턴한다
+			if Input.is_action_just_pressed(_action("map_skill")):
 				fighter.use_map_skill()
 
 		if Input.is_action_just_pressed(_action("basic_attack")):

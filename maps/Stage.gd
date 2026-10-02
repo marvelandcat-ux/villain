@@ -406,6 +406,7 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
 		fighter.global_position = spawn.global_position
+		_face_each_other(fighter, spawn, spawn_marker_name)
 	if is_ai:
 		# 스토리는 Claude API가 전략을 얹는 AI, 대전 모드 컴퓨터 상대는 규칙 기반 AI만(사용자 결정 — API 비용 없음)
 		if GameState.game_mode == "story":
@@ -423,6 +424,18 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 		fighter.add_child(skill)
 		fighter.map_skill = skill
 	return fighter
+
+## 시작할 때 **상대 쪽을 보게** 돌려놓는다(2026-10-02). `Fighter.facing` 기본값이 1(오른쪽)이라
+## 그냥 두면 오른쪽 선수가 **등을 보인 채** 시작하고, 한 발 움직여야 비로소 돌아선다.
+## 맵이 자리를 옮겨도(헬스장처럼 라운드마다 기구 자리가 바뀌는 맵) 두 마커의 관계만 보므로 그대로 맞는다
+func _face_each_other(fighter: Fighter, spawn: Marker2D, spawn_marker_name: String) -> void:
+	var other_name: String = "PlayerSpawn2" if spawn_marker_name == "PlayerSpawn1" else "PlayerSpawn1"
+	var other: Marker2D = get_node_or_null(other_name)
+	if other == null:
+		return
+	var dx: float = other.global_position.x - spawn.global_position.x
+	if not is_zero_approx(dx):
+		fighter.facing = signf(dx)
 
 ## 스토리 상대의 체력·공격력을 그 에피소드가 정한 배수로 조정한다.
 ## ⚠️ **`stats`는 씬이 공유하는 Resource라 반드시 복제해서 고친다** — 그냥 고치면 훈련장·대전에서

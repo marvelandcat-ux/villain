@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="9"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://skills/ThrownRecorder.tscn" id="31_recorder"]
 [ext_resource type="Script" path="res://skills/XSlashFinisher.gd" id="32_xslash"]
 [ext_resource type="PackedScene" path="res://combat/XSlashTrail.tscn" id="33_xtrail"]
+[ext_resource type="PackedScene" path="res://combat/SlashMark.tscn" id="34_mark"]
 [ext_resource type="Texture2D" path="res://sprite/지하철빌/개찰구.png" id="40_logo1"]
 [ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아재반격스킬로고.png" id="41_logo2"]
 [ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아저씨궁극기로고.png" id="42_logoult"]
@@ -110,6 +111,7 @@ script = ExtResource("7")
 icon = ExtResource("42_logoult")
 cooldown = 24.0
 start_on_cooldown = true
+slash_mark_scene = ExtResource("34_mark")
 
 [node name="Hitbox" type="Area2D" parent="SkillUltimate"]
 monitoring = false

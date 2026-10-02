@@ -177,6 +177,9 @@ var counter_stance = null
 var move_speed_multiplier: float = 1.0
 var jump_multiplier: float = 1.0
 var attack_debuff_multiplier: float = 1.0
+## **기본공격에만** 더 곱해지는 배수(스킬 피해에는 안 붙는다). 헬스장 바벨 컬이 올려 준다 —
+## `attack_debuff_multiplier`는 `compute_damage`를 지나는 **모든** 피해에 걸려서 스킬까지 세진다
+var basic_attack_damage_multiplier: float = 1.0
 var cooldown_rate_multiplier: float = 1.0
 ## 기본공격 전용 공격속도 배수 — 1.5면 기본공격 쿨타임이 1.5배 빨리 돌아 50% 더 자주 때린다 (악플러 열등감 스킬)
 var attack_speed_multiplier: float = 1.0
@@ -979,6 +982,11 @@ func apply_fear(duration: float, from_ultimate: bool = false) -> void:
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
 func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
+
+## **기본공격 전용** 피해 계산 — 위에 기본공격만 올려주는 배수를 한 번 더 곱한다(헬스장 바벨 컬).
+## 기본공격(`ComboMeleeAttack`)만 이걸 쓰고, 스킬은 그냥 `compute_damage`를 쓴다
+func compute_basic_damage(base_damage: int) -> int:
+	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier * basic_attack_damage_multiplier))
 
 ## 지금 방어를 켤 수 있는지. 쿨타임이 남았거나 이미 방어 중이거나,
 ## 경직·붙잡힘·대시 중이거나 다른 스킬이 이동을 가로챈 상태면 안 된다.

@@ -753,7 +753,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
 	var push_scale: float = finisher_distance_scale if is_final else 1.0
 	if d != null:
-		hitbox.damage = fighter.compute_damage(d.damage + bonus_damage)
+		hitbox.damage = fighter.compute_basic_damage(d.damage + bonus_damage)
 		hitbox.knockback = Vector2(d.knockback.x * fighter.facing * push_scale, d.knockback.y)
 		hitbox.pop_override = d.pop
 		hitbox.hitstop_multiplier = d.hitstop_scale
@@ -763,7 +763,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		var di: int = _clamp_step(step, combo_damage.size())
 		var ki: int = _clamp_step(step, combo_knockback.size())
 		var pi: int = _clamp_step(step, combo_pop.size())
-		hitbox.damage = fighter.compute_damage(combo_damage[di] + bonus_damage)
+		hitbox.damage = fighter.compute_basic_damage(combo_damage[di] + bonus_damage)
 		hitbox.knockback = Vector2(combo_knockback[ki].x * fighter.facing * push_scale, combo_knockback[ki].y)
 		hitbox.pop_override = combo_pop[pi]
 		hitbox.hitstop_multiplier = 1.0
@@ -1066,7 +1066,7 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 		_spin_shape_left = _make_front_half_circle(-1.0)
 		_spin_shape_facing = 0.0
 		_apply_spin_shape(fighter.facing)
-	hitbox.damage = fighter.compute_damage(spin_flurry_damage)
+	hitbox.damage = fighter.compute_basic_damage(spin_flurry_damage)
 	hitbox.knockback = Vector2(spin_flurry_knockback.x * fighter.facing, spin_flurry_knockback.y)
 	hitbox.pop_override = 0.0            # 원형 난무는 위로 안 띄운다(뜨면 판정 밖으로 빠진다)
 	hitbox.source_fighter = fighter

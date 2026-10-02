@@ -8,7 +8,9 @@ extends Skill
 ## 이 스킬은 **상태만 바꾼다** — 자세는 `BodyRig`(`held_item_l_armed`)가, 때리는 건
 ## 기본공격과 **대시**가 한다(경찰 경관봉 모드와 같은 꼴).
 ##
-## 대시는 이 동안 **지나가며 베는 공격**이 된다 — 아래 `_dash_hitbox`를 대시 중에만 켠다
+## 대시는 이 동안 **지나가며 베는 공격**이 된다 — 아래 `_dash_hitbox`를 대시 중에만 켠다.
+## 스치고 지나간 상대 몸에는 **칼자국**(`combat/SlashMark.gd`)이 남고, **돌진이 끝나는 순간**
+## 그 자국이 **터지면서** 한 번 더 피해를 준다(2026-10-02 사용자 요청) — "슥… 팡!"이 이 궁의 맛이다
 
 ## 악기를 들고 있는 시간(초). **궁을 쓴 순간부터 센다**
 @export var duration: float = 30.0
@@ -29,7 +31,11 @@ extends Skill
 @export var bonus_combo_hits: int = 0
 
 @export_group("대시 공격")
-## 대시로 지나가며 주는 피해와 밀어내는 힘
+## **지나갈 때도 피해를 줄지**(2026-10-02 사용자 요청으로 **꺼 뒀다**).
+## 꺼 두면 지나가며 **칼자국만 새기고**, 피해는 돌진이 끝나고 **터질 때 한 번에** 들어간다.
+## 켜면 아래 `dash_damage`·`dash_knockback`이 살아난다(그만큼 총 피해가 늘어난다)
+@export var dash_pass_damage: bool = false
+## 대시로 지나가며 주는 피해와 밀어내는 힘 — **`dash_pass_damage`가 켜져 있을 때만** 쓴다
 @export var dash_damage: int = 8
 @export var dash_knockback: Vector2 = Vector2(190, -170)
 ## 대시 판정 상자 크기(캐릭터 중심 기준)
@@ -42,6 +48,29 @@ extends Skill
 ## 뒤로 다 물러난 뒤 앞으로 내지르는 거리·속도
 @export var dash_forward_distance: float = 330.0
 @export var dash_forward_speed: float = 1700.0
+
+@export_group("칼자국 → 터짐")
+## 상대 몸에 새길 칼자국 장면. **비워 두면 기본 모양으로 직접 만든다**(연출이 조용히 빠지지 않게).
+## 모양·색·터지는 크기는 `combat/SlashMark.tscn`을 열어 인스펙터에서 고치면 된다
+@export var slash_mark_scene: PackedScene
+## 칼자국 크기 배율과 **맞은 쪽 몸 중심에서** 자국이 뜨는 자리
+@export var mark_scale: float = 1.0
+@export var mark_offset: Vector2 = Vector2(0, -10)
+## 자국이 눕는 각도(도). 0이면 X가 똑바로 서고, 기울이면 지나간 결대로 눕는다
+@export var mark_angle_deg: float = 0.0
+## **터질 때** 주는 피해. 지금은 `dash_pass_damage`가 꺼져 있어서 **이게 이 돌진의 피해 전부다**
+## (지나가며 주던 8을 이쪽으로 옮겨 합계 22를 그대로 유지했다).
+## `dash_pass_damage`를 켜면 `dash_damage`가 따로 더 들어간다
+@export var burst_damage: int = 22
+## 터질 때 밀어내는 힘. y가 음수면 위로 띄운다
+@export var burst_knockback: Vector2 = Vector2(120, -330)
+## 터지는 판정 크기(px) — 자국이 난 상대 자리에서 터지므로 그 **옆에 붙어 있던 상대도 휘말린다**
+@export var burst_hitbox_size: Vector2 = Vector2(118, 118)
+## 돌진이 멈추고 터지기까지의 뜸(초). 0이면 멈추는 순간 바로 터진다 —
+## 조금 뜸을 둬야 "지나갔다 … 팡"으로 읽힌다(마무리 자세 `dash_end_hold` 안에 들어가는 길이로 둔다)
+@export var burst_delay: float = 0.12
+## 터지는 판정이 켜져 있는 시간(초). **한 프레임만 켜면 겹침 등록이 안 될 수 있어** 넉넉히 둔다
+@export var burst_hitbox_time: float = 0.1
 
 ## 데미지 배수를 걸 때 쓰는 이름표. 같은 이름으로 걸고 풀어야 다른 버프와 안 싸운다
 const MODIFIER_ID := "dual_instrument"
@@ -61,12 +90,18 @@ var _rush_dir: float = 1.0
 var _end_hold_left: float = 0.0
 ## 지금 이 스킬이 무적을 걸어 둔 상태인지 (중복으로 걸고 안 풀리는 걸 막는다)
 var _invincible_on: bool = false
+## 이번 돌진에 자국을 새긴 상대들 {맞은 쪽 Node: SlashMark}. 터지면 비운다
+var _marks: Dictionary = {}
+## 터지기까지 남은 시간(초). 0이면 기다리는 중이 아니다
+var _burst_left: float = 0.0
 
 func _ready() -> void:
 	super._ready()
 	if _dash_hitbox:
 		_dash_hitbox.monitoring = false
 		_dash_hitbox.monitorable = false
+		# 지나가며 맞힌 순간을 받아 자국을 새긴다 — 데미지는 판정이 알아서 넣으니 여기선 자국만 맡는다
+		_dash_hitbox.connected.connect(_on_dash_connected)
 		# 판정 도형은 씬이 공유하는 자원이라 복제해서 크기를 잡는다
 		var shape_node := _dash_hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
 		if shape_node and shape_node.shape is RectangleShape2D:
@@ -81,6 +116,12 @@ func _process(delta: float) -> void:
 		_end_hold_left -= delta
 		if _end_hold_left <= 0.0:
 			_set_rig_phase(0.0)
+	# 돌진이 멈춘 뒤 뜸을 들였다가 자국을 터뜨린다.
+	# **아래 `_left` 검사보다 위에 둔다** — 돌진 끝과 동시에 궁 시간이 다 돼도 예약된 폭발은 터져야 한다
+	if _burst_left > 0.0:
+		_burst_left -= delta
+		if _burst_left <= 0.0:
+			_burst_marks()
 	if _left <= 0.0:
 		return
 	_left -= delta
@@ -142,6 +183,13 @@ func _end_rush(fighter: Fighter) -> void:
 	_set_invincible(false)
 	if is_instance_valid(fighter):
 		fighter.pass_through_fighters = false
+	# 지나가며 새긴 자국을 터뜨린다 — 뜸이 0이면 멈추는 그 프레임에 바로 터진다
+	if _marks.is_empty():
+		_burst_left = 0.0
+	elif burst_delay > 0.0:
+		_burst_left = burst_delay
+	else:
+		_burst_marks()
 	# 마무리 자세(구간 2)를 dash_end_hold 동안 유지한다. 0이면 곧바로 평소 자세로 돌아간다
 	_end_hold_left = maxf(dash_end_hold, 0.0)
 	_set_rig_phase(2.0 if _end_hold_left > 0.0 else 0.0)
@@ -184,6 +232,8 @@ func _update_dash_hitbox() -> void:
 			_dash_hitbox.set_deferred("monitorable", false)
 		return
 	_dash_hitbox.global_position = _armed_fighter.global_position
+	# 지나갈 땐 자국만 남긴다 — 피해 주는 길을 아예 안 타고 "스쳤다"만 알린다
+	_dash_hitbox.sense_only = not dash_pass_damage
 	# ⚠️ **이 궁이 자기한테 건 공격력 배수(damage_multiplier)는 돌진에서 도로 나눈다.**
 	#    그 배수는 "기본공격이 세진다"는 뜻인데, 안 빼면 돌진 피해에도 곱해져서
 	#    여기 적은 8이 실제로는 12로 들어간다(실측). 약화 같은 **다른** 디버프는 그대로 먹는다
@@ -196,6 +246,106 @@ func _update_dash_hitbox() -> void:
 		_dash_hitbox.clear_repeat_state()
 		_dash_hitbox.monitoring = true
 		_dash_hitbox.monitorable = true
+
+## --- 칼자국 → 터짐 ---
+
+## 돌진 판정이 누군가를 맞힌 순간(`Hitbox.connected`). 그 몸에 자국을 새겨 둔다.
+## **앞으로 내지르는 중일 때만** 센다 — 폭발 판정도 같은 신호를 쏘기 때문에(복제본이라도)
+## 구간을 안 보면 터진 자리에 또 자국이 생겨 영영 안 끝난다
+func _on_dash_connected(victim: Node) -> void:
+	if _rush_phase <= 0 or not is_instance_valid(_armed_fighter):
+		return
+	var target := victim as Node2D
+	if target == null or not is_instance_valid(target):
+		return
+	# **막아냈거나 무적이면 자국이 안 남는다** — 안 베였는데 나중에 터지면 억울하다.
+	# (`Hitbox.connected`는 막힌 타격에도 뜨기 때문에 여기서 걸러야 한다)
+	if "is_guarding" in victim and victim.is_guarding:
+		return
+	if "is_invincible" in victim and victim.is_invincible:
+		return
+	# 한 번의 돌진에 한 대상당 자국 하나 (겹쳐 새겨도 터질 때 두 번 때리게 될 뿐이다)
+	var old: Variant = _marks.get(victim)
+	if old != null and is_instance_valid(old):
+		return
+	var mark: Node2D = _make_mark()
+	if mark == null:
+		return
+	# **맞은 쪽 몸의 자식으로 붙인다** — 상대가 날아가는 내내 자국이 몸에 붙어 같이 간다.
+	# 자식이라 부모의 크기·뒤집힘을 물려받으므로 크기는 아래에서 다시 못박는다
+	target.add_child(mark)
+	mark.position = mark_offset
+	mark.scale = Vector2.ONE * mark_scale
+	mark.rotation_degrees = mark_angle_deg
+	_marks[victim] = mark
+
+## 자국 한 개를 만든다. 장면을 안 꽂아 뒀으면 기본 모양으로 직접 만든다 —
+## 비어 있다고 연출이 조용히 사라지면 "왜 안 터지지"로 헤매게 된다
+func _make_mark() -> Node2D:
+	if slash_mark_scene != null:
+		return slash_mark_scene.instantiate() as Node2D
+	return SlashMark.new()
+
+## 새겨 둔 자국을 모두 **터뜨린다** — 보이는 건 자국이, 피해는 그 자리에 잠깐 켜는 판정이 맡는다
+func _burst_marks() -> void:
+	_burst_left = 0.0
+	for victim in _marks:
+		var mark: Variant = _marks[victim]
+		if mark != null and is_instance_valid(mark) and mark.has_method("burst"):
+			mark.burst()
+		# 맞은 쪽이 그 사이 사라졌으면(훈련장에서 캐릭터 교체 등) 그 자리엔 아무것도 안 터뜨린다
+		if victim is Node2D and is_instance_valid(victim):
+			_spawn_burst_hitbox((victim as Node2D).global_position + Vector2(0.0, mark_offset.y))
+	_marks.clear()
+
+## 터지는 자리에 **잠깐만 켜지는 판정**을 하나 띄운다.
+##
+## 돌진 판정을 **복제해서** 쓴다 — 레이어·마스크·충돌 도형 설정을 그대로 물려받으니
+## 새 Area2D를 손으로 맞추다 어긋날 일이 없다. 신호는 복제하지 않는다(`DUPLICATE_SIGNALS` 제외) —
+## 복제본의 명중까지 `_on_dash_connected`로 돌아오면 터진 자리에 또 자국이 생긴다
+func _spawn_burst_hitbox(pos: Vector2) -> void:
+	if _dash_hitbox == null or not is_instance_valid(_armed_fighter):
+		return
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	var boom := _dash_hitbox.duplicate(DUPLICATE_SCRIPTS | DUPLICATE_GROUPS) as Hitbox
+	if boom == null:
+		return
+	# 판정 도형은 복제본끼리도 같은 자원을 가리키므로 따로 복제해서 크기를 잡는다
+	var shape_node := boom.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node and shape_node.shape is RectangleShape2D:
+		shape_node.shape = shape_node.shape.duplicate()
+		(shape_node.shape as RectangleShape2D).size = burst_hitbox_size
+	# ⚠️ 돌진 피해와 **같은 규칙**으로 배수를 도로 나눈다 — `damage_multiplier`는 "기본공격이 세진다"는
+	#    뜻이라, 안 빼면 여기 적은 값이 1.5배로 들어간다(약화 같은 다른 디버프는 그대로 먹는다)
+	var own: float = maxf(damage_multiplier, 0.01)
+	boom.damage = maxi(int(round(float(_armed_fighter.compute_damage(burst_damage)) / own)), 1)
+	boom.knockback = Vector2(burst_knockback.x * _armed_fighter.facing, burst_knockback.y)
+	boom.source_fighter = _armed_fighter
+	# ⚠️ **복제본은 "스치기만" 설정까지 물려받는다** — 끄지 않으면 터져도 피해가 0이다(실측).
+	#    지나갈 때(자국만)와 터질 때(피해)의 역할이 정반대라서 여기서 꼭 되돌려야 한다
+	boom.sense_only = false
+	# 한 번만 때린다 — 켜져 있는 동안 계속 때리면 폭발 한 번이 여러 대가 된다
+	boom.repeat_interval = 0.0
+	boom.monitoring = true
+	boom.monitorable = true
+	root.add_child(boom)
+	boom.global_position = pos
+	# 잠깐 켜 뒀다 스스로 사라진다. **자기한테 붙인 트윈이라** 맵이 정리되면 같이 사라진다
+	# (SceneTree 타이머로 하면 해제된 노드를 붙잡은 콜백이 남는다)
+	var life := boom.create_tween()
+	life.tween_interval(maxf(burst_hitbox_time, 0.05))
+	life.tween_callback(boom.queue_free)
+
+## 터뜨리지 않고 자국만 지운다 — 스킬이 트리에서 빠질 때처럼 **판정을 띄울 수 없는** 경우에 쓴다
+func _drop_marks() -> void:
+	for victim in _marks:
+		var mark: Variant = _marks[victim]
+		if mark != null and is_instance_valid(mark):
+			mark.queue_free()
+	_marks.clear()
+	_burst_left = 0.0
 
 func _execute(fighter: Fighter) -> void:
 	# 이미 들고 있는데 또 쓰면 시간만 다시 채운다(겹쳐서 두 번 거는 걸 막는다)
@@ -260,6 +410,8 @@ func active_ratio() -> float:
 		return -1.0
 	return clampf(_left / maxf(duration, 0.001), 0.0, 1.0)
 
-## 악기를 든 채 라운드가 끝나면 배수가 남을 수 있어서, 사라질 때 확실히 푼다
+## 악기를 든 채 라운드가 끝나면 배수가 남을 수 있어서, 사라질 때 확실히 푼다.
+## 남은 자국은 **터뜨리지 않고 지운다** — 트리에서 빠지는 중엔 폭발 판정을 띄울 곳이 없다
 func _exit_tree() -> void:
 	_disarm()
+	_drop_marks()

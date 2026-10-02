@@ -4,10 +4,13 @@ extends Control
 ## 위쪽 큰 미리보기 상자 크기 (CharacterSelect.tscn의 P1/P2 PreviewBox custom_minimum_size와 같은 값 — 정사각형)
 const PREVIEW_BOX_SIZE := Vector2(300, 300)
 
-## 인게임 리그는 아주 작게(몸 33x30 / 머리 55x55) 그려져 있어서, 상자 안에서 잘 보이도록 이만큼 키운다
-const PREVIEW_RIG_SCALE := 2.8
-## 상자 안에서 리그 원점이 놓일 자리 — x는 가운데, y는 발이 상자 아래쪽 근처(이름표 아래)에 오도록 잡은 값
-const PREVIEW_RIG_ORIGIN := Vector2(150, 210)
+## 인게임 리그는 아주 작게(몸 33x30 / 머리 55x55) 그려져 있어서, 상자 안에서 잘 보이도록 이만큼 키운다.
+## **아래 이름표(상자 바닥 40px) 위에 전신이 다 들어가도록 잡은 값이다**(2026-10-02 사용자 "전신으로").
+## 리그 실측: 머리끝 y -56~-68 / 발바닥 y +33, 즉 제일 큰 캐릭터(황근출)가 101px.
+## 2.8배였을 땐 발이 y 302에 떨어져 **상자(300)를 넘고 이름표에 가려** 신발이 안 보였다
+const PREVIEW_RIG_SCALE := 2.4
+## 상자 안에서 리그 원점이 놓일 자리 — x는 가운데, y는 **발이 이름표 바로 위(약 250)** 에 오도록 잡았다
+const PREVIEW_RIG_ORIGIN := Vector2(150, 170)
 
 ## 이 순서로 키를 치면 아래 칸이 숨겨진 캐릭터(GameState.HIDDEN_CHARACTERS)로 바뀌고, 다시 치면 원래대로
 const SECRET_CODE := "aaddssww"

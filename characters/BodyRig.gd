@@ -937,7 +937,20 @@ var held_item_l_thrown: bool = false
 @onready var _gun: Sprite2D = get_node_or_null("Gun")
 @onready var _eat_bowl: Sprite2D = get_node_or_null("EatBowl")
 
+@export_group("헬스장 스펙")
+## **팔(손) 그림이 커지는 배율** — 헬스장 바벨 컬로 쌓은 스펙이 올려 준다(`WorkoutSkill`).
+## 1이면 평소 크기라 다른 맵에선 아무 일도 안 일어난다
+@export var muscle_arm: float = 1.0
+## **다리(발) 그림이 커지는 배율** — 스쿼트·런닝머신이 올려 준다
+@export var muscle_leg: float = 1.0
+
 var _fighter: Fighter
+## 손·발의 원래 크기 — 부풀렸다 되돌릴 기준점(`_ready`에서 기억한다)
+var _hand_rest_scale: Vector2 = Vector2.ONE
+var _foot_rest_scale: Vector2 = Vector2.ONE
+## 지금 화면에 반영해 둔 배율 — 바뀔 때만 다시 쓰려고 들고 있는다
+var _muscle_arm_shown: float = 1.0
+var _muscle_leg_shown: float = 1.0
 ## 걸음 위상 — 계속 커지는 각도. sin()에 넣어서 앞뒤로 왔다갔다 하는 값을 만든다
 var _phase: float = 0.0
 ## 숨쉬기 위상 — 계속 커지며 sin()으로 위아래 미묘한 움직임을 만든다 (idle breathing)
@@ -1199,6 +1212,10 @@ func _ready() -> void:
 		_body_rest_scale = _body.scale
 	if _hand_l:
 		_hand_l_rest_z = _hand_l.z_index
+		# 헬스장에서 팔이 부풀었다 되돌아올 기준 크기(두 손은 같은 크기로 그려져 있다)
+		_hand_rest_scale = _hand_l.scale
+	if _foot_l:
+		_foot_rest_scale = _foot_l.scale
 	if _hand_r:
 		_hand_r_rest_z = _hand_r.z_index
 	if _hand_r_hold:
@@ -1214,6 +1231,23 @@ func _ready() -> void:
 	if _eat_bowl:
 		_eat_bowl_rest_scale = _eat_bowl.scale
 		_eat_bowl.visible = false
+
+## 헬스장 스펙만큼 손·발 그림을 키운다(기획서 "강화된 부위가 변해 한눈에 보임").
+## **원래 크기에 곱한다** — 캐릭터마다 손·발 그림 크기가 달라서 절대값으로 쓰면 다 어긋난다.
+## 리그의 다른 곳은 손·발 `scale`을 건드리지 않으므로 여기서만 쓰면 안 싸운다
+func _apply_muscle() -> void:
+	if is_equal_approx(muscle_arm, _muscle_arm_shown) and is_equal_approx(muscle_leg, _muscle_leg_shown):
+		return
+	_muscle_arm_shown = muscle_arm
+	_muscle_leg_shown = muscle_leg
+	if _hand_l:
+		_hand_l.scale = _hand_rest_scale * muscle_arm
+	if _hand_r:
+		_hand_r.scale = _hand_rest_scale * muscle_arm
+	if _foot_l:
+		_foot_l.scale = _foot_rest_scale * muscle_leg
+	if _foot_r:
+		_foot_r.scale = _foot_rest_scale * muscle_leg
 
 func _process(delta: float) -> void:
 	if _knocked_out:
@@ -1233,6 +1267,8 @@ func _process(delta: float) -> void:
 
 	# 숨쉬기 위상은 항상 진행 (가만히 서 있을 때만 화면에 반영된다)
 	_breathe_phase += delta * breathe_speed
+	# 헬스장에서 쌓은 스펙만큼 팔·다리를 부풀린다 — 다른 맵에선 둘 다 1이라 그냥 지나간다
+	_apply_muscle()
 	_update_blocked_flash(delta)
 	# 두 손 잡기 — 공격이 도는 동안은 1로, 콤보가 끝나면 0으로 서서히 돌아간다.
 	# weapon_on_final_hit이 켜져 있으면 **마지막 타에만** 왼손이 합류한다(앞 타는 한 손 주먹)

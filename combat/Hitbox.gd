@@ -27,6 +27,11 @@ signal connected(victim: Node)
 @export var blunt_impact: bool = false
 ## 명중 시 카메라를 흔드는 세기 = damage × 이 값 (0이면 안 흔든다). 데미지가 클수록 크게·오래 흔들린다
 @export var shake_per_damage: float = 0.04
+## 켜면 **피해를 하나도 주지 않고 "스쳤다"만 알린다**(`connected` 신호만 뜬다).
+## 데미지·넉백·경직·스파크·숫자 팝업이 전부 안 나간다 — 지나가며 **표시만 남기고** 피해는
+## 나중에 따로 주는 공격에 쓴다(지하철 궁 돌진이 칼자국만 새기고 지나갈 때).
+## ⚠️ `Hurtbox.take_hit`을 안 거치므로 **자기 자신·아군 거르기를 여기서 직접 한다**
+@export var sense_only: bool = false
 ## 맞은 상대를 위로 띄우는 힘(px/s). 음수(기본)면 데미지 비례 기본 팝업, 0이면 안 띄운다(지상 유지).
 ## 콤보 앞 타격이 상대를 공중에 날려버려 다음 타가 헛치는 걸 막을 때 0으로 둔다
 @export var pop_override: float = -1.0
@@ -103,6 +108,15 @@ func _try_hit(area: Area2D) -> bool:
 		return false
 	if not (area is Hurtbox):
 		return false
+	if sense_only:
+		# 피해 주는 길(`Hurtbox.take_hit`)을 아예 안 탄다 — 거기서 걸러 주던
+		# **자기 자신·아군**을 여기서 직접 거른다. 방어·무적은 신호를 받는 쪽이 보고 판단한다
+		if area.fighter == source_fighter:
+			return false
+		if area.immune_source != null and area.immune_source == source_fighter:
+			return false
+		connected.emit(area.fighter)
+		return true
 	var kb: Vector2 = _compute_knockback(area)
 	# 이 한 방이 방어에 막히는지 먼저 판정해서 팝업·무기 깜빡임에 같이 쓴다
 	var blocked: bool = _is_blocked_by_guard(area)
