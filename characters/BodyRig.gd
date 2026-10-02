@@ -516,6 +516,11 @@ var held_item_l_thrown: bool = false
 @export var head_turn_anchors: Array[Vector3] = []
 ## 그림이 원래 **왼쪽**을 보고 그려졌는지(0번 포함, 그림 수 + 1칸). 왼쪽을 보는 그림은 좌우로 뒤집어 쓴다
 @export var head_turn_faces_left: Array[bool] = []
+## 액션 표정(action_head_texture)일 때 대신 쓸 머리 돌리기 그림·머리 공·방향 — 위 세 개와 같은 모양이고 **0번은 action_head_texture**다.
+## 비워 두면 액션 표정 중엔 머리를 안 돌린다(예전과 같음). 악플러 열등감(분노 얼굴), 2026-10-02
+@export var action_head_turn_textures: Array[Texture2D] = []
+@export var action_head_turn_anchors: Array[Vector3] = []
+@export var action_head_turn_faces_left: Array[bool] = []
 ## 머리가 도는 **도중에만** 몸통에 끼울 그림들 — 평소와 머리가 정면일 때는 Body 원래 그림(정면 몸통) 그대로고,
 ## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
 ## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
@@ -1857,7 +1862,7 @@ func _apply_spin_head_turn(p: float) -> void:
 	var back_flip: float = clampf(spin_back_flip, 0.5, 0.99)
 	var mirrored: bool = p >= 0.25 and p < back_flip
 	if p < 0.5:
-		var front: int = head_turn_textures.size()
+		var front: int = _turn_textures().size()
 		var shown: int = front * 2
 		var step: int = clampi(int(p / 0.5 * shown), 0, shown - 1)
 		_set_head_frame(step + 1 if step < front else shown - 1 - step, 1.0)
@@ -3783,22 +3788,54 @@ func _pose_scratch() -> void:
 
 ## 머리를 돌리는 그림으로 바꿔 끼울 준비가 됐는지 — 그림마다 기준점·방향이 다 있고(0번 옆모습 포함), 머리가 평소 얼굴(또는 이미 돌리는 중)일 때만
 func _can_head_turn() -> bool:
-	var count: int = head_turn_textures.size()
-	if _head == null or count < 1 or head_turn_anchors.size() < count + 1 or head_turn_faces_left.size() < count + 1:
+	var count: int = _turn_textures().size()
+	if _head == null or count < 1 or _turn_anchors().size() < count + 1 or _turn_faces_left().size() < count + 1:
 		return false
 	return _is_turn_texture(_head.texture)
 
-## 평소 얼굴이거나 머리 돌리기용 그림(측면·정면·뒤통수)인지 — 이 밖의 그림이면 다른 표정이 들어온 것이다
+## 액션 표정 전용 머리 돌리기 세트가 다 채워져 있는지
+func _has_action_turn_set() -> bool:
+	var count: int = action_head_turn_textures.size()
+	return action_head_texture != null and count >= 1 and action_head_turn_anchors.size() >= count + 1 and action_head_turn_faces_left.size() >= count + 1
+
+## 지금 쓸 머리 돌리기 세트인지 — 액션 표정이 켜져 있고 전용 세트가 있으면 그쪽
+func _use_action_turn_set() -> bool:
+	return _action_face_on and _has_action_turn_set()
+
+func _turn_textures() -> Array[Texture2D]:
+	return action_head_turn_textures if _use_action_turn_set() else head_turn_textures
+
+func _turn_anchors() -> Array[Vector3]:
+	return action_head_turn_anchors if _use_action_turn_set() else head_turn_anchors
+
+func _turn_faces_left() -> Array[bool]:
+	return action_head_turn_faces_left if _use_action_turn_set() else head_turn_faces_left
+
+## 돌기 전 옆모습(0번) 그림과 그 배율 — 액션 표정 세트면 액션 표정 그림
+func _turn_rest_texture() -> Texture2D:
+	return action_head_texture if _use_action_turn_set() else _head_rest_texture
+
+func _turn_rest_scale() -> Vector2:
+	if _use_action_turn_set() and action_head_scale != Vector2.ZERO:
+		return action_head_scale
+	return _head_rest_scale
+
+## 평소 얼굴이거나 머리 돌리기용 그림(측면·정면·뒤통수)인지 — 이 밖의 그림이면 다른 표정이 들어온 것이다.
+## 액션 표정은 전용 세트가 있을 때만 돌리기 그림으로 친다(돌던 중에 표정이 켜지고 꺼져도 이어서 돌도록 두 세트를 다 본다)
 func _is_turn_texture(tex: Texture2D) -> bool:
-	return tex == _head_rest_texture or head_turn_textures.has(tex) or (tex != null and tex == head_back_texture)
+	if tex == null:
+		return false
+	if tex == _head_rest_texture or head_turn_textures.has(tex) or tex == head_back_texture:
+		return true
+	return _has_action_turn_set() and (tex == action_head_texture or action_head_turn_textures.has(tex))
 
 ## 머리를 돌리는 단계 그림 하나로 바꿔 끼운다. frame: 0 옆 / 1~ head_turn_textures 순서(마지막이 정면).
 ## dir: 1이면 바라보는 쪽, -1이면 그 반대쪽(그림을 한 번 더 뒤집는다 = 뒤를 본다).
 ## 머리 공 중심이 평소 옆모습과 같은 자리, 지름이 같은 크기가 되도록 배율·위치를 계산한다.
 ## 걷기 들썩임·움찔 같은 앞선 자세 오프셋은 그대로 두고 제자리 차이만 더한다
 func _set_head_frame(frame: int, dir: float) -> void:
-	var tex: Texture2D = _head_rest_texture if frame == 0 else head_turn_textures[frame - 1]
-	_set_head_image(tex, head_turn_anchors[frame], head_turn_faces_left[frame], dir)
+	var tex: Texture2D = _turn_rest_texture() if frame == 0 else _turn_textures()[frame - 1]
+	_set_head_image(tex, _turn_anchors()[frame], _turn_faces_left()[frame], dir)
 	_set_body_frame(frame, dir)
 
 ## 머리 단계(frame, 0 = 옆 ~ 머리 그림 수 = 정면)에 맞춰 몸통 그림을 바꿔 끼운다.
@@ -3808,7 +3845,7 @@ func _set_head_frame(frame: int, dir: float) -> void:
 func _set_body_frame(head_frame: int, dir: float) -> void:
 	if _body == null or body_turn_textures.is_empty() or _body_rest_texture == null:
 		return
-	var nh: int = maxi(head_turn_textures.size(), 1)
+	var nh: int = maxi(_turn_textures().size(), 1)
 	var tex: Texture2D = _body_rest_texture
 	# 이 그림을 좌우로 뒤집을 양 — 보통 dir, 왼쪽을 보고 그린 그림이면 그 반대
 	var flip: float = dir
@@ -3884,20 +3921,41 @@ func _clear_body_frame() -> void:
 	_body.texture = _body_rest_texture
 	_body.scale = _body_rest_scale
 
+## 지금 입은 몸통(그림·배율·제자리·몸 돌리기 그림) — set_body_outfit()으로 되돌릴 때 쓴다
+func get_body_outfit() -> Dictionary:
+	if _body == null:
+		return {}
+	return {"texture": _body_rest_texture, "scale": _body_rest_scale, "position": _rest_positions.get(_body, _body.position), "turn": body_turn_textures}
+
+## 몸통을 통째로 갈아입힌다(황근출 궁 옷 벗기, 2026-10-02) — 평소 그림·배율·제자리·몸 돌리기 그림을 한 번에 바꾼다.
+## outfit은 get_body_outfit()과 같은 모양
+func set_body_outfit(outfit: Dictionary) -> void:
+	if _body == null or outfit.is_empty():
+		return
+	_clear_body_frame()
+	_body_rest_texture = outfit["texture"]
+	_body_rest_scale = outfit["scale"]
+	_rest_positions[_body] = outfit["position"]
+	body_turn_textures = outfit["turn"]
+	_body.texture = _body_rest_texture
+	_body.scale = _body_rest_scale
+	_body.position = _rest_positions[_body]
+
 ## 머리를 그림 한 장(tex, 머리 공 here, 왼쪽을 보는지 faces_left)으로 바꿔 끼운다 — _set_head_frame과 뒤통수가 같이 쓴다
 func _set_head_image(tex: Texture2D, here: Vector3, faces_left: bool, dir: float) -> void:
 	_turn_applied = true
-	var base: Vector3 = head_turn_anchors[0]
-	var base_size: Vector2 = _head_rest_texture.get_size()
+	var base: Vector3 = _turn_anchors()[0]
+	var rest_scale: Vector2 = _turn_rest_scale()
+	var base_size: Vector2 = _turn_rest_texture().get_size()
 	var size: Vector2 = tex.get_size()
 	var ratio: float = base.z / maxf(here.z, 1.0)
-	var sx: float = absf(_head_rest_scale.x) * ratio
-	var sy: float = _head_rest_scale.y * ratio
+	var sx: float = absf(rest_scale.x) * ratio
+	var sy: float = rest_scale.y * ratio
 	var mirror: float = (-1.0 if faces_left else 1.0) * dir
 	var rest_pos: Vector2 = _rest_positions[_head]
 	# 평소 옆모습의 머리 공 중심이 리그의 어디에 있는지 — 반대쪽을 볼 땐 좌우 대칭 자리로 간다
-	var center_x: float = (rest_pos.x + (base.x - base_size.x * 0.5) * absf(_head_rest_scale.x)) * dir
-	var center_y: float = rest_pos.y + (base.y - base_size.y * 0.5) * _head_rest_scale.y
+	var center_x: float = (rest_pos.x + (base.x - base_size.x * 0.5) * absf(rest_scale.x)) * dir
+	var center_y: float = rest_pos.y + (base.y - base_size.y * 0.5) * rest_scale.y
 	var target := Vector2(
 		center_x - (here.x - size.x * 0.5) * sx * mirror,
 		center_y - (here.y - size.y * 0.5) * sy)
@@ -3910,10 +3968,9 @@ func _clear_head_frame() -> void:
 	if not _turn_applied or _head == null:
 		return
 	_turn_applied = false
-	# 반대쪽을 볼 땐 평소 옆모습 그림을 뒤집어 쓰므로, 그림이 같아도 배율은 꼭 되돌린다
+	# 반대쪽을 볼 땐 옆모습 그림을 뒤집어 쓰므로, 그림이 같아도 배율은 꼭 되돌린다 — 액션 표정 중이면 그 얼굴로(_apply_base_head)
 	if _is_turn_texture(_head.texture):
-		_head.texture = _head_rest_texture
-		_head.scale = _head_rest_scale
+		_apply_base_head()
 	_clear_body_frame()
 
 ## 왼쪽(-x)으로 갈 때는 몸 전체를 좌우로 뒤집는다.
@@ -3959,7 +4016,7 @@ func _pose_face_turn() -> void:
 	if not _can_head_turn():
 		_face_turn_time = 0.0
 		return
-	var front: int = head_turn_textures.size()
+	var front: int = _turn_textures().size()
 	var shown: int = front * 2
 	var step: int = clampi(int(_face_turn_progress() * shown), 0, shown - 1)
 	# 그림 n장이면: 앞 절반 1, 2, ..., n(정면) / 뒤 절반 n-1, ..., 0(옆모습). 둘 다 "그때 몸이 보는 쪽" 기준이라 dir은 1
@@ -3982,7 +4039,7 @@ func _pose_lookback() -> void:
 	# 돌리는 그림이 있으면 옆 -> 측면1 -> ... -> 정면 -> ... -> 측면1 -> 반대쪽 옆으로 돈다(돌아올 땐 거꾸로).
 	# 그림이 n장이면 단계는 2n+1개 — 정면(n번)까지는 바라보는 쪽, 그 뒤로는 뒤집어서 반대쪽 그림이 된다
 	if _can_head_turn():
-		var front: int = head_turn_textures.size()
+		var front: int = _turn_textures().size()
 		var steps: int = front * 2 + 1
 		var step: int = clampi(int(_lookback_reach() * steps), 0, steps - 1)
 		_set_head_frame(front - absi(step - front), 1.0 if step <= front else -1.0)

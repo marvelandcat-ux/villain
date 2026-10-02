@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ctgho1lr2r4ya"
-path="res://.godot/imported/악플러 몸 측면 3.png-500fe69ec1aacc1e9f8d015ae789c9c0.ctex"
+uid="uid://bpl6ksh6ltqdm"
+path="res://.godot/imported/창문.webp-73e4a555c6edc4c301a720527e514045.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/악플러/몸/악플러 몸 측면 3.png"
-dest_files=["res://.godot/imported/악플러 몸 측면 3.png-500fe69ec1aacc1e9f8d015ae789c9c0.ctex"]
+source_file="res://sprite/황근출 해병/궁극기/창문.webp"
+dest_files=["res://.godot/imported/창문.webp-73e4a555c6edc4c301a720527e514045.ctex"]
 
 [params]
 

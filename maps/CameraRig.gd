@@ -79,6 +79,10 @@ var _pan_origin_x: float = 0.0
 var _min_zoom: float = 1.0
 ## 두 캐릭터가 붙어 있을 때 가장 많이 당기는 배율
 var _max_zoom: float = 1.0
+## 다른 장소(황근출 궁극기 내무반)로 잠깐 옮겨 찍는 중인지 — 그동안은 벽 한계선 재계산을 안 한다
+var _arena_active: bool = false
+## 장소 옮기기 전 값(돌아올 때 되돌림)
+var _arena_saved: Dictionary = {}
 
 func _ready() -> void:
 	# 타격 판정(Hitbox)이 찾아서 흔들 수 있도록 그룹에 등록한다
@@ -264,6 +268,8 @@ func _apply_shake(delta: float) -> void:
 ## 벽 사이 폭이 화면 폭보다 좁으면 한계선만으로는 화면이 벽 밖을 물게 되므로,
 ## 벽 사이가 화면에 딱 맞을 만큼만 확대(zoom)해서 그 문제를 없앤다
 func _apply_wall_limits() -> void:
+	if _arena_active:
+		return
 	var left: float = _wall_edge("LeftWall", -1.0)
 	var right: float = _wall_edge("RightWall", 1.0)
 	if is_nan(left) or is_nan(right):
@@ -302,3 +308,51 @@ func _wall_edge(node_name: String, dir: float) -> float:
 			continue
 		half_width = maxf(half_width, rect.size.x * 0.5 * absf(collision.global_scale.x))
 	return wall.global_position.x + dir * half_width
+
+## 다른 장소로 잠깐 옮겨 찍는다(황근출 궁극기 내무반) — `area`(월드 좌표) 밖이 화면에 안 보이게 한계선·최소 배율을 바꾸고,
+## 이전 값은 기억해 뒀다가 `leave_arena()`가 되돌린다. 옮긴 순간 따라가지 않고 바로 그 자리로 붙는다
+func enter_arena(area: Rect2, look_at: Vector2) -> void:
+	if not _arena_active:
+		_arena_saved = {
+			"limits": [limit_left, limit_top, limit_right, limit_bottom],
+			"min_y": min_y, "max_y": max_y, "lock": lock_ground_to_bottom,
+			"min_zoom": _min_zoom, "max_zoom": _max_zoom,
+			"pos": global_position, "zoom": zoom,
+		}
+	_arena_active = true
+	limit_left = int(floorf(area.position.x))
+	limit_top = int(floorf(area.position.y))
+	limit_right = int(ceilf(area.end.x))
+	limit_bottom = int(ceilf(area.end.y))
+	min_y = area.position.y
+	max_y = area.end.y
+	lock_ground_to_bottom = false
+	var view: Vector2 = get_viewport_rect().size
+	_min_zoom = maxf(view.x / area.size.x, view.y / area.size.y) * zoom_boost
+	_max_zoom = maxf(_authored_zoom, _min_zoom) * max_close_zoom
+	var z: float = clampf(zoom.x, _min_zoom, _max_zoom)
+	zoom = Vector2(z, z)
+	global_position = look_at
+	reset_smoothing()
+
+## enter_arena() 전 상태로 되돌리고 `look_at`으로 바로 붙는다
+func leave_arena(look_at: Vector2) -> void:
+	if not _arena_active:
+		return
+	_arena_active = false
+	var l: Array = _arena_saved["limits"]
+	limit_left = l[0]
+	limit_top = l[1]
+	limit_right = l[2]
+	limit_bottom = l[3]
+	min_y = _arena_saved["min_y"]
+	max_y = _arena_saved["max_y"]
+	lock_ground_to_bottom = _arena_saved["lock"]
+	_min_zoom = _arena_saved["min_zoom"]
+	_max_zoom = _arena_saved["max_zoom"]
+	var z: float = clampf(zoom.x, _min_zoom, _max_zoom)
+	zoom = Vector2(z, z)
+	global_position = Vector2(look_at.x, clampf(look_at.y, min_y, _lowest_center_y()))
+	reset_smoothing()
+	if clamp_to_walls:
+		_apply_wall_limits()

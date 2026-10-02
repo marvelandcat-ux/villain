@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqk2uvtbnq3w8"
-path="res://.godot/imported/분노 악플러.png-3cdc6912011ea9b8a7bc44bbcfb6bf5b.ctex"
+uid="uid://dl6v6s1arxumh"
+path="res://.godot/imported/분노 악플러 정면.png-c79866f2f60b5f70a929434fd28f795f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/악플러/몸/분노 악플러.png"
-dest_files=["res://.godot/imported/분노 악플러.png-3cdc6912011ea9b8a7bc44bbcfb6bf5b.ctex"]
+source_file="res://sprite/악플러/몸/분노 악플러 정면.png"
+dest_files=["res://.godot/imported/분노 악플러 정면.png-c79866f2f60b5f70a929434fd28f795f.ctex"]
 
 [params]
 
