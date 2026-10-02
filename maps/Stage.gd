@@ -27,6 +27,10 @@ extends Node2D
 
 ## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
 const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
+const DEBUG_GRID := preload("res://maps/DebugGrid.gd")
+
+## 50px 격자를 켰는지(G + ') — static이라 라운드가 바뀌어 씬을 다시 읽어도 켠 채로 남는다
+static var show_debug_grid: bool = false
 
 ## 화면 왼쪽에 일시정지 버튼을 띄울지
 @export var pause_button: bool = true
@@ -84,6 +88,7 @@ func _ready() -> void:
 	# 궁극기 컷인 연출 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
 	_add_pause_button()
+	_apply_debug_grid()
 	# 같은 스킬 슬롯을 동시에 쓰면 연타 미니게임(클래시)을 벌이는 매니저 (Fighter가 그룹으로 찾아 쓴다)
 	add_child(SkillClashManager.new())
 	_p1 = _spawn_fighter(GameState.p1_character_path, "PlayerSpawn1", false, 1)
@@ -303,6 +308,29 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 	if event.is_action_pressed("ui_cancel"):
 		open_pause_menu()
+
+## G와 '를 같이 누르면(둘 중 하나를 누른 채 다른 하나를 누른 순간) 50px 격자를 켜고 끈다 — 거리 재기용 디버그.
+## 스킬 키라 입력을 삼키지 않으려고 _input에서 보기만 한다(스킬도 같이 나간다)
+func _input(event: InputEvent) -> void:
+	if _attract or not (event is InputEventKey):
+		return
+	var key: InputEventKey = event
+	if not key.pressed or key.echo:
+		return
+	var code: Key = key.physical_keycode
+	var other: Key = KEY_APOSTROPHE if code == KEY_G else (KEY_G if code == KEY_APOSTROPHE else KEY_NONE)
+	if other != KEY_NONE and Input.is_physical_key_pressed(other):
+		show_debug_grid = not show_debug_grid
+		_apply_debug_grid()
+
+func _apply_debug_grid() -> void:
+	var grid: Node = get_node_or_null("DebugGrid")
+	if show_debug_grid and grid == null:
+		grid = DEBUG_GRID.new()
+		grid.name = "DebugGrid"
+		add_child(grid)
+	elif not show_debug_grid and grid != null:
+		grid.queue_free()
 
 ## 화면 왼쪽에 일시정지 버튼을 붙인다 (스토리 장면과 같은 것).
 ## ESC만 있으면 처음 하는 사람은 멈출 방법을 모른다는 피드백을 받아서 넣었다(2026-09-15).

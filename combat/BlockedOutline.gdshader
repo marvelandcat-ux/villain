@@ -23,6 +23,8 @@ const int SAMPLES = 10;
 const int STEPS = 2;
 
 void fragment() {
+	// COLOR(= 노드 modulate·색조)를 곱한다 — 안 곱하면 테두리가 붙은 동안 걸려 있던 색조(주정뱅이 술 빨개짐 등)·피격 번쩍임이 사라졌다
+	vec4 tint = COLOR;
 	vec4 src = texture(TEXTURE, UV);
 	float edge = 0.0;
 	// 몸이 있는 자리에서만 본다 — 둘레에 빈 곳이 가까울수록 "가장자리"다
@@ -40,5 +42,5 @@ void fragment() {
 	}
 	float amount = clamp(edge, 0.0, 1.0) * outline_alpha;
 	// 투명도는 원래대로 두고 색만 빨갛게 덮는다 (실루엣이 안 두꺼워진다)
-	COLOR = vec4(mix(src.rgb, outline_color.rgb, amount), src.a);
+	COLOR = vec4(mix(src.rgb * tint.rgb, outline_color.rgb, amount), src.a * tint.a);
 }

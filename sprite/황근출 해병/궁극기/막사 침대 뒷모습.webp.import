@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8nx1kaab0uwa"
-path="res://.godot/imported/악플러 분노 측면.png-9fd702949d0cc6f1ca3cabf28f1fbca4.ctex"
+uid="uid://ba2rqlnl5d7ah"
+path="res://.godot/imported/막사 침대 뒷모습.webp-f738396a20072ee8c94f2b343a0c78fe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/악플러/몸/악플러 분노 측면.png"
-dest_files=["res://.godot/imported/악플러 분노 측면.png-9fd702949d0cc6f1ca3cabf28f1fbca4.ctex"]
+source_file="res://sprite/황근출 해병/궁극기/막사 침대 뒷모습.webp"
+dest_files=["res://.godot/imported/막사 침대 뒷모습.webp-f738396a20072ee8c94f2b343a0c78fe.ctex"]
 
 [params]
 

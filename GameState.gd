@@ -76,7 +76,7 @@ const CHARACTER_RIGS := {
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoiseRig.tscn",
-	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulRig.tscn",
+	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn",
 }
 
 ## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.

@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/HwanggeunchulStats.tres" id="2"]
@@ -6,9 +6,13 @@
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
 [ext_resource type="Script" path="res://skills/Skill.gd" id="6"]
-[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulRig.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn" id="7"]
 [ext_resource type="Script" path="res://skills/DropkickSkill.gd" id="8"]
 [ext_resource type="Script" path="res://skills/JjajangEatSkill.gd" id="9"]
+[ext_resource type="Script" path="res://skills/BarracksUltimate.gd" id="10"]
+[ext_resource type="Texture2D" uid="uid://cg4fw7r64kwqt" path="res://sprite/황근출 해병/황근출 해병 몸.png" id="11_bare"]
+[ext_resource type="Texture2D" uid="uid://blb1lphxy4ghn" path="res://sprite/황근출 해병/황근출 해병 몸 측면 2.png" id="12_bare_turn1"]
+[ext_resource type="Texture2D" uid="uid://bcr7yrftk4mjd" path="res://sprite/황근출 해병/황근축 해병 몸 측면 3.png" id="13_bare_turn2"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -75,6 +79,10 @@ skill_name = "짜장면 먹기"
 description = "주머니에서 짜장면을 꺼내 먹는다. 다 먹으면 잃은 체력의 30%를 회복하지만, 먹을 때마다 대시 쿨타임이 2초씩 늘어난다(라운드 끝까지). 먹다가 맞으면 끊긴다."
 
 [node name="SkillUltimate" type="Node" parent="."]
-script = ExtResource("6")
+script = ExtResource("10")
+bare_body_texture = ExtResource("11_bare")
+bare_body_turn_textures = Array[Texture2D]([ExtResource("12_bare_turn1"), ExtResource("13_bare_turn2")])
 cooldown = 50.0
 start_on_cooldown = true
+skill_name = "내무반 집합"
+description = "웃통을 벗어 던지고, 화면이 어두워졌다 밝아지면 두 사람 모두 내무반으로 끌려가 15초 동안 거기서 싸운다. 시간이 끝나면 원래 자리로 돌아온다."

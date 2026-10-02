@@ -1059,7 +1059,7 @@ func _want_skill(skill: Skill) -> bool:
 			return level and open and d > 50.0 and d < float(skill.get("charge_speed")) * float(skill.get("charge_duration")) * 0.9
 		"DropkickSkill":
 			return level and open and fighter.is_on_floor() and d > 80.0 and d < float(skill.get("travel_distance")) * 0.9
-		"WeakenAuraUltimate", "CatHutUltimate", "IljinCrewUltimate":
+		"WeakenAuraUltimate", "CatHutUltimate", "IljinCrewUltimate", "BarracksUltimate":
 			return true
 	# 모르는 스킬(빈 껍데기 포함) — 가까울 때 가끔
 	return d < 250.0
