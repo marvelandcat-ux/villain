@@ -369,9 +369,26 @@
 ## 튜토리얼 `maps/Tutorial.tscn`(2026-10-01, 뼈대)
 
 - 그림 `sprite/맵/튜토리얼/`: 하늘(`DecoSky` CanvasLayer -10 화면 꽉), 구름1~4(`DecoClouds`(ParallaxFollow 0.2)/`Spawner` = `maps/RandomCloudSpawner.gd` — 그림·크기·높이·속도 랜덤으로 왼쪽 밖에서 만들어 오른쪽으로 흘리고 나가면 지움), 산(`DecoMountains` 0.3, 4장 번갈아 반전)·숲(`DecoForest` 0.6, region 반복), `DecoBuildings`(양옆 막사, 국기 = `국기 1.png` 한 장 + `maps/FlagFlutter.gdshader`(깃대 `hoist_x` 오른쪽 천만 위아래로 출렁, 끝으로 갈수록 크게. 늘어진 깃발용은 `ui/story/FlagWave.gdshader`)), 땅 `군대 잔디.png`(배율 0.5 반복, 바닥 윗면 y=280. ⚠️ `texture_repeat`는 위아래로도 반복돼 윗변에 아랫줄 흙색이 한 줄 번진다 → `region_rect`를 투명한 윗부분 40px 아래부터 시작), 벽 ±1200
-- 훈련 더미를 P1이 조작(stats 복제 후 `player_move_speed`). ESC = 메인 메뉴. 군인 설명은 TODO
+- 훈련 더미를 P1이 조작(stats 복제 후 `player_move_speed`). ESC = 메인 메뉴. 교관 대사 안내는 아래 "교관 대사 흐름"(지금 이동·점프까지, 나머지 조작 설명은 이어서 TODO)
 - **교관 = 황근출 해병(옷 입은 버전)** `Instructor`(Node2D, scale.x -1로 왼쪽 봄) > `characters/hwanggeunchul/HwanggeunchulUniformRig.tscn`(황근출 리그 상속, `Body`만 `황근출 해병 몸 옷.png`로 — 배율은 맨몸 그림과 보이는 영역이 같게 역산, 몸통 돌리기도 옷 측면 2·3). Fighter 아닌 리그만 — 판정·조작 없음. 원점 y = 바닥 윗면 - 30
 - **처음 켠 사람만** 타이틀 → 튜토리얼(`GameState.tutorial_seen`, settings.cfg `[progress]`, 들어올 때 저장). 메뉴 훈련장 버튼 = `ConfirmPopup.open_choice()` 두 갈래(훈련장 / 튜토리얼 다시, 둘째 버튼 = `alternate_chosen`, ESC = `cancelled`)
+
+### 말풍선 `maps/SpeechBubble.gd`/`.tscn`(2026-10-01) — 교관 대사용, 전부 코드로 그림(스프라이트 안 씀)
+
+- **`@tool` Node2D.** `_draw()`로 흰 타원 + 삼각 꼬리 + 검은 윤곽선을 **직접** 그림. 글자 상자는 폰트 `get_string_size`로 바로 재서(한 프레임 대기 없음) 타원 크기 = `_text_size*0.5 + pad_x/pad_y`. 꼬리는 타원 아래→원점으로 뻗는 삼각형, 윤곽선을 타원+꼬리 한 줄로 이어 그려 이음새 없음(옛 PNG `sprite/body/말풍선*.png`는 이제 안 씀)
+- **노드 원점 = 꼬리 끝 = 팝 커지는 기준점 = 꼬리가 가리키는 곳**(캐릭터 머리). Tutorial 씬엔 `InstructorBubble`로 교관 머리에 배치(현재 world (250,308); 황근출 Head는 리그 로컬 y -36.93 → 머리중심 world ≈326). 교관은 scale.x -1이라 **자식으로 붙이면 글자가 뒤집혀** 맵 직속에 둠
+- 연출: 팝(`TRANS_BACK` 오버슈트) + 열린 뒤 숨쉬기 펄스 + 글자 타이핑 + `[wave]` 물결. 타이핑 블립은 **코드 합성**(`_make_blip`, 오토로드·음원파일 불필요). `say(text)`는 BBCode 가능 — `_strip_bbcode`로 보이는 글자만 세서 타이핑 수를 맞춤(`[color]`/`[b]` 넣어도 안 깨짐). `close()`
+- 폰트 = 강한육군 Bold(`font/강한육군 Bold.ttf`), 모든 글꼴 슬롯 + **모든 `*_font_size` 슬롯**을 지정(⚠️ `bold_font_size` 등을 빼면 `[b]` 강조가 기본 16px로 작아진다)
+- **에디터에서 조절**: `preview_text`로 미리보기, 인스펙터 export = `bubble_center`(꼬리끝 기준 타원 위치), `pad_x`/`pad_y`(크기), `tail_reach`(0~1, 1이면 꼬리가 머리까지 닿음), `tail_spread`(꼬리 밑동 폭, 라디안), `outline_width`, `font_size`. 값 바꾸면 `_refresh_preview()`로 즉시 반영. 노드 자체를 드래그하면 꼬리 끝(=머리 겨냥점)이 같이 움직임
+
+### 교관 대사 흐름 — `Tutorial.gd`(`enum Step { NONE, TALK, DONE }` + `_lines` 배열)
+
+- 해병 `instructor_trigger_range`(500px) 안에 들면 `TALK` 시작, 그 뒤 **스페이스바로 한 줄씩** 넘긴다(`_unhandled_input` KEY_SPACE → `_advance`). 대사 5줄은 `_lines`에 `_ready`에서 강조 입혀 채움: 시작 인사 → AD 이동 → "좋다 아쌔이" → W 점프 → 착지 경직 경고. 마지막 줄 뒤 스페이스 = `DONE`
+- 예전엔 AD 이동·점프를 **실제로 해야** 넘어갔는데(행동 판정 + 자동 타이머), "그냥 넘어가서 이상"하다고 **전부 스페이스 넘김으로 교체**(행동 판정·Timers 제거). 2026-10-01
+- `_advance`: 타이핑 중이면 `_bubble.finish_typing()`으로 즉시 다 띄우고, 다 떴으면 다음 줄. 마지막 줄만 "계속(▼)" 힌트 끔(`say(text, hint)`의 hint=false)
+- 강조 = **빨간색 굵게**(`_em()` → `[color=#e22020][b]…[/b][/color]`). 대상: A·D·W·착지·경직. 기본 글꼴이 이미 Bold라 `[b]`로 굵기 차이는 거의 없고 빨간색으로 튐(더 굵게 원하면 기본 글꼴을 강한육군 Medium으로). ⚠️ **"썌"는 강한육군 폰트에 글리프가 없어** 빈칸 — "쌔"로 써야 보임
+- "계속" 표시: 말풍선이 `hint`일 때 타이핑이 끝나면 글자 아래~타원 바닥 사이에 **깜빡이는 ▼**를 `_draw`로 그림(`HINT_BLINK`). 폰트 기호 글리프 못 쓰니 코드로 그림. 끝난 뒤 `HINT_TEXT_DELAY`(10초) 넘게 안 넘기면 말풍선 바닥 아래에 **"스페이스를 누르세요"**(흰 알약 배경 + 글자)까지 추가로 뜸(`_hint_wait` 누적, say 때 0으로 리셋)
+- ⚠️ **대사 진행 중(`TALK`)엔 카메라를 교관 ±450px로 clamp**(말풍선이 화면 밖으로 안 밀리게). `DONE`이면 해제
 
 ## 훈련장 `maps/TrainingGround.tscn`
 

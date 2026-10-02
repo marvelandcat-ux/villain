@@ -388,11 +388,11 @@ func _start_versus() -> void:
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
-## 훈련장 버튼은 두 갈래 — 훈련장 / 튜토리얼 다시(2026-10-01). ESC면 아무 데도 안 감
+## 훈련장 버튼은 두 갈래 — 훈련장 / 튜토리얼(2026-10-01). ESC면 아무 데도 안 감
 func _on_training_pressed() -> void:
 	_pending = func(): get_tree().change_scene_to_file("res://maps/TrainingGround.tscn")
 	_pending_alternate = func(): get_tree().change_scene_to_file("res://maps/Tutorial.tscn")
-	_confirm.open_choice("어디로 갈까요?", "훈련장", "튜토리얼 다시")
+	_confirm.open_choice("어디로 갈까요?", "훈련장", "튜토리얼")
 
 func _on_alternate_chosen() -> void:
 	_pending = Callable()
