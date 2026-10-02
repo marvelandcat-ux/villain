@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://maps/TrainingGround.gd" id="1"]
+[ext_resource type="Script" path="res://maps/FloorRuler.gd" id="2_ruler"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(2000, 40)
@@ -20,6 +21,10 @@ shape = SubResource("RectangleShape2D_ground")
 [node name="GroundVisual" type="Polygon2D" parent="Ground"]
 color = Color(0.28, 0.3, 0.34, 1)
 polygon = PackedVector2Array(-1000, -20, 1000, -20, 1000, 20, -1000, 20)
+
+[node name="FloorRuler" type="Node2D" parent="Ground"]
+position = Vector2(0, -20)
+script = ExtResource("2_ruler")
 
 [node name="PlayerSpawn" type="Marker2D" parent="."]
 position = Vector2(0, 250)

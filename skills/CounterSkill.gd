@@ -56,10 +56,36 @@ var _slowed: bool = false
 var _prev_time_scale: float = 1.0
 ## 타입을 안 붙인다 — CounterFlash는 class_name이 없어 Node로 받으면 release()를 못 찾는다
 var _flash = null
+## 반격이 맞기 전까지 두 사람을 묶어 둘 자리 {Fighter: Vector2} — 비어 있으면 안 묶는다(필중, 2026-10-02 사용자 요청)
+var _lock_positions: Dictionary = {}
+var _lock_opponent: Fighter = null
 
 func _ready() -> void:
 	super()
 	hitbox.connected.connect(_on_hitbox_connected)
+
+## 묶인 동안 매 물리 프레임 두 사람을 제자리에 세우고 이동·점프·공격·방어를 막는다
+func _physics_process(_delta: float) -> void:
+	if _lock_positions.is_empty():
+		return
+	for f in _lock_positions:
+		if not is_instance_valid(f):
+			continue
+		f.global_position = _lock_positions[f]
+		f.velocity = Vector2.ZERO
+		f.start_busy(0.1)
+	if is_instance_valid(_lock_opponent):
+		_lock_opponent.apply_hitstun(0.1)
+		if _lock_opponent.is_guarding:
+			_lock_opponent.cancel_guard(true)
+
+func _lock(fighter: Fighter, opponent: Fighter) -> void:
+	_lock_opponent = opponent
+	_lock_positions = {fighter: fighter.global_position, opponent: opponent.global_position}
+
+func _unlock() -> void:
+	_lock_positions.clear()
+	_lock_opponent = null
 
 func _execute(fighter: Fighter) -> void:
 	_fighter = fighter
@@ -109,10 +135,14 @@ func trigger_counter(fighter: Fighter) -> void:
 	if opponent == null or not is_instance_valid(opponent):
 		return
 	# 상대를 연출 동안 그 자리에 묶는다 — 느려진 동안 빠져나가면 후려치기가 허공을 친다
-	opponent.velocity.x = 0.0
+	opponent.cancel_finisher_flight()
+	opponent.cancel_guard(true)
+	opponent.velocity = Vector2.ZERO
 	opponent.apply_hitstun(slow_time * slow_scale + 0.1)
 	_start_slow()
 	_teleport_behind(fighter, opponent)
+	# 반격이 맞을 때까지 둘 다 그 자리에 묶는다 — 상대가 빠져나가거나 막아서 헛치는 일이 없게(필중)
+	_lock(fighter, opponent)
 	fighter.start_busy(slow_time * slow_scale + active_duration + 0.1)
 	_spawn_flash(fighter)
 	# 모션의 후려치는 순간이 slow_time에 오도록 거꾸로 계산해 휘두르기 시작 시각을 정한다(느려진 만큼 모션도 길다)
@@ -156,7 +186,11 @@ func _strike(fighter: Fighter) -> void:
 		_flash.release()
 	_flash = null
 	if not is_instance_valid(fighter):
+		_unlock()
 		return
+	# 필중 — 무적(대시 등)이 걸려 있어도 이 한 방은 들어간다
+	if is_instance_valid(_lock_opponent):
+		_lock_opponent.is_invincible = false
 	hitbox.damage = fighter.compute_damage(counter_damage)
 	# 피격 반응(움찔·콤보 수)용 넉백 — 실제 날아가는 속도는 명중 뒤 launch_finisher가 덮어쓴다
 	hitbox.knockback = Vector2(220.0 * fighter.facing, -90.0)
@@ -169,6 +203,12 @@ func _strike(fighter: Fighter) -> void:
 	Timers.after(self, active_duration, _disable_hitbox)
 
 func _disable_hitbox() -> void:
+	# 판정이 켜진 동안 겹침 신호가 안 왔으면(묶인 자리가 판정과 어긋난 경우) 상대 허트박스를 직접 때린다
+	if _striking and is_instance_valid(_lock_opponent):
+		var hurt := _lock_opponent.get_node_or_null("Hurtbox") as Hurtbox
+		if hurt:
+			hitbox._try_hit(hurt)
+	_unlock()
 	_striking = false
 	hitbox.monitoring = false
 	hitbox.monitorable = false
@@ -178,6 +218,7 @@ func _on_hitbox_connected(victim: Node) -> void:
 	if not _striking:
 		return
 	_striking = false
+	_unlock()
 	if not (victim is Fighter) or not is_instance_valid(victim) or not is_instance_valid(_fighter):
 		return
 	var target: Fighter = victim
@@ -248,5 +289,6 @@ func _set_rig_stance(on: bool) -> void:
 func _exit_tree() -> void:
 	# 연출 도중 라운드가 바뀌거나 나가도 게임이 느린 채로 남지 않게
 	_end_slow()
+	_unlock()
 	if _in_stance:
 		_end_stance()

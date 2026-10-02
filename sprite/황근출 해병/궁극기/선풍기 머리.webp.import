@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0l8wu3qe7bkd"
-path="res://.godot/imported/악플러 분노 측면 2.png-06714dcae6e05b86f96ab2eff5179748.ctex"
+uid="uid://b7rwa1qrx07jv"
+path="res://.godot/imported/선풍기 머리.webp-8bf584c161edaa478100287a5fbf811f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/악플러/몸/악플러 분노 측면 2.png"
-dest_files=["res://.godot/imported/악플러 분노 측면 2.png-06714dcae6e05b86f96ab2eff5179748.ctex"]
+source_file="res://sprite/황근출 해병/궁극기/선풍기 머리.webp"
+dest_files=["res://.godot/imported/선풍기 머리.webp-8bf584c161edaa478100287a5fbf811f.ctex"]
 
 [params]
 

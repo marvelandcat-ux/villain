@@ -150,7 +150,7 @@
 - **금쪽이 = 촉법소년의 표시 이름.** 표시 이름이 키라 바꿀 땐 전부: `GameState`(CHARACTERS·색·초상화·리그), `ChokbeopsonyeonStats.tres`, `CharacterSelect.tscn`, `CharacterDex.tscn`, `PortraitFrames.tscn` 노드, `Stage.knockout_characters`, `sprite/도감/전신/금쪽이.png`. 내부 이름은 그대로
 - **새 캐릭터 크기 기준 = 악플러**(머리 ~53x52, 상한 55x55)
 - **숨겨진 캐릭터 `GameState.HIDDEN_CHARACTERS`**(2026-10-01): 캐릭터 선택창에서 **aaddssww**를 치면 아래 칸 줄이 숨겨진 캐릭터 칸으로 바뀌고 다시 치면 원래대로(`CharacterSelect._input`/`_toggle_hidden_mode`, 칸은 `_build_hidden_tiles()`가 코드로 만들어 줄 가운데에). 경로 찾기는 `GameState.character_path()`, `training_characters()`·`character_name_for_path()`도 숨겨진 캐릭터를 포함. 타이틀 구경·도감엔 안 나옴
-  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/`, 팔 파일명 `황 근충 해병 팔.png`·정면 `환근출 해병 정면.png` 오타 그대로): 궁은 빈 껍데기(사용자 지시). **스킬2 `JjajangEatSkill`**(2026-10-01): 주머니에서 짜장면(리그 `EatBowl`, `play_eat_motion`/`_pose_eat`)을 꺼내 1초 먹고 잃은 체력의 30% 회복(씬 `heal_ratio`), 대신 대시 쿨이 먹을 때마다 +2초씩 쌓임(라운드 끝까지, `Fighter.dash_cooldown_bonus` → `effective_dash_cooldown()`, `custom_data["jjajang_eats"]`). 먹다 맞으면(`damaged`) 끊기고 회복·쿨 증가 없음, 쿨 15. ⚠️ `EatBowl` 순서는 씬의 `index="3"`으로 — `_ready()`에서 `move_child`하면 대시 잔상(`duplicate()`)이 자식 속성을 순서로 복사해 머리가 커진다. **스킬1 `DropkickSkill`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 첫 포물선만 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김에서 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직임. 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(경찰 맨손 잽 재사용: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍음, `_pose_headbutt()`; 로컬 좌표라 facing 부호 안 곱함). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로
+  - **황근출 해병** `characters/hwanggeunchul/`(그림 `sprite/황근출 해병/`, 팔 파일명 `황 근충 해병 팔.png`·정면 `환근출 해병 정면.png` 오타 그대로): **기본 몸 = 옷 입은 버전**(캐릭터 씬 `Visual`·`GameState` 리그 둘 다 `HwanggeunchulUniformRig.tscn`, 2026-10-02). **궁 `BarracksUltimate`**(2026-10-02): 암전 → 두 캐릭터를 내무반(`sprite/황근출 해병/궁극기/군대 집.webp`, 1536x1024)으로 옮겨 `duration` 15초 → 원래 자리로. 내무반은 맵 위 `arena_offset`(0,-6000)에 그때 만들고(그림 배율 0.75, 발 높이 = 그림 y 790, 벽은 그림 끝 20px 안), 그동안 맵 루트의 CanvasItem·`Deco*` CanvasLayer는 숨김. 카메라는 `CameraRig.enter_arena(rect, 보는 곳)`/`leave_arena()`(그동안 `_apply_wall_limits` 안 함). **옷 벗기**: 쓰면 먼저 몸통 그림을 떼어 뒤쪽 위로 빙글 던지고 맨몸으로 갈아입음(`BodyRig.get_body_outfit()`/`set_body_outfit()` — 그림·배율·제자리·몸 돌리기 그림 한 번에, 맨몸 값은 `SkillUltimate`의 `bare_body_*`) → `strip_time` 0.6초 뒤 **원래 맵이 금 가며 깨져 떨어짐**(`combat/ScreenShatter.gd` — 화면을 찍어 Polygon2D 조각, 금 퍼짐 → 조각 낙하 → 검정, 화면을 못 찍으면 암전) → 맵 뒤 검은 판(CanvasLayer -100) 위로 내무반 배경 투명도 0→1, 두 캐릭터는 양쪽에서 Fighter 루트 `modulate.a` 0→1(`reveal_*`). 진입 동안 둘 다 무적·busy. 돌아올 때도 같은 깨지는 연출(`_start_leave` → `_break_screen` → `_leave(true)` → 맨 위 까만 판을 걷어 원래 맵 드러냄 + 캐릭터 투명도 0→1), 까만 동안 다시 입음(`redress_on_return`). 내무반에 있는 동안 **눈에서 노란 빛**: 리그 `Head/EyeGlow`(`characters/EyeGlow.gd`, @tool — 머리 그림 픽셀 좌표, 가산·unshaded, `set_active()`로 서서히 켬/끔, 기본 얼굴 그림일 때만 보임, 인스펙터 `preview`로 에디터 미리보기). **스킬2 `JjajangEatSkill`**(2026-10-01): 주머니에서 짜장면(리그 `EatBowl`, `play_eat_motion`/`_pose_eat`)을 꺼내 1초 먹고 잃은 체력의 30% 회복(씬 `heal_ratio`), 대신 대시 쿨이 먹을 때마다 +2초씩 쌓임(라운드 끝까지, `Fighter.dash_cooldown_bonus` → `effective_dash_cooldown()`, `custom_data["jjajang_eats"]`). 먹다 맞으면(`damaged`) 끊기고 회복·쿨 증가 없음, 쿨 15. ⚠️ `EatBowl` 순서는 씬의 `index="3"`으로 — `_ready()`에서 `move_child`하면 대시 잔상(`duplicate()`)이 자식 속성을 순서로 복사해 머리가 커진다. **스킬1 `DropkickSkill`**(2026-10-01): 무릎 꿇기 0.5초(슈퍼아머, 리그 `set_kneeling`/`kneel_*`) → 앞으로 300px 날아 차기(1뎀, 쿨 10) → 맞으면 `launch_finisher(..., shape)`로 첫 포물선만 옆 속도 x2·높이 x2·체공 x5(중력 = peak/airtime², 공중 감속 /airtime, 첫 땅 튕김에서 보통 3타 물리로 복귀), 헛치면 착지 후 1초 못 움직임. 기본공격(2026-10-01) = 1타 뒷손 잽 → 2타 앞손 잽(경찰 맨손 잽 재사용: `held_item_armed` false + `unarmed_thrust`) → 3타 **박치기**(리그 `unarmed_headbutt` — 엉덩이 축 `headbutt_pivot`으로 상체를 뒤로 젖혔다 앞 아래로 내리찍음, `_pose_headbutt()`; 로컬 좌표라 facing 부호 안 곱함). 수치는 악플러와 같은 배열(3/4/7, 파고들기 0/60/120, `finisher_windup` 0.223). 머리 돌리기 그림 전부 오른쪽, 얼굴이 검은 실루엣인 건 그림 그대로
 
 ### 금쪽이
 
@@ -187,6 +187,7 @@
 - **카운터 `CounterSkill`**: `stance_duration`(0.6) 자세 중 상대 공격(맵 피해 제외)을 맞으면 피해 없이 반격, 헛방이면 `whiff_lag`
   - 자세 `BodyRig.set_counter_stance()`: 두 손으로 단소를 얼굴 높이에서 앞 아래로 겨눔, z를 `attack_grip_hand_z`로. **자세 중 idle 몸짓 금지**
   - 반격: `Engine.time_scale` = `slow_scale` + 검은 막 → 상대 등 뒤 순간이동 → 선글라스 번쩍(`CounterFlash.gd`) → 3타 베기 → 데미지 + `launch_finisher`. 예약은 `Timers.after(..., real_time = true)`, 배속은 0.5 미만이면 안 건드림, `_exit_tree()`에서 복구
+  - **필중**(2026-10-02): 반격이 시작되면 맞을 때까지 둘 다 묶임(`_lock`/`_unlock`, 매 물리 프레임 제자리·속도 0·busy, 상대는 경직 + 방어 취소). 때릴 때 상대 무적 해제, 판정 신호가 안 오면 `_disable_hitbox()`가 상대 허트박스를 직접 `_try_hit`. 명중 신호에서 먼저 풀어야 `launch_finisher`가 안 막힘
   - 가로채는 곳 두 군데, 둘 다 `Fighter.try_counter()`: ① `Hurtbox.take_hit()`(false 반환) ② `Fighter.take_damage()`(넉백 있는 피해만). 등록 슬롯 `Fighter.counter_stance`
   - AI는 상대 공격을 읽었을 때만 `_try_counter_stance()`
 - 개찰구 `Turnstile.gd`: 그림 한 장(마주 보는 한 쌍)을 가운데서 반으로 잘라 두 장애물에 하나씩(`flap_dir`, add_child 전). **`visual_scale`과 `TurnstileSkill.spacing`은 같이(spacing = 817 x 배율).** 충돌은 40x45. `CABINET_X`/`BOTTOM_Y`는 그림 바꾸면 재측정
@@ -230,6 +231,7 @@
   - 방향 전환 `head_turn_on_face`: 고개 먼저, 정면인 순간 몸 뒤집기. `Fighter.facing`은 즉시 바뀌므로 공격·스킬·방어·피격이 시작되면 `_face_turn_blocked()`로 즉시 끝냄
   - 회전 타격 `spin_uses_head_turn`: 뒤 반 바퀴는 뒤통수 `head_back_texture`(금쪽이만). `spin_back_flip + spin_back_show` < `spin_strike`
   - 앵커 재는 법(스크립트는 저장소에 없음): 알파 1/4 축소 → bbox 높이 22% 정사각형 열림 연산 → 무게중심·`2sqrt(넓이/pi)`. 프로펠러·턱 말고 머리 공만
+  - **액션 표정 전용 세트** `action_head_turn_textures`/`_anchors`/`_faces_left`(0번 = `action_head_texture`, 2026-10-02 악플러 분노): 액션 표정 중엔 이 세트로 돈다(`_turn_textures()` 등 헬퍼 경유, 비우면 액션 표정 중엔 안 돎). 돌기가 끝나면 `_apply_base_head()`로 복귀
   - 몸통 돌리기 `body_turn_textures`(금쪽이·악플러·주정뱅이·황근출): 도는 도중에만, 평소엔 정면 몸통. 캔버스가 다르면 `body_turn_match_height`, 왼쪽 보는 그림은 `body_turn_faces_left`. 영역은 `_opaque_rect_of()`(알파 절반 이상 — `get_used_rect()`는 알파 1짜리 점에도 늘어남)
   - 파일명 오타는 그대로 둠: `축법소년 픅면 2.png`, `금쪾이 몸 측면3.png`, `주정뱅잉 측면2.png`, `지하철 아저 씨측면 1.png`, `황근축 해병 몸 측면 3.png`
   - ⚠️ 주정뱅이 머리 `측면 3.png`이 몸통 그림으로 덮인 적 있음 — **머리/몸통 파일명이 비슷하니 덮어쓰기 전 내용을 볼 것**
@@ -334,6 +336,7 @@
 - 도감 `CharacterDex`: 별점은 표시 전용. ⚠️ TODO: 놀이터 설명이 옛 기믹
 - `FanTile.gd`(@tool): `corners` 네 점 모양 버튼(캐릭터 선택·가이드). 추가 공식은 파일 맨 위 주석
 - `ui/outline.gdshader`: ⚠️ 셰이더 사용자 함수 안에서 `TEXTURE`/`UV` 못 씀
+- ⚠️ **canvas_item 셰이더에서 `COLOR`를 덮어쓸 땐 처음 `COLOR`(modulate·색조)를 곱할 것** — 안 곱하면 그 파츠만 색조가 빠진다(`BlockedOutline.gdshader`가 기본공격 잠김 동안 주정뱅이 술 빨개짐을 지웠음, 2026-10-02)
 - 초상화(정면): 배경 투명(테두리 flood fill), 크기·위치는 `ui/PortraitFrames.tscn`, 네 곳 모두 `GameState.frame_portrait()` 경유. 캣맘 초상화 = `sprite/body/면.png`
 - 스킬 로고 HUD: `Skill.icon`(투명 여백을 잘라 넣을 것), 지금 주정뱅이·금쪽이만
 
@@ -342,6 +345,7 @@
 - 라운드제: `Stage._process()`가 양쪽 HP를 **한 번에** 판정(동시 KO = 무승부), 시간 초과는 HP 높은 쪽. 승수 `GameState.p1/p2_round_wins`, 미달이면 `reload_current_scene()`. 링아웃 `ring_out_y`
 - 카운트다운(`RoundStart`) 중엔 컨트롤러 `is_active` false + `move(0)` (`set_physics_process(false)`는 관성으로 미끄러짐)
 - KO 연출 `Stage._play_knockout`: 전 캐릭터·전 모드(0.35배속 + 눈 X 표정 `ko_head_texture` + 빙글 날아감)
+- 디버그 격자: 대전 중 **G + '** 동시 입력으로 50px 월드 격자 켬/끔(`maps/DebugGrid.gd`, `Stage.show_debug_grid` static이라 라운드 넘어가도 유지, 100px마다 좌표 숫자, 원점 축 노랑). 스킬 키라 스킬도 같이 나감
 - `CombatHUD`: `update_round_info(p1_wins, p2_wins, time_left)`, 시간 제한 0이면 타이머 숨김
 
 ### 궁극기 컷인 `ui/UltimateCutIn.tscn`
@@ -394,6 +398,7 @@
 
 - 물리값·게임 속도 슬라이더(패널은 코드 생성). static var는 게임 종료까지 유지 — 영구 반영은 `DEFAULT_*`, 이동속도는 `stats/*.tres`
 - `Engine.time_scale`은 `_exit_tree`에서 1로 복구. 동작 테스트 `play_scratch()`/`play_lookback()`/`play_blink()`/`play_special()`. 충돌 보기 `maps/CollisionDebugView.gd`
+- 바닥 눈금자 `Ground/FloorRuler`(`maps/FloorRuler.gd`, @tool): 바닥 윗면에서 50px마다 눈금, 100px마다 긴 눈금 + 가운데(0)부터의 거리 숫자
 
 ## GDScript 코드 스타일
 
