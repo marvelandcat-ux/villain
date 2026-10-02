@@ -74,6 +74,12 @@ func use(fighter: Fighter) -> void:
 func cancel_use() -> void:
 	cooldown_left = effective_cooldown()
 
+## **지금 효과가 지속되는 중이면 남은 비율(1 → 0), 아니면 -1.**
+## 쿨타임 표시(`CooldownPies`)가 "궁을 쓰는 중, 남은 시간이 얼마인지"를 물어볼 때 쓴다.
+## 지속 시간이 있는 스킬만 덮어쓰면 된다 — 안 덮어쓰면 -1이라 "지속 중 아님"으로 친다
+func active_ratio() -> float:
+	return -1.0
+
 ## 하위 클래스가 실제 효과를 구현하는 곳
 func _execute(_fighter: Fighter) -> void:
 	pass

@@ -88,6 +88,13 @@ func _disarm() -> void:
 func is_armed() -> bool:
 	return _left > 0.0
 
+## 경관봉이 남은 비율(1 → 0). 안 들고 있으면 -1 —
+## 쿨타임 표시(`CooldownPies`)가 이걸 보고 "쓰는 중 남은 시간"을 금색으로 그린다
+func active_ratio() -> float:
+	if _left <= 0.0:
+		return -1.0
+	return clampf(_left / maxf(duration, 0.001), 0.0, 1.0)
+
 ## 경봉을 든 채 라운드가 끝나면 배수가 남을 수 있어서, 사라질 때 확실히 푼다
 func _exit_tree() -> void:
 	_disarm()

@@ -48,6 +48,13 @@ static var zoom_boost: float = 1.0
 
 ## 현재 흔들림 세기 0~1 — 타격이 들어오면 데미지에 비례해 쌓이고, 매 프레임 감쇠한다
 var _trauma: float = 0.0
+## --- 잠깐 다가가기(focus_on) ---
+var _focus_target: Node2D = null
+var _focus_left: float = 0.0
+var _focus_total: float = 0.0
+var _focus_blend: float = 0.12
+var _focus_zoom_mul: float = 1.0
+var _focus_base_zoom: float = 1.0
 ## 씬에 저장돼 있던 원래 배율
 var _authored_zoom: float = 1.0
 ## **흐르기(팬)** — 0보다 크면 캐릭터를 따라가지 않고 맵 왼쪽 끝에서 오른쪽 끝까지 이 시간(초) 동안 천천히 흐른다.
@@ -95,6 +102,10 @@ func _process(delta: float) -> void:
 		_update_pan(delta)
 		_apply_shake(delta)
 		return
+	# 한 대상에게 바짝 다가가는 중이면 평소 추적 대신 그쪽을 본다
+	if _update_focus(delta):
+		_apply_shake(delta)
+		return
 	var fighters := get_tree().get_nodes_in_group("fighters")
 	if fighters.size() >= 2:
 		var a: Vector2 = fighters[0].global_position
@@ -104,6 +115,40 @@ func _process(delta: float) -> void:
 		global_position = global_position.lerp(mid, follow_speed * delta)
 		_update_zoom(a, b, delta)
 	_apply_shake(delta)
+
+## **잠깐 한 대상에게 바짝 다가간다.** 궁 마무리처럼 한 순간을 크게 보여줄 때 쓴다.
+## `duration`은 **실제 시간**이다 — 같이 쓰는 슬로우모션(Engine.time_scale)에 끌려 늘어나면
+## 연출이 하염없이 길어진다. 들어가고 나오는 건 `blend`초에 걸쳐 부드럽게 섞인다
+func focus_on(target: Node2D, zoom_mul: float = 1.6, duration: float = 0.45, blend: float = 0.12) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	_focus_target = target
+	_focus_zoom_mul = maxf(zoom_mul, 0.1)
+	_focus_total = maxf(duration, 0.05)
+	_focus_left = _focus_total
+	_focus_blend = clampf(blend, 0.01, _focus_total * 0.5)
+	_focus_base_zoom = zoom.x
+
+## 다가가기를 진행한다. 지금 다가가는 중이면 true(그 프레임은 평소 추적을 건너뛴다)
+func _update_focus(delta: float) -> bool:
+	if _focus_left <= 0.0:
+		return false
+	# 실제 시간으로 센다 — 느려진 배속에 안 끌려간다
+	_focus_left -= delta / maxf(Engine.time_scale, 0.01)
+	if not is_instance_valid(_focus_target):
+		_focus_left = 0.0
+		return false
+	var elapsed: float = _focus_total - _focus_left
+	# 들어갈 때·나올 때만 섞고 가운데는 1.0으로 머문다
+	var w: float = minf(elapsed / _focus_blend, minf(_focus_left / _focus_blend, 1.0))
+	w = clampf(w, 0.0, 1.0)
+	w = w * w * (3.0 - 2.0 * w)
+	var aim: Vector2 = _focus_target.global_position
+	aim.y = clampf(aim.y, min_y, _lowest_center_y())
+	global_position = global_position.lerp(aim, clampf(follow_speed * 2.0 * delta, 0.0, 1.0))
+	var want: float = lerpf(_focus_base_zoom, _focus_base_zoom * _focus_zoom_mul, w)
+	zoom = Vector2(want, want)
+	return _focus_left > 0.0
 
 ## 흐르기를 시작한다 — 지금 배율 그대로, 맵 왼쪽 끝에서 전체 거리의 end_ratio까지 duration초 동안.
 ## 흐를 거리가 min_range보다 짧은 좁은 맵이면 가운데 멈춘 채 hold초 보여 주고 끝낸다

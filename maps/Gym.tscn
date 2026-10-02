@@ -1,9 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
-[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/헬스장.png" id="4"]
+[ext_resource type="Script" path="res://maps/GymLayout.gd" id="5_layout"]
+[ext_resource type="Script" path="res://maps/GymMachine.gd" id="6_machine"]
+[ext_resource type="PackedScene" path="res://skills/WorkoutSkill.tscn" id="7_workout"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(1248, 40)
@@ -11,8 +13,12 @@ size = Vector2(1248, 40)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 1600)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor2f"]
+size = Vector2(640, 22)
+
 [node name="Gym" type="Node2D"]
 script = ExtResource("1")
+map_skill_scene = ExtResource("7_workout")
 
 [node name="DecoBackdropSky" type="Polygon2D" parent="."]
 color = Color(0.1451, 0.1569, 0.1765, 1)
@@ -22,10 +28,37 @@ polygon = PackedVector2Array(-3000, -2400, 3000, -2400, 3000, 280, -3000, 280)
 color = Color(0.0941, 0.0941, 0.0941, 1)
 polygon = PackedVector2Array(-3000, 280, 3000, 280, 3000, 2400, -3000, 2400)
 
-[node name="Background" type="Sprite2D" parent="."]
-position = Vector2(0, -45.5)
-scale = Vector2(1.05, 1.05)
-texture = ExtResource("4")
+[node name="Floor2F" type="StaticBody2D" parent="."]
+position = Vector2(0, 100)
+
+[node name="Slab" type="Polygon2D" parent="Floor2F"]
+color = Color(0.2196, 0.2235, 0.2588, 1)
+polygon = PackedVector2Array(-320, 0, 320, 0, 320, 22, -320, 22)
+
+[node name="SlabEdge" type="Line2D" parent="Floor2F"]
+points = PackedVector2Array(-320, 0, 320, 0)
+width = 4.0
+default_color = Color(0.6, 0.63, 0.71, 1)
+
+[node name="Collision" type="CollisionShape2D" parent="Floor2F"]
+position = Vector2(0, 11)
+shape = SubResource("RectangleShape2D_floor2f")
+one_way_collision = true
+
+[node name="Equipment" type="Node2D" parent="."]
+script = ExtResource("5_layout")
+
+[node name="BarbellCurl" type="Node2D" parent="Equipment"]
+script = ExtResource("6_machine")
+kind = 0
+
+[node name="Squat" type="Node2D" parent="Equipment"]
+script = ExtResource("6_machine")
+kind = 1
+
+[node name="Treadmill" type="Node2D" parent="Equipment"]
+script = ExtResource("6_machine")
+kind = 2
 
 [node name="Ground" type="StaticBody2D" parent="."]
 position = Vector2(0, 300)

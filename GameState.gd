@@ -76,6 +76,7 @@ const CHARACTER_RIGS := {
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
 	"층간소음 청년": "res://characters/floornoise/FloorNoiseRig.tscn",
+	"일진": "res://characters/iljin/IljinRig.tscn",
 	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn",
 }
 
@@ -151,6 +152,16 @@ var story_next_scene: String = ""
 var current_story_id: String = ""
 ## 한 번이라도 끝까지 본 에피소드 id들 (user://settings.cfg의 [story] cleared에 저장)
 var story_cleared: PackedStringArray = PackedStringArray()
+
+## --- 스토리 전투 난이도(2026-10-01) ---
+## **이야기 장면(`StoryFadeScene`)이 정하고 `Stage`가 소환할 때 적용한다.** 에피소드마다 다른 값을 줄 수 있게
+## 상수가 아니라 여기에 담아 넘긴다. 전부 1.0이면 평소 대전과 똑같다(대전 모드는 아예 안 읽는다).
+## 스토리 상대(AI)의 최대 체력 배수 — 2.0이면 체력이 두 배라 싸움이 길어진다
+var story_enemy_hp_scale: float = 1.0
+## 스토리 상대(AI)가 **주는** 피해 배수 — 0.5면 반만 아프다
+var story_enemy_damage_scale: float = 1.0
+## 스토리 상대 AI의 솜씨. 1.0 = 평소 대전 AI 그대로, 0.0 = 아주 둔함(반응 느리고 거의 안 막는다)
+var story_ai_skill: float = 1.0
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
 ## 한 라운드 제한 시간(초). 0이면 시간 제한 없음.

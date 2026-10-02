@@ -988,9 +988,17 @@ func _decide_skills(delta: float) -> void:
 			_end_engage()
 		return
 
-## 맵 전용 스킬(공사현장 내리찍기) — 공중에서 상대 바로 위에 있을 때
+## 맵 전용 스킬 — 기본은 공사현장 내리찍기(공중에서 상대 바로 위에 있을 때).
+## **스킬이 `ai_wants_use()`를 들고 있으면 판단을 그쪽에 통째로 맡긴다**(헬스장 운동처럼
+## 지상에서 쓰는 맵 스킬이 생겨서). 그런 스킬은 "공중이어야 한다"는 아래 조건을 안 탄다
 func _try_map_skill() -> void:
-	if fighter.map_skill == null or fighter.is_on_floor() or not fighter.map_skill.can_use():
+	if fighter.map_skill == null or not fighter.map_skill.can_use():
+		return
+	if fighter.map_skill.has_method("ai_wants_use"):
+		if fighter.map_skill.ai_wants_use(fighter, target):
+			fighter.use_map_skill()
+		return
+	if fighter.is_on_floor():
 		return
 	if _target_distance() < 40.0 and target.global_position.y - fighter.global_position.y > 60.0:
 		fighter.use_map_skill()
@@ -1049,8 +1057,9 @@ func _want_skill(skill: Skill) -> bool:
 		"CounterSkill":
 			# 아무 때나 켜면 헛방 — 상대 공격을 읽었을 때만 _respond_to_threat()이 쓴다
 			return false
-		"TteokbokkiUltimate":
-			return level and d > 40.0 and d < 350.0
+		"DualInstrumentUltimate":
+			# 쌍 악기 모드는 **걸어두는 버프**라 거리와 상관없이 켜고 본다
+			return true
 		"BackSuplexSkill":
 			return level and target.can_be_grabbed() and d < float(skill.get("fallback_grab_range")) + 15.0
 		"CigaretteSmokeSkill":

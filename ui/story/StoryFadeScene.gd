@@ -46,6 +46,13 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 ## **그 대전에서 이겼을 때 이어서 갈 장면**(2026-09-13). Stage가 최종 승리 판정에서 여기로 넘어간다.
 ## 비워두면 예전처럼 결과창(재시도/메뉴)에서 멈춘다
 @export_file("*.tscn") var battle_win_scene: String = ""
+## **상대(AI) 난이도 — 에피소드마다 따로 잡는다.** Stage가 소환할 때 적용한다(평소 대전은 영향 없음).
+## 체력 배수: 2.0이면 체력 두 배라 싸움이 길어진다 / 피해 배수: 0.5면 상대 공격이 반만 아프다
+@export var battle_enemy_hp_scale: float = 1.0
+@export var battle_enemy_damage_scale: float = 1.0
+## 상대 AI 솜씨. **1 = 평소 대전 AI 그대로, 0 = 아주 둔함**(반응이 느리고 거의 안 막고 스킬도 잘 안 쓴다).
+## 스토리는 "처음 해보는 사람이 이기는 판"이라 대전용 AI를 그대로 쓰면 너무 잘한다
+@export_range(0.0, 1.0, 0.05) var battle_ai_skill: float = 1.0
 ## 대화창(DialogueBox)이나 장소 카드(LocationCard)를 지정하면 그게 끝나야 나간다(hold_time도 지나야 함). 비우면 시간만 본다
 @export var dialogue: NodePath
 ## 다음 장면으로 넘길 때 전환 방식
@@ -218,6 +225,9 @@ func _setup_battle() -> void:
 	GameState.rounds_to_win = battle_rounds
 	GameState.time_limit_seconds = battle_time_limit
 	GameState.story_next_scene = battle_win_scene
+	GameState.story_enemy_hp_scale = battle_enemy_hp_scale
+	GameState.story_enemy_damage_scale = battle_enemy_damage_scale
+	GameState.story_ai_skill = battle_ai_skill
 	GameState.reset_round_wins()
 
 func _unhandled_input(event: InputEvent) -> void:

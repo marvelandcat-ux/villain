@@ -22,6 +22,9 @@ next_scene = "res://maps/Playground.tscn"
 battle_p1 = "res://characters/police/Police.tscn"
 battle_p2 = "res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn"
 battle_win_scene = "res://ui/story/StoryScene6.tscn"
+battle_enemy_hp_scale = 2.0
+battle_enemy_damage_scale = 0.5
+battle_ai_skill = 0.35
 
 [node name="Background" type="ColorRect" parent="." unique_id=1558858319]
 layout_mode = 1

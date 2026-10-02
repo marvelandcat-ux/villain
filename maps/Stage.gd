@@ -47,8 +47,19 @@ static var show_debug_grid: bool = false
 @export var knockout_characters: Array[String] = []
 ## 스토리 모드에서만 연출을 쓸지. 끄면 일반 대전에서도 나온다
 @export var knockout_story_only: bool = false
+## 체력·스킬 판(`CombatHUD`의 선수 판 둘)을 **화면 위쪽 좌·우 구석**으로 올릴지.
+## 놀이터처럼 아래쪽에 발판·모래밭이 있어서 평소 자리(아래)에 두면 바닥 기믹을 가리는 맵에서 켠다
+@export var hud_panels_top: bool = false
 ## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다
 @export var knockout_time_scale: float = 0.35
+## 라운드 승리 띠(평행사변형 배너) 장면. 비워 두면 기본 띠(`ui/RoundWinBanner.tscn`)를 쓴다
+@export var round_banner_scene: PackedScene = null
+## **승리 띠 미리보기 키.** 싸우는 중에 이 키를 누르면 라운드를 안 끝내고 띠만 한 번 지나간다 —
+## 누를 때마다 P1 쪽·P2 쪽이 번갈아 나온다. 자리 잡을 때 쓰라고 둔 것이라 끄려면 false로.
+## 띠가 지나가는 동안에도 조작은 그대로 되고 라운드 진행에는 아무 영향이 없다
+@export var debug_banner_preview: bool = true
+## 그 키(기본 B)
+@export var debug_banner_key: Key = KEY_B
 ## 맞은 순간 딱 멈춰 있는 시간(초) — 타격감을 주는 정지
 @export var knockout_hitstop: float = 0.07
 ## 날아가는 시간(초)과 가로/세로 거리(px). 세로는 음수가 위로 뜨는 양이다
@@ -60,6 +71,12 @@ static var show_debug_grid: bool = false
 
 var _p1: Fighter
 var _p2: Fighter
+## 라운드 승리 띠의 기본 장면
+const DEFAULT_ROUND_BANNER := "res://ui/RoundWinBanner.tscn"
+
+## 미리보기 키를 누를 때 번갈아 보여 줄 쪽
+var _banner_preview_p1: bool = false
+
 var _round_over: bool = false
 ## 처치 연출을 재생하는 중 — 끝날 때까지 승패 판정을 멈춰둔다
 var _knockout_playing: bool = false
@@ -106,6 +123,8 @@ func _ready() -> void:
 
 	_combat_hud = get_node_or_null("CombatHUD")
 	if _combat_hud:
+		if _combat_hud.has_method("set_panels_top"):
+			_combat_hud.set_panels_top(hud_panels_top)
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 
@@ -261,14 +280,37 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 	if _combat_hud:
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win or GameState.p2_round_wins >= GameState.rounds_to_win
-	var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
-	add_child(result_screen)
 	if match_decided:
+		var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
+		add_child(result_screen)
 		_show_final_result(result_screen, p1_won, is_draw)
-	else:
-		result_screen.show_round_result(p1_won, is_draw, GameState.p1_round_wins, GameState.p2_round_wins)
-		await get_tree().create_timer(2.0).timeout
-		get_tree().reload_current_scene()
+		return
+	# **라운드 중간은 결과창 대신 띠 하나가 지나간다** — 창이 뜨면 흐름이 끊겨서
+	# "로그가 찍힌다"는 느낌이 났다(2026-10-02 사용자 요청)
+	await _play_round_banner(p1_won, is_draw)
+	if not is_inside_tree():
+		return   # 띠가 지나가는 사이에 맵이 사라졌으면(메뉴로 나감 등) 아무 것도 안 한다
+	get_tree().reload_current_scene()
+
+## 라운드 승리 띠를 띄우고 끝날 때까지 기다린다. 띠를 못 찾으면 잠깐 쉬고 넘어간다
+func _play_round_banner(p1_won: bool, is_draw: bool) -> void:
+	var scene: PackedScene = round_banner_scene
+	if scene == null and ResourceLoader.exists(DEFAULT_ROUND_BANNER):
+		scene = load(DEFAULT_ROUND_BANNER)
+	var band: Node = null
+	var banner: Node = null
+	if scene != null:
+		banner = scene.instantiate()
+		add_child(banner)
+		band = banner.get_node_or_null("Band")
+	if band == null or not band.has_method("play"):
+		if banner:
+			banner.queue_free()
+		await get_tree().create_timer(1.2).timeout
+		return
+	band.play(p1_won, is_draw)
+	await band.finished
+	banner.queue_free()
 
 func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool) -> void:
 	if is_draw:
@@ -306,6 +348,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				_debug_skip_story_battle()
 				return
+	# 승리 띠 미리보기 — 라운드는 그대로 두고 띠만 한 번 띄운다
+	if debug_banner_preview and event is InputEventKey:
+		var bk: InputEventKey = event
+		var hit: bool = bk.keycode == debug_banner_key or bk.physical_keycode == debug_banner_key
+		if bk.pressed and not bk.echo and hit:
+			get_viewport().set_input_as_handled()
+			_banner_preview_p1 = not _banner_preview_p1
+			_play_round_banner(_banner_preview_p1, false)
+			return
 	if event.is_action_pressed("ui_cancel"):
 		open_pause_menu()
 
@@ -376,14 +427,20 @@ func _debug_skip_story_battle() -> void:
 func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bool, player_index: int) -> Fighter:
 	var scene: PackedScene = load(character_path)
 	var fighter: Fighter = scene.instantiate()
+	# ⚠️ 체력·공격력 손보기는 **add_child 전에** 해야 한다 — Fighter._ready()가 current_hp를 stats.max_hp로 잡는다
+	if is_ai and GameState.game_mode == "story":
+		_apply_story_handicap(fighter)
 	add_child(fighter)
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
 		fighter.global_position = spawn.global_position
+		_face_each_other(fighter, spawn, spawn_marker_name)
 	if is_ai:
 		# 스토리는 Claude API가 전략을 얹는 AI, 대전 모드 컴퓨터 상대는 규칙 기반 AI만(사용자 결정 — API 비용 없음)
 		if GameState.game_mode == "story":
-			fighter.add_child(ClaudeAIController.new())
+			var brain := ClaudeAIController.new()
+			_tune_story_ai(brain)
+			fighter.add_child(brain)
 		else:
 			fighter.add_child(AIController.new())
 	else:
@@ -395,6 +452,51 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 		fighter.add_child(skill)
 		fighter.map_skill = skill
 	return fighter
+
+## 시작할 때 **상대 쪽을 보게** 돌려놓는다(2026-10-02). `Fighter.facing` 기본값이 1(오른쪽)이라
+## 그냥 두면 오른쪽 선수가 **등을 보인 채** 시작하고, 한 발 움직여야 비로소 돌아선다.
+## 맵이 자리를 옮겨도(헬스장처럼 라운드마다 기구 자리가 바뀌는 맵) 두 마커의 관계만 보므로 그대로 맞는다
+func _face_each_other(fighter: Fighter, spawn: Marker2D, spawn_marker_name: String) -> void:
+	var other_name: String = "PlayerSpawn2" if spawn_marker_name == "PlayerSpawn1" else "PlayerSpawn1"
+	var other: Marker2D = get_node_or_null(other_name)
+	if other == null:
+		return
+	var dx: float = other.global_position.x - spawn.global_position.x
+	if not is_zero_approx(dx):
+		fighter.facing = signf(dx)
+
+## 스토리 상대의 체력·공격력을 그 에피소드가 정한 배수로 조정한다.
+## ⚠️ **`stats`는 씬이 공유하는 Resource라 반드시 복제해서 고친다** — 그냥 고치면 훈련장·대전에서
+## 같은 캐릭터를 골랐을 때도 체력이 두 배인 채로 나온다(디스크의 .tres까지 더럽혀질 수 있다)
+func _apply_story_handicap(fighter: Fighter) -> void:
+	var hp_scale: float = GameState.story_enemy_hp_scale
+	var dmg_scale: float = GameState.story_enemy_damage_scale
+	if fighter.stats == null or (is_equal_approx(hp_scale, 1.0) and is_equal_approx(dmg_scale, 1.0)):
+		return
+	fighter.stats = fighter.stats.duplicate()
+	fighter.stats.max_hp = maxi(int(round(fighter.stats.max_hp * hp_scale)), 1)
+	# 공격력은 `compute_damage()`가 곱하는 `stats.attack_multiplier`로 깎는다 —
+	# 임시 디버프(`attack_debuff_multiplier`)에 걸면 다른 스킬이 풀어 버릴 수 있다
+	fighter.stats.attack_multiplier *= dmg_scale
+
+## 스토리 상대 AI의 솜씨를 `GameState.story_ai_skill`(0~1)로 낮춘다.
+## **1이면 평소 대전 AI 그대로**, 0이면 아래 "둔한 값"까지 쭉 끌어내린다.
+## 값 하나로 반응속도·방어·회피·스킬 사용을 한꺼번에 움직여야 "조금만 약하게"가 쉬워진다
+func _tune_story_ai(ai: ClaudeAIController) -> void:
+	var skill: float = clampf(GameState.story_ai_skill, 0.0, 1.0)
+	if is_equal_approx(skill, 1.0):
+		return
+	# 사람 반응속도가 0.2~0.25초다. 기본 0.09는 사람보다 빠르다 — 둔하게 하려면 그보다 한참 늦춘다
+	ai.reaction_time = lerpf(0.45, ai.reaction_time, skill)
+	ai.guard_react_chance = lerpf(0.10, ai.guard_react_chance, skill)
+	ai.dodge_react_chance = lerpf(0.15, ai.dodge_react_chance, skill)
+	ai.skill_commit_chance = lerpf(0.15, ai.skill_commit_chance, skill)
+	ai.skill_think_interval = lerpf(0.60, ai.skill_think_interval, skill)
+	ai.bait_chance = lerpf(0.0, ai.bait_chance, skill)
+	# 멀어도 잘 안 달려든다 — 플레이어가 거리를 잡을 틈이 생긴다
+	ai.dash_approach_distance = lerpf(520.0, ai.dash_approach_distance, skill)
+	# Claude에게 전략을 묻는 주기도 늘린다(판단이 늦게 갱신 = 상황 대응이 굼뜸)
+	ai.decision_interval = lerpf(6.0, ai.decision_interval, skill)
 
 func _freeze_controllers() -> void:
 	_set_controllers_active(false)

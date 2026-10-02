@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://u6vwjtavndcn"]
+
+[ext_resource type="Script" uid="uid://mqqnqeoquaff" path="res://combat/XSlashTrail.gd" id="1_x"]
+
+[node name="XSlashTrail" type="Node2D" unique_id=1097063023]
+script = ExtResource("1_x")

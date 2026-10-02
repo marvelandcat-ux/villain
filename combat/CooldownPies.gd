@@ -29,6 +29,14 @@ extends Node2D
 @export var dash_color: Color = Color(0.7, 1.0, 0.2, 0.95)
 ## 기본공격 잠금 X 색 — 막힌 무기가 깜빡이는 빨강
 @export var blocked_color: Color = Color(1.0, 0.2, 0.2, 0.95)
+## **궁극기를 쓰는 중 남은 시간** 색 — 방어(하늘)·대시(라임)·잠금(빨강) 어느 것과도 안 겹치는 금색.
+## 이 칸은 **지속형 궁(지하철 아저씨 쌍 악기, 경찰 경관봉)이 돌아가는 동안에만** 뜬다
+@export var ultimate_active_color: Color = Color(1.0, 0.82, 0.25, 0.95)
+## 궁극기 **쿨타임**까지 보여줄지. **기본은 끔** — 쿨타임은 HUD 스킬 칸이 이미 차오르며 보여 주므로
+## 여기까지 뜨면 라운드 내내 칸 하나가 붙박이로 떠 있게 된다(2026-10-02 사용자 요청)
+@export var show_ultimate_cooldown: bool = false
+## 쿨타임까지 켰을 때 쓰는 색(보라). 끈 상태면 안 쓰인다
+@export var ultimate_color: Color = Color(0.78, 0.36, 1.0, 0.95)
 ## X 팔 하나의 길이(중심에서 끝까지)·반 굵기(px). 끝까지 높이 = (길이 + 반 굵기) / √2 — 기본값이면 원 반지름과 비슷
 @export var x_arm_length: float = 8.5
 @export var x_arm_half_width: float = 2.8
@@ -69,6 +77,7 @@ func _ready() -> void:
 	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
 	material = mat
 	_pies = [Pie.new("guard_cooldown_ratio", guard_color), Pie.new("dash_cooldown_ratio", dash_color),
+		Pie.new("ultimate_timer_ratio", ultimate_color),
 		Pie.new("blocked_attack_ratio", blocked_color, true)]
 
 func _process(delta: float) -> void:
@@ -89,6 +98,13 @@ func _process(delta: float) -> void:
 		if not fighter.has_method(pie.method):
 			continue
 		var ratio: float = fighter.call(pie.method)
+		# 궁극기 칸은 **지속형 궁이 돌아가는 동안** 남은 시간이 줄어드는 걸 보여 준다(금색).
+		# 쿨타임까지 켜 뒀을 때만 차오르는 보라가 따로 뜬다
+		if pie.method == "ultimate_timer_ratio":
+			var using: bool = fighter.has_method("ultimate_active_ratio") and fighter.ultimate_active_ratio() >= 0.0
+			pie.color = ultimate_active_color if using else ultimate_color
+			if not using and not show_ultimate_cooldown:
+				ratio = 1.0
 		var cooling: bool = ratio < 1.0
 		if cooling:
 			if not pie.cooling and not _shown.has(pie):

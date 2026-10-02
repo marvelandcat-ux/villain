@@ -17,6 +17,26 @@ extends MeleeAttack
 ## 아직 옮기지 않은 캐릭터는 예전과 똑같이 동작한다
 @export var hits: Array[AttackData] = []
 
+## **평소 타 수에 더해지는 추가 타.** 버프가 켜고 끈다 — 지하철 아저씨 쌍 악기 궁이 1을 걸어 3타 → 4타가 된다.
+## 늘어난 타는 적어 둔 칸이 없으므로 **데미지·넉백·파고들기 모두 마지막 칸 값을 그대로 쓴다**.
+## 자세는 따로다 — 몸(`BodyRig`)의 4타 포즈 씬을 채워 두면 그쪽이 쓰인다
+var bonus_hits: int = 0
+
+## **부가 장치가 가져간 타**가 "맞았다/헛쳤다"를 기다리는 시간(초).
+## 던진 물건이 날아가 상대에게 닿을 시간이 필요해서 몸 판정(active_duration)보다 길게 잡는다
+@export var projectile_active_duration: float = 0.9
+## 이번 타를 부가 장치(던지기 등)가 가져갔는지 — 가져간 타는 몸 판정을 안 켠다
+var _external_hit: bool = false
+
+## **타별 예비동작 시간(초)** — 그 타를 시작하고 몇 초 뒤에 판정이 켜지는지.
+## 비워 두거나 0 이하면 평소 규칙(`windup`, 마무리는 `finisher_windup`)을 쓴다.
+## 어떤 타만 늦게/빨리 치게 하고 싶을 때 쓴다 — 지하철 아저씨 2타가 던진 리코더를 기다린다
+@export var combo_windup: Array[float] = []
+## **왼손에도 물건을 든 동안**(지하철 아저씨 쌍 악기 궁) 대신 쓰는 타별 예비동작.
+## 여기 값이 0보다 크면 위 `combo_windup`보다 이게 이긴다 —
+## 궁 중 2타는 던진 리코더가 손에 돌아오길 기다려야 해서 늦고, 평소 2타는 그럴 이유가 없다
+@export var dual_combo_windup: Array[float] = []
+
 ## 타별 데미지 (총 3타) — hits가 비어 있을 때만 쓴다
 @export var combo_damage: Array[int] = [3, 4, 7]
 ## 타별 넉백 (x는 앞 방향 자동반전, y는 띄우기)
@@ -127,9 +147,66 @@ extends MeleeAttack
 
 ## 타입을 안 붙이고 preload로 가져온다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다 (Fighter._shield, ShoulderChargeSkill의 ChargeWind와 같은 이유)
+@export_group("경관봉 난무 (무기 들었을 때만)")
+## **무기를 들었을 때만** 평타 콤보가 통째로 바뀐다(경찰 경관봉 모드, 2026-10-01 사용자 요청
+## "궁 쓰고 평타는 개 패듯이"). 맨손일 때는 아무 영향이 없다 — `Visual.held_item_armed`로 판단한다.
+##  1타 위에서 아래로 내려치기 → 2타 아래에서 위로 올려쳐 **띄운다** →
+##  띄운 뒤 `armed_flurry_duration` 동안 **평타를 누르는 족족** 부채꼴 범위를 두들긴다
+@export var armed_flurry_enabled: bool = false
+## 2타로 띄운 뒤 난무를 받아 주는 시간(초)
+@export var armed_flurry_duration: float = 3.0
+## 난무 한 대당 데미지. ⚠️ **이 값이 그대로 들어간다**(`compute_damage()`를 안 거친다) —
+## 경관봉 모드 배수(x2)가 이미 "강화된 상태"를 뜻하므로 또 곱하면 두 번 강화된다.
+## 왕관 버프 같은 걸 같이 먹이고 싶으면 `_armed_strike()`에서 `compute_damage()`로 바꿀 것
+@export var armed_flurry_damage: int = 8
+## 연타 사이 최소 간격(초) = **한 대의 최소 간격**. 사람이 아무리 빨리 눌러도 이보다 촘촘히는 안 들어간다.
+## 간격 안에 누른 입력은 버리지 않고 하나 기억했다가 간격이 끝나는 즉시 나간다("누른 횟수만큼"을 지키려고).
+## ⚠️ 이 값이 전체 피해를 정한다 — 0.085면 3초에 최대 약 35대(x8 = 280)다
+@export var armed_flurry_min_interval: float = 0.085
+## 난무 한 대의 모션 길이(초). 짧을수록 빨라 보인다
+@export var armed_flurry_swing_time: float = 0.1
+## 난무 한 대의 밀어내는 힘. **작게** 둬야 상대가 부채꼴 안에 머문다
+@export var armed_flurry_knockback: Vector2 = Vector2(16, 0)
+## 난무 중 상대를 붙잡아 두는 높이(공격자 원점 기준, 음수가 위)와 끌어당기는 세기.
+## ⚠️ **맞을 때마다 "띄우는" 방식은 못 쓴다** — 칠 때마다 위로 속도를 주면 매번 조금씩 더 올라가서
+## 2초쯤 뒤엔 부채꼴 위로 빠져나가 연타가 헛돈다(헤드리스 실측: y -0 → -89).
+## 대신 맞을 때마다 이 높이로 **부드럽게 끌어당긴다** — 때리는 간격이 달라져도 늘 범위 안에 떠 있다
+@export var armed_flurry_hold_y: float = -68.0
+@export var armed_flurry_hold_speed: float = 7.0
+## 난무 동안 손·무기 잔상(`BodyRig.attack_smear`)을 켤지. 끝나면 원래대로 되돌린다
+@export var armed_flurry_smear: bool = true
+## 휘두를 때마다 **참격 자국**(`combat/SlashArc.gd`)을 남길지와 그 크기 배수.
+## 자국이 없으면 아무리 빨리 휘둘러도 "툭툭 친다"로 보인다 — 칼싸움처럼 보이는 건 거의 이 자국 몫이다
+@export var armed_slash_arc: bool = true
+@export var armed_slash_arc_scale: float = 1.0
+
+@export_group("경관봉 난무 — 부채꼴 범위")
+## 부채꼴이 시작하는 자리(무기 쥔 손 언저리, 캐릭터 원점 기준). x는 바라보는 쪽으로 자동 반전
+@export var armed_flurry_origin: Vector2 = Vector2(14, -44)
+## 부채꼴이 앞으로 뻗는 거리(px)
+@export var armed_flurry_reach: float = 140.0
+## 부채꼴이 위아래로 벌어지는 각도(도, 한쪽 기준)
+@export var armed_flurry_half_angle_deg: float = 44.0
+
+@export_group("경관봉 1·2타 — 둔탁한 타격감")
+## 경봉 1·2타의 명중 효과를 **둔기(퍽!)** 로 바꾼다(`Hitbox.blunt_impact`). 난무는 너무 자주 맞아서 안 켠다
+@export var armed_blunt_impact: bool = true
+## 맞는 순간 화면이 멈추는 시간(초). **둔탁함은 거의 이 멈춤이 만든다** — 0이면 안 멈춘다.
+## 프로젝트 기본은 0(2026-09-25 사용자 요청으로 끔)이라, 이 두 타에만 따로 켜 주는 값이다
+@export var armed_hit_hitstop: float = 0.055
+## 맞는 순간 화면 흔들림 배수(1 = 평소)
+@export var armed_hit_shake: float = 2.2
+
+@export_group("경관봉 2타 — 띄우기")
+## 2타(올려치기)가 상대를 띄우는 힘. 난무가 이어지려면 떠 있어야 한다
+@export var armed_lift_pop: float = 440.0
+## 2타의 넉백 — 가로로 많이 밀면 부채꼴 밖으로 나가 버린다
+@export var armed_lift_knockback: Vector2 = Vector2(40, -120)
+
 const LAUNCH_SMOKE := preload("res://combat/LaunchSmoke.gd")
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 const JUMP_WIND := preload("res://combat/JumpWind.gd")
+const SLASH_ARC := preload("res://combat/SlashArc.gd")
 
 ## --- 드롭킥 마무리 (촉법소년 3타) ---
 ## 켜면 마무리 타가 "뛰어올라 두 발로 차고 넘어졌다 일어나는" 드롭킥이 된다.
@@ -200,6 +277,32 @@ var _spin_shape_facing: float = 0.0
 var _spin_wind_timer: float = 0.0
 var _spin_wind_angle: float = 0.0
 ## 버프가 콤보 타마다 더해 주는 고정 데미지(악플러 열등감 +2). 배율 곱하기 전에 더하고, 회전 난무엔 안 붙는다
+## --- 경관봉 난무 상태 ---
+## 지금 난무를 받고 있는지와 남은 시간
+var _armed_flurry: bool = false
+var _armed_left: float = 0.0
+## 다음 한 대까지 남은 간격 / 그 사이에 눌러 둔 입력 하나
+var _armed_gap: float = 0.0
+var _armed_pending: bool = false
+## 지금까지 몇 번 그었는지 — 베기 표(`BodyRig.SLASHES`)를 차례로 돌려 쓰는 데 쓴다
+var _armed_slash: int = 0
+## 참격 자국을 **후리기 시작하는 순간**에 맞춰 띄우려고 재는 시간(음수면 띄울 게 없다)과 그때 쓸 베기 번호
+var _armed_arc_delay: float = -1.0
+var _armed_arc_index: int = 0
+## 난무 동안 잠깐 올려 둔 잔상 설정 — 끝나면 되돌린다
+var _armed_smear_life: float = 0.0
+var _armed_smear_alpha: float = 0.0
+var _armed_smear_fill: int = 0
+## 원래 히트박스 모양·잔상 설정 — 끝나면 되돌린다
+var _armed_saved_shape: Shape2D = null
+var _armed_fan_right: ConvexPolygonShape2D = null
+var _armed_fan_left: ConvexPolygonShape2D = null
+var _armed_fan_facing: float = 0.0
+var _armed_smear_saved: bool = false
+
+## 씬에 적어 둔 원래 히트스톱 — 경봉 타에만 잠깐 올렸다가 여기로 되돌린다
+var _base_hitstop: float = 0.0
+
 var bonus_damage: int = 0
 
 ## 이만큼보다 짧은 시간에 파고들지는 않는다 — 예비동작이 0인 캐릭터가 한 프레임에 순간이동하지 않게
@@ -208,19 +311,60 @@ const LUNGE_MIN_TIME := 0.08
 ## --- 타별 값 읽기 (hits가 있으면 파일에서, 없으면 옛 배열에서) ---
 
 func _hit_count() -> int:
-	return hits.size() if not hits.is_empty() else combo_damage.size()
+	var base: int = hits.size() if not hits.is_empty() else combo_damage.size()
+	return base + maxi(bonus_hits, 0)
 
 func _is_final(step: int) -> bool:
 	return step >= _hit_count() - 1
 
 func _hit_data(step: int) -> AttackData:
-	if hits.is_empty() or step < 0 or step >= hits.size():
+	if hits.is_empty() or step < 0:
 		return null
-	return hits[step]
+	# 늘어난 타(bonus_hits)는 적어 둔 칸이 없으므로 **마지막 칸 값을 그대로 쓴다**
+	return hits[mini(step, hits.size() - 1)]
+
+## 늘어난 타가 배열 범위를 넘어가면 마지막 칸을 보게 한다 — 안 그러면 4타에서 튕긴다.
+## 데미지·넉백·팝업처럼 **반드시 값이 있어야 하는** 배열에만 쓴다
+func _clamp_step(step: int, count: int) -> int:
+	return clampi(step, 0, maxi(count - 1, 0))
+
+## 평소 타 수(늘어난 몫을 뺀 값)
+func _base_hit_count() -> int:
+	return hits.size() if not hits.is_empty() else combo_damage.size()
+
+## 있어도 되고 없어도 되는 배열(파고들기 등)에서 이 타가 쓸 칸 번호. 없으면 -1.
+## **늘어난 타만** 마지막 칸으로 당긴다 — 평소 타는 예전과 똑같이, 칸이 모자라면 없는 것으로 친다
+func _slot(step: int, count: int) -> int:
+	if step < count:
+		return step
+	if bonus_hits > 0 and count > 0 and step >= _base_hit_count():
+		return count - 1
+	return -1
+
+## 그 타에만 따로 적어 둔 예비동작 시간. 0 이하면 "안 적었다"는 뜻이라 평소 규칙을 쓴다
+func _step_windup(step: int) -> float:
+	if _dual_armed():
+		var j: int = _slot(step, dual_combo_windup.size())
+		if j >= 0 and dual_combo_windup[j] > 0.0:
+			return dual_combo_windup[j]
+	var i: int = _slot(step, combo_windup.size())
+	return combo_windup[i] if i >= 0 else 0.0
+
+## 왼손에도 물건을 들고 있는지(= 쌍 악기 궁 중인지) 몸에게 물어본다
+func _dual_armed() -> bool:
+	if not is_instance_valid(_fighter):
+		return false
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	return visual != null and "held_item_l_armed" in visual and bool(visual.held_item_l_armed)
 
 ## 이 타를 누른 뒤 몇 초 뒤에 판정을 켤지.
 ## 새 방식은 몸에게 물어본다 — 모션 길이만 바꿔도 판정이 따라오게(예전엔 finisher_windup을 손으로 맞춰야 했다)
 func _windup_for(step: int, fighter: Fighter) -> float:
+	# 타별로 따로 적어 둔 값이 있으면 그게 제일 세다 (지하철 아저씨 2타:
+	# 던진 리코더가 손에 돌아온 **뒤에** 쳐야 해서 판정을 늦춘다)
+	var own: float = _step_windup(step)
+	if own > 0.0:
+		return own
 	var d: AttackData = _hit_data(step)
 	if d != null:
 		var visual: Node = fighter.get_node_or_null("Visual") if is_instance_valid(fighter) else null
@@ -232,17 +376,25 @@ func _windup_for(step: int, fighter: Fighter) -> float:
 	return windup
 
 func _ready() -> void:
+	_base_hitstop = hitbox.hitstop_time if hitbox else 0.0
 	super()   # start_on_cooldown 처리 (기본공격은 꺼져 있지만 규칙을 깨지 않는다)
 	# 명중하는 순간(스윙 진행 중이면) 곧바로 "맞음"으로 판정한다
 	hitbox.connected.connect(_on_hitbox_connected)
 
 func _on_hitbox_connected(victim: Node) -> void:
 	_count_hit_for_break()
+	# 경관봉 난무 중에는 콤보 단계를 건드리지 않는다 — 떠 있는 높이만 붙잡아 둔다
+	if _armed_flurry:
+		_hold_in_flurry(victim)
+		return
 	if _swinging and not _resolved:
 		# **_resolve보다 먼저 부른다** — _resolve는 예약 입력이 있으면 그 자리에서 다음 타를 시작하면서
 		# _swing_step을 바꿔버려, 뒤에 부르면 "몇 번째 타였는지"를 잘못 보게 된다
 		_hold_for_next_hit(victim)
 		_launch_finisher(victim)
+		# **넉백을 다 먹인 뒤** 알린다 — 연출이 "날아가는 동안"을 잡으려면 속도가 이미 실려 있어야 한다.
+		# _resolve보다 먼저여야 한다(_resolve는 바로 다음 타를 시작하며 _swing_step을 바꾼다)
+		_announce_hit(victim)
 		_resolve(true)
 
 ## 앞 타(1·2타)가 맞았을 때 — 다음 타가 들어갈 때까지 상대가 못 움직이게 경직을 보장한다.
@@ -389,12 +541,19 @@ func _spawn_break_debris() -> void:
 ## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다.
 ## 그랩 충전이 걸려 있으면 쿨과 상관없이 회전 난무를 받아준다(끌어온 직후 바로 나가야 하므로)
 func can_use() -> bool:
+	# 난무 중에는 쿨과 상관없이 누르는 대로 받는다
+	if _armed_flurry:
+		return true
 	if spin_flurry_enabled and not _spin_active and _fighter != null and is_instance_valid(_fighter) and _fighter.custom_data.get("keyboard_spin_charged", false):
 		return true
 	return _swinging or _chain_left > 0.0 or cooldown_left <= 0.0
 
 func use(fighter: Fighter) -> void:
 	_fighter = fighter
+	# 경관봉 난무 중이면 **누를 때마다 한 대** — 콤보 단계는 건드리지 않는다
+	if _armed_flurry:
+		_armed_strike(fighter)
+		return
 	# 그랩으로 끌어온 직후 다음 기본공격 1번은 키보드 회전 난무로 바뀐다(악플러 강화). 쓰면 충전이 소모된다
 	if spin_flurry_enabled and not _spin_active and fighter.custom_data.get("keyboard_spin_charged", false):
 		fighter.custom_data["keyboard_spin_charged"] = false
@@ -437,6 +596,17 @@ func _process(delta: float) -> void:
 		if _spin_left <= 0.0:
 			_end_spin_flurry()
 		return
+	# 참격 자국은 **후리기가 시작되는 순간**에 띄운다 — 1·2타든 난무든 같은 박자다
+	if _armed_arc_delay >= 0.0:
+		_armed_arc_delay -= delta
+		if _armed_arc_delay < 0.0 and is_instance_valid(_fighter):
+			var vis: Node = _fighter.get_node_or_null("Visual")
+			if vis:
+				_spawn_slash_arc(_fighter, vis, _armed_arc_index)
+	# 경관봉 난무 — 판정을 몸에 붙여 따라다니게 하고, 시간이 다 되면 끝낸다
+	if _armed_flurry:
+		_update_armed_flurry(delta)
+		return
 	# 판정 창(active_duration)이 지날 때까지 안 맞았으면 헛발로 확정한다
 	if _active_left > 0.0:
 		# **판정이 켜져 있는 동안 캐릭터를 따라간다.** 드롭킥·파고들기처럼 때리는 중에 앞으로 나가면
@@ -468,12 +638,17 @@ func _resolve(hit: bool) -> void:
 	_resolved = true
 	_swinging = false
 	_active_left = 0.0
+	_external_hit = false
 	# 명중 시그널(area_entered) 콜백 안에서 호출될 수 있는데, 그때 monitoring을 바로 끄면
 	# Godot이 물리 연산 중이라 막아버려 히트박스가 켜진 채 남는다(그 자리를 지나가면 계속 맞는 버그).
 	# set_deferred로 물리 스텝이 끝난 뒤에 안전하게 끈다
 	hitbox.set_deferred("monitoring", false)
 	hitbox.set_deferred("monitorable", false)
 	if hit:
+		# 경관봉 2타(올려치기)가 맞으면 상대가 떠 있다 — 바로 난무 받는 시간으로 넘어간다
+		if _armed_mode() and _swing_step == ARMED_LIFT_STEP:
+			_start_armed_flurry(_fighter)
+			return
 		if not _is_final(_swing_step):
 			_step = _swing_step + 1
 			cooldown_left = 0.0
@@ -510,11 +685,22 @@ func _final_swing_duration(step: int, visual: Node) -> float:
 
 ## 실제로 히트박스를 켜서 때린다 (windup만큼만 판정을 늦춘다)
 func _fire(fighter: Fighter, step: int) -> void:
+	# 판정이 켜지기 **전**(예비동작 시작)에 먼저 알린다 — 연출이 들고 있는 동안을 잡을 수 있게
+	_announce_swing(fighter, step)
 	var d: AttackData = _hit_data(step)
 	var visual := fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_attack_swing"):
 		if d != null:
 			visual.play_attack_swing(d.anim_variant if d.anim_variant >= 0 else step, d.anim_duration, d.spin)
+		elif _armed_mode() and visual.has_method("play_weapon_slash"):
+			# 경관봉을 들었으면 1·2타도 **검사처럼 긋는 베기**다 — 난무와 같은 표(BodyRig.SLASHES)를 쓴다.
+			# 0 = 내려베기(위→아래), 1 = 올려베기(아래→위, 이 타가 띄운다)
+			var swing_len: float = _final_swing_duration(step, visual)
+			visual.play_weapon_slash(step, swing_len)
+			_armed_arc_index = step
+			# 모션 길이를 안 정했으면(-1) 리그 기본 길이(attack_duration)를 쓴다
+			var full: float = swing_len if swing_len > 0.0 else float(visual.get("attack_duration"))
+			_armed_arc_delay = full * 0.4
 		else:
 			visual.play_attack_swing(step, _final_swing_duration(step, visual))
 	var is_final: bool = _is_final(step)
@@ -534,13 +720,17 @@ func _fire(fighter: Fighter, step: int) -> void:
 				lunge_time = d.lunge_time
 			lead = d.lunge_foot_lead
 		else:
-			lunge = combo_lunge[step] if step < combo_lunge.size() else 0.0
+			# 늘어난 타(bonus_hits)는 마지막 칸 값을 그대로 쓴다 — 4타만 제자리에서 치면 어색하다
+			var li: int = _slot(step, combo_lunge.size())
+			lunge = combo_lunge[li] if li >= 0 else 0.0
 			follows = lunge_follows_pushback
 			# 옛 배열도 타별 파고드는 시간·발 동작을 줄 수 있다(비면 windup·0 = 예전 동작)
-			if step < combo_lunge_time.size() and combo_lunge_time[step] > 0.0:
-				lunge_time = combo_lunge_time[step]
-			if step < combo_lunge_lead.size():
-				lead = combo_lunge_lead[step]
+			var ti: int = _slot(step, combo_lunge_time.size())
+			if ti >= 0 and combo_lunge_time[ti] > 0.0:
+				lunge_time = combo_lunge_time[ti]
+			var ldi: int = _slot(step, combo_lunge_lead.size())
+			if ldi >= 0:
+				lead = combo_lunge_lead[ldi]
 		# 직전 타에 밀린 만큼 따라붙는다 (1타는 직전 타가 없으니 칸 값만)
 		if follows and step > 0:
 			lunge += _last_pushback
@@ -563,20 +753,48 @@ func _fire(fighter: Fighter, step: int) -> void:
 	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
 	var push_scale: float = finisher_distance_scale if is_final else 1.0
 	if d != null:
-		hitbox.damage = fighter.compute_damage(d.damage + bonus_damage)
+		hitbox.damage = fighter.compute_basic_damage(d.damage + bonus_damage)
 		hitbox.knockback = Vector2(d.knockback.x * fighter.facing * push_scale, d.knockback.y)
 		hitbox.pop_override = d.pop
 		hitbox.hitstop_multiplier = d.hitstop_scale
 		hitbox.shake_multiplier = d.shake_scale
 	else:
-		hitbox.damage = fighter.compute_damage(combo_damage[step] + bonus_damage)
-		hitbox.knockback = Vector2(combo_knockback[step].x * fighter.facing * push_scale, combo_knockback[step].y)
-		hitbox.pop_override = combo_pop[step]
+		# 늘어난 타는 마지막 칸 값을 쓴다 (배열마다 길이가 다를 수 있어 각각 따로 자른다)
+		var di: int = _clamp_step(step, combo_damage.size())
+		var ki: int = _clamp_step(step, combo_knockback.size())
+		var pi: int = _clamp_step(step, combo_pop.size())
+		hitbox.damage = fighter.compute_basic_damage(combo_damage[di] + bonus_damage)
+		hitbox.knockback = Vector2(combo_knockback[ki].x * fighter.facing * push_scale, combo_knockback[ki].y)
+		hitbox.pop_override = combo_pop[pi]
 		hitbox.hitstop_multiplier = 1.0
 		hitbox.shake_multiplier = 1.0
+	# **콤보가 늘어나(bonus_hits) 마무리가 아니게 된 타는 상대를 안 띄운다.**
+	# 적어 둔 띄우기 값은 "이게 마지막 타"라는 전제로 잡은 것이라, 3타가 더 이상 마지막이 아닐 때
+	# 그대로 걸면 상대가 공중으로 떠서 **4타가 허공을 친다**(실측: 4타 피해 0).
+	# 이 파일이 combo_pop에 적어 둔 규칙("앞 타를 띄우면 다음 타가 헛친다")을 늘어난 콤보에도 그대로 적용하는 것이다
+	if bonus_hits > 0 and not is_final and hitbox.pop_override < 0.0:
+		hitbox.pop_override = 0.0
+	# 경관봉 2타는 때리는 게 아니라 **띄우는 타**다 — 넉백·팝업을 따로 쓴다
+	if _armed_mode() and step == ARMED_LIFT_STEP:
+		hitbox.knockback = Vector2(armed_lift_knockback.x * fighter.facing, armed_lift_knockback.y)
+		hitbox.pop_override = armed_lift_pop
+	# 경봉 1·2타는 **둔탁하게** 맞는다 — 둔기 효과 + 잠깐 멈춤 + 큰 흔들림.
+	# 맨손이거나 다른 캐릭터면 씬에 적어 둔 원래 값으로 돌려놓는다
+	var blunt: bool = _armed_mode()
+	hitbox.blunt_impact = armed_blunt_impact and blunt
+	hitbox.hitstop_time = armed_hit_hitstop if blunt else _base_hitstop
+	if blunt:
+		hitbox.shake_multiplier = armed_hit_shake
 	hitbox.debris_enabled = (not debris_final_hit_only) or is_final
 	hitbox.source_fighter = fighter
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
+	# **부가 장치가 이 타를 가져갔으면 몸 판정은 안 켠다** — 날아간 물건이 대신 때린다
+	# (지하철 아저씨: 1타에 리코더를 던지고, 3타에 돌아오는 길이 판정이 된다).
+	# 피해·넉백·띄우기는 위에서 히트박스에 다 넣어 뒀고, 날아가는 물건이 그걸 그대로 베껴 간다
+	_external_hit = _offer_strike(fighter, step)
+	if _external_hit:
+		_active_left = projectile_active_duration
+		return
 	# 이미 겹쳐 있는 상대도 이번 타에 다시 맞도록 잠깐 껐다 켜서 area_entered가 새로 발생하게 한다
 	hitbox.monitoring = false
 	hitbox.monitorable = false
@@ -585,12 +803,244 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.monitorable = true
 	_active_left = d.active_time if d != null else active_duration
 
+## 자식으로 달린 **부가 장치**(예: 리코더 던지기)에게 이 타를 맡을지 물어본다.
+## 하나라도 true를 돌려주면 몸 판정을 안 켜고 그쪽 결과를 기다린다
+func _offer_strike(fighter: Fighter, step: int) -> bool:
+	for child in get_children():
+		if child.has_method("on_combo_strike") and child.on_combo_strike(fighter, step, hitbox):
+			return true
+	return false
+
+## 자식으로 달린 부가 장치에게 **그 타가 시작됐다**고 알린다(예비동작 시작, 판정 켜지기 전)
+func _announce_swing(fighter: Fighter, step: int) -> void:
+	for child in get_children():
+		if child.has_method("on_combo_swing"):
+			child.on_combo_swing(fighter, step)
+
+## 자식으로 달린 부가 장치에게 **그 타가 맞았다**고 알린다. victim은 맞은 쪽
+func _announce_hit(victim: Node) -> void:
+	for child in get_children():
+		if child.has_method("on_combo_hit"):
+			child.on_combo_hit(_fighter, _swing_step, victim)
+
+## **밖에서 들어온 명중을 이번 타의 명중으로 친다** — 날아간 리코더가 상대에게 닿았을 때 부른다.
+## 몸 판정이 맞은 것과 똑같은 길을 타므로 콤보도 그대로 이어진다
+func report_external_hit(victim: Node) -> void:
+	if not _external_hit:
+		return
+	_on_hitbox_connected(victim)
+
 func _reset(cd: float) -> void:
 	_step = 0
 	_last_pushback = 0.0
 	_queued = false
 	_chain_left = 0.0
 	cooldown_left = cd
+
+## --- 경관봉 난무 (경찰 궁 중 평타) ---
+## 평소 콤보가 "1타 → 2타 → 3타"라면, 무기를 든 동안은 "내려치기 → 올려쳐 띄우기 → 연타 난무"다.
+## 3타가 한 방이 아니라 **시간 창**이라서, 그 안에 누른 횟수만큼 들어간다 (2026-10-01 사용자 요청)
+
+## 띄우는 타는 몇 번째 타인가(0부터). 1 = 2타
+const ARMED_LIFT_STEP := 1
+## 난무 동안 `Hitbox.repeat_interval`에 걸어 두는 값 — 사실상 "스스로는 반복하지 마라"는 뜻이다.
+## 실제로 다시 때리는 건 누를 때마다 부르는 `clear_repeat_state()`가 정한다
+const ARMED_REPEAT_LOCK := 9999.0
+
+## 지금 무기를 들고 있는가 — 이게 false면 아래 난무 관련 코드는 전부 잠잠하다(맨손 콤보 그대로)
+func _armed_mode() -> bool:
+	if not armed_flurry_enabled or not is_instance_valid(_fighter):
+		return false
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	return visual != null and "held_item_armed" in visual and visual.held_item_armed
+
+## 이번에 그을 베기 번호 하나를 소비한다(0,1,2,3,0,… 차례로 돈다)
+func _next_slash() -> int:
+	var idx: int = _armed_slash
+	_armed_slash += 1
+	return idx
+
+## 벤 자리에 참격 자국을 남긴다 — 무기 쥔 손 자리에 맵에 붙여 둔다(캐릭터를 안 따라간다)
+func _spawn_slash_arc(fighter: Fighter, visual: Node, slash_index: int) -> void:
+	if not armed_slash_arc:
+		return
+	var parent: Node = fighter.get_parent()
+	if parent == null:
+		return
+	var arc: Node2D = SLASH_ARC.new()
+	parent.add_child(arc)
+	arc.global_position = visual.get_hand_position() if visual.has_method("get_hand_position") else fighter.global_position
+	# 왼쪽을 볼 땐 초승달이 반대로 열려야 한다 — 각도를 뒤집어 준다
+	var ang: float = BodyRig.slash_angle(slash_index)
+	if fighter.facing < 0.0:
+		ang = PI - ang
+	arc.setup(ang, armed_slash_arc_scale)
+
+## 2타가 상대를 띄운 순간 — 여기서부터 평타를 누르는 대로 받는다
+func _start_armed_flurry(fighter: Fighter) -> void:
+	_armed_flurry = true
+	_armed_left = armed_flurry_duration
+	_armed_gap = 0.0
+	_armed_pending = false
+	_armed_slash = 0
+	_armed_arc_delay = -1.0
+	# 콤보 상태는 깨끗이 — 난무가 끝날 때 _reset이 1타로 되돌린다
+	_swinging = false
+	_resolved = true
+	_queued = false
+	_active_left = 0.0
+	_chain_left = 0.0
+	cooldown_left = 0.0
+	# 판정 모양을 부채꼴로 갈아 끼운다(끝나면 _end_armed_flurry가 원래 사각형으로 되돌린다)
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node:
+		_armed_saved_shape = shape_node.shape
+		_armed_fan_right = _make_front_fan(1.0)
+		_armed_fan_left = _make_front_fan(-1.0)
+		# ⚠️ 여기서 바로 끼우지 않는다 — 이 함수는 명중 콜백(물리 질의 중)에서 불려서
+		# 그때 모양을 바꾸면 "Can't change this state while flushing queries"가 난다.
+		# _armed_fan_facing을 0으로 둬서 다음 _process의 _update_armed_flurry가 끼우게 한다
+		_armed_fan_facing = 0.0
+	hitbox.set_deferred("monitoring", false)
+	hitbox.set_deferred("monitorable", false)
+	# 손·무기 잔상을 켜서 "빨라서 잔상만 보인다"를 만든다
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if armed_flurry_smear and visual and "attack_smear" in visual:
+		_armed_smear_saved = visual.attack_smear
+		_armed_smear_life = visual.smear_life
+		_armed_smear_alpha = visual.smear_alpha
+		_armed_smear_fill = visual.smear_fill
+		visual.attack_smear = true
+		# 평소보다 길고 진하게 — 경봉이 어두운 색이라 기본값으로는 잔상이 거의 안 보인다
+		visual.smear_life = maxf(_armed_smear_life, 0.16)
+		visual.smear_alpha = maxf(_armed_smear_alpha, 0.65)
+		visual.smear_fill = maxi(_armed_smear_fill, 3)
+
+## 난무 중 한 대 맞은 상대를 **부채꼴 한가운데 높이로 끌어당긴다**.
+## 때릴 때마다 위로 튕기는 대신 목표 높이로 당기는 쪽이라, 연타가 빠르든 느리든 늘 범위 안에 머문다
+func _hold_in_flurry(victim: Node) -> void:
+	if not (victim is Fighter) or not is_instance_valid(victim) or not is_instance_valid(_fighter):
+		return
+	var target: Fighter = victim
+	if target.is_guarding or target.has_super_armor() or target.is_finisher_flying():
+		return
+	var want_y: float = _fighter.global_position.y + armed_flurry_hold_y
+	target.velocity.y = clampf((want_y - target.global_position.y) * armed_flurry_hold_speed, -320.0, 320.0)
+	# 가로로도 밀린 속도를 이번 한 대 몫만 남긴다 — 안 그러면 넉백이 쌓여 부채꼴 밖으로 밀려난다
+	target.velocity.x = armed_flurry_knockback.x * _fighter.facing * Fighter.KNOCKBACK_MULTIPLIER
+
+## 난무 한 대 — 평타를 누를 때마다 들어온다
+func _armed_strike(fighter: Fighter) -> void:
+	# 아직 간격이 안 찼으면 버리지 않고 하나 기억해 둔다("누른 횟수만큼"을 최대한 지킨다)
+	if _armed_gap > 0.0:
+		_armed_pending = true
+		return
+	_armed_gap = maxf(armed_flurry_min_interval, 0.02)
+	# 벨 때마다 **궤도가 다른 베기**를 차례로 쓴다 — 같은 궤도를 반복하면 "툭툭 친다"로 보인다
+	var visual: Node = fighter.get_node_or_null("Visual")
+	var slash: int = _next_slash()
+	if visual and visual.has_method("play_weapon_slash"):
+		visual.play_weapon_slash(slash, armed_flurry_swing_time)
+		# 자국은 **후리기가 시작되는 순간**에 띄운다(모션의 40% 지점) — 감는 중에 띄우면
+		# 경봉은 아직 뒤에 있는데 자국만 앞에 떠 있어서 따로 논다
+		_armed_arc_index = slash
+		_armed_arc_delay = armed_flurry_swing_time * 0.4
+	elif visual and visual.has_method("play_attack_swing"):
+		visual.play_attack_swing(0, armed_flurry_swing_time)
+	# **compute_damage를 일부러 안 거친다** — 위 export 설명 참고
+	hitbox.damage = maxi(armed_flurry_damage, 1)
+	hitbox.knockback = Vector2(armed_flurry_knockback.x * fighter.facing, armed_flurry_knockback.y)
+	hitbox.pop_override = 0.0   # 띄우기는 아래 _hold_in_flurry가 대신 한다
+	hitbox.hitstop_multiplier = 1.0
+	hitbox.shake_multiplier = 1.0
+	hitbox.blunt_impact = false
+	hitbox.hitstop_time = _base_hitstop
+	hitbox.debris_enabled = false
+	hitbox.source_fighter = fighter
+	hitbox.global_position = fighter.global_position
+	_apply_armed_fan(fighter.facing)
+	# ⚠️ **껐다 켜서 다시 맞히는 방식은 여기서 못 쓴다** — 한 대가 0.085초 간격이라 판정이 꺼진 채로
+	# 물리가 돌 틈이 모자라서 네 번에 한 번꼴로만 `area_entered`가 다시 났다(헤드리스 실측).
+	# 대신 `Hitbox`의 반복 타격을 빌린다: 간격을 사실상 무한대로 잠가 두고,
+	# **누를 때마다 `clear_repeat_state()`로 "다시 때려도 된다"고 풀어 준다** → 한 번 누르면 딱 한 대
+	hitbox.repeat_interval = ARMED_REPEAT_LOCK
+	hitbox.clear_repeat_state()
+	hitbox.monitoring = true
+	hitbox.monitorable = true
+
+## 매 프레임 — 판정을 몸에 붙여 두고, 한 대의 판정 창·간격·전체 시간을 센다
+func _update_armed_flurry(delta: float) -> void:
+	# 궁이 끝나 경관봉을 집어넣었거나 캐릭터가 사라지면 그 자리에서 끝낸다
+	if not is_instance_valid(_fighter) or not _armed_mode():
+		_end_armed_flurry()
+		return
+	hitbox.global_position = _fighter.global_position
+	_apply_armed_fan(_fighter.facing)
+	if _armed_gap > 0.0:
+		_armed_gap = maxf(_armed_gap - delta, 0.0)
+		if _armed_gap <= 0.0 and _armed_pending:
+			_armed_pending = false
+			_armed_strike(_fighter)
+	_armed_left = maxf(_armed_left - delta, 0.0)
+	if _armed_left <= 0.0:
+		_end_armed_flurry()
+
+## 난무를 끝내고 히트박스·잔상을 원래대로 되돌린다
+func _end_armed_flurry() -> void:
+	_armed_flurry = false
+	_armed_left = 0.0
+	_armed_gap = 0.0
+	_armed_pending = false
+	_armed_arc_delay = -1.0
+	# 명중 콜백 안에서 불릴 수 있으므로 monitoring은 물리 스텝 뒤에 끈다(_resolve와 같은 이유)
+	hitbox.set_deferred("monitoring", false)
+	hitbox.set_deferred("monitorable", false)
+	hitbox.repeat_interval = 0.0
+	hitbox.clear_repeat_state()
+	hitbox.debris_enabled = true
+	hitbox.pop_override = -1.0
+	if _armed_saved_shape != null:
+		var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+		if shape_node:
+			shape_node.set_deferred("shape", _armed_saved_shape)
+		_armed_saved_shape = null
+	_armed_fan_right = null
+	_armed_fan_left = null
+	_armed_fan_facing = 0.0
+	var visual: Node = _fighter.get_node_or_null("Visual") if is_instance_valid(_fighter) else null
+	if armed_flurry_smear and visual and "attack_smear" in visual:
+		visual.attack_smear = _armed_smear_saved
+		visual.smear_life = _armed_smear_life
+		visual.smear_alpha = _armed_smear_alpha
+		visual.smear_fill = _armed_smear_fill
+	_reset(effective_cooldown())
+
+## 무기 쥔 자리에서 앞으로 벌어지는 부채꼴 판정을 만든다(dir = 1 오른쪽 / -1 왼쪽).
+## 꼭짓점 하나 + 호 위의 점들이라 ConvexPolygonShape2D로 그대로 쓸 수 있다
+func _make_front_fan(dir: float) -> ConvexPolygonShape2D:
+	var origin := Vector2(armed_flurry_origin.x * dir, armed_flurry_origin.y)
+	var points := PackedVector2Array([origin])
+	var half: float = deg_to_rad(armed_flurry_half_angle_deg)
+	var steps: int = 8
+	for i in range(steps + 1):
+		var a: float = -half + 2.0 * half * float(i) / float(steps)
+		points.append(origin + Vector2(cos(a) * dir, sin(a)) * armed_flurry_reach)
+	var shape := ConvexPolygonShape2D.new()
+	shape.points = points
+	return shape
+
+## 바라보는 방향에 맞는 부채꼴을 끼운다(방향이 바뀔 때만 갈아끼움)
+func _apply_armed_fan(dir: float) -> void:
+	if _armed_fan_right == null or is_zero_approx(dir):
+		return
+	var side: float = signf(dir)
+	if side == _armed_fan_facing:
+		return
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node:
+		# 물리 질의 중(명중 콜백)에 불릴 수 있어 모양 교체는 항상 지연시킨다
+		shape_node.set_deferred("shape", _armed_fan_right if side > 0.0 else _armed_fan_left)
+		_armed_fan_facing = side
 
 ## --- 키보드 회전 난무 (악플러 그랩 후 강화 평타) ---
 ## 두 손으로 무기를 빙빙 돌리며 몸 주변을 spin_flurry_duration초 동안 다단히트한다.
@@ -616,7 +1066,7 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 		_spin_shape_left = _make_front_half_circle(-1.0)
 		_spin_shape_facing = 0.0
 		_apply_spin_shape(fighter.facing)
-	hitbox.damage = fighter.compute_damage(spin_flurry_damage)
+	hitbox.damage = fighter.compute_basic_damage(spin_flurry_damage)
 	hitbox.knockback = Vector2(spin_flurry_knockback.x * fighter.facing, spin_flurry_knockback.y)
 	hitbox.pop_override = 0.0            # 원형 난무는 위로 안 띄운다(뜨면 판정 밖으로 빠진다)
 	hitbox.source_fighter = fighter
