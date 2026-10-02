@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bkw1vo4thoun8"
-path="res://.godot/imported/나무 폴랫폼2.png-f5168ba092efbb583af24527f8eed670.ctex"
+uid="uid://f1k86iymwnp6"
+path="res://.godot/imported/M4 총.png-2424f80459a83f236d0d150ce0e05593.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/나무 폴랫폼2.png"
-dest_files=["res://.godot/imported/나무 폴랫폼2.png-f5168ba092efbb583af24527f8eed670.ctex"]
+source_file="res://sprite/맵/튜토리얼/M4 총.png"
+dest_files=["res://.godot/imported/M4 총.png-2424f80459a83f236d0d150ce0e05593.ctex"]
 
 [params]
 

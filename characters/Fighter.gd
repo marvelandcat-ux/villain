@@ -313,6 +313,10 @@ func _ignore_other_fighters() -> void:
 ## 몸 충돌 자체는 원래부터 예외 처리돼 있어서, 길을 막던 건 가로 밀어내기뿐이다
 var pass_through_fighters: bool = false
 
+## 켜 두면 **다른 캐릭터가 밀어도 안 밀린다** — 밀어내기(`_separate_from_others`)에서 내 몫이 0이 되고, 상대가 그만큼 대신 밀려난다.
+## 튜토리얼 교관(황근출)이 켠다. 몸을 겹쳐 밀어도 교관은 그대로 서 있고 플레이어만 밀려난다
+var immovable: bool = false
+
 ## 캐릭터끼리 서로 밀어내 겹치지 않게 하는 최소 가로 간격(px). 몸 반지름(20)의 두 배쯤
 const BODY_PUSH_WIDTH := 38.0
 ## 세로로 이만큼 넘게 벌어져 있으면(상대가 위에 있으면) 안 밀어낸다 — 점프로 넘어갈 수 있게
@@ -325,7 +329,7 @@ const BODY_PUSH_HEIGHT := 46.0
 func _separate_from_others() -> void:
 	# 지금 상대를 **뚫고 지나가는 중**이면 밀어내지 않는다 (지하철 아저씨 쌍 악기 돌진).
 	# 몸 충돌은 이미 예외 처리돼 있어서, 실제로 길을 막는 건 아래 가로 밀어내기뿐이었다
-	if pass_through_fighters:
+	if pass_through_fighters or immovable:
 		return
 	for other in get_tree().get_nodes_in_group("fighters"):
 		if other == self or not is_instance_valid(other):
@@ -343,7 +347,9 @@ func _separate_from_others() -> void:
 		if dir == 0.0:
 			# 완전히 겹쳤으면 인스턴스 순서로 방향을 갈라 서로 반대로 밀어낸다
 			dir = 1.0 if get_instance_id() > other.get_instance_id() else -1.0
-		move_and_collide(Vector2(dir * (BODY_PUSH_WIDTH - dist) * 0.5, 0.0))
+		# 보통은 각자 절반씩. 상대가 안 밀리는 몸이면 상대 몫까지 내가 다 밀려난다
+		var share: float = 1.0 if (other is Fighter and other.immovable) else 0.5
+		move_and_collide(Vector2(dir * (BODY_PUSH_WIDTH - dist) * share, 0.0))
 
 ## --- 피격 리액션(격투 게임식 히트 리액션) 튜닝값 ---
 ## 넉백 방향으로 기우는 각도(도) = 이 기본값 + 데미지 × 비례값, 최대 HIT_LEAN_MAX_DEG로 제한

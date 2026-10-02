@@ -47,7 +47,7 @@ const TIP := Vector2.ZERO  # 꼬리 끝 = 팝이 커지는 기준점(노드 원�
 		outline_width = v
 		_refresh_preview()
 ## 에디터 미리보기에 쓸 샘플 대사(게임엔 영향 없음)
-@export var preview_text: String = "아쌔이 지금 부터 신병 훈련을 시작한다":
+@export var preview_text: String = "신병 지금 부터 신병 훈련을 시작한다":
 	set(v):
 		preview_text = v
 		_refresh_preview()
@@ -62,7 +62,23 @@ const CLOSE_TIME := 0.18   # 사라짐 시간
 const PULSE_SPEED := 3.2   # 숨쉬기 속도
 const PULSE_AMP := 0.03    # 숨쉬기 폭
 const HINT_BLINK := 6.0    # 계속(▼) 깜빡임 속도
-const HINT_TEXT_DELAY := 6.0  # 이 초만큼 안 넘기면 "스페이스를 누르세요" 안내를 띄움
+
+## --- 대사 안에 넣는 작은 아이콘(쿨타임 파이·패링 X) ---
+## 쿨 파이(CooldownPies)와 같은 모양·색을 코드로 그려 텍스처로 만든다(그림 파일 없음). 대사에는 `icon(종류)`가 돌려주는
+## `[img]` 태그를 끼워 쓴다. [img]는 경로로 텍스처를 찾으므로 메모리 텍스처에 가짜 경로를 붙여 둔다(take_over_path)
+const ICON_SIZE := 28          # 대사 안에서 보이는 크기(px)
+const ICON_RES := 48           # 텍스처 해상도 — 보이는 크기보다 크게 잡아 줄여 그리면 선명하다
+const ICON_SUBSAMPLE := 3      # 한 픽셀을 이만큼 x 이만큼으로 쪼개 평균(가장자리 부드럽게)
+const ICON_PIE_RATIO := 0.7    # 파이 아이콘이 차오른 정도(쿨타임 중인 모습)
+const ICON_PATH_FMT := "res://__bubble_icon_%s.tres"
+const ICON_BACK := Color(0.16, 0.18, 0.26, 0.92)
+const ICON_COLORS := {
+	"guard": Color(0.55, 0.85, 1.0),   # 방어 — 하늘색
+	"dash": Color(0.7, 1.0, 0.2),      # 대시 — 라임
+	"parry": Color(1.0, 0.2, 0.2),     # 패링(기본공격 잠금) — 빨강 X
+}
+## 글자 수를 셀 때 아이콘 하나를 대신하는 글자(RichTextLabel이 이미지를 글자 하나로 세므로 맞춰 준다)
+const ICON_STAND_IN := "가"
 
 var _font: Font
 var rt: RichTextLabel
@@ -76,8 +92,11 @@ var _dialogue := ""        # 화면에 보이는 글자만(타이핑 수·블립
 var _talking := false
 var _hint_enabled := false  # 타이핑이 끝난 뒤 "계속(▼)" 표시를 켤지
 var _hint_wait := 0.0       # 타이핑이 끝난 뒤 안 넘기고 기다린 시간(초)
+var _press_hint_delay := -1.0  # 0 이상이면 이 초 뒤 "스페이스를 누르세요"를 띄움(음수면 안 띄움)
 var _pop_tween: Tween
 var _bbcode_re: RegEx
+var _icon_re: RegEx
+var _icon_textures: Dictionary = {}   # 종류 -> ImageTexture(처음 쓸 때 한 번만 만든다)
 var _players: Array[AudioStreamPlayer] = []
 var _blip: AudioStreamWAV
 var _idx := 0
@@ -226,8 +245,8 @@ func _draw() -> void:
 		var col := LINE_COLOR
 		col.a = 0.2 + 0.8 * (0.5 + 0.5 * sin(_pulse_t * HINT_BLINK))
 		draw_colored_polygon(tri, col)
-		# 오래(HINT_TEXT_DELAY) 안 넘기면 ▼ 아래에 "스페이스를 누르세요"
-		if _hint_wait >= HINT_TEXT_DELAY:
+		# press_hint_delay가 정해진 줄에서만, 그 초 뒤 ▼ 아래에 "스페이스를 누르세요"
+		if _press_hint_delay >= 0.0 and _hint_wait >= _press_hint_delay:
 			_draw_press_hint(c, hh, s)
 
 
@@ -235,6 +254,9 @@ func _draw() -> void:
 func _draw_press_hint(c: Vector2, hh: float, s: float) -> void:
 	var font := _get_font()
 	if font == null:
+		return
+	# 팝으로 커지거나 닫히며 줄어드는 중엔 글자 크기가 0이 돼 draw_string이 에러를 낸다 — 그 구간은 안 그린다
+	if int(15 * s) < 1:
 		return
 	var msg := "스페이스를 누르세요"
 	var fs := 15
@@ -252,7 +274,8 @@ func _draw_press_hint(c: Vector2, hh: float, s: float) -> void:
 ## 대사를 띄운다(이미 떠 있으면 새 대사로 바꿔 다시 타이핑).
 ## text에 BBCode([color] 등)가 있어도 됨 — 타이핑 수·블립은 보이는 글자 기준으로 센다.
 ## hint=true면 타이핑이 끝난 뒤 말풍선 안쪽 아래에 깜빡이는 ▼(계속)를 그린다.
-func say(text: String, hint: bool = false) -> void:
+## press_hint_delay가 0 이상이면 타이핑이 끝나고 그 초 뒤 "스페이스를 누르세요"까지 띄운다(음수면 안 띄움).
+func say(text: String, hint: bool = false, press_hint_delay: float = -1.0) -> void:
 	if rt == null:
 		_build_text()
 	_dialogue = _strip_bbcode(text)
@@ -261,6 +284,7 @@ func say(text: String, hint: bool = false) -> void:
 	_talking = true
 	_hint_enabled = hint
 	_hint_wait = 0.0
+	_press_hint_delay = press_hint_delay
 	rt.visible_characters = 0
 	rt.text = _wrap(text)
 	_text_size = _measure(_dialogue)
@@ -285,12 +309,76 @@ func finish_typing() -> void:
 	queue_redraw()
 
 
-## BBCode 태그([color] 등)를 떼어 화면에 보이는 글자만 남긴다
+## BBCode 태그([color] 등)를 떼어 화면에 보이는 글자만 남긴다. 아이콘([img])은 글자 하나로 센다
 func _strip_bbcode(s: String) -> String:
 	if _bbcode_re == null:
 		_bbcode_re = RegEx.new()
 		_bbcode_re.compile("\\[[^\\]]*\\]")
-	return _bbcode_re.sub(s, "", true)
+		_icon_re = RegEx.new()
+		_icon_re.compile("\\[img[^\\]]*\\][^\\[]*\\[/img\\]")
+	return _bbcode_re.sub(_icon_re.sub(s, ICON_STAND_IN, true), "", true)
+
+
+## 대사에 끼울 아이콘 태그를 돌려준다. 종류: "guard"(방어 파이) / "dash"(대시 파이) / "parry"(패링 X)
+func icon(kind: String) -> String:
+	if not _icon_textures.has(kind):
+		var tex := _make_icon(kind)
+		tex.take_over_path(ICON_PATH_FMT % kind)   # [img]가 이 경로로 찾아 온다
+		_icon_textures[kind] = tex
+	return "[img=%dx%d]%s[/img]" % [ICON_SIZE, ICON_SIZE, ICON_PATH_FMT % kind]
+
+
+## 아이콘 한 장을 그린다. 좌표는 쿨 파이와 같은 단위(반지름 8) — 가장자리 윤곽선까지 들어가게 -11~11을 텍스처에 편다
+func _make_icon(kind: String) -> ImageTexture:
+	var img := Image.create(ICON_RES, ICON_RES, false, Image.FORMAT_RGBA8)
+	var sub: int = ICON_SUBSAMPLE
+	var samples: float = float(sub * sub)
+	for py in ICON_RES:
+		for px in ICON_RES:
+			var r := 0.0
+			var g := 0.0
+			var b := 0.0
+			var a := 0.0
+			for sy in sub:
+				for sx in sub:
+					var u: float = (float(px) + (float(sx) + 0.5) / float(sub)) / float(ICON_RES) * 22.0 - 11.0
+					var v: float = (float(py) + (float(sy) + 0.5) / float(sub)) / float(ICON_RES) * 22.0 - 11.0
+					var c: Color = _icon_sample(kind, Vector2(u, v))
+					r += c.r * c.a
+					g += c.g * c.a
+					b += c.b * c.a
+					a += c.a
+			if a > 0.0:
+				img.set_pixel(px, py, Color(r / a, g / a, b / a, a / samples))
+	return ImageTexture.create_from_image(img)
+
+
+## 아이콘 한 점의 색(단위 좌표 p). 투명이면 alpha 0
+func _icon_sample(kind: String, p: Vector2) -> Color:
+	var fill: Color = ICON_COLORS.get(kind, Color.WHITE)
+	if kind == "parry":
+		# X: 대각선 막대 둘의 합집합. 안쪽은 빨강, 바깥 1.4는 어두운 윤곽선
+		var d: float = minf(_arm_distance(p, 1.0), _arm_distance(p, -1.0))
+		if d <= 0.0:
+			return fill
+		if d <= 1.4:
+			return LINE_COLOR
+		return Color(0, 0, 0, 0)
+	var dist: float = p.length()
+	if dist > 9.4:
+		return Color(0, 0, 0, 0)
+	if dist > 8.0:
+		return LINE_COLOR
+	# 12시 방향에서 시계 방향으로 ICON_PIE_RATIO만큼은 색, 나머지는 어두운 바탕
+	var ang: float = fposmod(atan2(p.x, -p.y), TAU)
+	return fill if ang / TAU <= ICON_PIE_RATIO else ICON_BACK
+
+
+## X의 막대 하나(대각선 방향 dir = 1 또는 -1)까지의 부호 있는 거리(안쪽이 음수). 쿨 파이 X와 같은 길이 8.5, 반 굵기 3.0
+func _arm_distance(p: Vector2, dir: float) -> float:
+	var along: float = (p.x + dir * p.y) * 0.70710678
+	var across: float = (p.y * dir - p.x) * 0.70710678
+	return maxf(absf(along) - 8.5, absf(across) - 3.0)
 
 
 ## 말풍선을 꼬리 끝으로 쏙 집어넣어 닫는다.

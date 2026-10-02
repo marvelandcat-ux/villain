@@ -14,7 +14,6 @@
 [ext_resource type="Texture2D" uid="uid://bu8i8yynoimxq" path="res://sprite/맵/튜토리얼/군대 막사.png" id="13_barracks"]
 [ext_resource type="Texture2D" uid="uid://bio3ekygknc8f" path="res://sprite/맵/튜토리얼/국기 1.png" id="14_flag1"]
 [ext_resource type="Shader" uid="uid://cct33r6314sp" path="res://maps/FlagFlutter.gdshader" id="15_flag_shader"]
-[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn" id="16_instructor"]
 [ext_resource type="Shader" path="res://maps/Sunlight.gdshader" id="17_sunlight"]
 [ext_resource type="PackedScene" uid="uid://dqk3m8speechbub" path="res://maps/SpeechBubble.tscn" id="18_bubble"]
 
@@ -130,11 +129,8 @@ position = Vector2(-567, 267)
 scale = Vector2(0.18, 0.18)
 texture = ExtResource("14_flag1")
 
-[node name="Instructor" type="Node2D" parent="." unique_id=2040561113]
+[node name="InstructorSpawn" type="Marker2D" parent="." unique_id=2040561113]
 position = Vector2(250, 363)
-scale = Vector2(-1, 1)
-
-[node name="Rig" parent="Instructor" unique_id=1510562629 instance=ExtResource("16_instructor")]
 
 [node name="InstructorBubble" parent="." instance=ExtResource("18_bubble")]
 position = Vector2(250, 308)

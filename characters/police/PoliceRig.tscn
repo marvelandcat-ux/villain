@@ -24,11 +24,11 @@ unarmed_uppercut = true
 grab_slam_deg = -58.0
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
-position = Vector2(-8.000001, 34)
+position = Vector2(-8.000001, 26.331104)
 texture = ExtResource("4_foot")
 
 [node name="FootR" parent="." index="1" unique_id=1509249644]
-position = Vector2(18.000002, 34)
+position = Vector2(18.000002, 27.000002)
 texture = ExtResource("4_foot")
 
 [node name="Body" parent="." index="2" unique_id=1277525598]
