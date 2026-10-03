@@ -68,6 +68,7 @@
 
 ### 기본공격 `skills/ComboMeleeAttack.gd`(`MeleeAttack` 상속) — 전 캐릭터 3타 콤보
 
+- **📌 평타 판정은 무조건 금쪽이 기준**(새 캐릭터도): 30x30 상자, `range` 40, 판정 유지 0.1초, 파고들기 0/60/120(`combo_lunge_time` 0/0.24/0.34, `lead` 0/0.3/0.3) + 밀린 만큼 따라감(`pushback_base` 6, `pushback_per_damage` 2). 캐릭터마다 바꾸지 말 것
 - 판정은 캐릭터 앞 40px의 30x30 상자. 헛치면 예약 입력 버림 + `miss_cooldown` + 1타 리셋, 3타 성공 시 `cooldown`. 타별 값은 `combo_damage`/`combo_knockback` 배열
 - 브롤할라식 `combat/AttackData.gd`: `hits`에 .tres 순서대로(지금 금쪽이만, 비면 옛 배열). 판정 시각은 `BodyRig.strike_time()`(보통 40%)
 - windup 0이면 `_fire()`가 물리 프레임 **두 번** 대기. **`attack_duration`을 바꾸면 `windup`(= duration x 0.4)도**
@@ -130,7 +131,7 @@
 | 금쪽이(촉법소년) | 막대사탕 3타 | `DashSkill` 자전거 | `BBGunSkill` 비비탄 | `HealSkill` |
 | 악플러 | 키보드(두 손) | `MouseGrabSkill` | `RageBuffSkill` 열등감 | `WeakenAuraUltimate` |
 | 주정뱅이 | 술병 | `DrinkSkill` 술 스택 | `VomitSkill` 토 기둥 | `ScreamConeUltimate` 괴성 |
-| 고양이 아주머니 | 3타 | `TunaThrowSkill` | `TunaPlaceSkill` | `CatHutUltimate` |
+| 고양이 아주머니 | 3타 | `CatHouseSkill` 고양이 집 | `CatSelectSkill` 고양이 고르기 | `CatUltimate`(고른 고양이별) |
 | 층간소음 청년 | 3타 | `AoeAttack` 기타 둔화 | `VacuumSkill` 흡입 | `DunkUltimate` |
 | 지하철 아저씨 | 단소: 찌르기→발차기→회전 베기 | `TurnstileSkill` | `CounterSkill` | `DualInstrumentUltimate` 쌍 악기 |
 | 헬스장 빌런 | 3타 | `LivingShadowSkill` | `BackSuplexSkill` | 빈 `Skill.gd` |
@@ -199,7 +200,20 @@
   - 패거리 `IljinCrewMember`(CharacterBody2D) — **Fighter로 만들면 안 됨**. 캐릭터와 몸 충돌 끄고 가로로만 밀어냄. 부른 일진 공격엔 `immune_source`로 면역
   - 친구 침(`Spit.tscn`): `aim()`은 `setup()` 다음, 빠른 투사체는 판정을 진행 방향으로 늘림(도형은 새로 만들어 — sub_resource 공유). 여자친구: 넉백 맞으면 `knockback_stun`
 
-### 헬스장 빌런 / 고양이 아주머니 / 층간소음
+### 고양이 아주머니 (그림 폴더 `sprite/고양이 아줌마/` — 탐색기에서 `sprite/캣`을 바꾼 것)
+
+- 고양이 그림 `skills/CatSprite.gd`: `고양이들/`의 머리·몸·발·꼬리(전부 오른쪽을 봄)를 코드로 조립, 원점 = 발바닥. 파츠마다 `PARTS`의 BBOX를 `region_rect`로 잘라 목표 px로 배율 역산 — **그림을 바꾸면 BBOX 재측정**. 자세는 사용자 참고 그림대로 엎드림(큰 머리가 몸 앞 위, 발은 엎드린 채 앞발 = 가슴 밑·뒷발 = 엉덩이 밑, 걸으면 앞뒤로 미끄러짐). 꼬리 그림은 직선이라 BBOX만 잘라(`cropped_of`) `Line2D` STRETCH로 곡선에 늘려 붙이고 물결침(점은 끝 → 뿌리 순서 — 그림 왼쪽이 끝). 따라다니는 고양이·낀 검은 고양이·든 흰 고양이가 쓰고, `CatFollower.draw_face()`(선택 표시·집 간판)는 머리 그림. 집·망치·옷 머리는 아직 `_draw()` 임시
+
+- 스킬1 `CatHouseSkill`: 앞에 무릎 꿇고 망치질 2초(슈퍼아머, 리그 `set_kneeling` + `set_hammering`, 망치가 칠 때마다 `LandDust`) → `CatHouse`(원점 = 바닥 가운데, 자식 Hurtbox로 맞아 부서짐, 다 지으면 `StaticBody2D`로 상대를 벽처럼 막고 지붕에 설 수 있음 — 지은 사람·자기 집 고양이는 통과, 개수 제한 없음). 다 지은 순간 고른 고양이 1마리 + `spawn_interval` 7초마다, 주인 고양이가 맵에 (종류 상관없이) 4마리면 건너뜀. **나오는 고양이 = 나오는 순간 고른 종류**(지붕 간판도 따라 바뀜)
+- 스킬2 `CatSelectSkill`: 검은→주황→흰 순환, `custom_data["cat_kind"]`, 머리 위 `CatFaceIcon` 1.5초. `clashable()` false(클래시 대기창 안 탐)
+- 고양이 `CatFollower`(레이어 0, 그룹 `catmom_cats`): 지금은 상대를 따라다니기만 — TODO 종류별 능력
+- **궁 `CatUltimate`**: `cat_kind`별. 검은·흰은 `_swap_basic()`으로 기본공격 자리를 `CatPoopShot`(콜백만 있는 대체 평타)으로 바꿔 끼우고 `_end_mode()`에서 복구
+  - 흰(임시): 10초 동안 `CatHeldWhite`를 들고 평타 = 앞 상자 할퀴기(0.25초 간격, 맵에 붙인 짧은 `Hitbox`)
+  - 검은: 똥 유탄 `CatPoopShell`(포물선, 땅·벽(레이캐스트) 또는 상대·상대 집 Hurtbox(자식 Area2D 접촉, 자기·자기 집은 통과)에 닿는 즉시 원형 `Hitbox`로 범위 피해) 5발 다 쏘면 끝. 낀 고양이 그림 `CatHeldVisual`(Visual 자식, 남은 탄 점)
+  - 주황: 10초 고양이 옷 — `custom_data["cat_suit"]`로 스킬1·2 봉인, `set_modifier`(id `cat_suit`)로 평타 피해 x1.5·`damage_taken_multiplier` 0.6·`guard_dash_cooldown_multiplier` 0.5·`attack_speed_multiplier` 2, 입을 때 30 회복, 머리 `CatSuitHood`(Head 자식, 배율 역수) + 주황 색조
+- `Fighter.damage_taken_multiplier`/`guard_dash_cooldown_multiplier`는 `set_modifier`용 배수(`damage_reduction`은 `set_modifier`로 걸면 다 풀릴 때 1.0 = 완전 무효가 되니 쓰지 말 것). 방어·대시 배수는 쿨 길이가 아니라 도는 속도에 걸림
+
+### 헬스장 빌런 / 층간소음
 
 - `DunkUltimate`: 상대 쪽 도약 후 착지 범위 공격. `AoeAttack`: 자신 중심 원형 + 둔화
 

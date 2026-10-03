@@ -187,6 +187,12 @@ var cooldown_rate_multiplier: float = 1.0
 var attack_speed_multiplier: float = 1.0
 ## 받는 데미지 감소율 (0.0=없음, 1.0=완전 무효) — 가드 스킬 등이 사용
 var damage_reduction: float = 0.0
+## 받는 데미지에 곱하는 배수 — `set_modifier`로 거는 버프용(0.6 = 40% 덜 받음).
+## `damage_reduction`은 `set_modifier`로 걸면 다 풀릴 때 1.0(완전 무효)이 되므로 버프는 이쪽을 쓸 것
+var damage_taken_multiplier: float = 1.0
+## 방어·대시 쿨타임에 곱하는 배수 — `set_modifier`로 건다(고양이 아주머니 주황 고양이 옷 0.5).
+## 쿨 길이는 그대로 두고 **도는 속도**를 1/배수로 바꾼다(쿨 파이 비율이 안 어긋나게)
+var guard_dash_cooldown_multiplier: float = 1.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중).
 ## **읽을 때는 아래 두 가지를 합쳐서 본다** — 시간제 무적(`grant_invincibility`)과
 ## "이 동작이 끝날 때까지" 무적(`push_invincible`)을 따로 세야 서로를 꺼버리지 않는다.
@@ -421,7 +427,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	if is_guarding and not ignore_guard:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + amount
 		return
-	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction)))
+	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction) * damage_taken_multiplier))
 	if damage_reduction > 0.0:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + (amount - reduced_amount)
 	current_hp = max(current_hp - reduced_amount, 0)
@@ -1292,7 +1298,7 @@ func _get_clash_manager() -> Node:
 func use_skill_1() -> void:
 	if skill_1 == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_1.can_use():
 		return
-	var manager: Node = _get_clash_manager()
+	var manager: Node = _get_clash_manager() if skill_1.clashable() else null
 	if manager:
 		manager.request(self, "skill_1", func(): skill_1.use(self), func(): skill_1.cancel_use())
 	else:
@@ -1308,7 +1314,7 @@ func swap_skill_2(skill: Skill) -> Skill:
 func use_skill_2() -> void:
 	if skill_2 == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_2.can_use():
 		return
-	var manager: Node = _get_clash_manager()
+	var manager: Node = _get_clash_manager() if skill_2.clashable() else null
 	if manager:
 		manager.request(self, "skill_2", func(): skill_2.use(self), func(): skill_2.cancel_use())
 	else:
@@ -1476,7 +1482,7 @@ func apply_physics(delta: float) -> void:
 	if _blocked_attack_left > 0.0:
 		_blocked_attack_left = maxf(_blocked_attack_left - delta, 0.0)
 	if _guard_cooldown_left > 0.0:
-		_guard_cooldown_left = maxf(_guard_cooldown_left - delta, 0.0)
+		_guard_cooldown_left = maxf(_guard_cooldown_left - delta / maxf(guard_dash_cooldown_multiplier, 0.05), 0.0)
 	if _guard_time > 0.0:
 		_guard_time = maxf(_guard_time - delta, 0.0)
 		velocity.x = 0.0
@@ -1492,7 +1498,7 @@ func apply_physics(delta: float) -> void:
 	# 대시 — 짧은 시간 동안 입력보다 우선해서 수평 속도를 덮어쓴다.
 	# 맞으면 그 자리에서 끊긴다(넉백이 대시를 이겨야 콤보가 성립한다)
 	if _dash_cooldown_left > 0.0:
-		_dash_cooldown_left = maxf(_dash_cooldown_left - delta, 0.0)
+		_dash_cooldown_left = maxf(_dash_cooldown_left - delta / maxf(guard_dash_cooldown_multiplier, 0.05), 0.0)
 	if _dash_time > 0.0:
 		if _hitstun_time > 0.0 or is_grabbed:
 			_dash_time = 0.0

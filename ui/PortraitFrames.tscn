@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="3"]
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/고양이 아줌마/고양이아줌마정면.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="7"]
 
 [sub_resource type="AtlasTexture" id="a1"]
