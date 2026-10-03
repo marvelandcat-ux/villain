@@ -76,6 +76,8 @@ horizontal_alignment = 1
 [node name="ScoreBoard" parent="." unique_id=977128472 instance=ExtResource("3_board")]
 layout_mode = 3
 offset_left = -137.0
-offset_top = 31.0
-offset_right = 143.52625
+offset_top = 32.0
+offset_right = 144.0
 offset_bottom = 87.0
+center_ratio = null
+lean_ratio = null

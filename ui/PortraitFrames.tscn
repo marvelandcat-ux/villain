@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://bf3scs88bumcp" path="res://sprite/축법소년/축법소년 정면.png" id="1"]
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="3"]
-[ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/초록 귀걸이의 갈색 머리 옆모습.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="7"]
@@ -136,7 +136,7 @@ texture = SubResource("a5")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="층간소음 청년" type="Panel" parent="." unique_id=716982390]
+[node name="층간소음 빌런" type="Panel" parent="." unique_id=716982390]
 clip_contents = true
 layout_mode = 0
 offset_left = 1110.0
@@ -144,7 +144,7 @@ offset_top = 10.0
 offset_right = 1310.0
 offset_bottom = 190.0
 
-[node name="Portrait" type="TextureRect" parent="층간소음 청년" unique_id=1802025111]
+[node name="Portrait" type="TextureRect" parent="층간소음 빌런" unique_id=1802025111]
 layout_mode = 0
 offset_left = 12.0
 offset_top = 14.0

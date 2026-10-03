@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/캣/고양이아줌마정면.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="7"]
-[ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="8"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/초록 귀걸이의 갈색 머리 옆모습.png" id="8"]
 [ext_resource type="Texture2D" path="res://sprite/대전모드/배경.png" id="9_bg"]
 [ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="9"]
 
@@ -238,8 +238,8 @@ corners = PackedVector2Array()
 lean = null
 fill_color = Color(0.3, 0.5, 0.85, 1)
 portrait_texture = ExtResource("8")
-name_text = "층간소음 청년"
-character_key = "층간소음 청년"
+name_text = "층간소음 빌런"
+character_key = "층간소음 빌런"
 
 [node name="TileSubwayVillain" type="Button" parent="Center/VBox/ThumbRow" unique_id=327050201]
 layout_mode = 0

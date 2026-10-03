@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아들.png" id="1_head"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아들몸.png" id="2_body"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="3_foot"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_hand"]
+
+[node name="Kid" type="Node2D"]
+
+[node name="KidFootL" type="Sprite2D" parent="."]
+position = Vector2(-39.0, 114.0)
+scale = Vector2(0.547525, 0.547525)
+texture = ExtResource("3_foot")
+flip_h = true
+
+[node name="KidFootR" type="Sprite2D" parent="."]
+position = Vector2(43.0, 113.0)
+scale = Vector2(0.478218, 0.478218)
+texture = ExtResource("3_foot")
+
+[node name="KidBody" type="Sprite2D" parent="."]
+position = Vector2(0.0, 32.0)
+scale = Vector2(0.446352, 0.446352)
+texture = ExtResource("2_body")
+
+[node name="KidHandL" type="Sprite2D" parent="."]
+position = Vector2(-102.0, 46.0)
+scale = Vector2(0.304, 0.304)
+texture = ExtResource("4_hand")
+flip_h = true
+
+[node name="KidHandR" type="Sprite2D" parent="."]
+position = Vector2(96.0, 47.0)
+scale = Vector2(0.304, 0.304)
+texture = ExtResource("4_hand")
+
+[node name="KidHead" type="Sprite2D" parent="."]
+position = Vector2(-21.0, -61.0)
+scale = Vector2(0.165245, 0.165245)
+texture = ExtResource("1_head")

@@ -280,10 +280,105 @@ var held_item_l_thrown: bool = false
 ## 비워 두면 위쪽 숫자 export(`dual_guard_*`, `dual_dash_*`)로 돌아간다 — 그래서 중간에 지워도 안 깨진다.
 ## 크기(scale)는 안 읽는다 — 걷기·머리 돌리기가 크기를 건드리기 때문에 서로 싸우게 된다
 @export var dual_guard_pose: PackedScene = null
+## **평소 방어 자세를 씬 파일로 잡는다.** 쌍 악기와 무관하게 이 리그를 쓰는 캐릭터면 적용된다.
+## 위의 쌍 악기용 칸이 채워져 있고 지금 쌍 악기를 들었으면 그쪽이 먼저다.
+## 비워 두면 예전처럼 숫자 export(`guard_hand_*`, `guard_crouch` 등)로 잡는다
+@export var guard_pose: PackedScene = null
 ## 돌진 **준비**(뒤로 물러나는 동안) / **돌진 중**(앞으로 내지르는 동안) / **끝난 직후**(마무리) 세 장
 @export var dual_dash_ready_pose: PackedScene = null
 @export var dual_dash_run_pose: PackedScene = null
 @export var dual_dash_end_pose: PackedScene = null
+
+@export_group("박수 (층간소음 빌런 2번)")
+## 손이 **떨어졌을 때** 자세 씬과 **붙었을 때** 자세 씬. 둘 사이를 왔다 갔다 하며 박수가 된다
+@export var clap_open_pose: PackedScene = null
+@export var clap_close_pose: PackedScene = null
+## 1초에 치는 박수 횟수
+@export var clap_rate: float = 3.2
+## 박수 자세가 섞여 들고 빠지는 빠르기(1/초)
+@export var clap_blend_speed: float = 14.0
+## 박수 자세가 **다리와 몸통까지 붙잡을지.** 꺼 두면(기본) **두 손과 머리만** 잡고
+## 다리·몸통은 걷기에 맡긴다 — 그래야 박수를 치면서 걸을 때 발이 움직인다.
+## 켜면 자세 씬에 잡아 둔 다리 자리로 굳는다(제자리에서만 칠 때 쓴다)
+@export var clap_holds_legs: bool = false
+## 박수 박자에 맞춰 **머리가 위아래로 까딱이는 폭(px)**. 손뼉이 마주칠 때 아래로, 벌어질 때 위로 간다.
+## 0이면 머리는 가만히 있는다
+@export var clap_head_bob: float = 1.6
+
+@export_group("아이 우는 얼굴")
+## 1번 스킬(악쓰기) 동안 아이 머리에 끼울 **우는 얼굴** 그림. 비워 두면 얼굴은 안 바뀐다
+@export var kid_cry_texture: Texture2D = null
+## 우는 얼굴일 때 쓸 크기. (0,0)이면 평소 아이 머리 크기를 그대로 쓴다
+@export var kid_cry_scale: Vector2 = Vector2.ZERO
+
+@export_group("기본 자세 씬")
+## **가만히 서 있을 때의 자리를 씬 파일로 잡는다.** 넣어 두면 켜질 때 그 씬에서
+## 머리·몸·두 손·두 발·안고 있는 것의 **자리와 각도를 읽어 제자리로 삼는다**.
+##
+## 리그를 직접 안 건드려도 되고, 포즈 씬은 크게 띄워 놓고 잡을 수 있어서 눈대중이 쉽다.
+## 비워 두면(기본) 예전처럼 리그에 저장된 자리를 그대로 쓴다 — 다른 캐릭터는 영향이 없다.
+## 씬에 없는 조각은 안 건드린다
+@export var rest_pose: PackedScene = null
+
+@export_group("안고 있기 (층간소음 빌런)")
+## **한쪽 팔로 안고 있는 것**을 보일지. 리그에 `Carry` 노드를 자식으로 달아 두면 이 값에 따라 보였다 숨었다 한다.
+## 쌍 악기(`held_item_l_armed`)와 달리 **자세는 하나도 안 바꾼다** — 그냥 들고 다니는 것일 뿐이다.
+## 층간소음 빌런 2번 스킬이 아이를 내려놓는 동안 이걸 꺼서 품에서 사라지게 한다
+@export var carrying: bool = true
+## 걸을 때 몸이 들썩이는 만큼 아이도 같이 들썩일지. 끄면 제자리에 고정된다
+@export var carry_follows_body: bool = true
+## **아이가 옆에서 같이 걷게 할지.** 엄마가 걷는 박자에 맞춰 아이 발이 앞뒤로 오가고 몸이 들썩인다.
+## 끄면 아이가 뻣뻣하게 끌려만 다닌다
+@export var carry_walks: bool = true
+## 아이 발이 앞뒤로 오가는 폭(px)과 디딜 때 들리는 높이(px)
+@export var kid_step_swing: float = 3.0
+@export var kid_step_lift: float = 2.0
+## 아이 손이 발과 **반대로** 흔들리는 폭(px) — 걷는 사람은 팔과 다리가 엇갈린다
+@export var kid_hand_swing: float = 2.2
+## 아이 몸·머리가 한 걸음마다 들썩이는 높이(px)
+@export var kid_bob: float = 1.2
+## **엄마가 뛰면 아이도 같이 뛴다** — 두 발이 모여 접히고 몸이 살짝 뜬다.
+## 공중에 뜬 정도(`_air_blend`)를 그대로 쓰므로 엄마가 착지하면 아이도 같이 내려온다
+@export var kid_jump_lift: float = 4.0
+## 뛸 때 두 발이 가운데로 모이는 폭(px)과 접히는 각도(도)
+@export var kid_jump_tuck: float = 2.5
+@export var kid_jump_deg: float = 38.0
+## 뛸 때 두 손이 위로 들리는 높이(px)
+@export var kid_jump_hand: float = 3.0
+
+@export_subgroup("품으로 안기기")
+## **아이가 폴짝 뛰어 품에 안긴 자세**를 잡아 둔 씬. 1번 스킬(악쓰기)을 쓰면 옆에서 걷던 아이가
+## 여기 적어 둔 자리로 뛰어올라 안기고, 소리를 다 지르면 제자리로 내려온다.
+##
+## `Carry` 하나만 옮겨 두면 아이가 통째로 따라온다 — 아이 조각을 따로 잡으면 안긴 자세까지 바뀐다.
+## 비워 두면 안기는 연출 없이 옆에서 그냥 소리만 지른다
+@export var hug_pose: PackedScene = null
+## 뛰어올라 안기는 데 걸리는 시간(초)과 다시 내려서는 데 걸리는 시간(초)
+@export var hug_rise_time: float = 0.22
+@export var hug_fall_time: float = 0.2
+## 뛰는 동안 **위로 솟는 높이(px)**. 가는 길 가운데에서 가장 높이 뜬다 — 0이면 미끄러져 올라간다
+@export var hug_arc: float = 16.0
+## 안긴 자세가 **엄마 다리와 몸통까지 붙잡을지.** 꺼 두면(기본) 아이와 두 손·머리만 잡고
+## 다리는 걷기에 맡긴다 — 아이를 안은 채로도 걸어다닐 수 있다
+@export var hug_holds_legs: bool = false
+## **아이를 안고 있는 동안 지을 표정**(우쭈쭈 얼굴). 스킬 키를 누르는 순간 바뀌고 아이를 내려놓으면 돌아온다.
+## 박수 표정(`action_head_texture`)과 **다른 칸**이다 — 둘 다 켜져 있으면 이쪽이 이긴다.
+## 비워 두면 표정은 안 바뀐다
+@export var hug_head_texture: Texture2D = null
+## 그 표정일 때 머리 배율. (0,0)이면 평소 머리 배율을 그대로 쓴다
+@export var hug_head_scale: Vector2 = Vector2.ZERO
+
+@export_subgroup("영역 점프 자세")
+## **궁극기(영역전개) 안에서 뛸 때**만 쓰는 세 장 — 준비(굽힘) → 최고점 → 착지.
+## 엄마와 아이를 **한 씬에서 같이** 잡는다(아이는 Carry 밑 조각들).
+## 비워 둔 칸은 건너뛰므로 세 장을 다 안 채워도 된다
+@export var domain_jump_ready_pose: PackedScene = null
+@export var domain_jump_peak_pose: PackedScene = null
+@export var domain_jump_land_pose: PackedScene = null
+## 자세가 다 넘어가는 기준 속도(px/s). 뛰어오르는 속도가 이 값이면 준비 자세, 0이면 최고점 자세다
+@export var domain_jump_speed: float = 450.0
+## 착지하고 착지 자세가 풀리는 데 걸리는 시간(초)
+@export var domain_jump_land_time: float = 0.16
 
 @export_group("평타 자세 씬")
 ## **기본공격 1·2·3타**를 각각 세 장으로 잡는다 — 준비(ready) → 중간(mid) → 마무리(end).
@@ -525,6 +620,10 @@ var held_item_l_thrown: bool = false
 ## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
 ## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
 @export var body_turn_textures: Array[Texture2D] = []
+## **마지막 단계(머리가 정면일 때)까지 몸통 그림을 쓸지.** 꺼 두면(기본) 머리가 정면인 순간에는
+## 원래 몸통 그림으로 돌아간다 — 평소 몸통이 **정면**인 캐릭터(금쪽이·악플러)용이다.
+## 층간소음 빌런처럼 평소 몸통이 **측면**이면 켠다. 그러면 단계마다 body_turn_textures를 차례로 쓴다
+@export var body_turn_full: bool = false
 ## 켜면 몸통 그림마다 불투명 영역 **높이**를 원래 몸통과 같게 배율을 맞춘다 — 캔버스·그린 크기가 원래 몸통과 다른 그림용
 ## (악플러: 원래 344x270, 측면 그림 887x887에 크게 그려짐, 2026-09-28). 금쪽이처럼 같은 캔버스로 그렸으면 끈다
 @export var body_turn_match_height: bool = false
@@ -954,6 +1053,8 @@ var held_item_l_thrown: bool = false
 ## 왼손에 드는 물건걸이 — 오른손 것과 같은 방식으로 왼손을 따라간다(지하철 아저씨 검은 리코더).
 ## 평소에는 비어 있고, `held_item_l_armed`가 켜질 때만 자식 그림이 보인다
 @onready var _hand_l_hold: Node2D = get_node_or_null("HandLHold")
+## 한쪽 팔로 안고 있는 것(층간소음 빌런의 아이). 없는 리그면 null이라 그냥 넘어간다
+@onready var _carry: Node2D = get_node_or_null("Carry")
 ## 자전거 노드(있으면 촉법소년) — 돌진 중에만 보인다
 @onready var _bike: Sprite2D = get_node_or_null("Bike")
 ## 총 노드(있으면 촉법소년) — 총 쏘는 스킬 중에만 보인다
@@ -1169,6 +1270,10 @@ var _head_shake_span: float = 0.0
 var _head_aim: float = 0.0
 ## 방어 자세를 얼마나 취하고 있는지 (0=평소, 1=완전히 막는 자세). 목표값으로 서서히 간다
 var _guard_blend: float = 0.0
+## 박수 — 섞인 정도 / 목표 / 흐른 시간(손이 붙었다 떨어지는 위상)
+var _clap_blend: float = 0.0
+var _clap_target: float = 0.0
+var _clap_time: float = 0.0
 ## 쌍 악기 자세가 섞인 정도(0~1)
 var _dual_blend: float = 0.0
 ## 돌진 공격이 어느 구간인지 — **궁(`DualInstrumentUltimate`)이 넣어 준다.**
@@ -1215,17 +1320,48 @@ static var _opaque_rect_cache: Dictionary = {}
 var _rest_positions: Dictionary = {}
 ## 손에 든 악기의 제자리 {Node2D: [위치, 각도]} — 포즈 씬이 건드린 뒤 되돌리는 데 쓴다
 var _held_rest: Dictionary = {}
+## 안고 있는 것의 제자리 — 몸 들썩임을 여기에 더한다
+var _carry_rest: Vector2 = Vector2.ZERO
+## 아이가 품에 안긴 정도(0 옆에서 걷기 → 1 품에 안김)와, 지금 안기려는 중인지
+var _hug_blend: float = 0.0
+var _hug_want: bool = false
+## 지금 우쭈쭈 표정을 짓고 있는지 — 안기는 동작(hug_pose)이 없어도 표정은 따로 켜진다
+var _hug_face_on: bool = false
+## 영역전개 점프 자세를 쓰는 중인지(궁극기가 켜고 끈다)와 착지 자세가 남은 시간
+var _domain_jump: bool = false
+var _domain_land_left: float = 0.0
+## 아이 조각들의 제자리 {이름: 위치} — 걷기 흔들림을 여기에 더한다
+var _kid_rest: Dictionary = {}
+## 아이 조각들의 제자리 각도 {이름: 라디안}
+var _kid_rest_rot: Dictionary = {}
+## 아이 머리의 평소 그림·크기 — 우는 얼굴에서 되돌릴 때 쓴다
+var _kid_head_rest_texture: Texture2D = null
+var _kid_head_rest_scale: Vector2 = Vector2.ONE
 
 func _ready() -> void:
 	# Visual로 붙는 자리가 Fighter의 자식이라 부모가 곧 조종 대상이다.
 	# 미리보기 도구처럼 Fighter 없이 띄우면 null이고, 그때는 가만히 서 있는다
 	_fighter = get_parent() as Fighter
+	# **기본 자세 씬이 있으면 먼저 입힌다** — 그 다음에 제자리를 기억해야
+	# 걷기·공격이 돌아올 자리가 씬에 잡아 둔 자리가 된다
+	_apply_rest_pose()
 	for part in [_foot_l, _foot_r, _body, _head, _hand_l, _hand_r]:
 		if part:
 			_rest_positions[part] = part.position
 	# 손에 든 악기(리코더·단소)의 제자리 값도 따로 기억한다.
 	# **포즈 씬이 이 둘의 자리까지 바꾸기 때문이다** — 안 기억해 두면 던지는 자세(1타)가 리코더를
 	# 손에서 멀찍이 밀어 놓은 그 자리에 **영영 남아서**, 돌아와도 손에 안 붙은 것처럼 보인다
+	if _carry:
+		_carry_rest = _carry.position
+		for kid_name in ["KidHead", "KidBody", "KidFootL", "KidFootR", "KidHandL", "KidHandR"]:
+			var kid_part: Node2D = _carry.get_node_or_null(kid_name) as Node2D
+			if kid_part:
+				_kid_rest[kid_name] = kid_part.position
+				_kid_rest_rot[kid_name] = kid_part.rotation
+		var kid_head := _carry.get_node_or_null("KidHead") as Sprite2D
+		if kid_head:
+			_kid_head_rest_texture = kid_head.texture
+			_kid_head_rest_scale = kid_head.scale
 	for part_name in ["Recorder", "Danso"]:
 		var held: Node2D = _pose_part(part_name)
 		if held:
@@ -1369,6 +1505,9 @@ func _process(delta: float) -> void:
 	# 줄 당기는 자세는 목표로 서서히 오가고, 당기는 박자는 그 자세일 때만 진행된다
 	_reel_blend = move_toward(_reel_blend, _reel_target, delta * reel_blend_speed)
 	_guard_blend = move_toward(_guard_blend, _guard_target, delta * guard_blend_speed)
+	_clap_blend = move_toward(_clap_blend, _clap_target, delta * clap_blend_speed)
+	if _clap_target > 0.0:
+		_clap_time += delta
 	# 쌍 악기 자세는 궁을 켠 동안 1로 차오른다. 공격 중에는 손을 스윙이 가져가야 하므로 잠깐 0으로 빠진다
 	var dual_want: float = 1.0 if (held_item_l_armed and _attack_time <= 0.0) else 0.0
 	_dual_blend = move_toward(_dual_blend, dual_want, delta * dual_blend_speed)
@@ -1463,7 +1602,7 @@ func _process(delta: float) -> void:
 
 	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
 	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 \
-		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 and _kneel_target <= 0.0 \
+		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _clap_target <= 0.0 and _charge_target <= 0.0 and _kneel_target <= 0.0 \
 		and _lift_target <= 0.0 and _stomp_target <= 0.0 and _counter_target <= 0.0 and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
 	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
 
@@ -1487,6 +1626,10 @@ func _process(delta: float) -> void:
 			# 완전히 멈췄으면 다음 걸음이 항상 같은 자세에서 시작하도록 위상을 초기화
 			_phase = 0.0
 
+	# 아이가 품으로 뛰어오르거나 내려서는 진행도
+	_update_hug(delta)
+	# 영역전개 점프 — 공중에 있는 동안은 착지 자세 시간을 가득 채워 둔다
+	_update_domain_jump(delta)
 	_apply_pose(speed_ratio)
 	_update_smear(delta)
 	_update_fan_ghosts(delta)
@@ -1682,6 +1825,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	if _guard_blend > 0.001:
 		_pose_guard()
 
+	# 박수 — 아이를 풀어놓고 신나서 손뼉을 친다 (방어보다 나중이지만 방어 중엔 애초에 안 켜진다)
+	if _clap_blend > 0.001:
+		_pose_clap()
+
 	# 카운터 자세 — 단소를 앞 아래로 겨누고 한 손은 얼굴 옆, 상체를 숙인다 (방어 자세 다음이라 우선한다)
 	if _counter_blend > 0.001:
 		_pose_counter_stance()
@@ -1747,6 +1894,11 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 키보드 선풍기 회전 — 두 손을 몸 앞에 모은다(회전은 아래 HandRHold에서 더한다)
 	if _fan_time > 0.0:
 		_pose_keyboard_fan()
+
+	# 안고 있는 것(아이) — 보였다 숨었다 하고, 몸이 들썩이는 만큼 같이 들썩인다
+	_pose_carry()
+	# 영역전개 안에서 뛰는 동안은 엄마와 아이를 통째로 점프 자세로 덮는다
+	_pose_domain_jump()
 
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	# 왼손 물건걸이도 왼손을 그대로 따라간다(오른손 것과 같은 방식).
@@ -3353,7 +3505,11 @@ func set_action_face(on: bool) -> void:
 func _apply_base_head() -> void:
 	if _head == null or _knocked_out:
 		return
-	if _action_face_on and action_head_texture != null:
+	if _hug_face_on and hug_head_texture != null:
+		# 아이를 안고 어르는 표정이 제일 위다 — 안고 있는 동안은 다른 표정이 끼어들 일이 없다
+		_head.texture = hug_head_texture
+		_head.scale = hug_head_scale if hug_head_scale != Vector2.ZERO else _head_rest_scale
+	elif _action_face_on and action_head_texture != null:
 		_head.texture = action_head_texture
 		_head.scale = action_head_scale if action_head_scale != Vector2.ZERO else _head_rest_scale
 	elif _drunk_head_on and drunk_head_texture != null:
@@ -3879,8 +4035,9 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 	var tex: Texture2D = _body_rest_texture
 	# 이 그림을 좌우로 뒤집을 양 — 보통 dir, 왼쪽을 보고 그린 그림이면 그 반대
 	var flip: float = dir
-	if head_frame > 0 and head_frame < nh:
-		var middle: int = maxi(nh - 1, 1)
+	if head_frame > 0 and (body_turn_full or head_frame < nh):
+		# 마지막 단계까지 쓰는 캐릭터는 단계 수를 하나 더 쳐서 그림을 끝까지 나눠 쓴다
+		var middle: int = nh if body_turn_full else maxi(nh - 1, 1)
 		var i: int = clampi(int(floor(float(head_frame - 1) * body_turn_textures.size() / middle)), 0, body_turn_textures.size() - 1)
 		tex = body_turn_textures[i]
 		if i < body_turn_faces_left.size() and body_turn_faces_left[i]:
@@ -4081,7 +4238,8 @@ func set_guarding(on: bool) -> void:
 	_guard_target = 1.0 if on else 0.0
 
 ## 포즈 씬에서 읽어 오는 조각 이름들. 씬에 같은 이름의 노드가 있으면 그 자리·각도를 쓰고, 없으면 안 건드린다
-const POSE_PART_NAMES: Array[String] = ["FootL", "FootR", "Body", "Head", "HandL", "HandR", "Recorder", "Danso"]
+const POSE_PART_NAMES: Array[String] = ["FootL", "FootR", "Body", "Head", "HandL", "HandR", "Recorder", "Danso",
+	"Carry", "KidHead", "KidBody", "KidFootL", "KidFootR", "KidHandL", "KidHandR"]
 ## 이미 읽어 둔 포즈 {씬 경로: {조각 이름: [위치, 각도]}} — 리그끼리 공유해 씬마다 한 번만 읽는다
 static var _pose_cache: Dictionary = {}
 
@@ -4099,7 +4257,10 @@ static func read_pose(scene: PackedScene) -> Dictionary:
 		for part_name in POSE_PART_NAMES:
 			var part := root.find_child(part_name, true, false) as Node2D
 			if part:
-				out[part_name] = [part.position, part.rotation]
+				# [자리, 각도, 크기, 좌우뒤집힘] — 뒤의 둘은 **기본 자세 씬만** 쓴다.
+				# 평타·방어 포즈는 앞의 둘만 보므로 지금까지와 똑같이 동작한다
+				var flipped: bool = (part as Sprite2D).flip_h if part is Sprite2D else false
+				out[part_name] = [part.position, part.rotation, part.scale, flipped]
 		root.free()
 	if key != "":
 		_pose_cache[key] = out
@@ -4124,7 +4285,219 @@ func _pose_part(part_name: String) -> Node2D:
 			return _hand_l_hold.get_node_or_null("Recorder") as Node2D if _hand_l_hold else null
 		"Danso":
 			return _hand_r_hold.get_node_or_null("Danso") as Node2D if _hand_r_hold else null
+		"Carry":
+			return _carry
+		"KidHead", "KidBody", "KidFootL", "KidFootR", "KidHandL", "KidHandR":
+			# 안고 있는 것(아이)의 **조각들**. 자세 씬에서 머리·몸·두 발을 따로 끌어 잡을 수 있게 열어 둔다
+			return _carry.get_node_or_null(part_name) as Node2D if _carry else null
 	return null
+
+## 기본 자세 씬에 적어 둔 **자리·각도·크기·좌우뒤집힘**을 리그 조각에 그대로 입힌다.
+## 씬이 없으면 아무 일도 안 한다.
+##
+## **크기까지 읽는 건 여기뿐이다.** 평타·방어 포즈 씬은 자리와 각도만 쓴다 —
+## 그쪽은 치는 도중에 섞이는 값이라 크기까지 건드리면 걷기·머리 돌리기와 싸운다.
+## 기본 자세는 켤 때 딱 한 번 입히는 것이라 그냥 리그에 적어 둔 것과 같다
+func _apply_rest_pose() -> void:
+	if rest_pose == null:
+		return
+	var pose: Dictionary = read_pose(rest_pose)
+	for part_name in pose:
+		var part: Node2D = _pose_part(part_name)
+		if part == null:
+			continue
+		var data: Array = pose[part_name]
+		part.position = data[0] as Vector2
+		part.rotation = data[1] as float
+		if data.size() > 2:
+			part.scale = data[2] as Vector2
+		if data.size() > 3 and part is Sprite2D:
+			(part as Sprite2D).flip_h = data[3] as bool
+
+## **아이 얼굴을 우는 얼굴로 바꾸고 되돌린다.** 우는 얼굴 그림이 없으면 아무 일도 안 한다.
+## 아이가 밖에 나가 있을 때도 그대로 먹는다 — 품에 있든 없든 머리는 같은 조각이다
+func set_kid_crying(on: bool) -> void:
+	if _carry == null or kid_cry_texture == null:
+		return
+	var kid_head := _carry.get_node_or_null("KidHead") as Sprite2D
+	if kid_head == null:
+		return
+	if on:
+		kid_head.texture = kid_cry_texture
+		kid_head.scale = kid_cry_scale if kid_cry_scale != Vector2.ZERO else _kid_head_rest_scale
+	else:
+		if _kid_head_rest_texture != null:
+			kid_head.texture = _kid_head_rest_texture
+		kid_head.scale = _kid_head_rest_scale
+
+## 아이 머리의 지금 월드 자리 — 1번 스킬이 **아이 얼굴에서** 비명을 터뜨릴 때 쓴다
+func kid_head_position() -> Vector2:
+	if _carry == null:
+		return global_position
+	var kid_head := _carry.get_node_or_null("KidHead") as Node2D
+	return kid_head.global_position if kid_head else _carry.global_position
+
+## 안고 있는 것을 보이고 숨기고, 몸의 들썩임을 따라가게 한다
+func _pose_carry() -> void:
+	if _carry == null:
+		return
+	if _carry.visible != carrying:
+		_carry.visible = carrying
+	if not carrying:
+		return
+	if carry_follows_body and _body != null and _rest_positions.has(_body):
+		_carry.position = _carry_rest + (_body.position - (_rest_positions[_body] as Vector2))
+	else:
+		_carry.position = _carry_rest
+	_pose_kid_walk()
+	# 막는 중이면 아이도 가드 자세 씬에 잡아 둔 자리로 간다
+	_pose_kid_guard()
+	# 뛰어올라 안겨 있는 동안은 걷기 자세 위에 안긴 자세를 덮는다
+	_pose_hug()
+
+## 자세 씬에서 **아이가 아닌** 조각들 — 아이만 따로 입힐 때 건너뛸 이름이다
+const NON_CARRY_PART_NAMES: Array[String] = ["FootL", "FootR", "Body", "Head", "HandL", "HandR", "Recorder", "Danso"]
+
+## **막는 자세의 아이 부분.** 가드 자세 씬에 잡아 둔 아이 조각 자리를 아이에게만 입힌다.
+##
+## 몸 전체 가드(`_pose_guard`)는 걷기보다 **먼저** 돌기 때문에, 거기서 아이를 같이 잡아도
+## 뒤따라 도는 걷기 자세(`_pose_kid_walk`)가 그대로 덮어써 버린다. 그래서 여기서 한 번 더 입힌다
+func _pose_kid_guard() -> void:
+	if _guard_blend <= 0.001:
+		return
+	var scene: PackedScene = guard_pose
+	if held_item_l_armed and dual_guard_pose != null:
+		scene = dual_guard_pose
+	if scene == null:
+		return
+	_apply_pose_scene(read_pose(scene), _guard_blend, true, NON_CARRY_PART_NAMES)
+
+## **영역전개 점프 자세를 켜고 끈다** — 궁극기가 영역에 들어갈 때 켜고 나올 때 끈다
+func set_domain_jump(on: bool) -> void:
+	_domain_jump = on
+	if not on:
+		_domain_land_left = 0.0
+
+## 공중에 떠 있는 동안은 착지 자세 시간을 가득 채워 두고, 바닥에 닿으면 그때부터 깎는다
+func _update_domain_jump(delta: float) -> void:
+	if not _domain_jump or _fighter == null or not is_instance_valid(_fighter):
+		return
+	if _fighter.is_on_floor():
+		_domain_land_left = maxf(_domain_land_left - delta, 0.0)
+	else:
+		_domain_land_left = domain_jump_land_time
+
+## 뛰는 높이에 맞춰 세 장을 이어 붙인다 — 올라갈 땐 준비 → 최고점, 내려올 땐 최고점 → 착지.
+## 바닥에 닿은 뒤로는 착지 자세가 잠깐 남았다가 풀린다.
+##
+## **걷기·안기기 자세보다 뒤에** 돈다 — 그래야 아이까지 통째로 이 자세가 이긴다
+func _pose_domain_jump() -> void:
+	if not _domain_jump or _fighter == null or not is_instance_valid(_fighter):
+		return
+	if domain_jump_ready_pose == null and domain_jump_peak_pose == null and domain_jump_land_pose == null:
+		return
+	if _fighter.is_on_floor():
+		if _domain_land_left > 0.0 and domain_jump_land_pose != null:
+			var t: float = clampf(_domain_land_left / maxf(domain_jump_land_time, 0.01), 0.0, 1.0)
+			_apply_pose_scene(read_pose(domain_jump_land_pose), t)
+		return
+	var vy: float = _fighter.velocity.y
+	var speed: float = maxf(domain_jump_speed, 1.0)
+	if vy < 0.0:
+		# 솟아오르는 중 — 빠를수록 준비 자세, 느려질수록 최고점 자세
+		var t: float = 1.0 - clampf(-vy / speed, 0.0, 1.0)
+		if domain_jump_ready_pose != null:
+			_apply_pose_scene(read_pose(domain_jump_ready_pose), 1.0)
+		if domain_jump_peak_pose != null:
+			_apply_pose_scene(read_pose(domain_jump_peak_pose), t, false)
+	else:
+		# 떨어지는 중 — 빠를수록 착지 자세
+		var t: float = clampf(vy / speed, 0.0, 1.0)
+		if domain_jump_peak_pose != null:
+			_apply_pose_scene(read_pose(domain_jump_peak_pose), 1.0)
+		if domain_jump_land_pose != null:
+			_apply_pose_scene(read_pose(domain_jump_land_pose), t, false)
+
+## **아이를 품으로 불러올리거나 내려놓는다.** 1번 스킬(악쓰기)이 켜고 끈다.
+## 자세 씬(`hug_pose`)이 비어 있으면 아무 일도 안 한다 — 아이는 계속 옆에서 걷는다
+func set_kid_hug(on: bool) -> void:
+	_hug_want = on and hug_pose != null
+	# 표정은 자세 씬과 따로 논다 — 씬을 안 넣어 둔 캐릭터도 표정은 바뀔 수 있어야 한다
+	if _hug_face_on != on:
+		_hug_face_on = on
+		if _vomit_time <= 0.0 and _hurt_time <= 0.0:   # 잠깐 바뀐 표정이 떠 있으면 그게 끝난 뒤 반영된다
+			_apply_base_head()
+
+## 지금 아이가 품에 안겨 있는지(뛰어오르는 중에는 아직 false)
+func is_kid_hugged() -> bool:
+	return _hug_blend > 0.99
+
+## 아이 머리 **조각 자체**를 돌려준다 — 카메라가 아이를 따라다니며 확대할 때 쓴다.
+## `kid_head_position()`은 그 순간 자리만 주지만, 이쪽은 계속 따라갈 수 있다
+func kid_head_node() -> Node2D:
+	if _carry == null:
+		return self
+	var kid_head := _carry.get_node_or_null("KidHead") as Node2D
+	return kid_head if kid_head else _carry
+
+## 안기는 진행도를 시간에 따라 밀어 준다. 올라갈 때와 내려올 때 빠르기를 따로 둔다
+func _update_hug(delta: float) -> void:
+	var want: float = 1.0 if _hug_want else 0.0
+	if is_equal_approx(_hug_blend, want):
+		_hug_blend = want
+		return
+	var span: float = hug_rise_time if _hug_want else hug_fall_time
+	_hug_blend = move_toward(_hug_blend, want, delta / maxf(span, 0.01))
+
+## 걷던 아이를 품에 안긴 자리로 끌어올린다. 가는 길 가운데에서 **위로 솟아** 폴짝 뛰는 모양이 된다.
+## 다리·몸통은 기본적으로 건너뛴다(`hug_holds_legs`) — 안고도 걸을 수 있어야 한다
+func _pose_hug() -> void:
+	if _hug_blend <= 0.001 or hug_pose == null:
+		return
+	var skip: Array = [] if hug_holds_legs else ["FootL", "FootR", "Body"]
+	# 때리는 중에는 두 손을 안 잡는다 — 안고 있다고 평타 동작까지 굳으면 안 때린 것처럼 보인다
+	if _attack_time > 0.0:
+		skip = skip + ["HandL", "HandR"]
+	_apply_pose_scene(read_pose(hug_pose), _hug_blend, true, skip)
+	# 뛰는 중에만 뜬다 — 다 안기면(1) 솟음이 0으로 돌아와 품에 딱 붙는다
+	if _carry and hug_arc != 0.0:
+		_carry.position.y -= sin(clampf(_hug_blend, 0.0, 1.0) * PI) * hug_arc
+
+## 옆에서 같이 걷는 아이의 걸음. 엄마 걸음 위상(`_phase`)과 세기(`_blend`)를 그대로 쓰므로
+## 엄마가 멈추면 아이도 멈추고, 빨리 걸으면 아이도 빨라진다.
+## 두 발은 서로 반 바퀴 엇갈리고, 두 손은 발과 **반대로** 흔들린다
+func _pose_kid_walk() -> void:
+	if _kid_rest.is_empty():
+		return
+	if not carry_walks:
+		for kid_name in _kid_rest:
+			_set_kid(kid_name, Vector2.ZERO, 0.0)
+		return
+	# 공중에 뜬 만큼 걷기 흔들림은 줄고 점프 자세가 들어온다
+	var air: float = clampf(_air_blend, 0.0, 1.0)
+	var ground: float = 1.0 - air
+	var swing: float = sin(_phase) * _blend * ground
+	var bob: float = absf(sin(_phase)) * _blend * ground
+	_set_kid("KidFootL", Vector2(kid_step_swing * swing + kid_jump_tuck * air,
+		-kid_step_lift * maxf(swing, 0.0) - kid_jump_lift * air), deg_to_rad(-kid_jump_deg) * air)
+	_set_kid("KidFootR", Vector2(-kid_step_swing * swing - kid_jump_tuck * air,
+		-kid_step_lift * maxf(-swing, 0.0) - kid_jump_lift * air), deg_to_rad(-kid_jump_deg) * air)
+	_set_kid("KidHandL", Vector2(-kid_hand_swing * swing, -kid_jump_hand * air))
+	_set_kid("KidHandR", Vector2(kid_hand_swing * swing, -kid_jump_hand * air))
+	_set_kid("KidBody", Vector2(0.0, -kid_bob * bob - kid_jump_lift * 0.4 * air))
+	_set_kid("KidHead", Vector2(0.0, -kid_bob * bob - kid_jump_lift * 0.4 * air))
+
+## 아이 조각 하나를 제자리에서 offset만큼 옮기고 각도를 더한다. 그 조각이 없으면 그냥 넘어간다.
+## 각도는 **자세 씬에 잡아 둔 각도에 더한다** — 씬에서 기울여 둔 걸 지우지 않는다
+func _set_kid(kid_name: String, offset: Vector2, extra_rot: float = 0.0) -> void:
+	if not _kid_rest.has(kid_name):
+		return
+	var part: Node2D = _carry.get_node_or_null(kid_name) as Node2D
+	if part == null:
+		return
+	part.position = (_kid_rest[kid_name] as Vector2) + offset
+	if _kid_rest_rot.has(kid_name):
+		part.rotation = (_kid_rest_rot[kid_name] as float) + extra_rot
 
 ## 손에 든 악기(리코더·단소)를 씬에 저장돼 있던 제자리로 돌려놓는다
 func _reset_held_items() -> void:
@@ -4142,8 +4515,10 @@ func _reset_held_items() -> void:
 ##    자연스럽게 가야 하는 경우에 쓴다.
 ##  - false: **적어 둔 숫자 그대로** 보간한다. 평타 키프레임 사이에 쓴다 —
 ##    짧은 쪽으로 돌면 0도 → 180도 → 360도로 적어 둔 **한 바퀴 돌기**가 도로 되감긴다
-func _apply_pose_scene(pose: Dictionary, t: float, shortest: bool = true) -> void:
+func _apply_pose_scene(pose: Dictionary, t: float, shortest: bool = true, skip: Array = []) -> void:
 	for part_name in pose:
+		if skip.has(part_name):
+			continue
 		var part: Node2D = _pose_part(part_name)
 		if part == null:
 			continue
@@ -4283,6 +4658,32 @@ func _pose_dual() -> void:
 	if _head:
 		_head.rotation += lean * 0.7
 
+## **박수를 치고 있는지** 밖에서 켜고 끈다. 켜면 활짝 웃는 얼굴(action_head_texture)로도 바뀐다 —
+## 웃는 얼굴 그림이 없으면 자세만 바뀐다
+func set_clapping(on: bool) -> void:
+	if on and not (_clap_target > 0.0):
+		_clap_time = 0.0
+	_clap_target = 1.0 if on else 0.0
+	set_action_face(on)
+
+## 박수 자세 — 손이 **떨어진 자세**를 깔고, 그 위에 **붙은 자세**를 박자에 맞춰 섞는다.
+## 0이면 벌어져 있고 1이면 손뼉이 마주친 상태다
+func _pose_clap() -> void:
+	if clap_open_pose == null and clap_close_pose == null:
+		return
+	var t: float = _clap_blend
+	# 다리·몸통은 기본적으로 안 건드린다 — 붙잡으면 걸어도 발이 안 움직인다
+	var skip: Array = [] if clap_holds_legs else ["FootL", "FootR", "Body"]
+	if clap_open_pose != null:
+		_apply_pose_scene(read_pose(clap_open_pose), t, true, skip)
+	# 마주치는 순간이 짧고 벌어진 상태가 길어야 "짝짝" 하고 치는 맛이 난다 — 그래서 제곱을 건다
+	var close: float = pow(sin(_clap_time * PI * clap_rate), 2.0)
+	if clap_close_pose != null:
+		_apply_pose_scene(read_pose(clap_close_pose), t * close, true, skip)
+	# 머리는 손뼉 박자에 맞춰 까딱인다 — 자세 씬이 잡아 둔 자리 **위에 더한다**
+	if _head != null and not is_zero_approx(clap_head_bob):
+		_head.position.y += clap_head_bob * (close * 2.0 - 1.0) * t
+
 ## 방어 자세 — 두 손을 몸 앞으로 올려 막고, 몸과 머리를 살짝 움츠린다.
 ## 오른손은 얼굴 앞 높이, 왼손은 그보다 낮은 가슴 앞이라 권투 가드처럼 위아래로 어긋난다.
 ## 지금 값에서 목표 자세로 lerp하므로, 걷다가 막아도 그 자리에서 자연스럽게 이어진다
@@ -4293,6 +4694,9 @@ func _pose_guard() -> void:
 	# 쌍 악기 방어 자세를 포즈 씬으로 잡아 뒀으면 그게 이긴다
 	if dual and dual_guard_pose != null:
 		_apply_pose_scene(read_pose(dual_guard_pose), t)
+		return
+	if guard_pose != null:
+		_apply_pose_scene(read_pose(guard_pose), t)
 		return
 	var r_pos: Vector2 = dual_guard_hand_r_pos if dual else guard_hand_r_pos
 	var r_deg: float = dual_guard_hand_r_deg if dual else guard_hand_deg

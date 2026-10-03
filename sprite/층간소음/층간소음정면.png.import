@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b66h74br7hpui"
-path="res://.godot/imported/층간소음정면샷.png-64a38198ab99f69ff4a010179b7fd008.ctex"
+uid="uid://byiw814ew6cqr"
+path="res://.godot/imported/층간소음정면.png-ddfaa57e7180cc50274b3efeea507850.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소음/층간소음정면샷.png"
-dest_files=["res://.godot/imported/층간소음정면샷.png-64a38198ab99f69ff4a010179b7fd008.ctex"]
+source_file="res://sprite/층간소음/층간소음정면.png"
+dest_files=["res://.godot/imported/층간소음정면.png-ddfaa57e7180cc50274b3efeea507850.ctex"]
 
 [params]
 

@@ -9,7 +9,7 @@ const CHARACTERS := {
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
-	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
+	"층간소음 빌런": "res://characters/floornoise/FloorNoise.tscn",
 	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
@@ -46,7 +46,7 @@ const CHARACTER_COLORS := {
 	"주정뱅이": Color(0.8, 0.5, 0.2),
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
-	"층간소음 청년": Color(0.3, 0.5, 0.85),
+	"층간소음 빌런": Color(0.3, 0.5, 0.85),
 	"일진": Color(0.25, 0.3, 0.5),
 	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
 	"황근출 해병": Color(0.4, 0.45, 0.35),   # 숨겨진 캐릭터
@@ -59,7 +59,7 @@ const PORTRAITS := {
 	"금쪽이": "res://sprite/축법소년/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
-	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
+	"층간소음 빌런": "res://sprite/층간소음/초록 귀걸이의 갈색 머리 옆모습.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
 	"일진": "res://sprite/일진/정면일진.png",
@@ -75,7 +75,7 @@ const CHARACTER_RIGS := {
 	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
-	"층간소음 청년": "res://characters/floornoise/FloorNoiseRig.tscn",
+	"층간소음 빌런": "res://characters/floornoise/FloorNoiseRig.tscn",
 	"일진": "res://characters/iljin/IljinRig.tscn",
 	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn",
 }

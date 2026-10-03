@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b070fqpyg6rmj"
-path="res://.godot/imported/층간소음몸.png-7fd27a2803cfe9fc78ce53fdcb43a0d2.ctex"
+uid="uid://cqi8775l3olx6"
+path="res://.godot/imported/층간소음영역전개_0002_레이어-3.png-b9ba10af5b6eceaf1a8cbebba00ab2c0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소음/층간소음몸.png"
-dest_files=["res://.godot/imported/층간소음몸.png-7fd27a2803cfe9fc78ce53fdcb43a0d2.ctex"]
+source_file="res://sprite/층간소음/궁극기맵/층간소음영역전개_0002_레이어-3.png"
+dest_files=["res://.godot/imported/층간소음영역전개_0002_레이어-3.png-b9ba10af5b6eceaf1a8cbebba00ab2c0.ctex"]
 
 [params]
 

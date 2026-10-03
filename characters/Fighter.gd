@@ -146,6 +146,9 @@ var guard_duration_bonus: float = 0.0
 var _guard_cooldown_left: float = 0.0
 ## 기본공격이 막혀서 기본공격이 잠겨 있는 남은 시간(초)
 var _blocked_attack_left: float = 0.0
+## 이번에 걸린 잠금의 **전체 길이**(초). 쿨 파이의 X 표시가 이걸 기준으로 얼마나 풀렸는지 센다 —
+## 방어에 막힌 경우(3초)와 아이 비명(따로 정한 시간)이 길이가 달라서 하나로 고정할 수 없다
+var _blocked_attack_total: float = 0.0
 ## 방어 중에 몸을 감싸는 원형 보호막 (처음 방어할 때 만든다).
 ## 타입을 안 붙인 이유 — GuardShield는 preload로 가져오는 새 class_name이라, 타입을 붙이면
 ## 전역 클래스 캐시가 갱신되기 전에는 set_active()를 못 찾는다고 파싱 에러가 난다
@@ -296,7 +299,7 @@ func effective_guard_duration() -> float:
 func blocked_attack_ratio() -> float:
 	if _blocked_attack_left <= 0.0:
 		return 1.0
-	return 1.0 - _blocked_attack_left / maxf(blocked_attack_lock, 0.001)
+	return 1.0 - _blocked_attack_left / maxf(_blocked_attack_total, 0.001)
 
 ## 캐릭터끼리는 서로의 몸을 밟고 올라설 수 없게 몸 충돌을 무시한다.
 ## 충돌 레이어를 통째로 바꾸지 않고 add_collision_exception_with로 "상대 캐릭터"만 예외 처리하는 이유:
@@ -1053,6 +1056,7 @@ func cancel_guard(refund: bool = false) -> void:
 ## 그 연출이 없는 비주얼(임시 사각형)이면 잠금만 걸리고 그림은 안 바뀐다
 func play_weapon_blocked() -> void:
 	_blocked_attack_left = blocked_attack_lock
+	_blocked_attack_total = blocked_attack_lock
 	var visual: Node = get_node_or_null("Visual")
 	if visual and visual.has_method("play_weapon_blocked"):
 		visual.play_weapon_blocked(blocked_attack_lock)
@@ -1060,6 +1064,23 @@ func play_weapon_blocked() -> void:
 ## 지금 기본공격이 막혀서 잠겨 있는지 (방어에 막힌 뒤 blocked_attack_lock 동안)
 func is_basic_attack_locked() -> bool:
 	return _blocked_attack_left > 0.0
+
+## **상대의 기본공격만 잠근다.** 둔화·공포와 달리 **이동과 스킬은 그대로 된다** —
+## 층간소음 빌런 1번 스킬(아이 비명)이 쓴다. 실제로 걸렸으면 true.
+##
+## 방어 중이면 안 걸린다(다른 디버프와 같은 규칙). 이미 더 길게 잠겨 있으면 덮어쓰지 않는다 —
+## 짧은 잠금이 긴 잠금을 지워 버리면 "걸었는데 더 빨리 풀렸다"가 된다
+func lock_basic_attack(duration: float, from_ultimate: bool = false) -> bool:
+	if duration <= 0.0 or blocks_debuff(from_ultimate):
+		return false
+	if duration <= _blocked_attack_left:
+		return false
+	_blocked_attack_left = duration
+	_blocked_attack_total = duration
+	var visual: Node = get_node_or_null("Visual")
+	if visual and visual.has_method("play_weapon_blocked"):
+		visual.play_weapon_blocked(duration)
+	return true
 
 ## 몸(BodyRig)에 막는 자세를 켜고 끈다. 그 메서드가 없는 비주얼이면 그냥 넘어간다
 func _set_visual_guard(on: bool) -> void:

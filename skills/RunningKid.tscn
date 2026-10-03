@@ -1,0 +1,28 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://skills/RunningKid.gd" id="1_kid"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/Kid.tscn" id="2_kidscene"]
+[ext_resource type="PackedScene" path="res://skills/StompWave.tscn" id="3_wave"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/KidReadyPose.tscn" id="4_ready"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/KidPeakPose.tscn" id="5_peak"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/KidLandPose.tscn" id="6_land"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_kid"]
+radius = 15.0
+
+[node name="RunningKid" type="Area2D"]
+monitoring = false
+monitorable = false
+script = ExtResource("1_kid")
+damage = 7
+pop_override = 0.0
+wave_scene = ExtResource("3_wave")
+ready_pose = ExtResource("4_ready")
+peak_pose = ExtResource("5_peak")
+land_pose = ExtResource("6_land")
+
+[node name="Shape" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_kid")
+
+[node name="Kid" parent="." instance=ExtResource("2_kidscene")]
+scale = Vector2(0.125, 0.125)
