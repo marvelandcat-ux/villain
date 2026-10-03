@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://cg4fw7r64kwqt" path="res://sprite/황근출 해병/황근출 해병 몸.png" id="11_bare"]
 [ext_resource type="Texture2D" uid="uid://blb1lphxy4ghn" path="res://sprite/황근출 해병/황근출 해병 몸 측면 2.png" id="12_bare_turn1"]
 [ext_resource type="Texture2D" uid="uid://bcr7yrftk4mjd" path="res://sprite/황근출 해병/황근축 해병 몸 측면 3.png" id="13_bare_turn2"]
+[ext_resource type="Script" path="res://skills/BarracksSlamSkill.gd" id="14_slam"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -86,3 +87,9 @@ cooldown = 50.0
 start_on_cooldown = true
 skill_name = "내무반 집합"
 description = "웃통을 벗어 던지고, 화면이 어두워졌다 밝아지면 두 사람 모두 내무반으로 끌려가 15초 동안 거기서 싸운다. 시간이 끝나면 원래 자리로 돌아온다."
+
+[node name="BarracksSkill2" type="Node" parent="."]
+script = ExtResource("14_slam")
+cooldown = 15.0
+skill_name = "내무반 얼차려"
+description = "내무반 안에서만 쓰는 스킬2. 순간이동하듯 앞으로 돌진해 상대를 두 손으로 번쩍 들어 위로 띄우고, 상대 위로 순간이동해 다리로 내려찍는다. 땅에 꽂힌 상대는 크게 튕겨 날아간다. 방어 중이어도 잡는다."

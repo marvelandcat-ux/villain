@@ -20,6 +20,7 @@ const HP_BAR_SIZE := Vector2(232.0, 20.0)
 ]
 
 var fighter: Fighter
+var _player_index: int = 1
 
 ## mirrored가 true면 캐릭터 박스를 오른쪽으로 옮기고 막대들도 오른쪽에 붙여서 계단이 반대로 꺾이게 한다 (P2용 좌우 반전).
 ## player_index는 쿨타임 슬롯에 띄울 조작 키를 찾는 데 쓴다 (1이면 p1_skill_1 …)
@@ -29,6 +30,8 @@ func bind(target_fighter: Fighter, mirrored: bool = false, player_index: int = 1
 	_hp_bar.max_value = fighter.stats.max_hp
 	_hp_bar.value = fighter.current_hp
 	fighter.health_changed.connect(_on_health_changed)
+	_player_index = player_index
+	fighter.skill_slots_changed.connect(_on_skill_slots_changed)
 	_bind_skill_slots(player_index)
 	if mirrored:
 		move_child(_character_box, get_child_count() - 1)
@@ -70,6 +73,9 @@ func _apply_portrait(character_name: String) -> void:
 	_character_image.texture = GameState.portrait_texture(character_name)
 	# 편집 씬(PortraitFrames.tscn)에서 잡은 배율·위치를 HUD 초상화 칸(70x70)에도 똑같이 적용
 	GameState.frame_portrait(_character_image, character_name, Vector2(70, 70))
+
+func _on_skill_slots_changed() -> void:
+	_bind_skill_slots(_player_index)
 
 func _on_health_changed(current: int, max_hp: int) -> void:
 	_hp_bar.max_value = max_hp

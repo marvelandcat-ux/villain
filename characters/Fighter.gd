@@ -15,6 +15,8 @@ signal basic_attack_used
 ## **health_changed로 대신하면 안 된다** — 회복할 때도 같이 날아오고, 넉백 방향을 알 수 없다.
 ## 가드로 완전히 막아 실제로 0이 깎였으면 발동하지 않는다
 signal damaged(amount: int, knockback: Vector2)
+## 스킬 슬롯에 낀 스킬이 바뀌었을 때 알린다 — HUD가 쿨 아이콘을 다시 묶는다(황근출 내무반 스킬2)
+signal skill_slots_changed
 
 ## 캐릭터 고정 수치
 @export var stats: CharacterStats
@@ -200,6 +202,8 @@ var _invincible_flag: bool = false
 var _invincible_locks: int = 0
 ## true인 동안은 무서워서 기본공격/스킬을 전혀 못 쓴다(이동은 가능) — 지하철 아저씨 공포 단소 등
 var is_feared: bool = false
+## 궁극기 봉인을 건 쪽(id) 모음. 하나라도 있으면 궁극기를 못 쓴다 — 황근출 내무반 등
+var _ultimate_seals: Dictionary = {}
 ## true인 동안은 붙잡힌 상태라 이동·점프·공격·스킬을 전혀 못 쓰고 중력도 받지 않는다.
 ## 잡은 스킬(파일드라이버 등)이 apply_physics를 건너뛰게 해서 위치를 직접 조작할 수 있게 한다
 var is_grabbed: bool = false
@@ -985,6 +989,16 @@ func apply_fear(duration: float, from_ultimate: bool = false) -> void:
 	set_tint("fear", Color(0.75, 0.75, 1.0), duration)
 	_after(duration, func(): is_feared = false)
 
+## id로 궁극기를 봉인한다(같은 id로 unseal_ultimate 해야 풀림)
+func seal_ultimate(id: StringName) -> void:
+	_ultimate_seals[id] = true
+
+func unseal_ultimate(id: StringName) -> void:
+	_ultimate_seals.erase(id)
+
+func is_ultimate_sealed() -> bool:
+	return not _ultimate_seals.is_empty()
+
 ## 기본 공격력에 캐릭터 배율과 디버프를 반영한 최종 데미지를 계산한다
 func compute_damage(base_damage: int) -> int:
 	return int(round(base_damage * stats.attack_multiplier * attack_debuff_multiplier))
@@ -1281,6 +1295,13 @@ func use_skill_1() -> void:
 	else:
 		skill_1.use(self)
 
+## 스킬2 자리에 다른 스킬을 끼우고 원래 스킬을 돌려준다 — 궁 동안만 스킬2가 바뀌는 캐릭터용(BarracksUltimate)
+func swap_skill_2(skill: Skill) -> Skill:
+	var old: Skill = skill_2
+	skill_2 = skill
+	skill_slots_changed.emit()
+	return old
+
 func use_skill_2() -> void:
 	if skill_2 == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_2.can_use():
 		return
@@ -1294,7 +1315,7 @@ func use_skill_2() -> void:
 ## 실제 발동은 연출이 끝난 뒤 fire_ultimate_now()로 이뤄진다.
 ## 상대와 같은 타이밍에 궁극기를 함께 쓰면(클래시) 진 쪽은 컷인조차 뜨지 않고 쿨타임만 소모된다
 func use_ultimate() -> void:
-	if skill_ultimate == null or is_feared or is_grabbed or is_guarding or is_busy() or not skill_ultimate.can_use():
+	if skill_ultimate == null or is_ultimate_sealed() or is_feared or is_grabbed or is_guarding or is_busy() or not skill_ultimate.can_use():
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:

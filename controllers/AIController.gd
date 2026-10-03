@@ -1066,6 +1066,8 @@ func _want_skill(skill: Skill) -> bool:
 			return level and open and d < 170.0
 		"ShoulderChargeSkill":
 			return level and open and d > 50.0 and d < float(skill.get("charge_speed")) * float(skill.get("charge_duration")) * 0.9
+		"BarracksSlamSkill":
+			return level and d > 60.0 and d < float(skill.get("dash_distance")) * 0.9
 		"DropkickSkill":
 			return level and open and fighter.is_on_floor() and d > 80.0 and d < float(skill.get("travel_distance")) * 0.9
 		"WeakenAuraUltimate", "CatHutUltimate", "IljinCrewUltimate", "BarracksUltimate":

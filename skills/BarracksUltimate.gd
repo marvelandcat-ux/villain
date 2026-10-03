@@ -13,6 +13,8 @@ extends Skill
 @export var image_scale: float = 0.75
 ## 그림에서 발이 닿는 높이(그림 픽셀) — 마룻바닥(630~1024)의 가운데쯤
 @export var floor_image_y: float = 790.0
+## 그림에서 천장 높이(그림 픽셀) — 형광등 아래쪽 끝쯤. 이 위로는 못 올라간다(머리가 여기 닿음)
+@export var ceiling_image_y: float = 85.0
 ## 원래 맵 원점에서 내무반 그림 가운데까지 — 위로 멀리 둬서 원래 맵(낙사 구조 높이·기믹)과 안 겹치게
 @export var arena_offset: Vector2 = Vector2(0, -6000)
 ## 그림 좌우 끝에서 벽 안쪽 면까지(px)
@@ -21,6 +23,8 @@ extends Skill
 @export var spawn_spread: float = 300.0
 ## 어두워지는/밝아지는 시간(초)
 @export var fade_time: float = 0.25
+## 내무반에 있는 동안 스킬2 자리에 끼울 시전자의 자식 스킬 노드 이름(없으면 안 바꿈)
+@export var arena_skill_2_name: String = "BarracksSkill2"
 
 @export_group("옷 벗기")
 ## 궁을 쓰면 먼저 웃통을 벗어 던진다 — 벗은 몸 그림·배율·제자리(맨몸 리그 `HwanggeunchulRig.tscn`의 Body 값)
@@ -45,9 +49,12 @@ extends Skill
 @export var reveal_fighter_time: float = 0.5
 
 const SCREEN_SHATTER := preload("res://combat/ScreenShatter.gd")
+const FOREGROUND := preload("res://maps/BarracksForeground.gd")
 
 var _arena: Node2D
 var _bg: Sprite2D
+## 앞 층(침대·관물대 뒷모습, maps/BarracksForeground.gd)
+var _fg: Node2D
 ## 화면 깨지기 연출(진입 중에만 있음)
 var _shatter = null   # 타입 안 붙임 — ScreenShatter는 class_name이 없어 CanvasLayer로 받으면 start()를 못 찾는다
 var _fade: ColorRect
@@ -59,11 +66,15 @@ var _return_pos: Dictionary = {}
 var _caster: Fighter
 ## 벗기 전 몸통(돌아올 때 다시 입힘)
 var _saved_outfit: Dictionary = {}
+## 내무반 동안 빼 둔 원래 스킬2
+var _saved_skill_2: Skill = null
+var _swapped_skill_2: bool = false
 
 func _execute(fighter: Fighter) -> void:
 	if is_instance_valid(_arena) or is_instance_valid(_shatter):
 		return
 	_caster = fighter
+	_seal_opponents(true)
 	var delay: float = strip_time if bare_body_texture != null and _strip(fighter) else 0.0
 	_lock_fighters(delay + 2.5)
 	Timers.after(self, delay, func(): _break_screen(fighter, func(reveal: bool): _enter(fighter, reveal)))
@@ -139,6 +150,7 @@ func _enter(fighter: Fighter, reveal: bool) -> void:
 	if cam and cam.has_method("enter_arena"):
 		cam.enter_arena(_arena_rect(), Vector2(_arena.global_position.x, feet_y - 150.0))
 	_set_eye_glow(true)
+	_swap_skill_2(true)
 	var shown_after: float = fade_time
 	if reveal:
 		shown_after = _reveal(map, fighters)
@@ -157,6 +169,8 @@ func _reveal(map: Node, fighters: Array) -> float:
 	backdrop.add_child(black)
 	map.add_child(backdrop)
 	_bg.modulate.a = 0.0
+	if is_instance_valid(_fg):
+		_fg.modulate.a = 0.0
 	for f in fighters:
 		f.modulate.a = 0.0
 	if is_instance_valid(_shatter):
@@ -164,6 +178,8 @@ func _reveal(map: Node, fighters: Array) -> float:
 	_shatter = null
 	var tw := _bg.create_tween()
 	tw.tween_property(_bg, "modulate:a", 1.0, reveal_bg_time)
+	if is_instance_valid(_fg):
+		_fg.create_tween().tween_property(_fg, "modulate:a", 1.0, reveal_bg_time)
 	tw.tween_callback(backdrop.queue_free)
 	for f in fighters:
 		var ft := (f as Node).create_tween()
@@ -190,6 +206,8 @@ func _leave(reveal: bool) -> void:
 			visual.set_body_outfit(_saved_outfit)
 	_saved_outfit = {}
 	_set_eye_glow(false)
+	_seal_opponents(false)
+	_swap_skill_2(false)
 	for f in _return_pos:
 		if is_instance_valid(f):
 			_place(f, _return_pos[f])
@@ -231,6 +249,35 @@ func _reveal_map() -> void:
 		ft.tween_interval(reveal_fighter_delay)
 		ft.tween_property(f, "modulate:a", 1.0, reveal_fighter_time)
 
+## 내무반 동안만 스킬2를 내무반 전용 기술로 바꾼다 — 들어갈 땐 바로 쓸 수 있게 쿨을 비우고, 나올 땐 하던 동작을 멈춘다
+func _swap_skill_2(on: bool) -> void:
+	if not is_instance_valid(_caster):
+		_swapped_skill_2 = false
+		return
+	var arena_skill := _caster.get_node_or_null(arena_skill_2_name) as Skill
+	if arena_skill == null:
+		return
+	if on and not _swapped_skill_2:
+		arena_skill.cooldown_left = 0.0
+		_saved_skill_2 = _caster.swap_skill_2(arena_skill)
+		_swapped_skill_2 = true
+	elif not on and _swapped_skill_2:
+		if arena_skill.has_method("abort"):
+			arena_skill.abort()
+		_caster.swap_skill_2(_saved_skill_2)
+		_saved_skill_2 = null
+		_swapped_skill_2 = false
+
+## 궁이 도는 동안(옷 벗기부터 돌아올 때까지) 상대는 궁극기를 못 쓴다
+func _seal_opponents(on: bool) -> void:
+	for f in _fighters():
+		if f == _caster:
+			continue
+		if on:
+			f.seal_ultimate(&"barracks")
+		else:
+			f.unseal_ultimate(&"barracks")
+
 func _fighters() -> Array:
 	var out: Array = []
 	for n in get_tree().get_nodes_in_group("fighters"):
@@ -258,12 +305,17 @@ func _build_arena(map: Node) -> void:
 	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_arena.add_child(bg)
 	_bg = bg
+	_fg = FOREGROUND.new()
+	_fg.name = "Foreground"
+	_arena.add_child(_fg)
 	var half: Vector2 = background.get_size() * image_scale * 0.5
 	var floor_local: float = (floor_image_y - background.get_size().y * 0.5) * image_scale
 	_add_block("Ground", Vector2(0, floor_local + 100.0), Vector2(half.x * 2.0 + 400.0, 200.0))
 	var wall_h: float = half.y * 6.0
 	_add_block("LeftWall", Vector2(-half.x + wall_inset - 50.0, floor_local - wall_h * 0.5), Vector2(100, wall_h))
 	_add_block("RightWall", Vector2(half.x - wall_inset + 50.0, floor_local - wall_h * 0.5), Vector2(100, wall_h))
+	var ceiling_local: float = (ceiling_image_y - background.get_size().y * 0.5) * image_scale
+	_add_block("Ceiling", Vector2(0, ceiling_local - 100.0), Vector2(half.x * 2.0 + 400.0, 200.0))
 
 func _add_block(block_name: String, pos: Vector2, size: Vector2) -> void:
 	var body := StaticBody2D.new()

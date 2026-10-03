@@ -58,3 +58,5 @@ texture = ExtResource("90_bowl")
 [node name="EyeGlow" type="Node2D" parent="Head"]
 position = Vector2(193, 52)
 script = ExtResource("91_eyeglow")
+core_color = Color(1, 0.75, 0.7, 1)
+glow_color = Color(1, 0.08, 0.05, 0.6)

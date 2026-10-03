@@ -860,6 +860,24 @@ var held_item_l_thrown: bool = false
 @export var kneel_hand_offset: Vector2 = Vector2(4.0, 6.0)
 ## 자세가 섞이는 빠르기(1/초)
 @export var kneel_blend_speed: float = 12.0
+## --- 두 손 번쩍 들기 / 다리 내려찍기 (황근출 내무반 스킬2 `BarracksSlamSkill`) ---
+## 두 손이 가는 자리(리그 로컬, +x = 바라보는 쪽)와 각도 — 머리 위로 번쩍
+@export var lift_hand_r_pos: Vector2 = Vector2(18.0, -52.0)
+@export var lift_hand_l_pos: Vector2 = Vector2(4.0, -55.0)
+@export var lift_hand_deg: float = -70.0
+## 들어 올리며 상체를 뒤로 젖히는 각도(도, 양수 = 뒤로)
+@export var lift_lean_deg: float = 8.0
+## 내려찍는 다리(오른발)가 가는 자리와 각도 — 발바닥을 아래로 쭉 뻗는다
+@export var stomp_foot_pos: Vector2 = Vector2(8.0, 44.0)
+@export var stomp_foot_deg: float = 0.0
+## 접는 다리(왼발)가 가는 자리와 각도
+@export var stomp_tuck_pos: Vector2 = Vector2(-14.0, 16.0)
+@export var stomp_tuck_deg: float = -25.0
+## 균형 잡는 두 손 자리
+@export var stomp_hand_r_pos: Vector2 = Vector2(28.0, -28.0)
+@export var stomp_hand_l_pos: Vector2 = Vector2(-28.0, -30.0)
+## 두 자세가 섞이는 빠르기(1/초)
+@export var slam_blend_speed: float = 20.0
 ## 줄을 잡은 두 손이 돌아가는 각도(도)
 @export var reel_hand_deg: float = -22.0
 ## 마우스를 던지고 줄을 당기는 동안 손에 든 물건(악플러 키보드 등)을 숨긴다 —
@@ -1166,6 +1184,10 @@ var _charge_target: float = 0.0
 ## 무릎 꿇기 자세 섞임(0~1)과 목표값
 var _kneel_blend: float = 0.0
 var _kneel_target: float = 0.0
+var _lift_blend: float = 0.0
+var _lift_target: float = 0.0
+var _stomp_blend: float = 0.0
+var _stomp_target: float = 0.0
 ## 드롭킥 단계 (0=안 함, 1=공중에서 두 발 뻗기, 2=넘어졌다 일어나는 중)
 var _dk_stage: int = 0
 ## 드롭킥 자세 섞임(0~1) / 몸이 누운 각도(라디안) / 몸이 내려간 양
@@ -1352,6 +1374,8 @@ func _process(delta: float) -> void:
 	_dual_blend = move_toward(_dual_blend, dual_want, delta * dual_blend_speed)
 	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
 	_kneel_blend = move_toward(_kneel_blend, _kneel_target, delta * kneel_blend_speed)
+	_lift_blend = move_toward(_lift_blend, _lift_target, delta * slam_blend_speed)
+	_stomp_blend = move_toward(_stomp_blend, _stomp_target, delta * slam_blend_speed)
 	_counter_blend = move_toward(_counter_blend, _counter_target, delta * counter_blend_speed)
 	_counter_phase = _counter_phase + delta * counter_poke_speed if _counter_blend > 0.001 else 0.0
 	_update_dropkick(delta)
@@ -1440,7 +1464,7 @@ func _process(delta: float) -> void:
 	# 대치 자세 — 손을 따로 쓰는 동작 중에는 풀었다가 끝나면 다시 든다
 	var stance_on: bool = fight_stance and _drink_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 \
 		and _cast_time <= 0.0 and _reel_blend <= 0.01 and _guard_target <= 0.0 and _charge_target <= 0.0 and _kneel_target <= 0.0 \
-		and _counter_target <= 0.0 and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
+		and _lift_target <= 0.0 and _stomp_target <= 0.0 and _counter_target <= 0.0 and _ride_target <= 0.0 and _clash_target <= 0.0 and _scratch_time <= 0.0 and _dk_stage == 0
 	_stance_blend = move_toward(_stance_blend, 1.0 if stance_on else 0.0, delta * stance_blend_speed)
 
 	# 스킬 클래시 대치 — 목표(_clash_target)로 서서히 오간다
@@ -1669,6 +1693,12 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 무릎 꿇기(드롭킥 준비) — 앞발은 세우고 뒷발은 무릎을 땅에 대고 몸을 낮춘다
 	if _kneel_blend > 0.001:
 		_pose_kneel()
+
+	# 두 손 번쩍 들기 / 다리 내려찍기 (황근출 내무반 스킬2)
+	if _lift_blend > 0.001:
+		_pose_lift()
+	if _stomp_blend > 0.001:
+		_pose_stomp()
 
 	# 드롭킥 — 두 발을 모아 앞으로 뻗고 두 손은 뒤로 뺀다 (몸을 눕히는 건 맨 아래에서 한꺼번에)
 	if _dk_blend > 0.001:
@@ -4006,7 +4036,7 @@ func _face_turn_progress() -> float:
 func _face_turn_blocked() -> bool:
 	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _eat_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
 		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _kneel_target > 0.0 or _counter_target > 0.0 \
-		or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
+		or _lift_target > 0.0 or _stomp_target > 0.0 or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
 
 ## 방향 전환 머리 돌리기 — 앞 절반은 몸이 옛 방향인 채 머리가 측면1 -> ... -> 정면으로 돌고,
 ## 머리가 정면을 본 순간 몸이 뒤집힌 뒤 뒤 절반은 새 방향에서 측면3 -> ... -> 옆모습으로 마저 돈다.
@@ -4344,6 +4374,43 @@ func set_charging(on: bool) -> void:
 ## 무릎 꿇는 자세를 켜고 끈다(DropkickSkill 준비 동작). 자세는 _kneel_blend로 서서히 섞인다
 func set_kneeling(on: bool) -> void:
 	_kneel_target = 1.0 if on else 0.0
+
+## 두 손을 머리 위로 번쩍 드는 자세를 켜고 끈다(BarracksSlamSkill)
+func set_lift_pose(on: bool) -> void:
+	_lift_target = 1.0 if on else 0.0
+
+## 한 다리를 아래로 쭉 뻗어 내려찍는 자세를 켜고 끈다(BarracksSlamSkill)
+func set_stomp_pose(on: bool) -> void:
+	_stomp_target = 1.0 if on else 0.0
+
+## 두 손 번쩍 — 로컬 좌표라 좌우 반전에 저절로 맞는다(_pose_kneel과 같은 이유로 방향 부호를 안 곱한다)
+func _pose_lift() -> void:
+	var t: float = _lift_blend
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(lift_hand_r_pos, t)
+		_hand_r.rotation = lerpf(_hand_r.rotation, deg_to_rad(lift_hand_deg), t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(lift_hand_l_pos, t)
+		_hand_l.rotation = lerpf(_hand_l.rotation, deg_to_rad(lift_hand_deg), t)
+	var angle: float = -deg_to_rad(lift_lean_deg) * t
+	for part in [_body, _head]:
+		if part:
+			part.position = kneel_pivot + (part.position - kneel_pivot).rotated(angle)
+			part.rotation += angle
+
+## 다리 내려찍기 — 오른발은 아래로 쭉, 왼발은 접고, 두 손은 양옆으로 벌려 균형
+func _pose_stomp() -> void:
+	var t: float = _stomp_blend
+	if _foot_r:
+		_foot_r.position = _foot_r.position.lerp(stomp_foot_pos, t)
+		_foot_r.rotation = lerpf(_foot_r.rotation, deg_to_rad(stomp_foot_deg), t)
+	if _foot_l:
+		_foot_l.position = _foot_l.position.lerp(stomp_tuck_pos, t)
+		_foot_l.rotation = lerpf(_foot_l.rotation, deg_to_rad(stomp_tuck_deg), t)
+	if _hand_r:
+		_hand_r.position = _hand_r.position.lerp(stomp_hand_r_pos, t)
+	if _hand_l:
+		_hand_l.position = _hand_l.position.lerp(stomp_hand_l_pos, t)
 
 ## 무릎 꿇기 — 손을 무릎 위로 내린 뒤, 상체(몸통·머리·두 손)를 엉덩이 축(kneel_pivot)으로 **통째로** 앞으로 숙이고 낮춘다.
 ## 조각의 **로컬 좌표**에서 돌리므로 좌우 반전(리그 scale.x = -1)에 저절로 맞는다 — 방향 부호를 곱하면 안 된다(_pose_headbutt와 같은 이유)
