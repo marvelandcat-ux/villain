@@ -45,7 +45,10 @@ shader_parameter/shade = 0.12
 size = Vector2(3000, 40)
 
 [sub_resource type="RectangleShape2D" id="Shape_edge_wall"]
-size = Vector2(40, 1600)
+size = Vector2(40, 2400)
+
+[sub_resource type="RectangleShape2D" id="Shape_ceiling"]
+size = Vector2(2440, 40)
 
 [node name="Tutorial" type="Node2D" unique_id=713366777]
 texture_filter = 4
@@ -171,6 +174,12 @@ position = Vector2(1200, -500)
 
 [node name="Collision" type="CollisionShape2D" parent="RightWall" unique_id=1399198582]
 shape = SubResource("Shape_edge_wall")
+
+[node name="Ceiling" type="StaticBody2D" parent="."]
+position = Vector2(0, -1700)
+
+[node name="Collision" type="CollisionShape2D" parent="Ceiling"]
+shape = SubResource("Shape_ceiling")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=728178402]
 position = Vector2(0, 250)

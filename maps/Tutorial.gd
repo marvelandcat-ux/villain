@@ -103,6 +103,25 @@ var _parry_timer: float = 0.0
 var _parry_wait: float = 0.0
 ## 이 줄이 뜬 뒤 대시 쿨이 끝나 있는 걸 확인했나(이전 대시의 쿨 때문에 바로 넘어가지 않게)
 var _dash_armed: bool = false
+
+## "이등병 똥자루와 싸워서 이겨라" 줄 — 이 줄을 넘기면 똥자루(임시 캐릭터, 약한 AI)가 나와 싸움이 시작된다.
+## 이기면 마지막 줄, 지면(플레이어 체력 0) 둘 다 체력을 채우고 다시 싸운다
+const FIGHT_LINE_IDX := 24
+const FIGHT_SCENE := "res://characters/ddongjaru/Ddongjaru.tscn"
+## 똥자루가 플레이어에게서 이만큼(px) 떨어진 곳에 나타난다(교관 반대쪽)
+const FIGHT_SPAWN_GAP := 300.0
+## 똥자루 공격력 배수 / AI 솜씨(0~1, 스토리 EP.1과 같은 약한 값)
+const FIGHT_DAMAGE_SCALE := 0.5
+const FIGHT_AI_SKILL := 0.35
+## 이긴 뒤 똥자루가 사라지고 마지막 대사가 나오기까지(초)
+const FIGHT_WIN_WAIT := 1.2
+var _fight_active: bool = false
+var _enemy: Fighter
+var _enemy_start_x: float = 0.0
+var _player_start_x: float = 0.0
+## 싸움 중 화면 위 체력바(신병 / 이등병 똥자루)
+var _fight_hud: CanvasLayer
+var _fight_bars: Array[ProgressBar] = []
 ## 교관(진짜 황근출 Fighter — 안 죽고, 3타 콤보로 날아가면 원래 자리로 돌아온다)
 var _instructor: Fighter
 var _instructor_home: Vector2 = Vector2.ZERO
@@ -156,6 +175,8 @@ func _ready() -> void:
 		"좋다 %s" % _em("신병"),
 		"이제 %s를 배워 볼껀데 방향키를 %s 눌러라" % [_em("대쉬"), _em("2번 연속으로")],
 		"%s이 있으니 %s 하도록해라 알겠나?! %s" % [_em("쿨타임"), _em("주의"), _bubble.icon("dash")],
+		"이제 %s를 할꺼다 %s!" % [_em("마지막 테스트"), _em("신병")],
+		"이등병 키자.. 아니;; %s와 싸워서 %s 악!" % [_em("이등병 똥자루"), _em("이겨라")],
 		"좋다 이정도면 이제 %s은 끝난 것 같다." % _em("훈련"),
 	]
 	var rays := $Sunlight/Rays as ColorRect
@@ -182,6 +203,7 @@ func _process(delta: float) -> void:
 	_update_hit_phase(delta)
 	_update_parry_phase(delta)
 	_update_dash_gate()
+	_update_fight()
 
 ## 교관 가까이(기본 500px) 오면 대사를 시작한다. 이후 진행은 스페이스바로(_advance).
 func _update_tutorial(_delta: float) -> void:
@@ -192,12 +214,11 @@ func _update_tutorial(_delta: float) -> void:
 		_line_idx = 0
 		_say_current()
 
-## 지금 줄을 말풍선에 띄운다. 마지막 줄이 아니면 "계속" 힌트(▼)를 켠다.
+## 지금 줄을 말풍선에 띄운다. "계속" 힌트(▼)를 켠다(마지막 줄도 스페이스로 넘겨 메인 메뉴로 나간다).
 ## "스페이스를 누르세요"는 첫 줄에서만 바로 띄우고, 이후 줄엔 안 띄운다.
 ## 스페이스로 안 넘어가는 줄(움직이기·파쿠르·대시)은 ▼·"스페이스를 누르세요"를 둘 다 끈다.
 func _say_current() -> void:
-	var is_last := _line_idx >= _lines.size() - 1
-	var hint := not is_last and not _is_action_gated_line(_line_idx)
+	var hint := not _is_action_gated_line(_line_idx)
 	var press_delay := 0.0 if _line_idx == 0 else -1.0
 	_bubble.say(_lines[_line_idx], hint, press_delay)
 	_move_wait = 0.0
@@ -227,13 +248,18 @@ func _advance() -> void:
 	if _line_idx == PARRY_LINE_IDX:
 		_start_parry_phase()
 		return
+	# "이등병 똥자루와 싸워서 이겨라"를 넘기면 다음 줄 대신 똥자루와 싸움이 시작된다
+	if _line_idx == FIGHT_LINE_IDX:
+		_start_fight()
+		return
 	_go_next_line()
 
-## 다음 줄로 넘어간다(마지막이면 끝).
+## 다음 줄로 넘어간다(마지막 줄을 넘기면 튜토리얼 끝 → 메인 메뉴).
 func _go_next_line() -> void:
 	_line_idx += 1
 	if _line_idx >= _lines.size():
 		_step = Step.DONE
+		get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 		return
 	_say_current()
 
@@ -525,6 +551,151 @@ func _update_parry_phase(_delta: float) -> void:
 func _finish_parry_phase() -> void:
 	_parry_returning = false
 	_go_next_line()
+
+# --- 마지막 테스트: 이등병 똥자루와 싸움 ---
+
+## "싸워서 이겨라"를 넘긴 순간: 말풍선을 치우고 플레이어 옆(교관 반대쪽)에 똥자루가 먼지와 함께 나타나 싸움을 건다
+func _start_fight() -> void:
+	if _fight_active:
+		return
+	_fight_active = true
+	if _bubble:
+		_bubble.close()
+	var side: float = -signf(_instructor_home.x - _fighter.global_position.x)
+	if side == 0.0:
+		side = -1.0
+	var x: float = _fighter.global_position.x + side * FIGHT_SPAWN_GAP
+	if absf(x) > 1100.0:
+		x = _fighter.global_position.x - side * FIGHT_SPAWN_GAP
+	_player_start_x = _fighter.global_position.x
+	_enemy_start_x = x
+	_enemy = load(FIGHT_SCENE).instantiate()
+	# add_child 전에 stats를 바꿔 끼워야 _ready()가 새 값으로 시작한다(stats는 공유 Resource라 복제)
+	var stats: CharacterStats = _enemy.stats.duplicate()
+	stats.attack_multiplier *= FIGHT_DAMAGE_SCALE
+	_enemy.stats = stats
+	add_child(_enemy)
+	_enemy.z_index = 2
+	_enemy.global_position = Vector2(x, $PlayerSpawn.global_position.y)
+	_enemy.facing = signf(_fighter.global_position.x - x)
+	var rig := _enemy.get_node_or_null("Visual")
+	if rig:
+		rig.idle_gestures = false
+	var ai := AIController.new()
+	ai.target = _fighter   # 안 정하면 가장 가까운 Fighter(교관)를 상대로 잡을 수 있다
+	ai.knows_follow_ups = false
+	ai.reaction_time = lerpf(0.45, ai.reaction_time, FIGHT_AI_SKILL)
+	ai.guard_react_chance = lerpf(0.10, ai.guard_react_chance, FIGHT_AI_SKILL)
+	ai.dodge_react_chance = lerpf(0.15, ai.dodge_react_chance, FIGHT_AI_SKILL)
+	ai.bait_chance = 0.0
+	ai.dash_approach_distance = lerpf(520.0, ai.dash_approach_distance, FIGHT_AI_SKILL)
+	_enemy.add_child(ai)
+	_spawn_dust(Vector2(x, ground_top_y), 2.0)
+	_fighter.heal(_fighter.stats.max_hp)
+	_set_instructor_bystander(true)
+	_build_fight_hud()
+
+## 싸움 진행(매 프레임): 체력바를 갱신하고, 똥자루가 쓰러지면 승리 / 플레이어가 쓰러지면 둘 다 채우고 다시
+func _update_fight() -> void:
+	if not _fight_active or _enemy == null or not is_instance_valid(_enemy):
+		return
+	_update_fight_hud()
+	if _enemy.current_hp <= 0:
+		_win_fight()
+	elif _fighter.current_hp <= 0:
+		_restart_fight()
+
+## 졌다: 둘 다 체력을 가득 채우고 처음 자리로 돌려 다시 싸운다
+func _restart_fight() -> void:
+	for f in [_fighter, _enemy]:
+		f.cancel_finisher_flight()
+		f.heal(f.stats.max_hp)
+		f.velocity = Vector2.ZERO
+	_fighter.global_position.x = _player_start_x
+	_enemy.global_position.x = _enemy_start_x
+	_enemy.facing = signf(_fighter.global_position.x - _enemy_start_x)
+	_spawn_dust(Vector2(_enemy_start_x, ground_top_y), 1.6)
+
+## 이겼다: 똥자루의 AI를 떼고 먼지와 함께 사라지게 한 뒤 마지막 대사로
+func _win_fight() -> void:
+	_fight_active = false
+	for child in _enemy.get_children():
+		if child is AIController:
+			child.queue_free()
+	_enemy.move(0.0)
+	_fighter.heal(_fighter.stats.max_hp)
+	var enemy := _enemy
+	var tw := create_tween()
+	tw.tween_interval(FIGHT_WIN_WAIT * 0.5)
+	tw.tween_callback(func(): _spawn_dust(Vector2(enemy.global_position.x, ground_top_y), 1.8))
+	tw.tween_property(enemy, "modulate:a", 0.0, FIGHT_WIN_WAIT * 0.5)
+	tw.tween_callback(enemy.queue_free)
+	tw.tween_callback(_end_fight)
+
+func _end_fight() -> void:
+	_enemy = null
+	_set_instructor_bystander(false)
+	if _fight_hud and is_instance_valid(_fight_hud):
+		_fight_hud.queue_free()
+	_fight_bars.clear()
+	_go_next_line()
+
+## 싸우는 동안 교관을 구경꾼으로: 몸을 뚫고 지나가고(밀어내기 없음) 맞지도 않는다
+func _set_instructor_bystander(on: bool) -> void:
+	if _instructor == null or not is_instance_valid(_instructor):
+		return
+	_instructor.pass_through_fighters = on
+	_instructor.immovable = not on
+	_set_instructor_hittable(false)
+
+## 화면 위 체력바 두 개(왼쪽 신병 / 오른쪽 이등병 똥자루)
+func _build_fight_hud() -> void:
+	_fight_hud = CanvasLayer.new()
+	_fight_hud.layer = 50
+	add_child(_fight_hud)
+	_fight_bars.clear()
+	var font: Font = load("res://font/강한육군 Bold.ttf")
+	var names := ["신병", "이등병 똥자루"]
+	var colors := [Color(0.25, 0.75, 0.35), Color(0.85, 0.25, 0.2)]
+	for i in 2:
+		var bar := ProgressBar.new()
+		bar.show_percentage = false
+		bar.size = Vector2(420, 26)
+		bar.position = Vector2(40.0 if i == 0 else 1280.0 - 40.0 - 420.0, 52.0)
+		bar.fill_mode = ProgressBar.FILL_BEGIN_TO_END if i == 0 else ProgressBar.FILL_END_TO_BEGIN
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0.1, 0.1, 0.12, 0.85)
+		bg.set_border_width_all(3)
+		bg.border_color = Color(0.05, 0.05, 0.06)
+		bg.set_corner_radius_all(6)
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = colors[i]
+		fill.set_corner_radius_all(5)
+		bar.add_theme_stylebox_override("background", bg)
+		bar.add_theme_stylebox_override("fill", fill)
+		_fight_hud.add_child(bar)
+		var label := Label.new()
+		label.text = names[i]
+		if font:
+			label.add_theme_font_override("font", font)
+		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_color_override("font_color", Color.WHITE)
+		label.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.06))
+		label.add_theme_constant_override("outline_size", 6)
+		label.size = Vector2(420, 30)
+		label.position = bar.position + Vector2(0, -34)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if i == 0 else HORIZONTAL_ALIGNMENT_RIGHT
+		_fight_hud.add_child(label)
+		_fight_bars.append(bar)
+	_update_fight_hud()
+
+func _update_fight_hud() -> void:
+	if _fight_bars.size() < 2:
+		return
+	var fs := [_fighter, _enemy]
+	for i in 2:
+		_fight_bars[i].max_value = fs[i].stats.max_hp
+		_fight_bars[i].value = maxi(fs[i].current_hp, 0)
 
 # --- 대시 ---
 

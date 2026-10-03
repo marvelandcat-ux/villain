@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" path="res://sprite/똥자루/똥자루 측면.png" id="2_head"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="3_uniform"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병  몸 옷 측면 2.png" id="4_uniform_turn1"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 옷 측면3.png" id="5_uniform_turn2"]
+[ext_resource type="Texture2D" uid="uid://da6imh6for67v" path="res://sprite/황근출 해병/황근출 해병 다리.png" id="6_foot"]
+
+[node name="BodyRig" instance=ExtResource("1_rig")]
+held_item_armed = false
+unarmed_thrust = true
+unarmed_guard_hand = true
+body_turn_textures = Array[Texture2D]([ExtResource("4_uniform_turn1"), ExtResource("5_uniform_turn2")])
+body_turn_match_height = true
+
+[node name="FootL" parent="." index="0"]
+texture = ExtResource("6_foot")
+
+[node name="FootR" parent="." index="1"]
+texture = ExtResource("6_foot")
+
+[node name="Body" parent="." index="2"]
+position = Vector2(0.49, 1.78)
+scale = Vector2(0.02485, 0.03267)
+texture = ExtResource("3_uniform")
+
+[node name="Head" parent="." index="6"]
+position = Vector2(0, -36)
+scale = Vector2(0.056, 0.056)
+texture = ExtResource("2_head")
