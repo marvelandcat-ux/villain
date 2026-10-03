@@ -50,8 +50,10 @@ static var show_debug_grid: bool = false
 ## 체력·스킬 판(`CombatHUD`의 선수 판 둘)을 **화면 위쪽 좌·우 구석**으로 올릴지.
 ## 놀이터처럼 아래쪽에 발판·모래밭이 있어서 평소 자리(아래)에 두면 바닥 기믹을 가리는 맵에서 켠다
 @export var hud_panels_top: bool = false
-## 연출 동안의 시간 배속 (0.35 = 35% 속도). 아래 시간들은 **이 느려진 시간 기준**이다
-@export var knockout_time_scale: float = 0.35
+## 쓰러질 때 화면 전체 슬로모션 배속 (0.3 = 30% 속도)
+@export var knockout_time_scale: float = 0.3
+## 슬로모션이 이어지는 시간(초, **실제 시간**) — 끝나면 원래 속도로 돌아온다
+@export var knockout_slow_time: float = 2.0
 ## 라운드 승리 띠(평행사변형 배너) 장면. 비워 두면 기본 띠(`ui/RoundWinBanner.tscn`)를 쓴다
 @export var round_banner_scene: PackedScene = null
 ## **승리 띠 미리보기 키.** 싸우는 중에 이 키를 누르면 라운드를 안 끝내고 띠만 한 번 지나간다 —
@@ -60,14 +62,12 @@ static var show_debug_grid: bool = false
 @export var debug_banner_preview: bool = true
 ## 그 키(기본 B)
 @export var debug_banner_key: Key = KEY_B
-## 맞은 순간 딱 멈춰 있는 시간(초) — 타격감을 주는 정지
-@export var knockout_hitstop: float = 0.07
-## 날아가는 시간(초)과 가로/세로 거리(px). 세로는 음수가 위로 뜨는 양이다
-@export var knockout_fly_time: float = 0.62
-@export var knockout_fly_x: float = 900.0
-@export var knockout_fly_up: float = -260.0
-## 날아가면서 도는 바퀴 수
-@export var knockout_spin_turns: float = 1.2
+## 땅에 멈춘 뒤 뒤로 눕는 데 걸리는 시간(초, 게임 시간)
+@export var knockout_lie_time: float = 0.35
+## 누웠을 때 몸이 바닥에 파묻히지 않게 올리는 양(px)
+@export var knockout_lie_lift: float = 16.0
+## 날아가던 몸이 끝내 안 멈춰도 결과로 넘어가는 한도(초, 실제 시간 — 슬로모션 포함)
+@export var knockout_max_wait: float = 4.0
 
 var _p1: Fighter
 var _p2: Fighter
@@ -80,6 +80,8 @@ var _banner_preview_p1: bool = false
 var _round_over: bool = false
 ## 처치 연출을 재생하는 중 — 끝날 때까지 승패 판정을 멈춰둔다
 var _knockout_playing: bool = false
+## 처치 연출 중 쓰러진 캐릭터가 다 누웠는지
+var _knockout_lying: bool = false
 ## "3, 2, 1, FIGHT!" 카운트다운이 끝날 때까지 true — HP/링아웃 판정과 제한시간 감소를 같이 멈춰둔다
 var _countdown_active: bool = true
 ## 이번 라운드 남은 시간 (GameState.time_limit_seconds가 0이면 시간 제한 없음)
@@ -235,31 +237,59 @@ func _play_knockout(loser: Fighter) -> void:
 		# 리그는 좌우 반전(scale.x = -1)이라 로컬 +x가 늘 바라보는 쪽이다 —
 		# 손·발이 날아가는 반대쪽으로 처지도록 방향을 바라보는 쪽 기준으로 바꿔 넘긴다
 		visual.play_knockout(direction * loser.facing)
-	loser.velocity = Vector2.ZERO
-	loser.set_physics_process(false)
-	# 카메라가 날아가는 쪽을 따라가면 승자가 화면 밖으로 밀려난다 —
+	# 날려 보내지 않는다 — 마지막에 맞은 넉백 그대로 물리로 밀려나 땅에 멈춘다(컨트롤러는 멈춰도 apply_physics는 계속 부른다).
+	# 경직을 걸어 둬야 멈춘 컨트롤러의 move(0)가 넉백 속도를 지우지 않는다
+	loser.apply_hitstun(knockout_max_wait)
+	# 카메라가 밀려나는 쪽을 따라가면 승자가 화면 밖으로 밀려난다 —
 	# "fighters" 그룹에서 빼면 CameraRig가 둘 다 못 찾아 그 자리에 멈춘다
 	loser.remove_from_group("fighters")
-	var camera: Camera2D = get_viewport().get_camera_2d()
-	if camera and camera.has_method("add_trauma"):
-		camera.add_trauma(0.7)
 	Engine.time_scale = maxf(knockout_time_scale, 0.05)
-	# 맞은 순간 딱 멈췄다가 날아간다. **트윈 안에서 tween_interval로 하면 안 된다** —
-	# set_parallel(true) 뒤에 붙는 트위너들이 그 간격과도 병렬로 돌아서 멈춤이 무시된다
-	if knockout_hitstop > 0.0:
-		await get_tree().create_timer(knockout_hitstop).timeout
-		if not is_instance_valid(loser):
+	_knockout_lying = false
+	_lay_down_when_settled(loser, direction)
+	var waited: float = 0.0
+	var slowed: bool = true
+	while waited < knockout_max_wait:
+		await get_tree().process_frame
+		if not is_inside_tree():
 			Engine.time_scale = 1.0
 			return
-	var start: Vector2 = loser.global_position
-	var goal: Vector2 = start + Vector2(direction * knockout_fly_x, knockout_fly_up)
-	var flight: Tween = loser.create_tween()
-	flight.set_parallel(true)
-	flight.tween_property(loser, "global_position", goal, knockout_fly_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	flight.tween_property(loser, "rotation", deg_to_rad(direction * 360.0 * knockout_spin_turns), knockout_fly_time).set_trans(Tween.TRANS_LINEAR)
-	flight.tween_property(loser, "modulate:a", 0.0, knockout_fly_time).set_delay(knockout_fly_time * 0.55)
-	await flight.finished
+		waited += get_process_delta_time() / maxf(Engine.time_scale, 0.01)
+		if slowed and waited >= knockout_slow_time:
+			Engine.time_scale = 1.0
+			slowed = false
+		if not slowed and (_knockout_lying or not is_instance_valid(loser)):
+			break
 	Engine.time_scale = 1.0
+
+## 쓰러진 캐릭터가 땅에 멈추면(날아가기도 끝나면) 발 밑을 축으로 밀려난 쪽으로 90도 눕힌다 — 몸통 충돌은 그대로 두고 그림(Visual)만 돌린다
+func _lay_down_when_settled(loser: Fighter, direction: float) -> void:
+	var still: float = 0.0
+	while is_instance_valid(loser) and is_inside_tree():
+		await get_tree().physics_frame
+		if not is_instance_valid(loser):
+			return
+		var settled: bool = loser.is_on_floor() and not loser.is_finisher_flying() and absf(loser.velocity.x) < 40.0
+		still = still + get_physics_process_delta_time() if settled else 0.0
+		if still >= 0.08:
+			break
+	if not is_instance_valid(loser):
+		return
+	var visual: Node2D = loser.get_node_or_null("Visual")
+	if visual == null:
+		_knockout_lying = true
+		return
+	var side: float = 1.0 if direction >= 0.0 else -1.0
+	var pivot := Vector2(0.0, 30.0)   # 발바닥
+	var from_pos: Vector2 = visual.position
+	var from_rot: float = visual.rotation
+	var tw: Tween = visual.create_tween()
+	tw.tween_method(func(t: float):
+		var ang: float = lerpf(from_rot, side * PI * 0.5, t)
+		visual.rotation = ang
+		visual.position = pivot + (from_pos - pivot).rotated(ang - from_rot) + Vector2(0.0, -knockout_lie_lift * t)
+	, 0.0, 1.0, knockout_lie_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tw.finished
+	_knockout_lying = true
 
 ## 연출 도중에 맵을 벗어나도(메뉴로 나가기 등) 시간 배속이 느린 채로 남지 않게 한다
 func _exit_tree() -> void:

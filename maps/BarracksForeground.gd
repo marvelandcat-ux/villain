@@ -30,6 +30,8 @@ extends Node2D
 @export var fade_speed: float = 6.0
 ## 그리기 순서 — 캐릭터(0)·이펙트보다 앞
 @export var draw_z: int = 60
+## 위치(`*_xs`)·높이에 곱하는 배율 — 내무반 배율이 바뀌면 `BarracksUltimate`가 add_child 전에 넣어 준다
+var size_scale: float = 1.0
 
 const BLUR_SHADER: Shader = preload("res://maps/foreground_blur.gdshader")
 
@@ -41,9 +43,9 @@ func _ready() -> void:
 	mat.shader = BLUR_SHADER
 	mat.set_shader_parameter("blur_amount", blur_amount)
 	for x in locker_xs:
-		_add_item(locker_texture, locker_region, x, locker_height, locker_show, mat)
+		_add_item(locker_texture, locker_region, x * size_scale, locker_height * size_scale, locker_show, mat)
 	for x in bed_xs:
-		_add_item(bed_texture, bed_region, x, bed_height, bed_show, mat)
+		_add_item(bed_texture, bed_region, x * size_scale, bed_height * size_scale, bed_show, mat)
 	_place(0.0)
 
 func _add_item(tex: Texture2D, region: Rect2, x: float, height: float, show: float, mat: Material) -> void:

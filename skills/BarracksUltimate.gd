@@ -9,7 +9,7 @@ extends Skill
 @export var background: Texture2D = preload("res://sprite/황근출 해병/궁극기/군대 집.webp")
 ## 내무반에 머무는 시간(초)
 @export var duration: float = 15.0
-## 배경 그림 배율 — 0.75면 1536x1024 그림이 1152x768이 된다(벽 사이 ≈ 1110, 다른 맵 폭과 비슷)
+## 배경 그림 배율 — 0.75면 1536x1024 그림이 1152x768이 된다(벽 사이 ≈ 1110). 작을수록 카메라가 당겨져 캐릭터가 크게 보인다
 @export var image_scale: float = 0.75
 ## 그림에서 발이 닿는 높이(그림 픽셀) — 마룻바닥(630~1024)의 가운데쯤
 @export var floor_image_y: float = 790.0
@@ -23,6 +23,10 @@ extends Skill
 @export var spawn_spread: float = 300.0
 ## 어두워지는/밝아지는 시간(초)
 @export var fade_time: float = 0.25
+## 내무반에서 카메라가 가장 가까이 당기는 배율 — 방 전체가 보이는 배율의 몇 배까지(1이면 안 당김)
+@export var arena_close_zoom: float = 1.2
+## 내무반에서 카메라가 두 캐릭터 가운데보다 이만큼(px) 위를 본다 — 바닥만 꽉 차지 않고 위(창문·천장)가 보이게
+@export var arena_look_up: float = 120.0
 ## 내무반에 있는 동안 스킬2 자리에 끼울 시전자의 자식 스킬 노드 이름(없으면 안 바꿈)
 @export var arena_skill_2_name: String = "BarracksSkill2"
 
@@ -50,6 +54,7 @@ extends Skill
 
 const SCREEN_SHATTER := preload("res://combat/ScreenShatter.gd")
 const FOREGROUND := preload("res://maps/BarracksForeground.gd")
+const WINDOWS := preload("res://maps/BarracksWindows.gd")
 
 var _arena: Node2D
 var _bg: Sprite2D
@@ -60,6 +65,10 @@ var _shatter = null   # 타입 안 붙임 — ScreenShatter는 class_name이 없
 var _fade: ColorRect
 ## 숨긴 원래 맵 그림들(돌아올 때 다시 켬)
 var _hidden: Array = []
+## 내무반 동안 멈춰 둔 원래 맵 노드 → 원래 process_mode
+var _frozen: Dictionary = {}
+## CameraRig가 아닌 평범한 Camera2D(훈련장)를 내무반으로 옮겼을 때 되돌릴 값
+var _plain_cam_saved: Dictionary = {}
 ## 끌려가기 전 자리 {Fighter: Vector2}
 var _return_pos: Dictionary = {}
 
@@ -70,9 +79,17 @@ var _saved_outfit: Dictionary = {}
 var _saved_skill_2: Skill = null
 var _swapped_skill_2: bool = false
 
+## 궁이 도는 동안(쓴 순간 ~ 원래 맵으로 돌아올 때)인지
+var _running: bool = false
+
+## 도는 동안엔 다시 못 쓴다 — 쿨이 0인 훈련장에서 내무반 안에서 또 누르면 컷인만 다시 나오고 꼬였다
+func can_use() -> bool:
+	return super() and not _running
+
 func _execute(fighter: Fighter) -> void:
-	if is_instance_valid(_arena) or is_instance_valid(_shatter):
+	if _running or is_instance_valid(_arena) or is_instance_valid(_shatter):
 		return
+	_running = true
 	_caster = fighter
 	_seal_opponents(true)
 	var delay: float = strip_time if bare_body_texture != null and _strip(fighter) else 0.0
@@ -148,7 +165,9 @@ func _enter(fighter: Fighter, reveal: bool) -> void:
 		_place(f, Vector2(_arena.global_position.x + side * spawn_spread, feet_y - 30.0))
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("enter_arena"):
-		cam.enter_arena(_arena_rect(), Vector2(_arena.global_position.x, feet_y - 150.0))
+		cam.enter_arena(_arena_rect(), Vector2(_arena.global_position.x, feet_y - 150.0), arena_close_zoom, arena_look_up)
+	else:
+		_enter_plain_camera(Vector2(_arena.global_position.x, feet_y - 150.0))
 	_set_eye_glow(true)
 	_swap_skill_2(true)
 	var shown_after: float = fade_time
@@ -199,6 +218,7 @@ func _start_leave(fighter: Fighter) -> void:
 
 ## 원래 맵으로 돌려놓는다. reveal이면 깨진 화면(검정)에서 원래 맵이 서서히 밝아지고 두 캐릭터가 서서히 나타난다(아니면 암전 풀기)
 func _leave(reveal: bool) -> void:
+	_running = false
 	# 화면이 까만 동안 다시 옷을 입는다
 	if redress_on_return and not _saved_outfit.is_empty() and is_instance_valid(_caster):
 		var visual := _caster.get_node_or_null("Visual")
@@ -220,9 +240,15 @@ func _leave(reveal: bool) -> void:
 		if is_instance_valid(n):
 			n.visible = true
 	_hidden.clear()
+	for n in _frozen:
+		if is_instance_valid(n):
+			n.process_mode = _frozen[n]
+	_frozen.clear()
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("leave_arena"):
 		cam.leave_arena(look)
+	else:
+		_leave_plain_camera()
 	if is_instance_valid(_arena):
 		_arena.queue_free()
 	_arena = null
@@ -304,9 +330,13 @@ func _build_arena(map: Node) -> void:
 	bg.z_index = -50
 	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_arena.add_child(bg)
+	# 창문·창밖 풍경은 배경의 자식 — 배경 그림 좌표·배율·나타나는 투명도를 그대로 따라간다
+	bg.add_child(WINDOWS.new())
 	_bg = bg
 	_fg = FOREGROUND.new()
 	_fg.name = "Foreground"
+	# 앞 층 크기·자리는 배율 0.75 기준 값이라 방 크기에 맞춰 같이 줄인다
+	_fg.size_scale = image_scale / 0.75
 	_arena.add_child(_fg)
 	var half: Vector2 = background.get_size() * image_scale * 0.5
 	var floor_local: float = (floor_image_y - background.get_size().y * 0.5) * image_scale
@@ -331,13 +361,55 @@ func _add_block(block_name: String, pos: Vector2, size: Vector2) -> void:
 ## 원래 맵 그림을 숨긴다 — 캐릭터·내무반은 빼고. 내무반이 화면을 다 덮지만 조명(CanvasModulate)·앞 층 장식이 위에 남아서
 func _hide_map(map: Node) -> void:
 	_hidden.clear()
+	_frozen.clear()
 	for c in map.get_children():
 		if c == _arena or c.is_in_group("fighters"):
 			continue
 		var should_hide: bool = c is CanvasItem or (c is CanvasLayer and String(c.name).begins_with("Deco"))
-		if should_hide and c.visible:
+		if not should_hide:
+			continue
+		if c.visible:
 			c.visible = false
 			_hidden.append(c)
+		# 숨기기만 하면 맵 기믹(지하철 열차 등)이 뒤에서 계속 돌아 카메라를 흔들고 소리를 낸다 — 내무반 동안은 통째로 멈춘다.
+		# 카메라는 내무반을 비춰야 하므로 빼고, 멈춘 물리 바디는 충돌에서도 빠졌다가 돌아올 때 복귀한다
+		if c.is_in_group("game_camera") or c is Camera2D:
+			continue
+		_frozen[c] = c.process_mode
+		c.process_mode = Node.PROCESS_MODE_DISABLED
+
+## CameraRig가 없는 맵(훈련장의 평범한 Camera2D) — 방 전체가 보이게 배율·한계선을 직접 맞춰 내무반으로 옮긴다
+func _enter_plain_camera(look: Vector2) -> void:
+	var cam: Camera2D = get_viewport().get_camera_2d()
+	if cam == null:
+		return
+	_plain_cam_saved = {"cam": cam, "pos": cam.global_position, "zoom": cam.zoom,
+		"limits": [cam.limit_left, cam.limit_top, cam.limit_right, cam.limit_bottom]}
+	var area: Rect2 = _arena_rect()
+	var view: Vector2 = cam.get_viewport_rect().size
+	var z: float = maxf(view.x / area.size.x, view.y / area.size.y)
+	cam.zoom = Vector2(z, z)
+	cam.limit_left = int(floorf(area.position.x))
+	cam.limit_top = int(floorf(area.position.y))
+	cam.limit_right = int(ceilf(area.end.x))
+	cam.limit_bottom = int(ceilf(area.end.y))
+	cam.global_position = look
+	cam.reset_smoothing()
+
+func _leave_plain_camera() -> void:
+	if _plain_cam_saved.is_empty():
+		return
+	var cam: Camera2D = _plain_cam_saved["cam"]
+	if is_instance_valid(cam):
+		var l: Array = _plain_cam_saved["limits"]
+		cam.limit_left = l[0]
+		cam.limit_top = l[1]
+		cam.limit_right = l[2]
+		cam.limit_bottom = l[3]
+		cam.zoom = _plain_cam_saved["zoom"]
+		cam.global_position = _plain_cam_saved["pos"]
+		cam.reset_smoothing()
+	_plain_cam_saved = {}
 
 func _floor_y() -> float:
 	return _arena.global_position.y + (floor_image_y - background.get_size().y * 0.5) * image_scale

@@ -147,14 +147,15 @@
 
 - 그림 `sprite/황근출 해병/`(오타 파일명 그대로: `황 근충 해병 팔.png`, `환근출 해병 정면.png`, `황근축 해병 몸 측면 3.png`). **기본 몸 = 옷 입은 버전**(`HwanggeunchulUniformRig.tscn` — 캐릭터 씬 `Visual`·`GameState` 리그·튜토리얼 교관 공용)
 - 기본공격: 뒷손 잽 → 앞손 잽(경찰 맨손 잽 재사용) → 박치기(`unarmed_headbutt`, `_pose_headbutt()`, 로컬 좌표라 facing 부호 안 곱함). 수치 = 악플러 배열
-- 스킬1 `DropkickSkill`: 무릎 꿇기(슈퍼아머, `set_kneeling`) → 300px 날아 차기 → 맞으면 `launch_finisher(…, shape)`(옆 x2·높이 x2·체공 x5), 헛치면 착지 후 1초 못 움직임
+- 스킬1 `DropkickSkill`: 무릎 꿇기(슈퍼아머, `set_kneeling`) → 300px 날아 차기 → 맞으면 `launch_finisher(…, shape)`(옆 x2·높이 x2·체공 x5), 헛치면 착지 후 1초 못 움직임(쓰는 내내 점프도 막음 — `Fighter.jump()`가 `movement_override.blocks_jump()`를 봄)
 - 스킬2 `JjajangEatSkill`: 1초 먹고 잃은 체력 30% 회복, 먹을 때마다 대시 쿨 +2초(라운드 끝까지, `dash_cooldown_bonus`), 맞으면 끊김. ⚠️ `EatBowl` 순서는 씬의 `index="3"`으로 — `_ready()`에서 `move_child`하면 대시 잔상이 자식 속성을 순서로 복사해 머리가 커진다
 - **궁 `BarracksUltimate`**: 옷 벗어 던짐(`get_body_outfit()`/`set_body_outfit()`, 맨몸 값 `bare_body_*`) → 원래 맵이 깨져 떨어짐(`combat/ScreenShatter.gd`, 못 찍으면 암전) → 두 캐릭터를 내무반으로 옮겨 15초 → 같은 연출로 복귀(까만 동안 다시 입음)
-  - 내무반은 맵 위 `arena_offset`(0,-6000)에 그때 생성: 그림 `궁극기/군대 집.webp` 배율 0.75, 바닥 = 그림 y 790, **천장 = 그림 y 85**(`ceiling_image_y`), 벽은 그림 끝 20px 안. 그동안 맵 루트 CanvasItem·`Deco*` CanvasLayer 숨김. 카메라 `CameraRig.enter_arena(rect, 보는 곳)`/`leave_arena()`
+  - 내무반은 맵 위 `arena_offset`(0,-6000)에 그때 생성: 그림 `궁극기/군대 집.webp` 배율 0.75(작을수록 캐릭터가 크게 보임, 앞 층은 `size_scale`로 같이 맞춰짐), 바닥 = 그림 y 790, **천장 = 그림 y 85**(`ceiling_image_y`), 벽은 그림 끝 20px 안. 그동안 맵 루트 CanvasItem·`Deco*` CanvasLayer를 숨기고 **`process_mode` DISABLED로 멈춤**(카메라 제외 — 열차 흔들림·소리·충돌이 내무반에 안 새게, AI `_hazard_active()`도 `can_process()` 아닌 기믹은 무시). 카메라 `CameraRig.enter_arena(rect, 보는 곳, close_zoom)`/`leave_arena()`(`arena_close_zoom` 1.2 = 방 전체 배율의 1.2배까지만 당김, `arena_look_up` 120 = 두 캐릭터 가운데보다 위를 비춤), CameraRig가 없는 훈련장은 `_enter_plain_camera()`가 평범한 Camera2D를 직접 옮김. 도는 동안 `can_use()` false(`_running`)
+  - 창문 `maps/BarracksWindows.gd`(배경 Sprite2D의 자식 — 좌표 = 배경 그림 픽셀): 그림 속 창문 두 개 자리(`window_rects`)에 `창문.webp`를 꼭 맞게(가로세로 따로) 덮고, 유리 칸마다 `창문 배경.webp`를 `region_rect`로 잘라 parallax 0.75로 밀림(칸 밖으로 안 삐져나옴). 배경·창문 그림을 바꾸면 `window_rects`·`window_frame`·`window_panes` 재측정
   - 앞 층 `maps/BarracksForeground.gd`: 침대·관물대 뒷모습 두 쌍, parallax 1.3 + `foreground_blur` + 어둡게, 위아래는 매 프레임 **카메라 화면 바닥 기준**(`*_show` ≈ 1/3), 캐릭터가 뒤면 반투명, z 60
   - 진입 동안 둘 다 무적·busy. 쓴 순간~복귀까지 **상대 궁극기 봉인**
   - 내무반 동안 눈에서 **빨간 빛**: 리그 `Head/EyeGlow`(`characters/EyeGlow.gd`, @tool, 색은 `HwanggeunchulRig.tscn`에서 덮어씀, 인스펙터 `preview`)
-  - **내무반 동안 스킬2 = `BarracksSlamSkill`**(씬 노드 `BarracksSkill2`, `_swap_skill_2()`가 끼우고 나올 때 `abort()` 후 복구, 들어갈 때 쿨 0, 쿨 15): 500px 순간 돌진(잔상·바람, 지나간 구간으로 판정, 헛방 경직 없음) → 방어 풀고 잡아 두 손 번쩍(`set_lift_pose`, 상대 `is_grabbed`로 250px 위로, 8뎀) → 상대 위 100px로 순간이동 → 내려찍기(`set_stomp_pose`, 22뎀) → 땅에 꽂히는 순간 `launch_finisher`(드롭킥의 높이·체공 2배)
+  - **내무반 동안 스킬2 = `BarracksSlamSkill`**(씬 노드 `BarracksSkill2`, `_swap_skill_2()`가 끼우고 나올 때 `abort()` 후 복구, 들어갈 때 쿨 0, 쿨 15): 500px 순간 돌진(잔상·바람, 지나간 구간으로 판정, 헛방 경직 없음) → 방어 풀고 잡아 두 손 번쩍(`set_lift_pose`, 상대 `is_grabbed`로 250px 위로, 8뎀) → 상대 위 100px로 순간이동 → 내려찍기(`set_stomp_pose`, 22뎀) → 땅에 꽂히는 순간 `launch_finisher`(드롭킥의 높이·체공 2배). 화면 슬로모션: 들어 올리는 동안 `lift_time_scale` 0.45, 내려찍은 뒤 땅에 꽂힐 때까지 `stomp_time_scale` 0.25(`_set_slow`/`_clear_slow`, 이미 0.5 밑이면 안 건드림, `_exit_tree`에서 복구)
 
 ### 금쪽이
 
@@ -306,7 +307,7 @@
 - 선수 판 위치: 기본 아래, `Stage.hud_panels_top`이면 위(놀이터). ⚠️ `panels_top_margin.x`를 76보다 작게 하면 일시정지 버튼에 깔림
 - 지상/공중 조건은 스킬이 스스로 판단
 - 카운트다운 중엔 컨트롤러 `is_active` false + `move(0)`(`set_physics_process(false)`는 미끄러짐)
-- KO 연출 `Stage._play_knockout`. 디버그 격자: 대전 중 **G + '**(`maps/DebugGrid.gd`)
+- KO 연출 `Stage._play_knockout`(전 모드): 날려 보내지 않고 마지막 넉백대로 물리로 밀려남(`apply_hitstun`으로 멈춘 컨트롤러의 `move(0)`를 막음) + 화면 0.3배 슬로 2초(실제 시간) + 눈 X, 땅에 멈추면 `_lay_down_when_settled()`가 Visual만 발바닥 축으로 90도 눕힘. 화면 흔들림 없음. 디버그 격자: 대전 중 **G + '**(`maps/DebugGrid.gd`)
 
 ### 궁극기 컷인 `ui/UltimateCutIn.tscn`
 

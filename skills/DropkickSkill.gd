@@ -61,6 +61,10 @@ func _execute(fighter: Fighter) -> void:
 	if visual and visual.has_method("set_kneeling"):
 		visual.set_kneeling(true)
 
+## 쓰는 동안(무릎 꿇기·날아차기·넘어짐)은 점프도 못 한다 — 안 막으면 헛친 뒤 1초 넘어짐을 점프로 빠져나간다(AI가 특히)
+func blocks_jump() -> bool:
+	return _state != State.IDLE
+
 ## Fighter.apply_physics가 이동 속도를 물어볼 때 — 날아가는 동안만 앞으로, 나머지는 제자리
 func get_move_velocity_x() -> float:
 	return _dir * _speed if _state == State.AIR else 0.0

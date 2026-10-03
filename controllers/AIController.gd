@@ -275,6 +275,9 @@ func _room_behind(dir: float) -> float:
 ## "ai_danger_zone" 그룹에 지금 위험한 기믹이 하나라도 있는지
 func _hazard_active() -> bool:
 	for hazard in get_tree().get_nodes_in_group("ai_danger_zone"):
+		# 멈춰 있는 기믹(황근출 내무반 동안의 원래 맵 열차 등)은 안 친다
+		if not hazard.can_process():
+			continue
 		if hazard.has_method("is_dangerous") and hazard.is_dangerous():
 			return true
 	return false

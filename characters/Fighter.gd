@@ -1185,6 +1185,9 @@ func jump() -> void:
 	# 경직 중엔 점프로 넉백을 못 벗어난다. 방어 중에도 못 뛴다(1.2초를 버티기로 한 대가)
 	if _hitstun_time > 0.0 or is_grabbed or is_guarding or _landing_lag > 0.0:
 		return
+	# 이동을 가로챈 스킬이 점프도 막겠다고 하면(드롭킥 준비·비행·넘어짐) 못 뛴다
+	if movement_override != null and movement_override.has_method("blocks_jump") and movement_override.blocks_jump():
+		return
 	var air: bool = not is_on_floor()
 	if not air:
 		velocity.y = jump_velocity * jump_multiplier

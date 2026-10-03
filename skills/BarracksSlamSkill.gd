@@ -42,6 +42,9 @@ extends Skill
 @export var launch_stun_mult: float = 2.0
 ## 어딘가 걸렸을 때를 위한 안전 한도(초)
 @export var max_time: float = 3.0
+## 화면 전체 슬로모션(게임 속도 배율) — 들어 올리는 동안 / 내려찍은 뒤 상대가 땅에 꽂힐 때까지
+@export var lift_time_scale: float = 0.45
+@export var stomp_time_scale: float = 0.25
 
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
@@ -66,6 +69,8 @@ var _lift_from: Vector2 = Vector2.ZERO
 var _hover: Vector2 = Vector2.ZERO
 var _wind = null
 var _slam_time: float = 0.0
+## 이 스킬이 Engine.time_scale을 바꿔 놓았는지 — 되돌릴 때 남의 슬로(카운터 등)를 건드리지 않게
+var _slowed: bool = false
 
 func _execute(fighter: Fighter) -> void:
 	_fighter = fighter
@@ -188,6 +193,7 @@ func _grab(fighter: Fighter, enemy: Fighter) -> void:
 	StunStars.spawn(enemy, lift_time + blink_delay + stomp_hang + 0.4)
 	_state = State.LIFT
 	_time = 0.0
+	_set_slow(lift_time_scale)
 	var visual: Node = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("set_lift_pose"):
 		visual.set_lift_pose(true)
@@ -198,6 +204,7 @@ func _grab(fighter: Fighter, enemy: Fighter) -> void:
 
 ## 상대 위로 순간이동 — 떠난 자리에 잔상, 나타난 자리에 아래로 뻗는 바람
 func _blink(fighter: Fighter) -> void:
+	_clear_slow()
 	_spawn_ghost(fighter, 0.6, 0.3)
 	_hover = _lift_from + Vector2(0.0, -lift_height - stomp_height)
 	_hold_self(fighter, _hover)
@@ -230,6 +237,7 @@ func _stomp(fighter: Fighter) -> void:
 	_enemy = enemy
 	_slamming = true
 	_slam_time = 0.0
+	_set_slow(stomp_time_scale)
 	var parent: Node = fighter.get_parent()
 	if parent:
 		CrashBurst.spawn(parent, enemy.global_position + Vector2(0.0, -30.0))
@@ -238,6 +246,7 @@ func _stomp(fighter: Fighter) -> void:
 ## 꽂힌 상대가 땅에 닿았다 — 드롭킥의 2배로 앞으로 튕겨 날려 보낸다
 func _launch(enemy: Fighter) -> void:
 	_slamming = false
+	_clear_slow()
 	var parent: Node = enemy.get_parent()
 	if parent:
 		CrashBurst.spawn(parent, enemy.global_position + Vector2(0.0, 26.0))
@@ -262,12 +271,14 @@ func _physics_process(delta: float) -> void:
 	if _slamming:
 		if not _enemy_valid():
 			_slamming = false
+			_clear_slow()
 		else:
 			_slam_time += delta
 			if _slam_time > GROUND_GRACE and _enemy.is_on_floor():
 				_launch(_enemy)
 			elif _slam_time > 1.0:
 				_slamming = false
+				_clear_slow()
 	# 다른 스킬이 이동 권한을 가져갔으면(after_physics가 더는 안 불림) 여기서 정리한다
 	if _state != State.IDLE and (not _has_fighter or not is_instance_valid(_fighter) or _fighter.movement_override != self):
 		_finish()
@@ -275,6 +286,7 @@ func _physics_process(delta: float) -> void:
 ## 궁이 끝나 원래 맵으로 돌아갈 때 — 하던 걸 그 자리에서 멈추고 잡은 상대도 놓는다
 func abort() -> void:
 	_slamming = false
+	_clear_slow()
 	_finish()
 
 func _hold_enemy_at(pos: Vector2) -> void:
@@ -297,6 +309,9 @@ func _release_enemy() -> void:
 ## 끝내고 이동 권한·행동 잠금·자세를 되돌린다
 func _finish() -> void:
 	_state = State.IDLE
+	# 꽂히는 중이면 땅에 닿을 때(_launch)까지 슬로를 둔다
+	if not _slamming:
+		_clear_slow()
 	_release_enemy()
 	_stop_wind()
 	if not _has_fighter or not is_instance_valid(_fighter):
@@ -352,5 +367,18 @@ func _shake(amount: float) -> void:
 	if cam and cam.has_method("add_trauma"):
 		cam.add_trauma(amount)
 
+## 화면 전체를 느리게 — 이미 다른 효과가 0.5 밑으로 늦춰 놨으면 건드리지 않는다
+func _set_slow(scale: float) -> void:
+	if not _slowed and Engine.time_scale < 0.5:
+		return
+	Engine.time_scale = scale
+	_slowed = true
+
+func _clear_slow() -> void:
+	if _slowed:
+		Engine.time_scale = 1.0
+	_slowed = false
+
 func _exit_tree() -> void:
 	_release_enemy()
+	_clear_slow()

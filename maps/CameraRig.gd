@@ -81,6 +81,8 @@ var _min_zoom: float = 1.0
 var _max_zoom: float = 1.0
 ## 다른 장소(황근출 궁극기 내무반)로 잠깐 옮겨 찍는 중인지 — 그동안은 벽 한계선 재계산을 안 한다
 var _arena_active: bool = false
+## 내무반 동안 위로 더 비추는 양(px)
+var _arena_look_up: float = 0.0
 ## 장소 옮기기 전 값(돌아올 때 되돌림)
 var _arena_saved: Dictionary = {}
 
@@ -111,6 +113,7 @@ func _process(delta: float) -> void:
 		var a: Vector2 = fighters[0].global_position
 		var b: Vector2 = fighters[1].global_position
 		var mid: Vector2 = (a + b) / 2.0
+		mid.y -= _arena_look_up
 		mid.y = clampf(mid.y, min_y, _lowest_center_y())
 		global_position = global_position.lerp(mid, follow_speed * delta)
 		_update_zoom(a, b, delta)
@@ -311,7 +314,9 @@ func _wall_edge(node_name: String, dir: float) -> float:
 
 ## 다른 장소로 잠깐 옮겨 찍는다(황근출 궁극기 내무반) — `area`(월드 좌표) 밖이 화면에 안 보이게 한계선·최소 배율을 바꾸고,
 ## 이전 값은 기억해 뒀다가 `leave_arena()`가 되돌린다. 옮긴 순간 따라가지 않고 바로 그 자리로 붙는다
-func enter_arena(area: Rect2, look_at: Vector2) -> void:
+## close_zoom > 0이면 가장 가까이 당기는 배율을 "방 전체가 보이는 배율 x close_zoom"으로 묶는다(작은 방에서 너무 붙지 않게)
+## look_up: 두 캐릭터 가운데보다 이만큼(px) 위를 비춘다(내무반 동안만, leave_arena가 0으로)
+func enter_arena(area: Rect2, look_at: Vector2, close_zoom: float = 0.0, look_up: float = 0.0) -> void:
 	if not _arena_active:
 		_arena_saved = {
 			"limits": [limit_left, limit_top, limit_right, limit_bottom],
@@ -320,6 +325,7 @@ func enter_arena(area: Rect2, look_at: Vector2) -> void:
 			"pos": global_position, "zoom": zoom,
 		}
 	_arena_active = true
+	_arena_look_up = look_up
 	limit_left = int(floorf(area.position.x))
 	limit_top = int(floorf(area.position.y))
 	limit_right = int(ceilf(area.end.x))
@@ -330,6 +336,8 @@ func enter_arena(area: Rect2, look_at: Vector2) -> void:
 	var view: Vector2 = get_viewport_rect().size
 	_min_zoom = maxf(view.x / area.size.x, view.y / area.size.y) * zoom_boost
 	_max_zoom = maxf(_authored_zoom, _min_zoom) * max_close_zoom
+	if close_zoom > 0.0:
+		_max_zoom = _min_zoom * maxf(close_zoom, 1.0)
 	var z: float = clampf(zoom.x, _min_zoom, _max_zoom)
 	zoom = Vector2(z, z)
 	global_position = look_at
@@ -340,6 +348,7 @@ func leave_arena(look_at: Vector2) -> void:
 	if not _arena_active:
 		return
 	_arena_active = false
+	_arena_look_up = 0.0
 	var l: Array = _arena_saved["limits"]
 	limit_left = l[0]
 	limit_top = l[1]
