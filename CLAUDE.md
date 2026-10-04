@@ -104,7 +104,7 @@
 - `jump()`: `max_air_jumps`·`air_jump_velocity`·`gravity`·`jump_velocity`는 **static var**(영구 반영은 `DEFAULT_*`). `_air_jumps_left`는 `move_and_slide()` **뒤에**
   - 이단 점프 전체 ≈ 216px. **점프·중력을 바꾸면 맵 발판 사다리(놀이터·지하철 의자·공사현장·헬스장)를 같이 확인**. 이동속도는 `stats/*.tres`의 `move_speed`
 - **착지 경직**: `landing_lag_height` 이상 낙하면 전부 막힘. 피격 낙하·`movement_override` 착지는 제외. 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 필수. 스쿼시는 발바닥(+30) 기준
-- **대시**(이동키 두 번): ≈ 112px, 쿨 2.5초(`effective_dash_cooldown()` — `dash_cooldown_bonus` 포함), 맞으면 끊김
+- **대시**(이동키 두 번): ≈ 112px, 쿨 2.5초(`effective_dash_cooldown()` — `dash_cooldown_bonus` 포함), 맞으면 끊김. 대시하면 `_launch_momentum`을 끔(안 끄면 맞고 뜬 채 대시한 속도가 착지까지 유지). 앞 상대 몸 앞(`BODY_PUSH_WIDTH`)에서 멈춤 `_dash_stop_before_fighters()`(`pass_through_fighters` 예외)
 - **방어**(아래 키 누르는 순간, `combat/GuardShield.gd`): `guard_duration` 동안 데미지·넉백 0 → `guard_cooldown`
   - 디버프·그랩 차단, **궁극기 디버프만 관통**(`blocks_debuff(from_ultimate)` 한 곳). `set_modifier` 직접 호출은 검사 안 거침
   - 방어 중 이동·점프·공격 전부 막힘. `GUARD_CANCEL_WINDOW` 안 점프면 `cancel_guard(true)`로 쿨 환불(발판 통과와 키가 겹쳐서)
@@ -204,13 +204,17 @@
 
 - 고양이 그림 `skills/CatSprite.gd`: `고양이들/`의 머리·몸·발·꼬리(전부 오른쪽을 봄)를 코드로 조립, 원점 = 발바닥. 파츠마다 `PARTS`의 BBOX를 `region_rect`로 잘라 목표 px로 배율 역산 — **그림을 바꾸면 BBOX 재측정**. 자세는 사용자 참고 그림대로 엎드림(큰 머리가 몸 앞 위, 발은 엎드린 채 앞발 = 가슴 밑·뒷발 = 엉덩이 밑, 걸으면 앞뒤로 미끄러짐). 꼬리 그림은 직선이라 BBOX만 잘라(`cropped_of`) `Line2D` STRETCH로 곡선에 늘려 붙이고 물결침(점은 끝 → 뿌리 순서 — 그림 왼쪽이 끝). 따라다니는 고양이·낀 검은 고양이·든 흰 고양이가 쓰고, `CatFollower.draw_face()`(선택 표시·집 간판)는 머리 그림. 집·망치·옷 머리는 아직 `_draw()` 임시
 
-- 스킬1 `CatHouseSkill`: 앞에 무릎 꿇고 망치질 2초(슈퍼아머, 리그 `set_kneeling` + `set_hammering`, 망치가 칠 때마다 `LandDust`) → `CatHouse`(원점 = 바닥 가운데, 자식 Hurtbox로 맞아 부서짐, 다 지으면 `StaticBody2D`로 상대를 벽처럼 막고 지붕에 설 수 있음 — 지은 사람·자기 집 고양이는 통과, 개수 제한 없음). 다 지은 순간 고른 고양이 1마리 + `spawn_interval` 7초마다, 주인 고양이가 맵에 (종류 상관없이) 4마리면 건너뜀. **나오는 고양이 = 나오는 순간 고른 종류**(지붕 간판도 따라 바뀜)
+- 스킬1 `CatHouseSkill`: 앞에 무릎 꿇고 망치질 2초(슈퍼아머, 리그 `set_kneeling` + `set_hammering`, 망치가 칠 때마다 `LandDust`) → `CatHouse`(원점 = 바닥 가운데, 자식 Hurtbox로 맞아 부서짐, 다 지으면 `StaticBody2D`로 상대를 벽처럼 막고 지붕에 설 수 있음 — 지은 사람·모든 고양이는 통과(집 벽 = `cat_house_solids` 그룹, 고양이 `_ready`·집 `_add_solid` 양쪽에서 예외), 개수 제한 없음). 다 지은 순간 고른 고양이 1마리 + `spawn_interval` 7초마다, 주인 고양이가 맵에 (종류 상관없이) 4마리면 건너뜀. **종류는 설치(짓기 시작) 당시 선택으로 고정**(`CatHouseSkill`이 `cat_kind`를 넣음) — 나중에 바꿔도 그 집은 안 바뀜
 - 스킬2 `CatSelectSkill`: 검은→주황→흰 순환, `custom_data["cat_kind"]`, 머리 위 `CatFaceIcon` 1.5초. `clashable()` false(클래시 대기창 안 탐)
-- 고양이 `CatFollower`(레이어 0, 그룹 `catmom_cats`): 지금은 상대를 따라다니기만 — TODO 종류별 능력
+- 고양이 `CatFollower`(그룹 `catmom_cats`): 체력 20 공통, 자식 Hurtbox(꼬리 뺀 머리 원·몸통·발 두 개, `CatSprite` 배치 값에서 계산, 방향 바뀌면 x만 뒤집음, 주인은 `immune_source`)로 맞음 — 넉백이면 0.45초 밀려남 + 눈 감음(`CatSprite.eyes_closed` — 머리 위 감은 눈 금, 자리 `eye_offset`은 머리 그림 바꾸면 재측정) + 돌진·웅크림 끊김, 죽으면 그룹에서 바로 빼서 집이 다음 고양이를 낼 수 있게. 이동은 가속(`walk_accel`)으로 — 즉시 속도를 꺾지 않고, 다리 박자는 실제 속도 비례. 가만히 있으면 숨쉬기 들썩임. 몸 충돌은 캐릭터와 같은 캡슐(r20 h60), 폴짝 넘기는 낮은 장애물만(`_can_hop_over()` — 머리 높이 레이가 비어야). **종류별 행동**(피해는 `owner.compute_damage` 경유, 판정은 공용 `_hitbox` 하나):
+  - 검은: 빠름(300), 140~200px 거리 유지(가까우면 뒤로 무빙), 쿨 3초 돌진 = 준비 0.5초(제자리 웅크림 `CatSprite.pounce`, 엉덩이 실룩) → 780px/s x 0.22초(피해 3) + 잔상 `_spawn_dash_ghost()`(복제 후 **스크립트 떼고** add_child)
+  - 주황: 보통(200), **자기 발판만 순찰**(벽·발판 끝 `_floor_ahead()`·나온 자리 ±150 `orange_patrol_range`에서 되돌아섬, 점프 안 함), 상대가 근처면 공격 거리까지 다가가 노려봄(서 있기만 하면 첫 타 넉백에 밀린 상대를 영영 못 침), 닿을 거리면 할퀴기(피해 5, 쿨 1.5초)
+  - 흰: 느림(140), 주인에게 가서 범위 안이면 핥아 회복 5(쿨 3초, 체력 다 차 있으면 안 핥음, 초록 색조 `cat_lick`, 고양이 머리 까딱 `CatSprite.nod_left`) 상대 발이 40px 넘게 위·가로 170 안이면 그 높이만큼 점프(상한 900px/초), 아래면 밟은 **원웨이** 발판만 잠깐 예외로 통과해 내려옴(맨바닥은 안 뚫음), 벽에 막히면 폴짝
 - **궁 `CatUltimate`**: `cat_kind`별. 검은·흰은 `_swap_basic()`으로 기본공격 자리를 `CatPoopShot`(콜백만 있는 대체 평타)으로 바꿔 끼우고 `_end_mode()`에서 복구
   - 흰(임시): 10초 동안 `CatHeldWhite`를 들고 평타 = 앞 상자 할퀴기(0.25초 간격, 맵에 붙인 짧은 `Hitbox`)
-  - 검은: 똥 유탄 `CatPoopShell`(포물선, 땅·벽(레이캐스트) 또는 상대·상대 집 Hurtbox(자식 Area2D 접촉, 자기·자기 집은 통과)에 닿는 즉시 원형 `Hitbox`로 범위 피해) 5발 다 쏘면 끝. 낀 고양이 그림 `CatHeldVisual`(Visual 자식, 남은 탄 점)
+  - 검은: 똥 유탄 `CatPoopShell`(포물선, 땅·벽(레이캐스트) 또는 상대·상대 집 Hurtbox(자식 Area2D 접촉, 자기·자기 집은 통과)에 닿는 즉시 원형 `Hitbox`로 범위 피해) 5발 다 쏘면 끝. 낀 고양이 그림 `CatHeldVisual`(Visual 자식, 남은 탄 점 — 분홍 똥꼬 표시는 사용자 요청으로 뺌)
   - 주황: 10초 고양이 옷 — `custom_data["cat_suit"]`로 스킬1·2 봉인, `set_modifier`(id `cat_suit`)로 평타 피해 x1.5·`damage_taken_multiplier` 0.6·`guard_dash_cooldown_multiplier` 0.5·`attack_speed_multiplier` 2, 입을 때 30 회복, 머리 `CatSuitHood`(Head 자식, 배율 역수) + 주황 색조
+- **소환물·설치물(고양이·고양이 집·일진 패거리)은 전부 캐릭터와 같은 층(z 0)·같은 충돌 방식**(레이어 1 + 캐릭터·소환물끼리 양방향 collision exception) — 음수 z로 내리면 지하철 의자 같은 맵 그림 뒤에 숨는다(2026-10-04 확정)
 - `Fighter.damage_taken_multiplier`/`guard_dash_cooldown_multiplier`는 `set_modifier`용 배수(`damage_reduction`은 `set_modifier`로 걸면 다 풀릴 때 1.0 = 완전 무효가 되니 쓰지 말 것). 방어·대시 배수는 쿨 길이가 아니라 도는 속도에 걸림
 
 ### 헬스장 빌런 / 층간소음
@@ -285,7 +289,7 @@
 
 ### 지하철 승강장 `maps/SubwayPlatform.tscn`
 
-- 선로 바닥 y=300, 벽 ±560, 의자 발판 y=155(원웨이). **의자 위 = 열차 피난처**(의자 높이·열차 크기는 같이 계산), 의자는 트리에서 열차보다 먼저
+- 선로 바닥 y=300, 벽 ±560, 의자 발판 y=155(원웨이, z 0). **의자 위 = 열차 피난처**(의자 높이·열차 크기는 같이 계산), 의자는 트리에서 열차보다 먼저
 - 열차 `SubwayTrain.gd`: 1~5칸, 그림을 잘라 조립(`SEAM_FRONT`/`SEAM_BACK`/`MIDDLE_DRIFT` — **그림을 바꾸면 재측정**)
 - 조명 `CanvasModulate` + 형광등. 빛나는 물체는 unshaded. **가산 색은 CanvasModulate가 곱해지므로 조명을 바꾸면 다시 잡을 것**
 - 먼 층 `DecoBackground`(CanvasGroup + `far_blur`), 앞 기둥 `ForegroundPillars.gd`. 역 이름판을 옮기면 `SignBand`·`SignBandOutline`도

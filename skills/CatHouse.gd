@@ -3,13 +3,14 @@ extends Node2D
 
 ## 고양이 집 — 고양이 아주머니 스킬1(`CatHouseSkill`)이 망치질로 짓는다. **원점 = 바닥 가운데**.
 ## 다 지으면(`finish_build`) 고양이 한 마리가 바로 나오고 그 뒤 `spawn_interval`마다 한 마리씩 나온다.
-## 나오는 고양이는 **그 순간** 주인이 스킬2로 고른 종류(`custom_data["cat_kind"]`) — 지붕 간판도 그걸 따라 바뀐다.
+## 나오는 고양이는 **집을 설치할 당시** 고른 종류로 고정이다(`CatHouseSkill`이 짓기 시작할 때 `cat_kind`를 넣어 준다) —
+## 나중에 스킬2로 다른 고양이를 골라도 이 집은 안 바뀐다.
 ## 맵 전체에 주인의 고양이가 `max_cats`마리면 그 차례는 건너뛴다.
 ##
 ## 상대가 때리면 부서진다 — Fighter가 아니지만 자식 Hurtbox(`fighter` = 이 집)로 맞는다(일진 패거리와 같은 방식).
 ## 그래서 `take_damage()`/`take_map_damage()`/`is_guarding`을 갖춘다. 다 짓기 전엔 판정이 없다.
 ## 다 지으면 몸통 크기의 StaticBody2D(기본 레이어 1 = 맵 벽·바닥과 같음)가 붙어 **상대를 벽처럼 막고**, 지붕 위엔 올라설 수 있다.
-## 지은 사람과 이 집에서 나온 고양이는 그 몸을 통과한다(고양이는 안 그러면 집 안에서 태어나 끼인다).
+## 지은 사람과 **모든 고양이**는 그 몸을 통과한다(고양이는 집 안에서 태어나고 집 사이를 오가다 끼기 쉽다 — 벽은 `cat_house_solids` 그룹).
 ## 그림은 임시로 `_draw()` — 네모난 몸통 + 네모난 지붕 판 + 문 구멍
 
 const CAT_FOLLOWER := preload("res://skills/CatFollower.gd")
@@ -28,7 +29,7 @@ const HURTBOX_SCRIPT := preload("res://combat/Hurtbox.gd")
 @export var door_color: Color = Color(0.18, 0.12, 0.1)
 @export var outline_color: Color = Color(0.15, 0.1, 0.08)
 
-## 지붕 간판에 그려 둔 고양이 종류(CatFollower.Kind) — 주인이 바꾸면 따라 바꿔 다시 그린다
+## 이 집이 내보내는 고양이 종류(CatFollower.Kind) — 설치 당시 선택으로 고정, 지붕 간판도 이 종류
 var cat_kind: int = 0
 ## 지은 사람 — 이 사람의 공격엔 안 맞는다. 해제 여부는 `_has_owner`로 따로 기억한다
 var owner_fighter: Fighter = null:
@@ -48,7 +49,6 @@ var _solid: StaticBody2D = null
 
 func _ready() -> void:
 	current_hp = max_hp
-	z_index = -1
 
 ## 짓는 정도(0~1)를 정한다 — 아래부터 차오른다
 func set_progress(t: float) -> void:
@@ -60,7 +60,6 @@ func finish_build() -> void:
 	if _built:
 		return
 	_built = true
-	cat_kind = _selected_kind()
 	set_progress(1.0)
 	_add_hurtbox()
 	_add_solid()
@@ -96,11 +95,19 @@ func _add_solid() -> void:
 	shape.shape = rect
 	shape.position = Vector2(0.0, -h * 0.5)
 	_solid.add_child(shape)
+	# 고양이가 집 벽 그룹을 보고 예외를 걸 수 있게 — add_child 전에 넣어야 고양이 _ready가 못 놓친다
+	_solid.add_to_group("cat_house_solids")
 	add_child(_solid)
 	# 지은 사람(고양이 아주머니)은 자기 집을 그냥 통과한다 — 예외는 양쪽에 다 건다
 	if _has_owner and is_instance_valid(owner_fighter):
 		owner_fighter.add_collision_exception_with(_solid)
 		_solid.add_collision_exception_with(owner_fighter)
+	# 고양이는 **어느 집에도** 안 막힌다 — 집 사이·새로 지은 집에 끼지 않게(먼저 나와 있던 고양이들에게 지금 건다.
+	# 나중에 나오는 고양이는 자기 _ready에서 cat_house_solids 그룹을 보고 건다)
+	for cat in get_tree().get_nodes_in_group("catmom_cats"):
+		if cat is PhysicsBody2D and is_instance_valid(cat):
+			cat.add_collision_exception_with(_solid)
+			_solid.add_collision_exception_with(cat)
 
 func take_damage(amount: int, _knockback: Vector2 = Vector2.ZERO, _pop_override: float = -1.0, _ignore_guard: bool = false) -> void:
 	if not _built or current_hp <= 0:
@@ -133,14 +140,11 @@ func _spawn_cat() -> void:
 	var parent: Node = get_parent()
 	if parent == null:
 		return
-	cat_kind = _selected_kind()
-	queue_redraw()
 	var cat = CAT_FOLLOWER.new()
 	cat.kind = cat_kind
 	cat.owner_fighter = owner_fighter
+	# 집 벽 예외는 고양이 _ready가 cat_house_solids 그룹으로 전부 건다
 	parent.add_child(cat)
-	if is_instance_valid(_solid):
-		cat.add_collision_exception_with(_solid)
 	cat.global_position = global_position + Vector2(0.0, -2.0)
 
 func _count_owner_cats() -> int:
@@ -150,16 +154,7 @@ func _count_owner_cats() -> int:
 			n += 1
 	return n
 
-## 주인이 지금 고른 고양이 종류(스킬2) — 주인이 없으면 마지막으로 그린 종류
-func _selected_kind() -> int:
-	if not _has_owner or not is_instance_valid(owner_fighter):
-		return cat_kind
-	return int(owner_fighter.custom_data.get("cat_kind", 0))
-
 func _process(delta: float) -> void:
-	if _built and _selected_kind() != cat_kind:
-		cat_kind = _selected_kind()
-		queue_redraw()
 	if _flash > 0.0:
 		_flash = maxf(_flash - delta, 0.0)
 		queue_redraw()

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://drrr4hqebxnvq"]
 
-[ext_resource type="Texture2D" uid="uid://bf3scs88bumcp" path="res://sprite/축법소년/축법소년 정면.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://bf3scs88bumcp" path="res://sprite/금쪽이/축법소년 정면.png" id="1"]
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://cx5howne65ad2" path="res://sprite/악플러/몸/악플러정면머리.png" id="3"]
 [ext_resource type="Texture2D" uid="uid://b66h74br7hpui" path="res://sprite/층간소음/층간소음정면샷.png" id="4"]

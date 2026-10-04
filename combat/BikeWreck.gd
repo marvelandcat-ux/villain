@@ -10,9 +10,9 @@ extends Node2D
 
 ## 조각 그림(바퀴, 안장, 몸체 순서 — 아래 속도 배열이 이 순서에 묶여 있다)
 const PIECES: Array[Texture2D] = [
-	preload("res://sprite/축법소년/자전거_조각_바퀴.png"),
-	preload("res://sprite/축법소년/자전거_조각_안장.png"),
-	preload("res://sprite/축법소년/자전거_조각_몸체.png"),
+	preload("res://sprite/금쪽이/자전거_조각_바퀴.png"),
+	preload("res://sprite/금쪽이/자전거_조각_안장.png"),
+	preload("res://sprite/금쪽이/자전거_조각_몸체.png"),
 ]
 
 ## true면 세 조각 중 하나만 랜덤으로 나온다(사용자 결정). false면 셋 다

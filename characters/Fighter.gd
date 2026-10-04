@@ -1088,6 +1088,28 @@ func can_dash() -> bool:
 func is_dashing() -> bool:
 	return _dash_time > 0.0
 
+## 대시가 앞에 있는 상대를 넘어가지 않게 속도를 줄인다 — 몸 충돌이 꺼져 있어서(_ignore_other_fighters)
+## 그냥 두면 대시 속도로 상대를 뚫고, 가운데를 넘는 순간 _separate_from_others가 반대편으로 밀어내 버린다.
+## 상대 몸 앞(BODY_PUSH_WIDTH)에 닿으면 거기서 멈추고 대시를 끝낸다. 뚫고 지나가는 몸(pass_through_fighters)은 예외
+func _dash_stop_before_fighters(vx: float, delta: float) -> float:
+	if pass_through_fighters:
+		return vx
+	var step: float = absf(vx) * delta
+	for other in get_tree().get_nodes_in_group("fighters"):
+		if other == self or not (other is Fighter) or not is_instance_valid(other) or other.pass_through_fighters:
+			continue
+		if absf(global_position.y - other.global_position.y) > BODY_PUSH_HEIGHT:
+			continue
+		var dx: float = other.global_position.x - global_position.x
+		# 등 뒤나 이미 거의 겹친 상대는 안 본다(겹침은 _separate_from_others가 푼다)
+		if signf(dx) != _dash_dir or absf(dx) < 1.0:
+			continue
+		var gap: float = absf(dx) - BODY_PUSH_WIDTH
+		if gap < step:
+			_dash_time = 0.0
+			return _dash_dir * maxf(gap, 0.0) / maxf(delta, 0.0001)
+	return vx
+
 ## 방향키를 두 번 눌렀을 때 그 방향으로 짧게 미끄러진다. 실제로 나갔으면 true.
 ## 스킬이 아니라 기본 조작이라 스킬 클래시·is_busy()와 무관하게 동작한다
 func dash(direction: float) -> bool:
@@ -1095,6 +1117,9 @@ func dash(direction: float) -> bool:
 		return false
 	_dash_dir = signf(direction)
 	facing = _dash_dir
+	# 맞고 날아가던 힘(_launch_momentum)을 끊는다 — 안 끊으면 대시가 끝난 뒤에도 move()가 대시 속도를
+	# "날아가던 힘"으로 보고 착지할 때까지 거의 그대로 유지해서 엄청 멀리 미끄러진다
+	_launch_momentum = false
 	# 쿨은 가로채든 말든 똑같이 돈다(mtem: 짜장면을 먹을수록 늘어나는 개인 추가분까지 포함)
 	_dash_cooldown_left = effective_dash_cooldown()
 	# 가로채는 스킬이 있으면 평소 대시는 아예 시작하지 않는다(그래야 첫 프레임이 안 튄다)
@@ -1504,7 +1529,7 @@ func apply_physics(delta: float) -> void:
 			_dash_time = 0.0
 		else:
 			_dash_time = maxf(_dash_time - delta, 0.0)
-			velocity.x = _dash_dir * dash_speed
+			velocity.x = _dash_stop_before_fighters(_dash_dir * dash_speed, delta)
 			_dash_trail_timer -= delta
 			if _dash_trail_timer <= 0.0:
 				_dash_trail_timer = DASH_TRAIL_INTERVAL

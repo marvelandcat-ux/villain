@@ -75,6 +75,8 @@ func _place_house(fighter: Fighter) -> void:
 		x = wall.position.x - _dir * 35.0
 	var ground_y: float = PhysicsQuery.ground_y_below(fighter, Vector2(x, feet_y - 20.0), 120.0, feet_y)
 	_house = CAT_HOUSE.new()
+	# 설치하는 지금 고른 고양이로 고정 — 짓는 도중·완성 뒤에 바꿔도 이 집은 안 바뀐다
+	_house.cat_kind = int(fighter.custom_data.get("cat_kind", 0))
 	_house.max_hp = house_hp
 	_house.spawn_interval = spawn_interval
 	_house.max_cats = max_cats
