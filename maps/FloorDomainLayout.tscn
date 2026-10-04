@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://byqc7i6uv2bd0"]
 
 [ext_resource type="Script" uid="uid://br5iahulsb64m" path="res://maps/FloorDomainLayout.gd" id="0_layout"]
-[ext_resource type="Texture2D" uid="uid://bxpvu2iy5rd8p" path="res://sprite/층간소음/궁극기맵/층간소음궁배경.png" id="1_bg"]
+[ext_resource type="Texture2D" uid="uid://beyi4agduv8f0" path="res://sprite/층간소음/궁극기맵/층간소음궁배경.png" id="1_bg"]
 
 [node name="FloorDomainLayout" type="Node2D" unique_id=1217956257]
 script = ExtResource("0_layout")

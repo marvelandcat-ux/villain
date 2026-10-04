@@ -171,8 +171,9 @@ func _start_hit(damage: int, knockback: Vector2) -> void:
 
 func _set_hitbox_active(on: bool) -> void:
 	if _hitbox:
-		_hitbox.monitoring = on
-		_hitbox.monitorable = on
+		# 맞는 중(충돌 신호 안)에도 불리므로 set_deferred로 바꾼다
+		_hitbox.set_deferred("monitoring", on)
+		_hitbox.set_deferred("monitorable", on)
 
 ## 꼬리를 뺀 머리·몸통·발에 맞는 판정 — CatSprite의 배치 값(배율 1 기준)에 size_scale을 곱해 만든다
 func _build_hurtbox() -> void:

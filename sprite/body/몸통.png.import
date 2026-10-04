@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://77j13tcldtk1"
-path="res://.godot/imported/몸통 - 복사본.png-602f2807a1e7c7a034bd0b76faeda018.ctex"
+uid="uid://dtomm4as2rguy"
+path="res://.godot/imported/몸통.png-8c0b191de005fe39f2ae1bb73eef4f69.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/body/몸통 - 복사본.png"
-dest_files=["res://.godot/imported/몸통 - 복사본.png-602f2807a1e7c7a034bd0b76faeda018.ctex"]
+source_file="res://sprite/body/몸통.png"
+dest_files=["res://.godot/imported/몸통.png-8c0b191de005fe39f2ae1bb73eef4f69.ctex"]
 
 [params]
 
