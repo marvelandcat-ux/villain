@@ -1,41 +1,135 @@
-[gd_scene format=3 uid="uid://buypdf5wmusqa"]
+[gd_scene load_steps=26 format=3 uid="uid://buypdf5wmusqa"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
-[ext_resource type="Texture2D" uid="uid://dy7656p8gyjb" path="res://sprite/층간소음/층간소음빌런측면.png" id="2_head"]
-[ext_resource type="Texture2D" uid="uid://b070fqpyg6rmj" path="res://sprite/층간소음/층간소음몸.png" id="3_body"]
-[ext_resource type="Texture2D" uid="uid://c52uakfygx8to" path="res://sprite/층간소음/발.png" id="4_foot"]
-[ext_resource type="Texture2D" uid="uid://2eahk8savgss" path="res://sprite/층간소음/손.png" id="5_hand"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="2_head"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_body"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="4_foot"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseRestPose.tscn" id="6_pose"]
 [ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아들.png" id="K_HEAD"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아들몸.png" id="K_BODY"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="K_HAND"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseGuardPose.tscn" id="8_guard"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseClapOpenPose.tscn" id="9_clapopen"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseClapClosePose.tscn" id="10_clapclose"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/웃는모습.png" id="11_smile"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아이울음.png" id="12_cry"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHugPose.tscn" id="13_hug"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/우쭈쭈층간소음.png" id="14_coo"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/머리45.png" id="15_h45"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/머리반정면.png" id="16_h34"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음정면.png" id="17_hfront"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/몸45.png" id="18_b45"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/몸반정면.png" id="19_b34"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간 소음몸정면.png" id="20_bfront"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseDomainJumpReady.tscn" id="21_djr"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseDomainJumpPeak.tscn" id="22_djp"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseDomainJumpLand.tscn" id="23_djl"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit1Ready.tscn" id="31r"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit1Mid.tscn" id="31m"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit1End.tscn" id="31e"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit2Ready.tscn" id="32r"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit2Mid.tscn" id="32m"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit2End.tscn" id="32e"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3Ready.tscn" id="33r"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3Mid.tscn" id="33m"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3End.tscn" id="33e"]
 
 [node name="BodyRig" unique_id=1130472801 instance=ExtResource("1_rig")]
+rest_pose = ExtResource("6_pose")
+guard_pose = ExtResource("8_guard")
+action_head_texture = ExtResource("11_smile")
+kid_cry_texture = ExtResource("12_cry")
+clap_open_pose = ExtResource("9_clapopen")
+clap_close_pose = ExtResource("10_clapclose")
+carrying = true
+carry_follows_body = false
+hug_pose = ExtResource("13_hug")
+hug_head_texture = ExtResource("14_coo")
+domain_jump_ready_pose = ExtResource("21_djr")
+domain_jump_peak_pose = ExtResource("22_djp")
+domain_jump_land_pose = ExtResource("23_djl")
+head_turn_textures = Array[Texture2D]([ExtResource("15_h45"), ExtResource("16_h34"), ExtResource("17_hfront")])
+head_turn_anchors = Array[Vector3]([Vector3(730, 642, 1140), Vector3(493, 468, 778), Vector3(525, 470, 777), Vector3(691, 671, 1190)])
+head_turn_faces_left = Array[bool]([false, false, false, false])
+head_turn_on_face = true
+body_turn_textures = Array[Texture2D]([ExtResource("18_b45"), ExtResource("19_b34"), ExtResource("20_bfront")])
+body_turn_faces_left = Array[bool]([false, false, false])
+body_turn_full = true
+body_turn_match_height = true
+hit1_ready_pose = ExtResource("31r")
+hit1_mid_pose = ExtResource("31m")
+hit1_end_pose = ExtResource("31e")
+hit2_ready_pose = ExtResource("32r")
+hit2_mid_pose = ExtResource("32m")
+hit2_end_pose = ExtResource("32e")
+hit3_ready_pose = ExtResource("33r")
+hit3_mid_pose = ExtResource("33m")
+hit3_end_pose = ExtResource("33e")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
-position = Vector2(-9.352722, 25.990273)
+position = Vector2(-9.35, 25.99)
+scale = Vector2(0.12, 0.12)
 texture = ExtResource("4_foot")
 
 [node name="FootR" parent="." index="1" unique_id=1509249644]
-position = Vector2(12.349991, 26.659187)
+position = Vector2(12.35, 26.66)
+scale = Vector2(0.12, 0.12)
 texture = ExtResource("4_foot")
 
 [node name="Body" parent="." index="2" unique_id=1277525598]
-position = Vector2(-0.6900177, 0.35917664)
-scale = Vector2(0.03066, 0.03485)
+position = Vector2(0, 2)
+scale = Vector2(0.0285, 0.0315)
 texture = ExtResource("3_body")
 
 [node name="HandL" parent="." index="3" unique_id=927525538]
-position = Vector2(-28.65001, 3.6591797)
-texture = ExtResource("5_hand")
+position = Vector2(-24, 7)
 
 [node name="HandR" parent="." index="4" unique_id=1459708461]
-position = Vector2(25.34999, 2.6591797)
-texture = ExtResource("5_hand")
+z_index = 3
+position = Vector2(26, -2)
 
 [node name="Head" parent="." index="6" unique_id=1394957076]
 position = Vector2(-3.14, -32)
-scale = Vector2(0.044, 0.044)
+scale = Vector2(0.045, 0.045)
 texture = ExtResource("2_head")
 
 [node name="EyeBlink" type="Node2D" parent="Head"]
-position = Vector2(286.5, -7.0)
+position = Vector2(323, 68)
 script = ExtResource("99_blink")
-eye_size = Vector2(236, 272)
+eye_size = Vector2(170, 105)
+
+[node name="Carry" type="Node2D" parent="."]
+z_index = 2
+position = Vector2(32, -10)
+
+[node name="KidFootL" type="Sprite2D" parent="Carry"]
+position = Vector2(-5, 14)
+scale = Vector2(0.075, 0.075)
+texture = ExtResource("4_foot")
+
+[node name="KidFootR" type="Sprite2D" parent="Carry"]
+position = Vector2(5, 15)
+scale = Vector2(0.075, 0.075)
+texture = ExtResource("4_foot")
+
+[node name="KidBody" type="Sprite2D" parent="Carry"]
+position = Vector2(0, 4)
+scale = Vector2(0.064, 0.064)
+texture = ExtResource("K_BODY")
+
+[node name="KidHead" type="Sprite2D" parent="Carry"]
+position = Vector2(0, -13)
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("K_HEAD")
+
+[node name="KidHandL" type="Sprite2D" parent="Carry"]
+position = Vector2(-4, 5)
+scale = Vector2(0.04, 0.04)
+texture = ExtResource("K_HAND")
+flip_h = true
+
+[node name="KidHandR" type="Sprite2D" parent="Carry"]
+position = Vector2(4, 5)
+scale = Vector2(0.04, 0.04)
+texture = ExtResource("K_HAND")

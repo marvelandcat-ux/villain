@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://dlvdkkbter4nv"]
+
+[ext_resource type="Script" uid="uid://ckfv7msam63d6" path="res://ui/FloorDomainIntro.gd" id="0_intro"]
+[ext_resource type="Texture2D" uid="uid://bg2w4btyqlu2q" path="res://sprite/층간소음/궁극기벽지.png" id="1_wall"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/궁극기연출/닫힌문.png" id="2_door"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
+[ext_resource type="Texture2D" uid="uid://cwehwdb7y34mc" path="res://sprite/층간소음/궁극기연출/아래집편지1.png" id="90_note1"]
+[ext_resource type="Texture2D" uid="uid://4015n65u2kor" path="res://sprite/층간소음/궁극기연출/문짝종이2Photoroom.png" id="91_note2"]
+
+[node name="FloorDomainIntro" type="CanvasLayer" unique_id=1422930456]
+layer = 60
+script = ExtResource("0_intro")
+
+[node name="Root" type="Node2D" parent="." unique_id=1811916664]
+
+[node name="Wallpaper" type="Sprite2D" parent="Root" unique_id=394865643]
+texture_filter = 1
+texture = ExtResource("1_wall")
+
+[node name="Door" type="Sprite2D" parent="Root" unique_id=1654568380]
+texture_filter = 1
+position = Vector2(-11, 113)
+scale = Vector2(0.7290361, 0.49076664)
+texture = ExtResource("2_door")
+
+[node name="Note1" type="Sprite2D" parent="Root/Door" unique_id=1311822306]
+texture_filter = 1
+position = Vector2(-124.12358, -353.7316)
+rotation = -0.05
+scale = Vector2(0.2405011, 0.2405011)
+texture = ExtResource("90_note1")
+
+[node name="Note2" type="Sprite2D" parent="Root/Door" unique_id=1207830314]
+texture_filter = 1
+position = Vector2(5.486698, -107.99431)
+rotation = 0.20769419
+scale = Vector2(0.26, 0.26)
+texture = ExtResource("91_note2")
+
+[node name="HandKnock" type="Node2D" parent="Root" unique_id=2083135739]
+position = Vector2(74, 36)
+
+[node name="HandStart" type="Node2D" parent="Root" unique_id=1669064975]
+position = Vector2(250, 190)
+
+[node name="Hand" type="Sprite2D" parent="Root" unique_id=1383142376]
+texture_filter = 1
+position = Vector2(458, 421)
+scale = Vector2(0.8137931, 0.8137931)
+texture = ExtResource("3_hand")

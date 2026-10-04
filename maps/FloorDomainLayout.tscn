@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://byqc7i6uv2bd0"]
+
+[ext_resource type="Script" uid="uid://br5iahulsb64m" path="res://maps/FloorDomainLayout.gd" id="0_layout"]
+[ext_resource type="Texture2D" uid="uid://bxpvu2iy5rd8p" path="res://sprite/층간소음/궁극기맵/층간소음궁배경.png" id="1_bg"]
+
+[node name="FloorDomainLayout" type="Node2D" unique_id=1217956257]
+script = ExtResource("0_layout")
+
+[node name="Background" type="Sprite2D" parent="." unique_id=986245211]
+z_index = -1
+texture_filter = 1
+texture = ExtResource("1_bg")
+centered = false
+
+[node name="Ceiling" type="Node2D" parent="." unique_id=1555177999]
+position = Vector2(0, 14)
+
+[node name="UpperFloor" type="Node2D" parent="." unique_id=1068996949]
+position = Vector2(0, 360)
+
+[node name="SlabBottom" type="Node2D" parent="." unique_id=833155707]
+position = Vector2(0, 411)
+
+[node name="LowerFloor" type="Node2D" parent="." unique_id=1253220893]
+position = Vector2(0, 772)
+
+[node name="LeftWall" type="Node2D" parent="." unique_id=1373238464]
+position = Vector2(24, 0)
+
+[node name="RightWall" type="Node2D" parent="." unique_id=1415361654]
+position = Vector2(1920, 0)
+
+[node name="MomSpawn" type="Node2D" parent="."]
+position = Vector2(250, 0)
+
+[node name="FoeSpawn" type="Node2D" parent="."]
+position = Vector2(250, 0)

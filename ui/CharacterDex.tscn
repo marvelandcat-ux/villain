@@ -75,7 +75,7 @@ portrait_overrides = {
 "악플러": Rect2(0.13253012, 0.019021738, 0.8795181, 0.7798913),
 "일진": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
 "지하철 아저씨": Rect2(0.12048193, 0.019021738, 0.8795181, 0.7798913),
-"층간소음 청년": Rect2(0.12650603, 0.019021738, 0.8795181, 0.7798913)
+"층간소음 빌런": Rect2(0.12650603, 0.019021738, 0.8795181, 0.7798913)
 }
 portrait_area = Rect2(0.09638554, 0.019021738, 0.8795181, 0.7798913)
 
@@ -477,7 +477,7 @@ offset_bottom = 294.0
 mouse_filter = 2
 color = Color(0.3, 1, 0.45, 0.16)
 
-[node name="층간소음 청년" type="ColorRect" parent="PortraitGuide" unique_id=1288250570]
+[node name="층간소음 빌런" type="ColorRect" parent="PortraitGuide" unique_id=1288250570]
 layout_mode = 0
 offset_left = 751.0
 offset_top = 6.9999995

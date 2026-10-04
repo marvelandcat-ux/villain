@@ -9,7 +9,7 @@ const CHARACTERS := {
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
-	"층간소음 청년": "res://characters/floornoise/FloorNoise.tscn",
+	"층간소음 빌런": "res://characters/floornoise/FloorNoise.tscn",
 	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
@@ -20,10 +20,12 @@ const TRAINING_ONLY_CHARACTERS := {
 	"주인공": "res://characters/police/Police.tscn",
 }
 
-## **숨겨진 캐릭터** — 캐릭터 선택창에서 aaddssww를 치면 아래 칸이 이 목록으로 바뀐다(다시 치면 원래대로).
+## **숨겨진 캐릭터** — 캐릭터 선택창에서 **캐릭터마다 정해진 커맨드**를 치면 그 캐릭터 칸이 아래에 뜬다
+## (어떤 키를 치는지는 CharacterSelect.gd의 SECRET_CODES. 황근출은 aaddssww, 인베이전은 한글로 "인베이전").
 ## 타이틀 구경 모드·도감 같은 CHARACTERS 전용 목록엔 안 나온다
 const HIDDEN_CHARACTERS := {
 	"황근출 해병": "res://characters/hwanggeunchul/Hwanggeunchul.tscn",
+	"인베이전": "res://characters/invasion/Invasion.tscn",
 }
 
 ## 훈련장 드롭다운에 쓰는 전체 목록 = 대전 로스터 + 훈련장 전용 + 숨겨진 캐릭터.
@@ -46,10 +48,11 @@ const CHARACTER_COLORS := {
 	"주정뱅이": Color(0.8, 0.5, 0.2),
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
-	"층간소음 청년": Color(0.3, 0.5, 0.85),
+	"층간소음 빌런": Color(0.3, 0.5, 0.85),
 	"일진": Color(0.25, 0.3, 0.5),
 	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
 	"황근출 해병": Color(0.4, 0.45, 0.35),   # 숨겨진 캐릭터
+	"인베이전": Color(0.45, 0.12, 0.14),   # 숨겨진 캐릭터 — 돌갑옷의 붉은 균열 색
 }
 const DEFAULT_COLOR := Color(0.35, 0.35, 0.4)
 
@@ -59,11 +62,12 @@ const PORTRAITS := {
 	"금쪽이": "res://sprite/금쪽이/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
-	"층간소음 청년": "res://sprite/층간소음/층간소음정면샷.png",
+	"층간소음 빌런": "res://sprite/층간소음/층간소음정면.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/고양이 아줌마/고양이아줌마정면.png",
 	"일진": "res://sprite/일진/정면일진.png",
 	"황근출 해병": "res://sprite/황근출 해병/환근출 해병 정면.png",
+	"인베이전": "res://sprite/인베이전/인베이전얼굴.png",
 }
 
 ## 실제 대전에서 쓰는 몸(BodyRig) 씬 — 캐릭터 선택창의 큰 미리보기 칸에 "인게임 캐릭터 전신"으로 띄운다.
@@ -75,9 +79,10 @@ const CHARACTER_RIGS := {
 	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
-	"층간소음 청년": "res://characters/floornoise/FloorNoiseRig.tscn",
+	"층간소음 빌런": "res://characters/floornoise/FloorNoiseRig.tscn",
 	"일진": "res://characters/iljin/IljinRig.tscn",
 	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn",
+	"인베이전": "res://characters/invasion/InvasionRig.tscn",
 }
 
 ## 초상화 프레이밍(크기·위치) 편집 씬 — 에디터에서 열어 각 캐릭터 Portrait를 조절한다.

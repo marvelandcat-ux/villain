@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://bysn1xnvsnjjc"]
+
+[ext_resource type="Texture2D" uid="uid://breacucrxeqiw" path="res://sprite/층간소음/층간소음아들.png" id="1_head"]
+[ext_resource type="Texture2D" uid="uid://3vyv3toxmea7" path="res://sprite/층간소음/층간소음아들몸.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://6shjavroe8hu" path="res://sprite/층간소음/층간소음발.png" id="3_foot"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="4_hand"]
+
+[node name="KidLandPose" type="Node2D" unique_id=511908958]
+
+[node name="KidFootL" type="Sprite2D" parent="." unique_id=1480919453]
+position = Vector2(-31, 118)
+rotation = -0.78714347
+scale = Vector2(0.547525, 0.547525)
+texture = ExtResource("3_foot")
+
+[node name="KidFootR" type="Sprite2D" parent="." unique_id=1360245217]
+position = Vector2(39, 117)
+rotation = -0.8412487
+scale = Vector2(0.478218, 0.478218)
+texture = ExtResource("3_foot")
+
+[node name="KidBody" type="Sprite2D" parent="." unique_id=34368243]
+position = Vector2(0, 38.5)
+scale = Vector2(0.446352, 0.446352)
+texture = ExtResource("2_body")
+
+[node name="KidHandL" type="Sprite2D" parent="." unique_id=653172456]
+position = Vector2(-102, 72)
+rotation = 0.7
+scale = Vector2(0.304, 0.304)
+texture = ExtResource("4_hand")
+flip_h = true
+
+[node name="KidHandR" type="Sprite2D" parent="." unique_id=2059416648]
+position = Vector2(112, 57)
+rotation = -0.7
+scale = Vector2(0.304, 0.304)
+texture = ExtResource("4_hand")
+
+[node name="KidHead" type="Sprite2D" parent="." unique_id=2125425759]
+position = Vector2(-19.000002, -48)
+rotation = 0.08
+scale = Vector2(0.165245, 0.165245)
+texture = ExtResource("1_head")

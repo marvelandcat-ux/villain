@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CharacterStats" format=3]
+
+[ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_name = "인베이전"
+max_hp = 100
+move_speed = 420.0
+attack_multiplier = 1.0
+attack_rating = 4
+hp_rating = 3
+speed_rating = 3
+description = "커맨드로만 불러낼 수 있는 숨겨진 캐릭터. 돌갑옷에 붉은 균열을 새기고 나타난다."

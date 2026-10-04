@@ -12,8 +12,15 @@ const PREVIEW_RIG_SCALE := 2.4
 ## 상자 안에서 리그 원점이 놓일 자리 — x는 가운데, y는 **발이 이름표 바로 위(약 250)** 에 오도록 잡았다
 const PREVIEW_RIG_ORIGIN := Vector2(150, 170)
 
-## 이 순서로 키를 치면 아래 칸이 숨겨진 캐릭터(GameState.HIDDEN_CHARACTERS)로 바뀌고, 다시 치면 원래대로
-const SECRET_CODE := "aaddssww"
+## **캐릭터마다 다른 커맨드.** 이 순서로 키를 치면 아래 칸이 그 숨겨진 캐릭터로 바뀌고, 같은 커맨드를 또 치면 되돌아간다.
+## 여러 캐릭터를 연달아 풀면 풀린 캐릭터들이 한 줄에 같이 늘어선다.
+##
+## **물리 키로 본다** — 한글 입력 상태에서도 자판 그대로 치면 된다.
+## 그래서 한글 커맨드는 두벌식으로 친 영문 키를 적어 둔다: "인베이전" = ㅇㅣㄴ ㅂㅔ ㅇㅣ ㅈㅓㄴ = dlsqpdlwjs
+const SECRET_CODES := {
+	"aaddssww": "황근출 해병",
+	"dlsqpdlwjs": "인베이전",
+}
 ## 숨겨진 캐릭터 칸 크기·겹침 — 씬에 놓인 일반 칸(150x90, 옆 칸과 50 겹침)과 같게
 const HIDDEN_TILE_SIZE := Vector2(150, 90)
 const HIDDEN_TILE_STEP := 100.0
@@ -54,7 +61,9 @@ var _p2_rig: Node2D = null
 var _normal_tiles: Array[FanTile] = []
 var _hidden_tiles: Array[FanTile] = []
 var _hidden_mode: bool = false
-## 최근에 친 글자들 — 끝이 SECRET_CODE와 같으면 전환
+## 커맨드로 풀어 둔 숨겨진 캐릭터 이름들 — 비면 원래 칸으로 돌아간다
+var _unlocked: Array[String] = []
+## 최근에 친 글자들 — 끝이 SECRET_CODES의 커맨드 중 하나와 같으면 그 캐릭터를 푼다
 var _typed: String = ""
 
 ## 씬에 미리 놓아둔 FanTile들을 훑어서 character_key로 어떤 캐릭터인지 확인하고 클릭 시그널을 연결한다.
@@ -76,15 +85,13 @@ func _ready() -> void:
 	_status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
 	background.texture = load(P1_BACKGROUND)
 
-## 숨겨진 캐릭터 칸을 미리 만들어 숨겨 둔다 — 원래 칸 줄(ThumbRow) 가운데에 같은 모양으로 늘어선다
+## 숨겨진 캐릭터 칸을 미리 전부 만들어 숨겨 둔다 — 실제로 보이는 건 커맨드로 푼 것뿐이고,
+## 자리는 몇 개가 풀렸느냐에 따라 _layout_hidden_tiles()가 그때그때 가운데로 다시 잡는다
 func _build_hidden_tiles() -> void:
 	var names: Array = GameState.HIDDEN_CHARACTERS.keys()
-	var total_width: float = HIDDEN_TILE_SIZE.x + HIDDEN_TILE_STEP * (names.size() - 1)
-	var start_x: float = (_thumb_row.custom_minimum_size.x - total_width) / 2.0
 	for i in names.size():
 		var character_name: String = names[i]
 		var tile := FanTile.new()
-		tile.position = Vector2(start_x + HIDDEN_TILE_STEP * i, 0.0)
 		tile.size = HIDDEN_TILE_SIZE
 		tile.fill_color = GameState.CHARACTER_COLORS.get(character_name, GameState.DEFAULT_COLOR)
 		if GameState.PORTRAITS.has(character_name):
@@ -97,16 +104,26 @@ func _build_hidden_tiles() -> void:
 		tile.gui_input.connect(_on_tile_gui_input.bind(character_name))
 		_hidden_tiles.append(tile)
 
-## 원래 칸 <-> 숨겨진 캐릭터 칸을 바꿔 보여 준다. 고르던(확정 전) 캐릭터는 지운다
-func _toggle_hidden_mode() -> void:
-	_hidden_mode = not _hidden_mode
+## 커맨드를 한 번 치면 그 캐릭터를 풀고, 같은 커맨드를 또 치면 도로 숨긴다.
+## 풀린 게 하나도 없으면 원래 칸 줄로 돌아간다
+func _toggle_unlocked(character_name: String) -> void:
+	if _unlocked.has(character_name):
+		_unlocked.erase(character_name)
+	else:
+		_unlocked.append(character_name)
+	_refresh_tiles()
+
+## 원래 칸 <-> 풀린 숨겨진 캐릭터 칸을 바꿔 보여 준다. 고르던(확정 전) 캐릭터는 지운다
+func _refresh_tiles() -> void:
+	_hidden_mode = not _unlocked.is_empty()
 	for tile in _normal_tiles:
 		tile.visible = not _hidden_mode
 	for tile in _hidden_tiles:
-		tile.visible = _hidden_mode
+		tile.visible = _hidden_mode and _unlocked.has(tile.character_key)
+	_layout_hidden_tiles()
 	_thumb_buttons.clear()
 	for tile in (_hidden_tiles if _hidden_mode else _normal_tiles):
-		if tile.character_key != "":
+		if tile.visible and tile.character_key != "":
 			_thumb_buttons[tile.character_key] = tile
 	if _pending_character != "":
 		_pending_character = ""
@@ -123,7 +140,21 @@ func _toggle_hidden_mode() -> void:
 			_p2_rig = null
 	_update_highlight()
 
-## 비밀 코드 입력 — 한글 입력 상태에서도 되게 물리 키로 본다
+## 지금 보이는 숨겨진 칸들만 줄 가운데로 다시 늘어놓는다 — 하나만 풀면 한가운데, 둘이면 나란히
+func _layout_hidden_tiles() -> void:
+	var shown: Array[FanTile] = []
+	for tile in _hidden_tiles:
+		if tile.visible:
+			shown.append(tile)
+	if shown.is_empty():
+		return
+	var total_width: float = HIDDEN_TILE_SIZE.x + HIDDEN_TILE_STEP * (shown.size() - 1)
+	var start_x: float = (_thumb_row.custom_minimum_size.x - total_width) / 2.0
+	for i in shown.size():
+		shown[i].position = Vector2(start_x + HIDDEN_TILE_STEP * i, 0.0)
+
+## 비밀 코드 입력 — 한글 입력 상태에서도 되게 물리 키로 본다.
+## 커맨드 길이가 제각각이라, 친 글자를 **가장 긴 커맨드 길이만큼** 들고 있다가 끝자락이 맞는 게 있는지 본다
 func _input(event: InputEvent) -> void:
 	if _is_spinning or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
@@ -131,10 +162,19 @@ func _input(event: InputEvent) -> void:
 	if key < KEY_A or key > KEY_Z:
 		_typed = ""
 		return
-	_typed = (_typed + char(key).to_lower()).right(SECRET_CODE.length())
-	if _typed == SECRET_CODE:
-		_typed = ""
-		_toggle_hidden_mode()
+	_typed = (_typed + char(key).to_lower()).right(_longest_code())
+	for code in SECRET_CODES:
+		if _typed.ends_with(code):
+			_typed = ""
+			_toggle_unlocked(SECRET_CODES[code])
+			return
+
+## 커맨드 중 가장 긴 것의 글자 수
+func _longest_code() -> int:
+	var longest: int = 0
+	for code in SECRET_CODES:
+		longest = maxi(longest, code.length())
+	return longest
 
 ## 목록에서 캐릭터를 눌러도 바로 확정되지 않고, 미리보기 칸에만 반영된다.
 ## 실제로 P1/P2에 배정되는 건 "확정" 버튼을 눌렀을 때(_on_confirm_pressed)뿐이다

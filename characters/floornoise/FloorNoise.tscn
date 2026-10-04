@@ -1,14 +1,17 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
-[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseRig.tscn" id="10"]
 [ext_resource type="Resource" path="res://stats/FloorNoiseStats.tres" id="2"]
 [ext_resource type="Script" uid="uid://cgqw8ohid720h" path="res://skills/ComboMeleeAttack.gd" id="3"]
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
-[ext_resource type="Script" path="res://skills/AoeAttack.gd" id="6"]
-[ext_resource type="Script" path="res://skills/VacuumSkill.gd" id="7"]
-[ext_resource type="Script" path="res://skills/DunkUltimate.gd" id="8"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseRig.tscn" id="10"]
+[ext_resource type="Script" path="res://skills/KidScreamSkill.gd" id="20_scream"]
+[ext_resource type="PackedScene" path="res://skills/KidScream.tscn" id="21_screamfx"]
+[ext_resource type="Script" path="res://skills/KidRushSkill.gd" id="22_rush"]
+[ext_resource type="PackedScene" path="res://skills/RunningKid.tscn" id="23_kid"]
+[ext_resource type="Script" path="res://skills/FloorDomainUltimate.gd" id="24_domain"]
+[ext_resource type="Script" path="res://skills/KidDropkick.gd" id="25_kick"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -20,12 +23,6 @@ height = 87.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_aoe"]
-radius = 70.0
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_vacuum"]
-size = Vector2(90, 36)
 
 [node name="FloorNoise" type="CharacterBody2D"]
 script = ExtResource("1")
@@ -56,6 +53,8 @@ combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
 windup = 0.16
 cooldown = 0.3
 miss_cooldown = 1.0
+skill_name = "주먹·주먹·드롭킥"
+description = "오른 주먹, 왼 주먹으로 두 번 때리고 마지막엔 옆에 있던 아이가 날아가 드롭킥을 꽂는다."
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
@@ -65,43 +64,26 @@ script = ExtResource("4")
 [node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox"]
 shape = SubResource("RectangleShape2D_hitbox")
 
+[node name="KidDropkick" type="Node" parent="BasicAttack"]
+script = ExtResource("25_kick")
+
 [node name="Skill1" type="Node" parent="."]
-script = ExtResource("6")
-cooldown = 8.0
-damage = 8
-radius = 70.0
-slow_multiplier = 0.7
-slow_duration = 2.0
-
-[node name="Hitbox" type="Area2D" parent="Skill1"]
-monitoring = false
-monitorable = false
-script = ExtResource("4")
-
-[node name="HitboxCollision" type="CollisionShape2D" parent="Skill1/Hitbox"]
-shape = SubResource("CircleShape2D_aoe")
+script = ExtResource("20_scream")
+cooldown = 10.0
+skill_name = "악쓰기"
+description = "품에 안긴 아이가 악을 쓴다. 소리가 닿은 상대는 4초 동안 기본공격을 못 쓴다. 이동과 스킬은 그대로다."
+scream_scene = ExtResource("21_screamfx")
 
 [node name="Skill2" type="Node" parent="."]
-script = ExtResource("7")
-cooldown = 6.0
-
-[node name="Hitbox" type="Area2D" parent="Skill2"]
-monitoring = false
-monitorable = false
-script = ExtResource("4")
-
-[node name="HitboxCollision" type="CollisionShape2D" parent="Skill2/Hitbox"]
-shape = SubResource("RectangleShape2D_vacuum")
+script = ExtResource("22_rush")
+cooldown = 8.0
+skill_name = "풀어놓기"
+description = "아이를 바닥에 내려놓는다. 아이가 앞으로 쿵쿵 달려갔다가 돌아와 다시 안긴다. 나가 있는 동안에는 악쓰기를 못 쓴다."
+kid_scene = ExtResource("23_kid")
 
 [node name="SkillUltimate" type="Node" parent="."]
-script = ExtResource("8")
-cooldown = 24.0
+script = ExtResource("24_domain")
+cooldown = 45.0
 start_on_cooldown = true
-
-[node name="Hitbox" type="Area2D" parent="SkillUltimate"]
-monitoring = false
-monitorable = false
-script = ExtResource("4")
-
-[node name="HitboxCollision" type="CollisionShape2D" parent="SkillUltimate/Hitbox"]
-shape = SubResource("CircleShape2D_aoe")
+skill_name = "영역전개 — 윗집"
+description = "두 사람을 위아래 두 층짜리 집으로 끌고 간다. 위층은 층간소음 빌런, 아래층은 상대. 걷고 뛰고 아이를 풀어놓는 것이 전부 아래층으로 내려꽂는 충격파가 된다."

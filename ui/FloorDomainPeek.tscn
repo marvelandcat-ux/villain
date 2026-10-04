@@ -1,0 +1,85 @@
+[gd_scene format=3 uid="uid://67n706o3bl2b"]
+
+[ext_resource type="Script" uid="uid://ddxfavkhy0n4v" path="res://ui/FloorDomainPeek.gd" id="0_peek"]
+[ext_resource type="Texture2D" uid="uid://bg2w4btyqlu2q" path="res://sprite/층간소음/궁극기벽지.png" id="1_wall"]
+[ext_resource type="Texture2D" uid="uid://df26qd6gjfh4u" path="res://sprite/층간소음/궁극기연출/열린문_0001_문틀.png" id="2_frame"]
+[ext_resource type="Texture2D" uid="uid://dilwr8w248p0n" path="res://sprite/층간소음/궁극기연출/열린문_0000_문.png" id="3_panel"]
+[ext_resource type="Texture2D" uid="uid://byiw814ew6cqr" path="res://sprite/층간소음/층간소음정면.png" id="4_face"]
+[ext_resource type="Texture2D" uid="uid://d6eh7e8qsd5u" path="res://sprite/층간소음/입벌리고있는층간소음.png" id="5_open"]
+[ext_resource type="Texture2D" uid="uid://b4sqbvydv2wa1" path="res://sprite/층간소음/층간 소음몸정면.png" id="6_body"]
+[ext_resource type="PackedScene" uid="uid://dkd5b0gex52q0" path="res://maps/SpeechBubble.tscn" id="7_bubble"]
+[ext_resource type="Texture2D" uid="uid://dwk7vv1foy5vq" path="res://sprite/층간소음/층간소음아이정면.png" id="8_kid"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="10_hand"]
+[ext_resource type="Texture2D" uid="uid://cdek2ma3nl784" path="res://sprite/층간소음/입벌린아이정면.png" id="12_kidsmile"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/궁극기연출/아래집편지1.png" id="90_note1"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/궁극기연출/문짝종이2Photoroom.png" id="91_note2"]
+
+[node name="FloorDomainPeek" type="CanvasLayer" unique_id=1921066867]
+layer = 60
+script = ExtResource("0_peek")
+mouth_open = ExtResource("5_open")
+mouth_shut = ExtResource("4_face")
+kid_face = ExtResource("8_kid")
+kid_smile = ExtResource("12_kidsmile")
+
+[node name="Root" type="Node2D" parent="." unique_id=1997703278]
+
+[node name="Wallpaper" type="Sprite2D" parent="Root" unique_id=147281571]
+texture_filter = 1
+texture = ExtResource("1_wall")
+
+[node name="DoorFrame" type="Sprite2D" parent="Root" unique_id=1545484922]
+texture_filter = 1
+position = Vector2(-11, 113)
+scale = Vector2(0.7290361, 0.49076664)
+texture = ExtResource("2_frame")
+
+[node name="Mom" type="Node2D" parent="Root" unique_id=645487338]
+z_index = 1
+position = Vector2(155, -70)
+
+[node name="Body" type="Sprite2D" parent="Root/Mom" unique_id=1392642070]
+texture_filter = 1
+position = Vector2(-20.999994, 257.99997)
+rotation = 0.4660029
+scale = Vector2(0.22371393, 0.31181005)
+texture = ExtResource("6_body")
+
+[node name="Head" type="Sprite2D" parent="Root/Mom" unique_id=190116117]
+texture_filter = 1
+position = Vector2(71, 80)
+rotation = 0.31066862
+scale = Vector2(0.24301313, 0.24301313)
+texture = ExtResource("4_face")
+
+[node name="Hand" type="Sprite2D" parent="Root/Mom" unique_id=1533021327]
+texture_filter = 1
+position = Vector2(-12, 236)
+scale = Vector2(0.49, 0.49)
+texture = ExtResource("10_hand")
+flip_h = true
+
+[node name="DoorPanel" type="Sprite2D" parent="Root" unique_id=1575227793]
+z_index = 2
+texture_filter = 1
+position = Vector2(-11, 113)
+scale = Vector2(0.7290361, 0.49076664)
+texture = ExtResource("3_panel")
+
+[node name="Note1" type="Sprite2D" parent="Root/DoorPanel"]
+texture_filter = 1
+position = Vector2(-124.12358, -353.7316)
+rotation = -0.05
+scale = Vector2(0.2405011, 0.2405011)
+texture = ExtResource("90_note1")
+
+[node name="Note2" type="Sprite2D" parent="Root/DoorPanel"]
+texture_filter = 1
+position = Vector2(5.486698, -107.99431)
+rotation = 0.20769419
+scale = Vector2(0.26, 0.26)
+texture = ExtResource("91_note2")
+
+[node name="Bubble" parent="Root" unique_id=1584881507 instance=ExtResource("7_bubble")]
+position = Vector2(371, -67)
+bubble_center = Vector2(-170, -130)
