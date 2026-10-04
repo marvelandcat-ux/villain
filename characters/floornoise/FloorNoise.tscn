@@ -42,9 +42,15 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
-range = 45.0
+range = 40.0
+active_duration = 0.1
+pushback_base = 6.0
+pushback_per_damage = 2.0
+lunge_follows_pushback = true
+combo_lunge = Array[float]([0.0, 60.0, 120.0])
+combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
+combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
 windup = 0.16
-active_duration = 0.4
 cooldown = 0.3
 miss_cooldown = 1.0
 skill_name = "주먹·주먹·드롭킥"

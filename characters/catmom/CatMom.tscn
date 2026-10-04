@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="PackedScene" path="res://characters/catmom/CatMomRig.tscn" id="11"]
@@ -6,11 +6,9 @@
 [ext_resource type="Script" uid="uid://cgqw8ohid720h" path="res://skills/ComboMeleeAttack.gd" id="3"]
 [ext_resource type="Script" path="res://combat/Hitbox.gd" id="4"]
 [ext_resource type="Script" path="res://combat/Hurtbox.gd" id="5"]
-[ext_resource type="Script" path="res://skills/TunaThrowSkill.gd" id="6"]
-[ext_resource type="PackedScene" path="res://skills/CatPet.tscn" id="7"]
-[ext_resource type="Script" path="res://skills/TunaPlaceSkill.gd" id="8"]
-[ext_resource type="Script" path="res://skills/CatHutUltimate.gd" id="9"]
-[ext_resource type="PackedScene" path="res://skills/CatHut.tscn" id="10"]
+[ext_resource type="Script" path="res://skills/CatHouseSkill.gd" id="6"]
+[ext_resource type="Script" path="res://skills/CatSelectSkill.gd" id="8"]
+[ext_resource type="Script" path="res://skills/CatUltimate.gd" id="9"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -42,6 +40,13 @@ shape = SubResource("CapsuleShape2D_hurt")
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
 range = 40.0
+active_duration = 0.1
+pushback_base = 6.0
+pushback_per_damage = 2.0
+lunge_follows_pushback = true
+combo_lunge = Array[float]([0.0, 60.0, 120.0])
+combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
+combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
 windup = 0.16
 cooldown = 0.3
 miss_cooldown = 1.0
@@ -56,16 +61,19 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("6")
-cooldown = 7.0
-cat_scene = ExtResource("7")
+cooldown = 15.0
+skill_name = "고양이 집 짓기"
+description = "앞에 망치로 고양이 집을 짓는다(2초, 슈퍼아머). 다 지으면 고른 고양이가 나오고 7초마다 한 마리씩 더 나온다. 집은 부술 수 있다"
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("8")
-cooldown = 9.0
-cat_scene = ExtResource("7")
+cooldown = 0.3
+skill_name = "고양이 고르기"
+description = "집에서 나올 고양이를 검은 고양이, 주황 고양이, 흰 고양이 순서로 바꾼다"
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("9")
 cooldown = 22.0
+skill_name = "고양이 대작전"
+description = "고른 고양이에 따라 다르다. 검은 고양이: 겨드랑이에 끼고 기본공격으로 똥 유탄 5발(범위 피해). 주황 고양이: 고양이 옷을 입고 10초 동안 스킬1, 2를 못 쓰는 대신 기본공격, 체력, 방어, 쿨타임이 좋아진다. 흰 고양이: 10초 동안 흰 고양이를 들고 기본공격이 빠른 할퀴기가 된다"
 start_on_cooldown = true
-hut_scene = ExtResource("10")

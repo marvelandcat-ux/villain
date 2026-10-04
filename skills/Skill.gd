@@ -84,6 +84,10 @@ func active_ratio() -> float:
 func _execute(_fighter: Fighter) -> void:
 	pass
 
+## false면 스킬 클래시(같은 스킬 동시 사용 → 연타 대결)를 안 타고 바로 나간다 — 고양이 고르기처럼 순식간인 스킬용
+func clashable() -> bool:
+	return true
+
 ## true면 이 스킬이 자기 공격 모션을 직접 재생한다는 뜻 — Fighter가 기본 스윙(play_attack_swing())을
 ## 덧대지 않는다. 타별로 스윙이 다른 콤보 평타처럼, 모션 타이밍/종류를 스킬이 직접 제어할 때 쓴다
 func handles_own_visual() -> bool:

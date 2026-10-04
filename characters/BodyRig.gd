@@ -979,6 +979,17 @@ var held_item_l_thrown: bool = false
 @export var kneel_hand_offset: Vector2 = Vector2(4.0, 6.0)
 ## 자세가 섞이는 빠르기(1/초)
 @export var kneel_blend_speed: float = 12.0
+## --- 망치질 (고양이 아주머니 스킬1 집 짓기 — 무릎 꿇기 위에 얹는다) ---
+## 한 번 내리치는 데 걸리는 시간(초). 켠 순간부터 이 간격마다 망치가 땅에 닿는다(스킬이 같은 값으로 먼지를 낸다)
+@export var hammer_period: float = 0.4
+## 망치를 치켜든 오른손 자리(쉬는 자리 기준)와 각도
+@export var hammer_raise_offset: Vector2 = Vector2(-6.0, -16.0)
+@export var hammer_raise_deg: float = -60.0
+## 내리친 오른손 자리와 각도 — 망치 머리가 앞쪽 땅에 닿는다
+@export var hammer_strike_offset: Vector2 = Vector2(8.0, 12.0)
+@export var hammer_strike_deg: float = 75.0
+## 한 박자 중 치켜드는 데 쓰는 비율 — 나머지 동안 빠르게 내리친다
+@export var hammer_raise_ratio: float = 0.65
 ## --- 두 손 번쩍 들기 / 다리 내려찍기 (황근출 내무반 스킬2 `BarracksSlamSkill`) ---
 ## 두 손이 가는 자리(리그 로컬, +x = 바라보는 쪽)와 각도 — 머리 위로 번쩍
 @export var lift_hand_r_pos: Vector2 = Vector2(18.0, -52.0)
@@ -1309,6 +1320,11 @@ var _charge_target: float = 0.0
 ## 무릎 꿇기 자세 섞임(0~1)과 목표값
 var _kneel_blend: float = 0.0
 var _kneel_target: float = 0.0
+## 망치질 자세 섞임(0~1)·목표값·켠 뒤 흐른 시간, 손에 쥐여주는 임시 망치 그림
+var _hammer_blend: float = 0.0
+var _hammer_target: float = 0.0
+var _hammer_time: float = 0.0
+var _hammer: Node2D = null
 var _lift_blend: float = 0.0
 var _lift_target: float = 0.0
 var _stomp_blend: float = 0.0
@@ -1535,6 +1551,9 @@ func _process(delta: float) -> void:
 	_dual_blend = move_toward(_dual_blend, dual_want, delta * dual_blend_speed)
 	_charge_blend = move_toward(_charge_blend, _charge_target, delta * charge_blend_speed)
 	_kneel_blend = move_toward(_kneel_blend, _kneel_target, delta * kneel_blend_speed)
+	_hammer_blend = move_toward(_hammer_blend, _hammer_target, delta * kneel_blend_speed)
+	if _hammer_target > 0.0:
+		_hammer_time += delta
 	_lift_blend = move_toward(_lift_blend, _lift_target, delta * slam_blend_speed)
 	_stomp_blend = move_toward(_stomp_blend, _stomp_target, delta * slam_blend_speed)
 	_counter_blend = move_toward(_counter_blend, _counter_target, delta * counter_blend_speed)
@@ -1864,6 +1883,10 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 무릎 꿇기(드롭킥 준비) — 앞발은 세우고 뒷발은 무릎을 땅에 대고 몸을 낮춘다
 	if _kneel_blend > 0.001:
 		_pose_kneel()
+
+	# 망치질(고양이 집 짓기) — 무릎 꿇기가 내려놓은 오른손을 치켜들었다 내리친다
+	if _hammer_blend > 0.001:
+		_pose_hammer()
 
 	# 두 손 번쩍 들기 / 다리 내려찍기 (황근출 내무반 스킬2)
 	if _lift_blend > 0.001:
@@ -4220,7 +4243,7 @@ func _face_turn_progress() -> float:
 ## 방향 전환을 그 자리에서 끝내야 하는 동작 중인지 — 손·몸을 따로 쓰는 동작이 시작되면 몸을 바로 새 방향으로 맞춘다
 func _face_turn_blocked() -> bool:
 	return _attack_time > 0.0 or _drink_time > 0.0 or _gun_time > 0.0 or _eat_time > 0.0 or _grab_time > 0.0 or _cast_time > 0.0 \
-		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _kneel_target > 0.0 or _counter_target > 0.0 \
+		or _step_time > 0.0 or _hurt_time > 0.0 or _guard_target > 0.0 or _charge_target > 0.0 or _kneel_target > 0.0 or _hammer_target > 0.0 or _counter_target > 0.0 \
 		or _lift_target > 0.0 or _stomp_target > 0.0 or _ride_target > 0.0 or _clash_target > 0.0 or _dk_stage != 0
 
 ## 방향 전환 머리 돌리기 — 앞 절반은 몸이 옛 방향인 채 머리가 측면1 -> ... -> 정면으로 돌고,
@@ -4843,6 +4866,49 @@ func set_charging(on: bool) -> void:
 ## 무릎 꿇는 자세를 켜고 끈다(DropkickSkill 준비 동작). 자세는 _kneel_blend로 서서히 섞인다
 func set_kneeling(on: bool) -> void:
 	_kneel_target = 1.0 if on else 0.0
+
+## 망치질을 켜고 끈다(고양이 아주머니 집 짓기). 켜는 순간 손에 임시 망치가 나타나고, hammer_period마다 땅을 내리친다.
+## 무릎 꿇기(set_kneeling)와 같이 켜는 걸 전제로 한다
+func set_hammering(on: bool) -> void:
+	_hammer_target = 1.0 if on else 0.0
+	_hammer_time = 0.0
+	if on and _hammer == null and _hand_r_hold:
+		_hammer = _make_temp_hammer()
+		_hand_r_hold.add_child(_hammer)
+	if _hammer:
+		_hammer.visible = on
+
+## 임시 망치 그림(나무 자루 + 쇠 머리) — 손에서 위(-y)로 자루가 뻗는다. 손을 앞으로 돌리면 머리가 앞쪽 땅을 친다
+func _make_temp_hammer() -> Node2D:
+	var hammer := Node2D.new()
+	hammer.name = "TempHammer"
+	var handle := Polygon2D.new()
+	handle.color = Color(0.55, 0.35, 0.18)
+	handle.polygon = PackedVector2Array([Vector2(-1.5, 2), Vector2(1.5, 2), Vector2(1.5, -18), Vector2(-1.5, -18)])
+	hammer.add_child(handle)
+	var head := Polygon2D.new()
+	head.color = Color(0.45, 0.47, 0.52)
+	head.polygon = PackedVector2Array([Vector2(-7, -23), Vector2(7, -23), Vector2(7, -16), Vector2(-7, -16)])
+	hammer.add_child(head)
+	return hammer
+
+## 망치질 — 오른손이 hammer_period 박자로 천천히 치켜들었다(hammer_raise_ratio) 빠르게 내리친다.
+## 무릎 꿇기 다음에 불러 그 자세의 오른손만 덮어쓴다. 로컬 좌표라 방향 부호를 안 곱한다
+func _pose_hammer() -> void:
+	if _hand_r == null or not _rest_positions.has(_hand_r):
+		return
+	var p: float = fposmod(_hammer_time, maxf(hammer_period, 0.05)) / maxf(hammer_period, 0.05)
+	var k: float
+	if p < hammer_raise_ratio:
+		k = _ease01(p / hammer_raise_ratio)
+	else:
+		var s: float = (p - hammer_raise_ratio) / maxf(1.0 - hammer_raise_ratio, 0.01)
+		k = 1.0 - s * s
+	var base: Vector2 = _rest_positions[_hand_r] + Vector2(0.0, kneel_depth * _kneel_blend)
+	var pos: Vector2 = base + hammer_strike_offset.lerp(hammer_raise_offset, k)
+	var deg: float = lerpf(hammer_strike_deg, hammer_raise_deg, k)
+	_hand_r.position = _hand_r.position.lerp(pos, _hammer_blend)
+	_hand_r.rotation = lerpf(_hand_r.rotation, deg_to_rad(deg), _hammer_blend)
 
 ## 두 손을 머리 위로 번쩍 드는 자세를 켜고 끈다(BarracksSlamSkill)
 func set_lift_pose(on: bool) -> void:

@@ -1040,10 +1040,20 @@ func _want_skill(skill: Skill) -> bool:
 			return st >= 1 and level and open and d < beam * 0.85
 		"ScreamConeUltimate":
 			return open and d < 300.0 and dy < 40.0 + d * 0.45
-		"TunaThrowSkill":
-			return d > 90.0 and d < 500.0
-		"TunaPlaceSkill":
-			return d > 140.0
+		"CatHouseSkill":
+			# 짓는 2초 동안 서 있으므로 상대가 떨어져 있을 때만
+			return fighter.is_on_floor() and d > 220.0
+		"CatUltimate":
+			# 검은 고양이(똥 유탄)는 사거리 안에서, 흰 고양이(할퀴기)는 붙었을 때, 주황 고양이 옷은 언제든
+			match int(fighter.custom_data.get("cat_kind", 0)):
+				0:
+					return level and d > 80.0 and d < float(skill.get("poop_range"))
+				2:
+					return level and d < 150.0
+			return true
+		"CatSelectSkill":
+			# 고양이 종류별 능력이 아직 없어 고를 이유가 없다(TODO: 능력이 정해지면 상황별로)
+			return false
 		"AoeAttack":
 			var r: float = float(skill.get("radius"))
 			return open and d < r * 0.9 and dy < r
@@ -1073,7 +1083,7 @@ func _want_skill(skill: Skill) -> bool:
 			return level and d > 60.0 and d < float(skill.get("dash_distance")) * 0.9
 		"DropkickSkill":
 			return level and open and fighter.is_on_floor() and d > 80.0 and d < float(skill.get("travel_distance")) * 0.9
-		"WeakenAuraUltimate", "CatHutUltimate", "IljinCrewUltimate", "BarracksUltimate":
+		"WeakenAuraUltimate", "IljinCrewUltimate", "BarracksUltimate":
 			return true
 	# 모르는 스킬(빈 껍데기 포함) — 가까울 때 가끔
 	return d < 250.0
