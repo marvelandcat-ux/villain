@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgjh3mm7rk8ly"
-path="res://.godot/imported/치마.png-de54b3d419cccd6f9cdaa452695c5a29.ctex"
+uid="uid://iuka46o34jqt"
+path="res://.godot/imported/악플러집 벽.png-69b633abe6881153ca60c45342112185.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/고양이 아줌마/치마.png"
-dest_files=["res://.godot/imported/치마.png-de54b3d419cccd6f9cdaa452695c5a29.ctex"]
+source_file="res://sprite/맵/악플러집/악플러집 벽.png"
+dest_files=["res://.godot/imported/악플러집 벽.png-69b633abe6881153ca60c45342112185.ctex"]
 
 [params]
 

@@ -3078,9 +3078,9 @@ func _pose_cast() -> void:
 	if progress < _cast_windup_ratio:
 		# ① 뒤로 당겨 든다 (이 동안 마우스는 아직 손에 쥐어져 있다)
 		var t: float = progress / _cast_windup_ratio
-		var ease: float = t * t * (3.0 - 2.0 * t)
-		pos = rest.lerp(cast_windup_offset, ease)
-		deg = cast_windup_deg * ease
+		var smooth_t: float = t * t * (3.0 - 2.0 * t)
+		pos = rest.lerp(cast_windup_offset, smooth_t)
+		deg = cast_windup_deg * smooth_t
 	else:
 		var t: float = (progress - _cast_windup_ratio) / (1.0 - _cast_windup_ratio)
 		if t < cast_snap_ratio:

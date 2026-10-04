@@ -3,7 +3,7 @@ extends CharacterBody2D
 
 ## 고양이 집에서 나온 고양이 — 종류(`kind`)마다 행동이 다르다. **add_child 전에** `kind`를 넣을 것.
 ## - 검은: 빠름. 상대와 거리를 두고(가까우면 뒤로 물러남) 3초마다 돌진 공격(피해 3)
-## - 주황: 보통. 자기 발판 위를 왔다 갔다 하다가 상대가 닿을 거리면 할퀴기(피해 5)
+## - 주황: 보통. 밟은 바닥 끝에서 끝까지 계속 왕복하다가 상대 몸이 닿으면 바로 할퀴기(피해 5)
 ## - 흰: 느림. 주인(고양이 아주머니)에게 다가가 혀로 핥아 회복(5, 쿨 3초 — 핥기 범위 안일 때만)
 ## 그림은 `CatSprite`(파츠 조립) 자식.
 ##
@@ -44,10 +44,10 @@ const OUTLINE_COLOR := Color(0.1, 0.08, 0.08)
 @export var orange_speed: float = 200.0
 @export var orange_damage: int = 5
 @export var orange_attack_cooldown: float = 1.5
-## 상대가 이 가로·세로(px) 안이면 할퀸다
-@export var orange_attack_range: Vector2 = Vector2(60.0, 50.0)
-## 나온 자리에서 이만큼(px) 넘게 멀어지면 되돌아선다 — 넓은 바닥에선 발판 끝이 없어 끝없이 걸어가 버린다
-@export var orange_patrol_range: float = 150.0
+## 상대가 이 가로·세로(px) 안이면 몸이 닿았다고 보고 바로 할퀸다(발끼리 비교 — 캐릭터·고양이 몸 반지름 20씩 + 앞발)
+@export var orange_touch_range: Vector2 = Vector2(50.0, 50.0)
+## 앞발을 휘두르는 모션 시간(초)
+@export var orange_swipe_time: float = 0.25
 @export_group("흰 고양이 (핥기 회복)")
 @export var white_speed: float = 140.0
 @export var white_heal: int = 5
@@ -66,6 +66,8 @@ const OUTLINE_COLOR := Color(0.1, 0.08, 0.08)
 @export var max_jump_speed: float = 900.0
 ## 한 번 뛰고/내려오고 다음까지 쉬는 시간(초) — 발판 끝에서 콩콩 반복하지 않게
 @export var jump_cooldown: float = 0.4
+## 땅에 이만큼(초) 붙어 있어야 다시 뛴다 — 공중에서 발판 끝을 스치는 순간 또 뛰어 2단 점프처럼 되지 않게
+@export var jump_ground_time: float = 0.1
 ## 상대가 이만큼(px) 넘게 아래에 있으면 밟고 선 원웨이 발판을 잠깐 통과해 내려온다
 @export var drop_trigger_height: float = 40.0
 @export var drop_through_time: float = 0.35
@@ -96,17 +98,18 @@ var _attack_cd: float = 0.0
 var _windup_left: float = 0.0
 var _dash_left: float = 0.0
 var _dash_dir: float = 1.0
-## 주황 고양이 순찰 방향과 공격 뒤 잠깐 멈추는 시간
+## 주황 고양이 순찰 방향과 할퀴기 모션 남은 시간
 var _patrol_dir: float = 1.0
-var _pause_left: float = 0.0
-## 주황 고양이가 나온 자리(순찰의 가운데)와 검은 고양이 잔상 타이머
-var _home_x: float = 0.0
+var _swipe_left: float = 0.0
+## 검은 고양이 잔상 타이머
 var _trail_timer: float = 0.0
 var _hitbox: Hitbox = null
 var _walk_phase: float = 0.0
 var _age: float = 0.0
 var _sprite = null
 var _jump_cd: float = 0.0
+## 땅에 계속 붙어 있은 시간(초) — 떠 있으면 0
+var _ground_time: float = 0.0
 var current_hp: int = 0
 ## Hurtbox 쪽 방어 판정이 읽는다 — 고양이는 막지 않는다
 var is_guarding: bool = false
@@ -143,7 +146,6 @@ func _ready() -> void:
 	current_hp = max_hp
 	_speed = [black_speed, orange_speed, white_speed][kind]
 	_patrol_dir = 1.0 if randf() < 0.5 else -1.0
-	_home_x = global_position.x
 	if kind != Kind.WHITE:
 		_hitbox = Hitbox.new()
 		_hitbox.monitoring = false
@@ -240,9 +242,7 @@ func _die() -> void:
 	queue_free()
 
 func _physics_process(delta: float) -> void:
-	if _age == 0.0:
-		_home_x = global_position.x
-	_age += minf(delta, 0.05)
+	_age +=minf(delta, 0.05)
 	if not is_on_floor():
 		velocity.y += gravity_force * delta
 	if _flash_left > 0.0:
@@ -252,6 +252,7 @@ func _physics_process(delta: float) -> void:
 		_stun_left = maxf(_stun_left - delta, 0.0)
 		velocity.x = move_toward(velocity.x, 0.0, hurt_friction * delta)
 		move_and_slide()
+		_ground_time = 0.0
 		_update_sprite()
 		return
 	_attack_cd = maxf(_attack_cd - delta, 0.0)
@@ -269,7 +270,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.x = move_toward(velocity.x, want_x, walk_accel * delta)
 	_jump_cd = maxf(_jump_cd - delta, 0.0)
-	if is_on_floor():
+	# 점프는 땅에 제대로 서 있을 때 한 번만 — 공중 점프(2단 점프)는 없다
+	if is_on_floor() and velocity.y >= 0.0 and _ground_time >= jump_ground_time:
 		# 주황은 자기 발판을 안 떠나고, 돌진 중엔 안 뛴다
 		var vertical: Fighter = _vertical_target()
 		if vertical and _dash_left <= 0.0:
@@ -278,6 +280,7 @@ func _physics_process(delta: float) -> void:
 		if kind != Kind.ORANGE and want_x != 0.0 and is_on_wall() and velocity.y >= 0.0 and _can_hop_over():
 			velocity.y = -hop_speed
 	move_and_slide()
+	_ground_time = _ground_time + delta if is_on_floor() and velocity.y >= 0.0 else 0.0
 	# 공중에선 다리를 멈춘 채로 둔다. 다리 박자는 실제 속도에 비례 — 천천히 돌아설 땐 다리도 천천히
 	if is_on_floor():
 		_walk_phase = _walk_phase + delta * absf(velocity.x) * 0.07 if absf(velocity.x) > 10.0 else 0.0
@@ -330,37 +333,53 @@ func _tick_black(delta: float) -> float:
 
 ## 주황 고양이 — 자기 발판 위를 왔다 갔다 하다가(끝·벽에서 되돌아옴) 상대가 닿을 거리면 할퀸다
 func _tick_orange(delta: float) -> float:
-	if _pause_left > 0.0:
-		_pause_left -= delta
-		return 0.0
+	if _swipe_left > 0.0:
+		_swipe_left = maxf(_swipe_left - delta, 0.0)
+		if _sprite:
+			_sprite.paw_reach = sin((1.0 - _swipe_left / maxf(orange_swipe_time, 0.01)) * PI)
 	var foe: Fighter = _target()
 	if foe and _attack_cd <= 0.0:
 		var dx: float = foe.global_position.x - global_position.x
 		var dy: float = absf(foe.global_position.y + 30.0 - global_position.y)
-		if absf(dx) <= orange_attack_range.x and dy <= orange_attack_range.y:
+		if absf(dx) <= orange_touch_range.x and dy <= orange_touch_range.y:
+			# 닿은 쪽(뒤에서 닿아도)으로 홱 돌아 할퀸다 — 걷기는 멈추지 않는다
 			if dx != 0.0:
 				_facing = signf(dx)
 			_attack_cd = orange_attack_cooldown
-			_pause_left = 0.3
+			_swipe_left = orange_swipe_time
 			_start_hit(orange_damage, Vector2(_facing * 180.0, -140.0))
 			Timers.after(self, 0.12, func(): _set_hitbox_active(false))
-			return 0.0
-	# 상대가 근처면 걸어가 버리지 말고 공격 거리까지 다가가 노려본다 (쿨이 돌면 바로 할퀸다) —
-	# "노려보는 거리 > 공격 거리"인 채 서 있기만 하면 첫 타 넉백으로 밀려난 상대를 영영 못 때린다
-	if foe:
-		var watch_dx: float = foe.global_position.x - global_position.x
-		var watch_dy: float = absf(foe.global_position.y + 30.0 - global_position.y)
-		if absf(watch_dx) <= orange_attack_range.x * 1.6 and watch_dy <= orange_attack_range.y:
-			if watch_dx != 0.0:
-				_facing = signf(watch_dx)
-			if absf(watch_dx) > orange_attack_range.x * 0.75:
-				return _facing * _speed
-			return 0.0
-	var strayed: bool = absf(global_position.x + _patrol_dir * 10.0 - _home_x) > orange_patrol_range 		and signf(_home_x - global_position.x) != _patrol_dir
-	if is_on_floor() and (strayed or is_on_wall() or not _floor_ahead()):
+			_spawn_claw_marks()
+			return _patrol_dir * _speed
+	# 밟은 바닥 끝(또는 벽)에서 끝까지 왔다 갔다 — 할퀴는 동안엔 돌아본 쪽을 그대로 본다
+	if is_on_floor() and (is_on_wall() or not _floor_ahead()):
 		_patrol_dir = -_patrol_dir
-	_facing = _patrol_dir
+	if _swipe_left <= 0.0:
+		_facing = _patrol_dir
 	return _patrol_dir * _speed
+
+## 주황 고양이 할퀴기 자국 — 앞발 앞에 비스듬한 세 줄을 그었다가 금방 지운다(맵에 붙임 — 고양이 반전에 안 뒤집히게)
+func _spawn_claw_marks() -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var marks := Node2D.new()
+	parent.add_child(marks)
+	marks.global_position = global_position + Vector2(_facing * 34.0, -26.0)
+	marks.scale = Vector2(_facing, 1.0)
+	for i in 3:
+		var line := Line2D.new()
+		line.width = 3.0
+		line.default_color = Color(1.0, 0.95, 0.85)
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		var off: float = (i - 1) * 8.0
+		line.points = PackedVector2Array([Vector2(-8.0 + off, -14.0), Vector2(off, 0.0), Vector2(6.0 + off, 14.0)])
+		marks.add_child(line)
+	marks.modulate = Color(1, 1, 1, 0.95)
+	var tween := marks.create_tween()
+	tween.tween_property(marks, "modulate:a", 0.0, 0.25).set_delay(0.08)
+	tween.tween_callback(marks.queue_free)
 
 ## 검은 고양이 돌진 잔상 — 그림을 통째로 복제해 맵에 남기고 서서히 지운다.
 ## ⚠️ 복제본은 add_child 전에 **스크립트를 뗄 것** — 안 떼면 _ready가 파츠를 또 만들어 두 겹이 된다
