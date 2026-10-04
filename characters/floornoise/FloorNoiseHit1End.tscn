@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://bqc520lcf3rb2"]
+[gd_scene format=3 uid="uid://cdxbxqgph3wh8"]
 
 [ext_resource type="Script" uid="uid://yb1yin5ofp3" path="res://characters/PosePreview.gd" id="0_prev"]
 [ext_resource type="Texture2D" uid="uid://6shjavroe8hu" path="res://sprite/층간소음/층간소음발.png" id="1_foot"]
@@ -8,84 +8,85 @@
 [ext_resource type="Texture2D" uid="uid://3vyv3toxmea7" path="res://sprite/층간소음/층간소음아들몸.png" id="K_BODY"]
 [ext_resource type="Texture2D" uid="uid://breacucrxeqiw" path="res://sprite/층간소음/층간소음아들.png" id="K_HEAD"]
 
-[node name="FloorNoiseDomainJumpLand" type="Node2D"]
+[node name="FloorNoiseHit1End" type="Node2D" unique_id=1639814463]
 scale = Vector2(8, 8)
 script = ExtResource("0_prev")
 
-[node name="FootL" type="Sprite2D" parent="."]
-rotation = 0.1
-position = Vector2(-13.35, 27.99)
+[node name="FootL" type="Sprite2D" parent="." unique_id=889234632]
+position = Vector2(-9.35, 25.99)
 scale = Vector2(0.12, 0.12)
 texture = ExtResource("1_foot")
 
-[node name="FootR" type="Sprite2D" parent="."]
-rotation = -0.1
-position = Vector2(16.35, 28.66)
+[node name="FootR" type="Sprite2D" parent="." unique_id=1810903980]
+position = Vector2(12.35, 26.66)
 scale = Vector2(0.12, 0.12)
 texture = ExtResource("1_foot")
 
-[node name="Body" type="Sprite2D" parent="."]
-position = Vector2(-0.5, 10.75)
+[node name="Body" type="Sprite2D" parent="." unique_id=920581767]
+position = Vector2(1.5, 2.5)
+rotation = 0.07
 scale = Vector2(0.023967315, 0.0315)
 texture = ExtResource("2_body")
 
-[node name="Carry" type="Node2D" parent="."]
+[node name="Carry" type="Node2D" parent="." unique_id=2065142920]
 z_index = 2
-position = Vector2(4.25, -2.0)
+position = Vector2(4.25, -10)
 
-[node name="KidFootL" type="Sprite2D" parent="Carry"]
+[node name="KidFootL" type="Sprite2D" parent="Carry" unique_id=410799828]
 position = Vector2(-53.52686, 40.025154)
 scale = Vector2(0.068440616, 0.06844061)
 texture = ExtResource("1_foot")
 
-[node name="KidFootR" type="Sprite2D" parent="Carry"]
+[node name="KidFootR" type="Sprite2D" parent="Carry" unique_id=1543272798]
 position = Vector2(-43.276867, 39.900154)
 scale = Vector2(0.059777234, 0.059777226)
 texture = ExtResource("1_foot")
 
-[node name="KidBody" type="Sprite2D" parent="Carry"]
+[node name="KidBody" type="Sprite2D" parent="Carry" unique_id=944618821]
 position = Vector2(-48.65187, 29.775156)
 scale = Vector2(0.055793986, 0.05579399)
 texture = ExtResource("K_BODY")
 
-[node name="KidHead" type="Sprite2D" parent="Carry"]
+[node name="KidHead" type="Sprite2D" parent="Carry" unique_id=320108803]
 position = Vector2(-51.27688, 18.150156)
 rotation = -0.116937056
 scale = Vector2(0.02065557, 0.020655569)
 texture = ExtResource("K_HEAD")
 
-[node name="KidHandL" type="Sprite2D" parent="Carry"]
+[node name="KidHandL" type="Sprite2D" parent="Carry" unique_id=374938798]
 position = Vector2(-61.40187, 31.525156)
 scale = Vector2(0.038, 0.038)
 texture = ExtResource("3_hand")
 flip_h = true
 
-[node name="KidHandR" type="Sprite2D" parent="Carry"]
+[node name="KidHandR" type="Sprite2D" parent="Carry" unique_id=1342577382]
 position = Vector2(-36.65187, 31.650156)
 scale = Vector2(0.038, 0.038)
 texture = ExtResource("3_hand")
 
-[node name="HandL" type="Sprite2D" parent="."]
-rotation = -0.2
-position = Vector2(-26.5, 13.4)
+[node name="HandL" type="Sprite2D" parent="." unique_id=488985996]
+position = Vector2(-22, 7.5)
+rotation = 0.08
 scale = Vector2(0.09206897, 0.09206896)
 texture = ExtResource("3_hand")
 flip_h = true
 
-[node name="HandLHold" type="Node2D" parent="."]
-position = Vector2(-22.5, 6.375)
+[node name="HandLHold" type="Node2D" parent="." unique_id=601001718]
+position = Vector2(-22, 7.5)
+rotation = 0.08
 
-[node name="HandR" type="Sprite2D" parent="."]
-rotation = 0.2
+[node name="HandR" type="Sprite2D" parent="." unique_id=104987376]
 z_index = 3
-position = Vector2(24.4, 13.4)
+position = Vector2(38.000004, -3.5)
+rotation = 0.22
 scale = Vector2(0.09206897, 0.09206896)
 texture = ExtResource("3_hand")
 
-[node name="HandRHold" type="Node2D" parent="."]
-position = Vector2(20.375, 6.3750014)
+[node name="HandRHold" type="Node2D" parent="." unique_id=1585678754]
+position = Vector2(38.000004, -3.5)
+rotation = 0.22
 
-[node name="Head" type="Sprite2D" parent="."]
-position = Vector2(-6.75, -16.1)
+[node name="Head" type="Sprite2D" parent="." unique_id=1053510418]
+position = Vector2(-4.5, -24.5)
 scale = Vector2(0.045, 0.045)
 texture = ExtResource("4_head")

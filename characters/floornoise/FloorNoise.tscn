@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://skills/KidRushSkill.gd" id="22_rush"]
 [ext_resource type="PackedScene" path="res://skills/RunningKid.tscn" id="23_kid"]
 [ext_resource type="Script" path="res://skills/FloorDomainUltimate.gd" id="24_domain"]
+[ext_resource type="Script" path="res://skills/KidDropkick.gd" id="25_kick"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -46,8 +47,8 @@ windup = 0.16
 active_duration = 0.4
 cooldown = 0.3
 miss_cooldown = 1.0
-skill_name = "한 손 휘두르기"
-description = "아이를 한쪽 팔로 안은 채 남은 손으로 세 번 휘두른다."
+skill_name = "주먹·주먹·드롭킥"
+description = "오른 주먹, 왼 주먹으로 두 번 때리고 마지막엔 옆에 있던 아이가 날아가 드롭킥을 꽂는다."
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false
@@ -56,6 +57,9 @@ script = ExtResource("4")
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="BasicAttack/Hitbox"]
 shape = SubResource("RectangleShape2D_hitbox")
+
+[node name="KidDropkick" type="Node" parent="BasicAttack"]
+script = ExtResource("25_kick")
 
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("20_scream")

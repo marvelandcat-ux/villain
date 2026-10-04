@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bm30q41jf7226"
-path="res://.godot/imported/열린문.png-9d489bae090cca526f4811157d28e87c.ctex"
+uid="uid://bikiimhj560pb"
+path="res://.godot/imported/열린문.png-ef35789fa7fabadc8541e2fa5b9194f4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소음/열린문.png"
-dest_files=["res://.godot/imported/열린문.png-9d489bae090cca526f4811157d28e87c.ctex"]
+source_file="res://sprite/층간소음/궁극기연출/열린문.png"
+dest_files=["res://.godot/imported/열린문.png-ef35789fa7fabadc8541e2fa5b9194f4.ctex"]
 
 [params]
 

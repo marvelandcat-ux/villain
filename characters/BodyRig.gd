@@ -368,6 +368,26 @@ var held_item_l_thrown: bool = false
 ## 그 표정일 때 머리 배율. (0,0)이면 평소 머리 배율을 그대로 쓴다
 @export var hug_head_scale: Vector2 = Vector2.ZERO
 
+@export_subgroup("아이 드롭킥")
+## **평타 마무리에서 아이가 앞으로 날아가 발길질**하고 **왔던 길 그대로** 돌아온다.
+## 나갔다 들어오는 한 번이 이 시간(초) 안에 다 끝난다
+@export var kid_kick_time: float = 0.4
+## 앞으로 나가는 거리(px)와 뜨는 높이(px), 날아가는 동안 **눕는 각도**(도).
+## 높이는 캐릭터 허리쯤까지 올라가야 "아래를 내려찍는" 게 아니라 **정면으로 날아가는** 드롭킥이 된다.
+## 각도도 −70도쯤 줘야 몸이 눕고 발이 앞으로 나간다(2026-10-04 사용자 요청)
+@export var kid_kick_reach: float = 62.0
+@export var kid_kick_lift: float = 34.0
+@export var kid_kick_deg: float = -72.0
+## **얼마나 빨리 다 올라가 눕는지**(작을수록 빠르다). 1이면 앞으로 나가는 것과 같은 박자로 천천히 올라가
+## 포물선처럼 보이고, 0.3쯤이면 **먼저 솟아 눕고 그 높이로 쭉 날아간다**
+@export_range(0.1, 1.0, 0.05) var kid_kick_rise: float = 0.3
+## **아이가 도는 축**으로 삼을 조각 이름. 비워 두면 `Carry` 원점을 축으로 도는데,
+## 그 원점은 아이 몸에서 멀찍이 떨어져 있어서 돌리면 아이가 큰 호를 그리며 휙 휘둘린다(2026-10-04 지적)
+@export var kid_kick_pivot: String = "KidBody"
+## 날아가는 동안 두 발이 앞으로 뻗는 양(px)과 각도(도)
+@export var kid_kick_legs: float = 11.0
+@export var kid_kick_leg_deg: float = -45.0
+
 @export_subgroup("영역 점프 자세")
 ## **궁극기(영역전개) 안에서 뛸 때**만 쓰는 세 장 — 준비(굽힘) → 최고점 → 착지.
 ## 엄마와 아이를 **한 씬에서 같이** 잡는다(아이는 Carry 밑 조각들).
@@ -1330,6 +1350,8 @@ var _hug_face_on: bool = false
 ## 영역전개 점프 자세를 쓰는 중인지(궁극기가 켜고 끈다)와 착지 자세가 남은 시간
 var _domain_jump: bool = false
 var _domain_land_left: float = 0.0
+## 아이 드롭킥이 남은 시간(0이면 안 하는 중)
+var _kid_kick_left: float = 0.0
 ## 아이 조각들의 제자리 {이름: 위치} — 걷기 흔들림을 여기에 더한다
 var _kid_rest: Dictionary = {}
 ## 아이 조각들의 제자리 각도 {이름: 라디안}
@@ -1630,6 +1652,8 @@ func _process(delta: float) -> void:
 	_update_hug(delta)
 	# 영역전개 점프 — 공중에 있는 동안은 착지 자세 시간을 가득 채워 둔다
 	_update_domain_jump(delta)
+	# 아이 드롭킥 — 나갔다 들어오는 시간
+	_kid_kick_left = maxf(_kid_kick_left - delta, 0.0)
 	_apply_pose(speed_ratio)
 	_update_smear(delta)
 	_update_fan_ghosts(delta)
@@ -4019,10 +4043,14 @@ func _is_turn_texture(tex: Texture2D) -> bool:
 ## dir: 1이면 바라보는 쪽, -1이면 그 반대쪽(그림을 한 번 더 뒤집는다 = 뒤를 본다).
 ## 머리 공 중심이 평소 옆모습과 같은 자리, 지름이 같은 크기가 되도록 배율·위치를 계산한다.
 ## 걷기 들썩임·움찔 같은 앞선 자세 오프셋은 그대로 두고 제자리 차이만 더한다
-func _set_head_frame(frame: int, dir: float) -> void:
+## body_dir을 따로 주면 **몸통만 다른 쪽**을 보게 할 수 있다 —
+## 뒤돌아보기는 "몸은 그대로, 머리만 반대쪽"이라 몸통까지 뒤집으면 안 된다.
+## 평소 몸통이 정면인 캐릭터는 뒤집혀도 티가 안 났지만, 층간소음 빌런처럼 **측면 몸통**이면
+## 뒤돌아볼 때마다 몸이 홱 뒤집혀 보인다(2026-10-04 지적)
+func _set_head_frame(frame: int, dir: float, body_dir: float = NAN) -> void:
 	var tex: Texture2D = _turn_rest_texture() if frame == 0 else _turn_textures()[frame - 1]
 	_set_head_image(tex, _turn_anchors()[frame], _turn_faces_left()[frame], dir)
-	_set_body_frame(frame, dir)
+	_set_body_frame(frame, dir if is_nan(body_dir) else body_dir)
 
 ## 머리 단계(frame, 0 = 옆 ~ 머리 그림 수 = 정면)에 맞춰 몸통 그림을 바꿔 끼운다.
 ## 머리가 옆(0)이거나 정면(마지막)이면 원래 몸통(정면), 그 사이 단계에만 body_turn_textures를 나눠 끼운다 —
@@ -4229,7 +4257,8 @@ func _pose_lookback() -> void:
 		var front: int = _turn_textures().size()
 		var steps: int = front * 2 + 1
 		var step: int = clampi(int(_lookback_reach() * steps), 0, steps - 1)
-		_set_head_frame(front - absi(step - front), 1.0 if step <= front else -1.0)
+		# 몸통은 1.0으로 고정 — 머리만 넘어가고 몸은 보던 쪽 그대로 있는다
+		_set_head_frame(front - absi(step - front), 1.0 if step <= front else -1.0, 1.0)
 		return
 	_head.scale.x = _head.scale.y * (1.0 - 2.0 * _lookback_reach())
 
@@ -4352,6 +4381,8 @@ func _pose_carry() -> void:
 	_pose_kid_walk()
 	# 막는 중이면 아이도 가드 자세 씬에 잡아 둔 자리로 간다
 	_pose_kid_guard()
+	# 평타 마무리 — 아이가 앞으로 날아가 발길질한다
+	_pose_kid_kick()
 	# 뛰어올라 안겨 있는 동안은 걷기 자세 위에 안긴 자세를 덮는다
 	_pose_hug()
 
@@ -4417,6 +4448,40 @@ func _pose_domain_jump() -> void:
 			_apply_pose_scene(read_pose(domain_jump_peak_pose), 1.0)
 		if domain_jump_land_pose != null:
 			_apply_pose_scene(read_pose(domain_jump_land_pose), t, false)
+
+## **아이 드롭킥을 시작한다.** 평타 마무리 타(`KidDropkick` 노드)가 불러 준다.
+## 0 이하를 주면 리그에 적어 둔 `kid_kick_time`을 쓴다
+func play_kid_dropkick(duration: float = -1.0) -> void:
+	_kid_kick_left = duration if duration > 0.0 else kid_kick_time
+
+## 아이가 앞으로 쭉 날아갔다가 **왔던 길 그대로** 돌아온다 — 나가는 양을 sin으로 재서
+## 0 → 1 → 0으로 움직이기 때문에 가는 궤도와 오는 궤도가 같다(2026-10-04 사용자 요청)
+func _pose_kid_kick() -> void:
+	if _carry == null:
+		return
+	if _kid_kick_left <= 0.0:
+		if not is_zero_approx(_carry.rotation):
+			_carry.rotation = 0.0
+		return
+	var k: float = clampf(1.0 - _kid_kick_left / maxf(kid_kick_time, 0.01), 0.0, 1.0)
+	# 앞으로 나가는 양 — 0 → 1 → 0이라 가는 길과 오는 길이 같다
+	var out: float = sin(k * PI)
+	# 높이와 눕는 각도는 **먼저** 다 차오른다 — 그래야 솟아서 눕고 그 높이로 쭉 날아간다
+	var rise: float = pow(out, clampf(kid_kick_rise, 0.1, 1.0))
+	var spin: float = deg_to_rad(kid_kick_deg) * rise
+	_carry.position += Vector2(kid_kick_reach * out, -kid_kick_lift * rise)
+	_carry.rotation = spin
+	# **아이 몸통을 축으로 돌린다** — 돌면서 생긴 어긋남만큼 되밀어 준다.
+	# 안 그러면 멀리 있는 Carry 원점을 축으로 돌아서 아이가 호를 그리며 끌려간다
+	if _kid_rest.has(kid_kick_pivot):
+		var pivot: Vector2 = _kid_rest[kid_kick_pivot] as Vector2
+		_carry.position += pivot - pivot.rotated(spin)
+	# 두 발을 앞으로 쭉 뻗는다 — 뒷발이 조금 더 나간다
+	var leg: float = deg_to_rad(kid_kick_leg_deg) * rise
+	_set_kid("KidFootL", Vector2(kid_kick_legs * rise, -kid_kick_legs * 0.4 * rise), leg)
+	_set_kid("KidFootR", Vector2(kid_kick_legs * 1.3 * rise, -kid_kick_legs * 0.2 * rise), leg)
+	_set_kid("KidHandL", Vector2(-kid_kick_legs * 0.6 * rise, kid_kick_legs * 0.3 * rise))
+	_set_kid("KidHandR", Vector2(-kid_kick_legs * 0.4 * rise, kid_kick_legs * 0.3 * rise))
 
 ## **아이를 품으로 불러올리거나 내려놓는다.** 1번 스킬(악쓰기)이 켜고 끈다.
 ## 자세 씬(`hug_pose`)이 비어 있으면 아무 일도 안 한다 — 아이는 계속 옆에서 걷는다

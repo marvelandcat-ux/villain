@@ -25,6 +25,15 @@
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseDomainJumpReady.tscn" id="21_djr"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseDomainJumpPeak.tscn" id="22_djp"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseDomainJumpLand.tscn" id="23_djl"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit1Ready.tscn" id="31r"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit1Mid.tscn" id="31m"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit1End.tscn" id="31e"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit2Ready.tscn" id="32r"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit2Mid.tscn" id="32m"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit2End.tscn" id="32e"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3Ready.tscn" id="33r"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3Mid.tscn" id="33m"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3End.tscn" id="33e"]
 
 [node name="BodyRig" unique_id=1130472801 instance=ExtResource("1_rig")]
 rest_pose = ExtResource("6_pose")
@@ -34,6 +43,7 @@ kid_cry_texture = ExtResource("12_cry")
 clap_open_pose = ExtResource("9_clapopen")
 clap_close_pose = ExtResource("10_clapclose")
 carrying = true
+carry_follows_body = false
 hug_pose = ExtResource("13_hug")
 hug_head_texture = ExtResource("14_coo")
 domain_jump_ready_pose = ExtResource("21_djr")
@@ -41,12 +51,21 @@ domain_jump_peak_pose = ExtResource("22_djp")
 domain_jump_land_pose = ExtResource("23_djl")
 head_turn_textures = Array[Texture2D]([ExtResource("15_h45"), ExtResource("16_h34"), ExtResource("17_hfront")])
 head_turn_anchors = Array[Vector3]([Vector3(730, 642, 1140), Vector3(493, 468, 778), Vector3(525, 470, 777), Vector3(691, 671, 1190)])
-head_turn_faces_left = Array[bool]([false, true, true, false])
+head_turn_faces_left = Array[bool]([false, false, false, false])
 head_turn_on_face = true
 body_turn_textures = Array[Texture2D]([ExtResource("18_b45"), ExtResource("19_b34"), ExtResource("20_bfront")])
-body_turn_faces_left = Array[bool]([true, true, false])
+body_turn_faces_left = Array[bool]([false, false, false])
 body_turn_full = true
 body_turn_match_height = true
+hit1_ready_pose = ExtResource("31r")
+hit1_mid_pose = ExtResource("31m")
+hit1_end_pose = ExtResource("31e")
+hit2_ready_pose = ExtResource("32r")
+hit2_mid_pose = ExtResource("32m")
+hit2_end_pose = ExtResource("32e")
+hit3_ready_pose = ExtResource("33r")
+hit3_mid_pose = ExtResource("33m")
+hit3_end_pose = ExtResource("33e")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 position = Vector2(-9.35, 25.99)

@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cl78nqp10gv0c"]
+[gd_scene format=3 uid="uid://bv8abwwcrtv6v"]
 
 [ext_resource type="Script" uid="uid://yb1yin5ofp3" path="res://characters/PosePreview.gd" id="0_prev"]
 [ext_resource type="Texture2D" uid="uid://6shjavroe8hu" path="res://sprite/층간소음/층간소음발.png" id="1_foot"]

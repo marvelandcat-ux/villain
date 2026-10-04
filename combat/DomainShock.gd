@@ -12,7 +12,8 @@ extends Node2D
 ## 걷기 충격파는 `width_ratio`로 **가로만 눌러** 좁은 물결이 된다 — 각도를 줄이는 것과 달리
 ## 호의 결은 그대로 남아서 같은 기술로 보인다.
 ##
-## 판정은 **첫 물결이 아래층에 닿는 순간 한 번**만 들어간다
+## 판정은 **발을 디딘 직후**(`hit_delay`) 한 번 들어간다. 물결이 다 퍼지기를 기다리면
+## 그 사이 엄마가 걸어가 버려서 좁은 걷기 충격파는 영영 안 맞는다(2026-10-04 지적)
 
 ## 아래로 퍼져 내려가는 거리(px) — 궁극기가 두 층 간격을 재서 넣어 준다
 @export var depth: float = 230.0
@@ -20,11 +21,11 @@ extends Node2D
 ## **보이는 폭이 곧 맞는 폭이다** — 맞는 반폭은 `depth * sin(이 각도)`로 계산한다
 @export var spread_deg: float = 48.0
 ## 물결 개수와, 한 겹이 끝까지 퍼지는 시간(초), 겹 사이 출발 간격(초)
-@export var arc_count: int = 4
-@export var arc_time: float = 0.26
+@export var arc_count: int = 2
+@export var arc_time: float = 0.3
 @export var arc_gap: float = 0.055
 ## 선 굵기(px) — 퍼질수록 조금 얇아진다
-@export var line_width: float = 3.2
+@export var line_width: float = 5.0
 ## 가장 안쪽 물결이 시작하는 반지름(px). 0이면 발 바로 밑에서 점처럼 시작한다
 @export var inner_radius: float = 10.0
 @export var color: Color = Color(1.0, 1.0, 1.0, 0.92)
@@ -38,6 +39,11 @@ var knockback: Vector2 = Vector2.ZERO
 var caster: Fighter = null
 ## 이 높이보다 **아래**에 있는 상대만 맞는다(같은 층에 있는 사람은 안 맞게)
 var hit_below: float = 80.0
+## 발을 디디고 **몇 초 뒤**에 피해가 들어가는지. 0에 가까울수록 쿵 하자마자 깎인다
+var hit_delay: float = 0.06
+## 맞는 쪽 **몸 반폭(px)** — 상대를 점이 아니라 이만큼 두꺼운 몸으로 친다.
+## 이게 없으면 좁은 걷기 충격파는 한가운데를 정확히 밟아야만 맞는다
+var hit_radius: float = 22.0
 
 var _time: float = 0.0
 var _life: float = 0.0
@@ -53,27 +59,38 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	queue_redraw()
-	if not _hit and _time >= arc_time:
+	if not _hit and _time >= hit_delay:
 		_hit = true
 		_strike()
 	if _time >= _life:
 		queue_free()
 
-## 맞는 반폭 — **보이는 물결이 아래층에 닿을 때의 폭** 그대로다
+## 맞는 반폭 — **물결이 다 퍼졌을 때의 가로 폭** 그대로다
 func hit_half_width() -> float:
 	return depth * sin(deg_to_rad(clampf(spread_deg, 1.0, 89.0))) * maxf(width_ratio, 0.05)
 
-## 첫 물결이 아래층에 닿은 순간 한 번 때린다 — 아래층에 있고 폭 안에 든 상대만
+## 맨 앞 물결이 지금 어디까지 퍼졌는지(반지름) — 그림용
+func _front_radius() -> float:
+	var k: float = clampf(_time / maxf(arc_time, 0.01), 0.0, 1.0)
+	return inner_radius + (depth - inner_radius) * (1.0 - pow(1.0 - k, 2.0))
+
+## **발을 디딘 직후** 아래층을 때린다.
+##
+## 가로는 "다 퍼졌을 때의 폭 + 상대 몸 반폭" 안, 세로는 아래층 쪽이면 맞는다.
+## 물결이 그 자리까지 실제로 내려가기를 기다리지 않는다 — 기다리는 동안 엄마가 걸어가
+## 원점이 뒤에 남으면 좁은 걷기 충격파는 영영 못 맞힌다
 func _strike() -> void:
 	if damage <= 0:
 		return
-	var half: float = hit_half_width()
+	var half: float = hit_half_width() + hit_radius
+	var reach: float = depth + hit_radius + 60.0
 	for other in get_tree().get_nodes_in_group("fighters"):
 		if other == caster or not (other is Fighter) or not is_instance_valid(other):
 			continue
 		var target: Fighter = other
-		if target.global_position.y < global_position.y + hit_below:
-			continue   # 같은 층(또는 위)에 있다
+		var dy: float = target.global_position.y - global_position.y
+		if dy < hit_below or dy > reach:
+			continue   # 같은 층(또는 위)이거나, 닿지 않을 만큼 멀리 아래다
 		if absf(target.global_position.x - global_position.x) > half:
 			continue
 		# pop_override 0 — 띄우면 다음 충격파가 전부 빗나가서 "쿵쿵쿵 → 딜딜딜"이 끊긴다

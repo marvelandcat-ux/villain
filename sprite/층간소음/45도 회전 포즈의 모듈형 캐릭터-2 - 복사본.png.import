@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvpnrklv4mf78"
-path="res://.godot/imported/닫힌문.png-067fb3e23f7417d4fc466f6503cf5473.ctex"
+uid="uid://c7cvrne502aag"
+path="res://.godot/imported/45도 회전 포즈의 모듈형 캐릭터-2 - 복사본.png-56874462eb80ff87deb0892cdbcbb273.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/층간소음/닫힌문.png"
-dest_files=["res://.godot/imported/닫힌문.png-067fb3e23f7417d4fc466f6503cf5473.ctex"]
+source_file="res://sprite/층간소음/45도 회전 포즈의 모듈형 캐릭터-2 - 복사본.png"
+dest_files=["res://.godot/imported/45도 회전 포즈의 모듈형 캐릭터-2 - 복사본.png-56874462eb80ff87deb0892cdbcbb273.ctex"]
 
 [params]
 

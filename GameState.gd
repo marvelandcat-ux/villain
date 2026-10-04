@@ -59,7 +59,7 @@ const PORTRAITS := {
 	"금쪽이": "res://sprite/축법소년/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
-	"층간소음 빌런": "res://sprite/층간소음/초록 귀걸이의 갈색 머리 옆모습.png",
+	"층간소음 빌런": "res://sprite/층간소음/층간소음정면.png",
 	"지하철 아저씨": "res://sprite/지하철빌/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/캣/고양이아줌마정면.png",
 	"일진": "res://sprite/일진/정면일진.png",

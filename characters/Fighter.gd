@@ -1348,6 +1348,11 @@ func use_ultimate() -> void:
 		_play_ultimate_cutin()
 
 func _play_ultimate_cutin() -> void:
+	# **자기 연출을 따로 가진 궁은 컷인을 건너뛴다**(층간소음 영역전개 — 초인종·문 쾅 연출이 곧 컷인이다).
+	# 그런 궁에 기본 컷인 상자까지 뜨면 연출이 두 번 나오는 꼴이 된다(2026-10-04)
+	if skill_ultimate and "skip_cutin" in skill_ultimate and skill_ultimate.skip_cutin:
+		skill_ultimate.use(self)
+		return
 	var cutin: Node = get_tree().get_first_node_in_group("ultimate_cutin")
 	if cutin and cutin.has_method("play"):
 		cutin.play(self)
