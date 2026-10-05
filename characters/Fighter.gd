@@ -52,10 +52,10 @@ const DEFAULT_DASH_DURATION: float = 0.04
 const DEFAULT_DASH_COOLDOWN: float = 2.5
 ## 대시 중 잔상을 남기는 간격(초). 대시가 0.04초뿐이라 매 물리 프레임 남긴다(0.04면 시작 잔상 하나만 나왔다)
 const DASH_TRAIL_INTERVAL: float = 0.015
-## 대시할 때 출발점부터 멈춘 자리까지 남는 하얀 스피드 라인(combat/SpeedLines.gd, 2026-10-05 사용자 요청).
-## 이 시간 동안 줄이 몸을 따라 늘어나고(대시 뒤 미끄러지는 것까지), 그 뒤 꼬리부터 지워진다
-const DASH_SPEED_LINE_TIME: float = 0.1
-const SPEED_LINES_SCRIPT := preload("res://combat/SpeedLines.gd")
+## 대시할 때 몸 뒤로 남는 하얀 스피드 라인 — 지나간 길을 따라 휘는 혜성 꼬리(combat/DashTrailLines.gd, 2026-10-06 사용자 요청).
+## 대시(약 0.1초) + 그 뒤 0.5초 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다
+const DASH_SPEED_LINE_TIME: float = 0.6
+const DASH_TRAIL_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
 ## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
 const AIR_TRAIL_INTERVAL: float = 0.04
@@ -1161,14 +1161,14 @@ func dash(direction: float) -> bool:
 func _spawn_dash_afterimage() -> void:
 	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
 
-## 대시 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집히고 몸을 따라 움직인다)
+## 대시 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집힌다). 줄은 지나간 자리를 맵 좌표로 기록해서 긋는다
 func _spawn_dash_speed_lines() -> void:
 	var parent: Node = get_parent()
 	if parent == null:
 		return
-	var lines = SPEED_LINES_SCRIPT.new()
+	var lines = DASH_TRAIL_LINES_SCRIPT.new()
 	parent.add_child(lines)
-	lines.setup(self, _dash_dir, DASH_SPEED_LINE_TIME)
+	lines.setup(self, DASH_SPEED_LINE_TIME)
 
 ## duration초 동안 날아가는 몸 뒤로 잔상을 남긴다 — 그네에 튕길 때(Swing)·스프링 시소로 높이 튈 때(SpringJumpPad) 맵이 부른다.
 ## 이미 남기는 중이면 남은 시간과 비교해 더 긴 쪽을 쓴다

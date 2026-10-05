@@ -4,6 +4,7 @@ extends Node2D
 ## 대시·자전거 돌진의 하얀 스피드 라인 (순수 장식, 판정 없음). 그림 없이 `_draw()`로 그린다.
 ## 줄은 **맵에 고정** — 출발한 자리에서 시작해 시전자가 간 데까지 늘어나고, 시전자가 멈추면 그 자리에 남는다.
 ## 앞쪽(시전자 쪽) 끝이 진하고 뒤쪽 꼬리로 갈수록 투명하며, 끝나면 꼬리 쪽부터 천천히 지워진다(2026-10-05 사용자 요청)
+## 앞쪽 끝도 몸 직전에 짧게 투명해진다 — 몸 앞에서 뚝 끊겨 보이지 않게(2026-10-06 사용자 요청)
 
 ## 줄 하나 — x는 이 노드(출발점) 기준, 진행 방향 쪽이 +
 class Line:
@@ -18,6 +19,8 @@ class Line:
 @export var line_color: Color = Color(1.0, 1.0, 1.0, 0.6)
 ## 줄이 생기는 높이 범위 (몸 기준, y는 음수가 위쪽)
 @export var spread_y: Vector2 = Vector2(-40.0, 24.0)
+## 앞쪽 끝이 투명해지는 길이(px) — 줄이 짧으면 줄 길이의 30%까지만
+@export var head_soft: float = 20.0
 ## 끝난 뒤 꼬리부터 다 지워지기까지 걸리는 시간(초)
 @export var fade_time: float = 0.45
 
@@ -77,5 +80,7 @@ func _draw() -> void:
 		head_col.a *= 1.0 - _fade * _fade   # 앞쪽 끝은 마지막에 가서야 옅어진다
 		var tail_col: Color = head_col
 		tail_col.a = 0.0
-		draw_polyline_colors(PackedVector2Array([Vector2(tail * _dir, l.y), Vector2(head * _dir, l.y)]),
-			PackedColorArray([tail_col, head_col]), l.width)
+		# 투명(꼬리) → 진함 → 투명(앞쪽 끝): 가장 진한 점은 앞쪽 끝에서 조금 뒤
+		var peak: float = head - minf(head_soft, (head - tail) * 0.3)
+		draw_polyline_colors(PackedVector2Array([Vector2(tail * _dir, l.y), Vector2(peak * _dir, l.y),
+			Vector2(head * _dir, l.y)]), PackedColorArray([tail_col, head_col, tail_col]), l.width)

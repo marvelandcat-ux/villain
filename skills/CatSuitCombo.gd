@@ -16,10 +16,9 @@ extends Node
 @export var throw_recover: float = 0.2
 ## 잡힌 상대 원점이 두 손에서 떨어진 거리(px) — 손은 머리를 쥐고 몸은 그 밑에 매달린다
 @export var head_drop: float = 30.0
-## 꽂을 때 상대에게 주는 속도 — x는 등 뒤 쪽, y는 아래(바닥에 꽂힘)
-@export var slam_velocity: Vector2 = Vector2(90.0, 600.0)
-## 꽂힌 뒤 못 움직이는 시간(초)
-@export var slam_stun: float = 0.6
+## 꽂은 뒤 튕겨 나가는 세기 — 평타(부모 콤보)의 3타 날아가기 값에 곱하는 배수(1 = 보통 3타와 같음)
+@export var slam_launch_speed_mult: float = 1.0
+@export var slam_launch_stun_mult: float = 1.0
 ## 꽂을 때 화면 흔들림
 @export var slam_shake: float = 0.35
 ## 잡은 순간 슬로 모션 — 게임 속도 배수와 길이(실제 초)
@@ -156,16 +155,30 @@ func _slam() -> void:
 	_release()
 	if not is_instance_valid(target):
 		return
-	# 넉백을 줘야 피격 반응·콤보 수가 들어간다. 속도는 아래에서 덮어쓴다(take_damage는 넉백을 더하므로)
-	target.take_damage(_pending_damage, Vector2(-_dir * slam_velocity.x, slam_velocity.y))
+	# 넉백을 줘야 피격 반응·콤보 수가 들어간다. 속도는 아래 launch_finisher가 덮어쓴다
+	target.take_damage(_pending_damage, Vector2(-_dir, -1.0))
 	var hitbox: Hitbox = _combo_hitbox()
 	if hitbox:
 		hitbox._spawn_damage_number(target.global_position, _pending_damage, target.get_combo_count())
-	target.velocity = Vector2(-_dir * slam_velocity.x, slam_velocity.y)
-	target.apply_hitstun(slam_stun)
+	# 바닥에 꽂힌 반동으로 **등 뒤 쪽으로 튕겨 날아가며 기절** — 보통 3타 날아가기와 같은 값(배수만 곱함)
+	var combo: Node = get_parent()
+	target.launch_finisher(-_dir,
+		_combo_value(combo, "finisher_launch_speed", 535.0) * slam_launch_speed_mult,
+		_combo_value(combo, "finisher_launch_pop", 220.0),
+		_combo_value(combo, "finisher_launch_stun", 0.4) * slam_launch_stun_mult,
+		_combo_value(combo, "finisher_tumble_turns", 1.0),
+		_combo_value(combo, "finisher_max_scale", 2.0))
+	if combo and combo.has_method("_spawn_launch_smoke") and bool(_combo_value(combo, "launch_smoke", 1.0)):
+		combo._spawn_launch_smoke(target, maxf(_combo_value(combo, "finisher_launch_stun", 0.4), 0.45))
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("add_trauma"):
 		cam.add_trauma(slam_shake)
+
+## 부모 콤보의 값(없으면 기본값)
+func _combo_value(combo: Node, key: String, fallback: float) -> float:
+	if combo and key in combo:
+		return float(combo.get(key))
+	return fallback
 
 ## 잡은 상대를 놓고 이동 가로채기를 푼다(두 번 불려도 된다)
 func _release() -> void:

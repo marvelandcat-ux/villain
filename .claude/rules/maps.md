@@ -29,7 +29,7 @@ paths:
 - 조명 `CanvasModulate` + 형광등. 빛나는 물체는 unshaded. **가산 색은 CanvasModulate가 곱해지므로 조명을 바꾸면 다시 잡을 것**
 - 먼 층 `DecoBackground`(CanvasGroup + `far_blur`), 앞 기둥 `ForegroundPillars.gd`. 역 이름판을 옮기면 `SignBand`·`SignBandOutline`도
 
-## 악플러의 집 `maps/TrashRoom.tscn` — 암전 + (예정) 엄마 등짝
+## 악플러의 집 `maps/TrashRoom.tscn` — 암전 + 엄마 등짝
 
 - 사용자가 에디터에서 배치·크기를 직접 잡음(2026-10-05). 땅 y=280, 벽 안쪽 -614 ~ 1194(**좌우 비대칭**, 두께 60). 발판 윗면: 왼쪽 -66(-614~-234)·가운데 12(-127~314)·오른쪽 -10(614~1194), **모두 원웨이**
 - ⚠️ **StaticBody2D(발판)에 scale 걸지 말 것** — 그림 scale·판정 size를 따로 맞춤. 그림을 키우면 판정도 다시
@@ -39,8 +39,10 @@ paths:
 - 이 맵 카메라엔 `limit_top`/`limit_bottom`을 쓰지 말 것 — 위아래 한계가 겹치면 한쪽이 이겨서 가운데 정렬이 깨진다
 - 스폰 -397 / 1030(벽 사이 비율 0.12 / 0.91)
 - 암전 `Blackout.gd`: 어두운 동안 `cooldown_pies` 그룹 호출로 방어·대시·빨간 X(패링) 숨김, 금색(궁 사용 중)은 유지. `MonitorLight`는 사용자가 꺼 둠(visible=false)
-- 문 `DoorLeft`/`DoorRight` = 엄마 기믹 자리. TODO: 엄마가 문 열고 나와 근처 플레이어 등짝 때리기
+- 엄마 기믹 `MomDoorGimmick`(문 `DoorLeft`/`DoorRight`): 주기마다 랜덤 문을 열고(경첩 쪽 고정 + 가로로 좁힘, 뒤에 어두운 문틈 Polygon2D) `AkpeulleoMom`("악플러집 엄마")을 **자기 자식으로** 내보냄. 카운트다운·라운드 끝엔 안 셈. 등장 주기 `first_delay`/`interval`은 TODO 임시값
+- `AkpeulleoMom`: **Fighter 아님**(IljinCrewMember와 같은 이유), Hurtbox 없음 = 안 맞음, 그림은 임시로 `CatMomRig`. "안 자고 뭐하니!" → 가까운 플레이어 추격(CatMomStats 이동속도 x0.8, **1단 점프만** — 발판 길찾기는 AIController 방식을 1단 기준으로 옮김) → 사거리면 3타처럼(0.223초 뒤) `take_map_damage(20)` + `launch_finisher`(평타 3타 기본값) → 16초 뒤 **다른 문**으로. 1단으로 못 닿는 문 발판이면 문 아래서 포물선 한 번에 뛰어오름(`_leap_to`), 10초 안에 못 가면 그 자리에서 사라짐
 - 장식은 전부 `Deco*`(미리보기 크기 기준 제외)
+- ⚠️ **맵 그림·발판은 전부 `z_index = -10`** — 대시 잔상(z -2)·스피드라인·먼지(z -1)가 그 앞에 그려져야 한다. z 0으로 두면 이펙트가 배경 뒤로 숨는다. **새로 넣는 맵 노드도 -10**
 
 ## 헬스장 `maps/Gym.tscn`
 
