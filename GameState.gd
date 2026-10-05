@@ -183,6 +183,12 @@ var clash_minigame_enabled: bool = true
 var guard_enabled: bool = true
 ## 꺼두면 방향키 두 번을 눌러도 대시(Fighter.can_dash())가 아예 안 나간다(RoomSettings에서 설정)
 var dash_enabled: bool = true
+## 꺼두면 **궁극기 컷인 연출**을 건너뛰고 바로 궁이 나간다(RoomSettings에서 설정, 2026-10-05).
+## 자기 연출을 가진 궁(층간소음 영역전개)은 이 값과 상관없이 제 연출을 그대로 보여준다
+var ultimate_cutin_enabled: bool = true
+## 꺼두면 **라운드 승패 띠**(평행사변형 배너)를 건너뛴다(RoomSettings에서 설정, 2026-10-05).
+## 최종 결과 화면은 그대로 뜬다 — 그건 연출이 아니라 결과 보고다
+var result_cutscene_enabled: bool = true
 ## 켜면 대전 모드(pvp)의 P2를 컴퓨터(규칙 기반 AIController)가 조종한다(RoomSettings "상대" 줄, 2026-09-27).
 ## 스토리 모드는 이 값과 상관없이 항상 P2가 AI(ClaudeAIController)다
 var vs_ai: bool = false

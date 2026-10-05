@@ -102,7 +102,8 @@ func _scatter(items: Array[GymMachine]) -> void:
 		var y: float = level_y[level] if level < level_y.size() else 280.0
 		for row in list:
 			var machine: GymMachine = row[1]
-			machine.position = Vector2(row[0], y)
+			# 기구마다 바닥보다 더 내려놓을 수 있다(런닝머신은 벨트가 바닥 높이에 와야 한다)
+			machine.position = Vector2(row[0], y + machine.ground_sink)
 			if random_flip:
 				machine.flip = rng.randf() < 0.5
 			if level == 0:

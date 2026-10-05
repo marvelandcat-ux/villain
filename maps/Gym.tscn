@@ -6,15 +6,16 @@
 [ext_resource type="Script" path="res://maps/GymLayout.gd" id="5_layout"]
 [ext_resource type="Script" path="res://maps/GymMachine.gd" id="6_machine"]
 [ext_resource type="PackedScene" path="res://skills/WorkoutSkill.tscn" id="7_workout"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="8_treadmill_tex"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1248, 40)
+size = Vector2(2496, 40)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 1600)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor2f"]
-size = Vector2(640, 22)
+size = Vector2(1280, 22)
 
 [node name="Gym" type="Node2D"]
 script = ExtResource("1")
@@ -33,10 +34,10 @@ position = Vector2(0, 100)
 
 [node name="Slab" type="Polygon2D" parent="Floor2F"]
 color = Color(0.2196, 0.2235, 0.2588, 1)
-polygon = PackedVector2Array(-320, 0, 320, 0, 320, 22, -320, 22)
+polygon = PackedVector2Array(-640, 0, 640, 0, 640, 22, -640, 22)
 
 [node name="SlabEdge" type="Line2D" parent="Floor2F"]
-points = PackedVector2Array(-320, 0, 320, 0)
+points = PackedVector2Array(-640, 0, 640, 0)
 width = 4.0
 default_color = Color(0.6, 0.63, 0.71, 1)
 
@@ -47,6 +48,11 @@ one_way_collision = true
 
 [node name="Equipment" type="Node2D" parent="."]
 script = ExtResource("5_layout")
+level_min_x = PackedFloat32Array(-680, -500)
+level_max_x = PackedFloat32Array(680, 500)
+level_slots = PackedInt32Array(5, 3)
+spawn_limit_x = 1080.0
+spawn_min_distance = 760.0
 
 [node name="BarbellCurl" type="Node2D" parent="Equipment"]
 script = ExtResource("6_machine")
@@ -59,6 +65,12 @@ kind = 1
 [node name="Treadmill" type="Node2D" parent="Equipment"]
 script = ExtResource("6_machine")
 kind = 2
+face_dir = -1.0
+ground_sink = 33.9
+size_scale = 0.1474
+scale = Vector2(0.7665, 0.91525)
+texture = ExtResource("8_treadmill_tex")
+belt_rect = Rect2(-74.9, -37, 162.5, 6.2)
 
 [node name="Ground" type="StaticBody2D" parent="."]
 position = Vector2(0, 300)
@@ -67,22 +79,22 @@ position = Vector2(0, 300)
 shape = SubResource("RectangleShape2D_ground")
 
 [node name="LeftWall" type="StaticBody2D" parent="."]
-position = Vector2(-624, -500)
+position = Vector2(-1248, -500)
 
 [node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="RightWall" type="StaticBody2D" parent="."]
-position = Vector2(624, -500)
+position = Vector2(1248, -500)
 
 [node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="PlayerSpawn1" type="Marker2D" parent="."]
-position = Vector2(-390, 240)
+position = Vector2(-780, 240)
 
 [node name="PlayerSpawn2" type="Marker2D" parent="."]
-position = Vector2(390, 240)
+position = Vector2(780, 240)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, 150)

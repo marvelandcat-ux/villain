@@ -4,9 +4,32 @@
 [ext_resource type="Texture2D" uid="uid://dtomm4as2rguy" path="res://sprite/body/몸통.png" id="1_body"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="2_hand"]
 [ext_resource type="Texture2D" uid="uid://1mwlfronfesm" path="res://sprite/body/발.png" id="3_foot"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymCurlDownPose.tscn" id="90_curl_down"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymCurlMidPose.tscn" id="91_curl_mid"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymCurlUpPose.tscn" id="92_curl_up"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="93_barbell"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymSquatUpPose.tscn" id="94_sq_up"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymSquatMidPose.tscn" id="95_sq_mid"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymSquatDownPose.tscn" id="96_sq_down"]
+[ext_resource type="PackedScene" path="res://combat/SquatPlate.tscn" id="97_plate"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymRunLeftPose.tscn" id="98_run_left"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymRunMidPose.tscn" id="99_run_mid"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymRunRightPose.tscn" id="100_run_right"]
 
 [node name="BodyRig" type="Node2D" unique_id=897452375]
 script = ExtResource("0_rig")
+curl_down_pose = ExtResource("90_curl_down")
+curl_mid_pose = ExtResource("91_curl_mid")
+curl_up_pose = ExtResource("92_curl_up")
+curl_bar_texture = ExtResource("93_barbell")
+curl_bar_texture_scale = 0.032
+squat_up_pose = ExtResource("94_sq_up")
+squat_mid_pose = ExtResource("95_sq_mid")
+squat_down_pose = ExtResource("96_sq_down")
+squat_plate_scene = ExtResource("97_plate")
+run_left_pose = ExtResource("98_run_left")
+run_mid_pose = ExtResource("99_run_mid")
+run_right_pose = ExtResource("100_run_right")
 
 [node name="FootL" type="Sprite2D" parent="." unique_id=1982953737]
 position = Vector2(-7.702712, 26.331104)

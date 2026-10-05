@@ -56,13 +56,21 @@ func _process(delta: float) -> void:
 	if not _fighter.is_on_floor() or _fighter.is_in_hitstun() or not _machine.in_range(_fighter.global_position):
 		_stop()
 		return
+	# **아무 키나 누르면 그 자리에서 끊긴다**(2026-10-05 사용자 규칙).
+	# ⚠️ `move_input`을 보면 안 된다 — 운동 중엔 `movement_override` 때문에 컨트롤러가
+	# 이동·점프 입력을 **아예 안 읽어서** 그 값이 그대로 멈춰 있다. 그래서 키를 직접 본다
+	if _wants_break():
+		_stop()
+		return
 	var key: String = _machine.spec_key()
 	var spec: float = minf(_get_spec(key) + _machine.spec_per_second * delta, _machine.spec_max)
 	_set_spec(key, spec)
 	_apply_spec(_machine, spec)
 	_machine.set_gauge(spec / maxf(_machine.spec_max, 0.001))
-	_bob += delta * bob_speed
-	_apply_bob(sin(_bob) * bob_amount)
+	# 바벨 컬은 자세가 직접 움직이므로 들썩임을 겹치면 두 번 흔들린다
+	if not _is_curl() and not _is_squat() and not _is_run():
+		_bob += delta * bob_speed
+		_apply_bob(sin(_bob) * bob_amount)
 	# 다 채웠으면 알아서 손을 턴다 — 더 해도 안 오르는데 발만 묶여 있으면 손해다
 	if spec >= _machine.spec_max:
 		_stop()
@@ -83,10 +91,14 @@ func _execute(fighter: Fighter) -> void:
 	_fighter = fighter
 	_machine = machine
 	_bob = 0.0
-	# 기구를 보고 선다(등지고 운동하면 이상하다). 정확히 겹쳐 있으면 보던 쪽 그대로
-	var dx: float = machine.global_position.x - fighter.global_position.x
-	if absf(dx) > 4.0:
-		fighter.facing = signf(dx)
+	# 기구를 보고 선다(등지고 운동하면 이상하다). 정확히 겹쳐 있으면 보던 쪽 그대로.
+	# **기구가 방향을 정해 뒀으면 그쪽이 이긴다** — 런닝머신은 조작판을 보고 달려야 한다
+	if not is_zero_approx(machine.face_dir):
+		fighter.facing = signf(machine.face_dir)
+	else:
+		var dx: float = machine.global_position.x - fighter.global_position.x
+		if absf(dx) > 4.0:
+			fighter.facing = signf(dx)
 	# **발을 묶는다** — 이게 이 맵의 판돈이다
 	fighter.movement_override = self
 	var visual: Node2D = fighter.get_node_or_null("Visual")
@@ -98,12 +110,20 @@ func _execute(fighter: Fighter) -> void:
 	if not fighter.basic_attack_used.is_connected(_on_attacked):
 		fighter.basic_attack_used.connect(_on_attacked)
 	machine.set_gauge(_get_spec(machine.spec_key()) / maxf(machine.spec_max, 0.001))
+	_set_curl_pose(true)
+	_set_squat_pose(true)
+	_set_run_pose(true)
+	_set_workout_flag(true)
 
 func effective_cooldown() -> float:
 	return toggle_cooldown
 
 ## 운동을 끝낸다(스스로 그만두든, 맞아서 끊기든 거쳐 가는 한 곳)
 func _stop() -> void:
+	_set_curl_pose(false)
+	_set_squat_pose(false)
+	_set_run_pose(false)
+	_set_workout_flag(false)
 	if _machine != null and is_instance_valid(_machine):
 		_machine.set_gauge(-1.0)
 	_machine = null
@@ -122,6 +142,81 @@ func _on_interrupted(_amount: int, _knockback: Vector2) -> void:
 
 func _on_attacked() -> void:
 	_stop()
+
+## **운동 중이라고 리그에 알려 준다** — 기구 종류와 상관없이 켠다.
+## 리그는 이걸 보고 idle 몸짓(뒤돌아보기·머리 긁기)을 쉰다
+func _set_workout_flag(on: bool) -> void:
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_workout"):
+		visual.set_workout(on)
+
+## 지금 쓰는 기구가 **런닝머신**인지
+func _is_run() -> bool:
+	return _machine != null and is_instance_valid(_machine) and _machine.kind == GymMachine.Kind.TREADMILL
+
+## 달리기 자세를 켜고 끈다. 리그에 그 손잡이가 없으면 조용히 넘어간다
+func _set_run_pose(on: bool) -> void:
+	if on and not _is_run():
+		return
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_run"):
+		visual.set_run(on)
+
+## 지금 쓰는 기구가 **스쿼트 랙**인지
+func _is_squat() -> bool:
+	return _machine != null and is_instance_valid(_machine) and _machine.kind == GymMachine.Kind.SQUAT
+
+## 스쿼트 자세를 켜고 끈다. 리그에 그 손잡이가 없으면 조용히 넘어간다
+func _set_squat_pose(on: bool) -> void:
+	if on and not _is_squat():
+		return
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_squat"):
+		visual.set_squat(on)
+
+## 지금 쓰는 기구가 **바벨 컬**인지 — 컬만 전용 자세가 있다
+func _is_curl() -> bool:
+	return _machine != null and is_instance_valid(_machine) and _machine.kind == GymMachine.Kind.CURL
+
+## 바벨 컬 자세를 켜고 끈다. 리그에 그 손잡이가 없으면 조용히 넘어간다(다른 캐릭터 리그에 안전하게)
+func _set_curl_pose(on: bool) -> void:
+	if on and not _is_curl():
+		return
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_curl"):
+		visual.set_curl(on)
+
+## 이 중 하나라도 눌려 있으면 운동을 그만둔다 — 맵 전용 키는 빼 둔다(그건 _execute가 토글로 받는다)
+const BREAK_ACTIONS: Array[String] = ["left", "right", "jump", "down",
+	"basic_attack", "skill_1", "skill_2", "ultimate"]
+
+## 이 캐릭터를 조작하는 사람이 몇 번인지(1/2). 컴퓨터가 잡고 있으면 0
+func _player_index() -> int:
+	if not is_instance_valid(_fighter):
+		return 0
+	for child in _fighter.get_children():
+		if "player_index" in child:
+			return int(child.player_index)
+	return 0
+
+## 지금 조작 키가 눌려 있는지 — 컴퓨터가 쓰는 중이면 늘 false다
+func _wants_break() -> bool:
+	var index: int = _player_index()
+	if index <= 0:
+		return false
+	for name in BREAK_ACTIONS:
+		var action: String = "p%d_%s" % [index, name]
+		if InputMap.has_action(action) and Input.is_action_pressed(action):
+			return true
+	return false
 
 ## 지금 운동 중인지 — 다른 연출이 물어볼 수 있게 열어 둔다
 func is_working_out() -> bool:

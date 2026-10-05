@@ -1577,7 +1577,8 @@ func _process(delta: float) -> void:
 	# 바닥에서 조작 없이(안 걷고·안 뛰고·안 때리고) 가만히 있으면 일정 시간마다 머리를 긁는다
 	# idle_gestures를 끄면 여기서 바로 false가 되어 아래 "취소" 가지로 빠진다 — 모션이 아예 안 나온다
 	# 카운터 자세 중엔 몸짓 금지 — 뒤돌아보기가 끼면 몸은 앞을 보는데 머리만 뒤를 봐서 단소가 뒤통수 뒤로 간 것처럼 보였다(2026-09-30)
-	var idle: bool = idle_gestures and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0 and _counter_target <= 0.0
+	# 운동(헬스장) 중에는 몸짓을 안 한다 — 바벨을 든 채 뒤를 돌아보면 봉이 따라 돌아 이상하다
+	var idle: bool = idle_gestures and not _workout_on and _curl_blend <= 0.001 and _squat_blend <= 0.001 and _run_blend <= 0.001 and on_floor and speed_ratio < 0.05 and _attack_time <= 0.0 and _drink_time <= 0.0 and _vomit_time <= 0.0 and _gun_time <= 0.0 and _eat_time <= 0.0 and _grab_time <= 0.0 and _cast_time <= 0.0 and _throw_time <= 0.0 and _reel_blend <= 0.01 and _hurt_time <= 0.0 and _counter_target <= 0.0
 	if not idle:
 		# 움직이거나 다른 동작이 시작되면 idle 모션 즉시 취소. 돌아보던 중이면 머리를 반드시 앞으로 되돌린다
 		_idle_time = 0.0
@@ -1669,6 +1670,12 @@ func _process(delta: float) -> void:
 
 	# 아이가 품으로 뛰어오르거나 내려서는 진행도
 	_update_hug(delta)
+	# 헬스장 바벨 컬 — 켜고 끄는 진행도와 한 번(올렸다 내리기) 안의 위치
+	_update_curl(delta)
+	# 헬스장 스쿼트 — 앉았다 서는 진행도
+	_update_squat(delta)
+	# 헬스장 런닝머신 — 달리는 진행도
+	_update_run(delta)
 	# 영역전개 점프 — 공중에 있는 동안은 착지 자세 시간을 가득 채워 둔다
 	_update_domain_jump(delta)
 	# 아이 드롭킥 — 나갔다 들어오는 시간
@@ -1709,6 +1716,13 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 손은 몸통과 다른 박자(위상 차이)로, 좌우 손도 살짝 어긋나게 해서 같이 움직이는 어색함을 없앤다
 	var on_floor_now: bool = _fighter == null or (is_instance_valid(_fighter) and _fighter.is_on_floor())
 	var idle_f: float = (1.0 - _blend) if on_floor_now else 0.0
+	# 바벨 컬 중엔 숨쉬기를 죽인다 — 컬 박자로 몸이 오르내리는 것과 겹치면 박자가 둘이 되어 떨려 보인다
+	if _curl_blend > 0.001 and curl_breath_mute > 0.0:
+		idle_f *= 1.0 - clampf(curl_breath_mute, 0.0, 1.0) * _curl_blend
+	if _squat_blend > 0.001 and squat_breath_mute > 0.0:
+		idle_f *= 1.0 - clampf(squat_breath_mute, 0.0, 1.0) * _squat_blend
+	if _run_blend > 0.001 and run_breath_mute > 0.0:
+		idle_f *= 1.0 - clampf(run_breath_mute, 0.0, 1.0) * _run_blend
 	var body_breathe: float = sin(_breathe_phase) * breathe_amount * idle_f
 	var hand_amt: float = breathe_amount * breathe_hand_ratio * idle_f
 	for part in [_body, _head]:
@@ -1946,6 +1960,12 @@ func _apply_pose(speed_ratio: float) -> void:
 	_pose_carry()
 	# 영역전개 안에서 뛰는 동안은 엄마와 아이를 통째로 점프 자세로 덮는다
 	_pose_domain_jump()
+	# 헬스장에서 바벨을 들었다 놨다 하는 자세(운동 중에만 켜진다)
+	_pose_curl()
+	# 헬스장에서 어깨에 봉을 메고 앉았다 서는 자세
+	_pose_squat()
+	# 런닝머신 위에서 달리는 자세
+	_pose_run()
 
 	# 손에 든 물건이 손을 그대로 따라가게 한다
 	# 왼손 물건걸이도 왼손을 그대로 따라간다(오른손 것과 같은 방식).
@@ -1999,6 +2019,11 @@ func _apply_pose(speed_ratio: float) -> void:
 			if _attack_time > 0.0 or _drink_time > 0.0 or _grab_time > 0.0:
 				hide_cast = false
 			_hand_r_hold.visible = not (hide_cast or hide_gun)
+		# **운동하는 동안엔 양손에 든 물건을 숨긴다** — 키보드·막대사탕이 봉·원판과 겹쳐 보인다
+		if _curl_blend > 0.001 or _squat_blend > 0.001 or _run_blend > 0.001:
+			_hand_r_hold.visible = false
+			if _hand_l_hold:
+				_hand_l_hold.visible = false
 		# 돌을 던지는 동안엔 **원래 들고 있던 물건(경봉)만** 숨긴다.
 		# HandRHold 자체를 끄면 그 자식으로 붙인 돌까지 같이 사라지므로 자식별로 끄고 켠다
 		var throwing: bool = throw_hides_held_item and _throw_time > 0.0
@@ -3552,7 +3577,27 @@ func set_action_face(on: bool) -> void:
 func _apply_base_head() -> void:
 	if _head == null or _knocked_out:
 		return
-	if _hug_face_on and hug_head_texture != null:
+	var run_face_tex: Texture2D = _run_face_now()
+	if run_face_tex != null:
+		# 런닝머신에서 달리는 동안은 한 가지 얼굴만 쓴다
+		_head.texture = run_face_tex
+		var run_base: Vector2 = run_face_scale if run_face_scale != Vector2.ZERO else _head_rest_scale
+		_head.scale = run_base * _curl_face_fit(run_face_tex)
+		return
+	var squat_face: Texture2D = _squat_face()
+	if squat_face != null:
+		# 스쿼트 중에는 **허리를 펴고 선 순간만** 쉬는 얼굴이고 나머지는 힘주는 얼굴이다
+		_head.texture = squat_face
+		var sq_base: Vector2 = squat_face_scale if squat_face_scale != Vector2.ZERO else _head_rest_scale
+		_head.scale = sq_base * _curl_face_fit(squat_face)
+		return
+	var curl_face: Texture2D = _curl_face()
+	if curl_face != null:
+		# 바벨을 드는 동안은 올릴 때·내릴 때 얼굴이 다르다 — 제일 위에 둔다
+		_head.texture = curl_face
+		var base: Vector2 = curl_face_scale if curl_face_scale != Vector2.ZERO else _head_rest_scale
+		_head.scale = base * _curl_face_fit(curl_face)
+	elif _hug_face_on and hug_head_texture != null:
 		# 아이를 안고 어르는 표정이 제일 위다 — 안고 있는 동안은 다른 표정이 끼어들 일이 없다
 		_head.texture = hug_head_texture
 		_head.scale = hug_head_scale if hug_head_scale != Vector2.ZERO else _head_rest_scale
@@ -5053,3 +5098,660 @@ func play_knockout(trail_dir: float = 1.0) -> void:
 		_foot_l.position += foot_offset
 	if _foot_r:
 		_foot_r.position += foot_offset
+
+
+## --- 헬스장 바벨 컬 (maps/GymMachine.gd, skills/WorkoutSkill.gd) ---
+
+@export_group("헬스장 바벨 컬")
+## 바벨 컬 자세 **세 장** — 아래(팔 편 자세) / 중간 / 위(다 올린 자세).
+## **세 장을 다 꽂아야 움직인다.** 한 장이라도 비면 운동해도 평소 자세 그대로다(다른 캐릭터 리그에 안전하게).
+## 자리는 `maps/GymCurlStudio.tscn`을 F6로 열어 **움직이는 걸 보면서** 맞추면 된다
+@export var curl_down_pose: PackedScene
+@export var curl_mid_pose: PackedScene
+@export var curl_up_pose: PackedScene
+## 한 번 올렸다 내리는 데 걸리는 시간(초)
+@export var curl_cycle: float = 1.6
+## 한 번 중에서 **올리는 데 쓰는 몫**(나머지가 내리는 시간). 0.45면 올릴 때가 조금 빠르다
+@export_range(0.1, 0.9, 0.05) var curl_rise_ratio: float = 0.62
+## 자세가 켜지고 꺼지는 데 걸리는 시간(초)
+@export var curl_blend_time: float = 0.18
+## 두 손 사이에 끼울 **바벨**. 비우면 `combat/GymBarbell.gd`가 도형으로 그려 준다
+@export var curl_bar_scene: PackedScene
+## **바벨 그림.** 꽂으면 도형 대신 이 그림을 쓴다(그림 가운데가 봉의 한가운데여야 한다).
+## 여기 한 곳만 바꾸면 전 캐릭터가 같은 바벨을 든다
+@export var curl_bar_texture: Texture2D
+## 바벨 그림의 배율(바벨 노드의 Scale로 들어간다). 그림 가로가 1926px이고 봉 길이를 62px로 보이게 하려면 0.032쯤이다.
+## **포즈 씬(아래 자세)에 보기용 바벨(`BarbellView`)이 있으면 그쪽 크기가 이긴다** —
+## 포즈 씬을 에디터에서 열어 바벨을 키우면 게임에서도 그대로 커지라고 그렇게 뒀다.
+## 포즈 씬에 바벨이 없을 때만 이 값을 쓴다
+@export var curl_bar_texture_scale: float = 0.032
+## 바벨이 두 손을 잇는 선에서 비켜나는 거리(px) — 손 그림 가운데가 손바닥이 아닐 때 맞춘다
+@export var curl_bar_offset: Vector2 = Vector2.ZERO
+## 바벨을 손보다 **앞**에 그릴지. 꺼 두면(기본) 몸통 바로 앞·손 뒤에 놓여
+## **손이 봉 위에 올라온 것처럼** 보인다(2026-10-05 사용자 지정). 켜면 봉이 손을 덮는다
+@export var curl_bar_in_front: bool = false
+## **올릴 때 쓸 얼굴**(이 악문 표정)과 **내릴 때 쓸 얼굴**(지친 표정).
+## 비워 두면 그 구간은 평소 얼굴 그대로다 — 한쪽만 넣어도 된다
+@export var curl_face_rise: Texture2D
+@export var curl_face_fall: Texture2D
+## 컬 얼굴을 쓸 때의 크기. 0이면 평소 머리 크기를 그대로 쓴다
+@export var curl_face_scale: Vector2 = Vector2.ZERO
+## **컬 얼굴 크기를 평소 얼굴에 맞출지.** 그림마다 얼굴이 그려진 크기가 달라서, 같은 배율을 줘도
+## 머리가 커졌다 작아졌다 한다(악플러: 힘든 얼굴이 올라잇보다 5%쯤 크게 그려져 있다).
+## 켜면 **살색 부분의 높이**를 평소 얼굴과 같게 맞춘다 — 머리카락은 그림마다 퍼진 양이 달라 기준으로 못 쓴다.
+## 살색을 못 찾으면(사람 얼굴이 아닌 캐릭터) 조용히 넘어간다
+@export var curl_face_match_size: bool = true
+## **바벨이 내려갈 때 몸도 같이 내려가는 깊이(px).** 바벨을 올리면 몸도 따라 올라온다.
+## 무릎을 살짝 굽혔다 펴는 느낌이 나서 "들어 올린다"가 산다. 0이면 몸은 가만히 있다.
+## 발은 땅에 붙어 있어야 하므로 안 움직인다
+@export var curl_body_dip: float = 3.0
+## **컬 중에 평소 숨쉬기를 얼마나 죽일지**(1이면 아예 끈다).
+## 위 오르내림과 숨쉬기가 겹치면 박자가 둘이라 몸이 떨리는 것처럼 보인다
+@export_range(0.0, 1.0, 0.05) var curl_breath_mute: float = 1.0
+## **올리는 동안 몸이 떠는 폭(px)** — 다 올라갈수록 세진다. 0이면 안 떤다
+@export var curl_shake: float = 0.7
+## 떠는 빠르기(클수록 잘게 떤다)
+@export var curl_shake_speed: float = 46.0
+## **다 올린 순간 머리 위로 튀는 땀.** 비우면 `combat/SweatDrops.gd`가 그려 준다.
+## 아예 안 나오게 하려면 `curl_sweat_on`을 끈다
+@export var curl_sweat_on: bool = true
+@export var curl_sweat_scene: PackedScene
+## 땀이 튀는 자리 — 머리 위에서 이만큼 더 올린 곳(px)
+@export var curl_sweat_lift: float = 12.0
+
+## 0=평소, 1=컬 자세. 켜고 끌 때 이 사이를 오간다
+var _curl_blend: float = 0.0
+var _curl_target: float = 0.0
+## 한 번(올렸다 내리기) 안에서 지금 어디쯤인지(0~1)
+var _curl_time: float = 0.0
+## 두 손 사이에 끼운 바벨 — 처음 쓸 때 만든다
+var _curl_bar: Node2D = null
+## 지금 올리는 중인지(내리는 중이면 false) — 얼굴과 떨림이 이걸 본다
+var _curl_rising: bool = false
+## 떨림에 쓰는 시계
+var _curl_shake_t: float = 0.0
+## 이번 한 번에서 땀을 이미 튀겼는지 — 한 번에 한 번만 나와야 한다
+var _curl_sweat_done: bool = false
+## **헬스장에서 운동하는 중인지**(기구 종류와 상관없이). 켜져 있으면 idle 몸짓을 쉰다
+var _workout_on: bool = false
+## 얼굴 그림마다 잰 살색 높이 {경로: px} — 그림마다 한 번만 잰다
+static var _skin_height_cache: Dictionary = {}
+## 포즈 씬마다 읽어 둔 바벨 크기 {경로: 배율}
+static var _bar_scale_cache: Dictionary = {}
+
+## 바벨 컬 자세를 켜고 끈다(`skills/WorkoutSkill.gd`가 부른다)
+func set_curl(on: bool) -> void:
+	_curl_target = 1.0 if on else 0.0
+	# 켤 때는 늘 **아래(팔 편 자세)** 에서 시작한다 — 중간부터 시작하면 들던 걸 이어받은 것처럼 보인다
+	if on and _curl_blend <= 0.001:
+		_curl_time = 0.0
+		_curl_rising = true
+		_curl_sweat_done = false
+	if curl_face_rise != null or curl_face_fall != null:
+		_apply_base_head()
+
+## 지금 컬 자세인지
+func is_curling() -> bool:
+	return _curl_target > 0.5
+
+func _update_curl(delta: float) -> void:
+	_curl_blend = move_toward(_curl_blend, _curl_target, delta / maxf(curl_blend_time, 0.01))
+	if _curl_blend <= 0.001:
+		_curl_rising = false
+		return
+	var before: float = _curl_time
+	_curl_time = fposmod(_curl_time + delta / maxf(curl_cycle, 0.05), 1.0)
+	_curl_shake_t += delta
+	var rise: float = clampf(curl_rise_ratio, 0.1, 0.9)
+	var was_rising: bool = _curl_rising
+	_curl_rising = _curl_time < rise
+	# **얼굴은 이벤트가 있을 때만 다시 칠한다** — 올림/내림이 바뀌는 순간에 한 번 불러 준다.
+	# 매 프레임 부르면 다른 표정(피격·토하기)이 끼어든 사이에도 덮어써 버린다
+	if was_rising != _curl_rising and (curl_face_rise != null or curl_face_fall != null):
+		_apply_base_head()
+	# **다 올린 순간**(올림 구간을 막 넘어선 때) 땀이 한 번 튄다
+	if before < rise and _curl_time >= rise and not _curl_sweat_done:
+		_curl_sweat_done = true
+		_spawn_curl_sweat()
+	# 한 바퀴를 돌아 처음으로 넘어가면 다음 번 땀을 풀어 준다
+	if _curl_time < before:
+		_curl_sweat_done = false
+
+## 바벨 컬 — 세 자세를 **아래 -> 중간 -> 위 -> 중간 -> 아래**로 오간다
+func _pose_curl() -> void:
+	if _curl_blend <= 0.001 or curl_down_pose == null or curl_mid_pose == null or curl_up_pose == null:
+		_show_curl_bar(false)
+		return
+	# 올릴 때와 내릴 때 길이가 달라서, 두 구간을 각각 0~1로 펴서 쓴다
+	var rise: float = clampf(curl_rise_ratio, 0.1, 0.9)
+	var k: float = _curl_time / rise if _curl_time < rise else 1.0 - (_curl_time - rise) / (1.0 - rise)
+	# 양 끝에서 부드럽게 멎도록 사인 곡선을 한 번 태운다 — 등속이면 기계처럼 보인다
+	k = 0.5 - cos(clampf(k, 0.0, 1.0) * PI) * 0.5
+	# 아래 -> 중간 -> 위를 한 줄로 잇는다. 앞 자세를 깔고 뒤 자세로 덮는 방식은 영역전개 점프와 같다
+	var a: PackedScene = curl_down_pose if k < 0.5 else curl_mid_pose
+	var b: PackedScene = curl_mid_pose if k < 0.5 else curl_up_pose
+	var t: float = k * 2.0 if k < 0.5 else (k - 0.5) * 2.0
+	_apply_pose_scene(read_pose(a), _curl_blend)
+	_apply_pose_scene(read_pose(b), _curl_blend * t, false)
+	# **바벨이 내려가면 몸도 같이 내려간다** — k가 0(바벨이 제일 아래)일 때 가장 낮다.
+	# 발은 빼고 위쪽 조각만 내린다(발이 같이 내려가면 땅을 뚫는다)
+	if curl_body_dip != 0.0:
+		var dip: float = (1.0 - k) * curl_body_dip * _curl_blend
+		for part in [_body, _head, _hand_l, _hand_r]:
+			if part:
+				part.position.y += dip
+	# **올리는 동안 부르르 떤다** — 다 올라갈수록(k가 클수록) 세진다
+	if _curl_rising and curl_shake > 0.0:
+		var amp: float = curl_shake * k * _curl_blend
+		var shake := Vector2(
+			sin(_curl_shake_t * curl_shake_speed) * amp,
+			cos(_curl_shake_t * curl_shake_speed * 1.37) * amp * 0.6)
+		for part in [_body, _head, _hand_l, _hand_r]:
+			if part:
+				part.position += shake
+	_update_curl_bar()
+
+## 두 손 사이에 바벨을 놓는다 — 손을 잇는 선 위에 얹고 각도도 그 선을 따른다.
+## 그래서 손만 제대로 움직이면 바벨은 저절로 기울어진다
+func _update_curl_bar() -> void:
+	if _hand_l == null or _hand_r == null:
+		return
+	_ensure_curl_bar()
+	if _curl_bar == null:
+		return
+	_curl_bar.visible = true
+	var a: Vector2 = _hand_l.position
+	var b: Vector2 = _hand_r.position
+	_curl_bar.position = (a + b) * 0.5 + curl_bar_offset
+	_curl_bar.rotation = (b - a).angle()
+
+## 바벨을 처음 쓸 때 한 번 만든다
+func _ensure_curl_bar() -> void:
+	if _curl_bar != null and is_instance_valid(_curl_bar):
+		return
+	_curl_bar = (curl_bar_scene.instantiate() as Node2D) if curl_bar_scene != null else GymBarbell.new()
+	if _curl_bar == null:
+		return
+	# **그림은 붙이기 전에 넘긴다** — 붙는 순간 _ready가 돌아서 나중에 넣으면 한 프레임 늦게 바뀐다
+	if curl_bar_texture != null and "texture" in _curl_bar:
+		_curl_bar.texture = curl_bar_texture
+		_curl_bar.scale = curl_bar_scale()
+	add_child(_curl_bar)
+	if curl_bar_in_front:
+		_curl_bar.z_as_relative = false
+		_curl_bar.z_index = 6
+	elif _body:
+		# **몸통 바로 뒤에 끼워 넣는다** — 같은 z에서는 트리에 늦게 놓인 것이 위라서,
+		# 손보다 앞에 두면 손이 봉 위에 올라온 것처럼 보인다
+		move_child(_curl_bar, _body.get_index() + 1)
+
+## 쓸 바벨 크기 — **포즈 씬에 놓인 보기용 바벨의 Scale**이 있으면 그걸 쓰고,
+## 없으면 `curl_bar_texture_scale`을 쓴다. 포즈 씬에서 눈으로 맞춘 크기가 게임에 그대로 가라고 둔 길이다.
+## **기준은 "중간" 자세**다(2026-10-05 사용자 지정). 중간 자세에 바벨이 없으면 아래 자세를 본다.
+## 가로·세로를 따로 들고 오므로, 에디터에서 한쪽만 늘린 것도 그대로 반영된다
+func curl_bar_scale() -> Vector2:
+	for scene in [curl_mid_pose, curl_down_pose, curl_up_pose]:
+		var from_pose: Vector2 = read_bar_scale(scene)
+		if from_pose.x > 0.0:
+			return from_pose
+	return Vector2(curl_bar_texture_scale, curl_bar_texture_scale)
+
+## 포즈 씬에 놓인 보기용 바벨(`BarbellView`)의 **Scale**을 읽는다 —
+## 에디터에서 네모 핸들을 끌어 키운 그 크기가 그대로 게임으로 온다. 씬마다 한 번만 읽는다.
+## 바벨이 없으면 (0,0)을 돌려준다
+static func read_bar_scale(scene: PackedScene) -> Vector2:
+	if scene == null:
+		return Vector2.ZERO
+	var key: String = scene.resource_path
+	if key != "" and _bar_scale_cache.has(key):
+		return _bar_scale_cache[key]
+	var out: Vector2 = Vector2.ZERO
+	var root: Node = scene.instantiate()
+	if root:
+		var bar := root.find_child("BarbellView", true, false) as Node2D
+		if bar:
+			out = bar.scale.abs()
+		root.free()
+	if key != "":
+		_bar_scale_cache[key] = out
+	return out
+
+func _show_curl_bar(on: bool) -> void:
+	if _curl_bar != null and is_instance_valid(_curl_bar) and _curl_bar.visible != on:
+		_curl_bar.visible = on
+
+## **헬스장에서 운동을 시작·종료할 때** 켜고 끈다(`skills/WorkoutSkill.gd`).
+## 기구 종류와 상관없이 켜진다 — 운동 중엔 idle 몸짓을 쉬게 하는 것이 목적이다
+func set_workout(on: bool) -> void:
+	_workout_on = on
+	if on:
+		_end_lookback()
+		_end_special()
+
+## 컬 얼굴을 평소 얼굴과 같은 크기로 보이게 할 배수. 맞춤이 꺼져 있거나 못 재면 1
+func _curl_face_fit(tex: Texture2D) -> float:
+	if not curl_face_match_size or tex == null or _head_rest_texture == null or tex == _head_rest_texture:
+		return 1.0
+	var here: float = _skin_height_of(tex)
+	var rest: float = _skin_height_of(_head_rest_texture)
+	if here <= 1.0 or rest <= 1.0:
+		return 1.0
+	return rest / here
+
+## 그림에서 **살색 부분의 높이**(px) — 얼굴이 실제로 얼마나 크게 그려졌는지를 재는 값.
+## 머리카락·안경을 빼고 재려고 색으로 거른다. 4px 간격으로만 훑고 그림마다 한 번만 잰다
+static func _skin_height_of(tex: Texture2D) -> float:
+	if tex == null:
+		return 0.0
+	var key: String = tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id())
+	if _skin_height_cache.has(key):
+		return _skin_height_cache[key]
+	var out: float = 0.0
+	var img: Image = tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		const STEP := 4
+		var top: int = -1
+		var bottom: int = -1
+		for y in range(0, img.get_height(), STEP):
+			for x in range(0, img.get_width(), STEP):
+				var c: Color = img.get_pixel(x, y)
+				# 살색 — 밝고 붉은기가 도는 색. 머리카락(검정)·안경(흰색)은 걸러진다
+				if c.a >= 0.5 and c.r > 0.85 and c.g > 0.7 and c.g < c.r and c.b > 0.55 and c.b < 0.95:
+					if top < 0:
+						top = y
+					bottom = y
+					break
+		if top >= 0:
+			out = float(bottom - top + STEP)
+	_skin_height_cache[key] = out
+	return out
+
+## 지금 써야 할 컬 얼굴 — 컬 중이 아니거나 그림을 안 넣었으면 null(평소 얼굴로 돌아간다)
+func _curl_face() -> Texture2D:
+	if _curl_target <= 0.5:
+		return null
+	return curl_face_rise if _curl_rising else curl_face_fall
+
+## 다 올린 순간 머리 위로 땀을 튀긴다
+func _spawn_curl_sweat() -> void:
+	if not curl_sweat_on:
+		return
+	var drops: Node2D = (curl_sweat_scene.instantiate() as Node2D) if curl_sweat_scene != null else SweatDrops.new()
+	if drops == null:
+		return
+	# 머리 꼭대기에서 조금 더 위 — 머리 그림 높이를 재서 올린다
+	var head_top: float = -26.0
+	if _head:
+		head_top = _head.position.y
+		if _head.texture:
+			head_top -= _head.texture.get_height() * absf(_head.scale.y) * 0.5
+	drops.position = Vector2(_head.position.x if _head else 0.0, head_top - curl_sweat_lift)
+	add_child(drops)
+
+
+## --- 헬스장 스쿼트 (maps/GymMachine.gd, skills/WorkoutSkill.gd) ---
+
+@export_group("헬스장 스쿼트")
+## 스쿼트 자세 **세 장** — 서기(허리 편 기본) / 중간 / 앉기.
+## 세 장을 다 꽂아야 움직인다. 자리는 `maps/GymSquatStudio.tscn`을 F6로 열어 맞춘다
+@export var squat_up_pose: PackedScene
+@export var squat_mid_pose: PackedScene
+@export var squat_down_pose: PackedScene
+## 한 번 앉았다 서는 데 걸리는 시간(초)
+@export var squat_cycle: float = 1.8
+## 한 번 중에서 **앉는 데 쓰는 몫**(나머지가 일어서는 시간)
+@export_range(0.1, 0.9, 0.05) var squat_fall_ratio: float = 0.45
+## 자세가 켜지고 꺼지는 데 걸리는 시간(초)
+@export var squat_blend_time: float = 0.2
+## **어깨에 멘 원판.** 비우면 `combat/SquatPlate.gd`가 검은 원으로 그려 준다
+@export var squat_plate_scene: PackedScene
+## 원판 그림(비우면 도형)
+@export var squat_plate_texture: Texture2D
+## 원판 크기. **포즈 씬(중간 자세)에 `SquatPlateView`가 있으면 그쪽 Scale이 이긴다**
+@export var squat_plate_scale: Vector2 = Vector2(0.05, 0.05)
+## 원판이 놓일 자리 — **몸통 자리에서 이만큼 떨어진 곳**이라 몸이 앉으면 같이 내려간다.
+## 포즈 씬에 `SquatPlateView`가 있으면 그 자리를 자세마다 읽어 쓴다
+@export var squat_plate_offset: Vector2 = Vector2(6, -22)
+## 원판을 **머리보다 앞**에 그릴지 — 켜면 얼굴을 살짝 가린다(사용자 스케치)
+@export var squat_plate_in_front: bool = true
+## **힘주는 얼굴**(앉고 서는 내내)과 **쉬는 얼굴**(허리 펴고 선 순간만).
+## 비워 두면 그 구간은 평소 얼굴 그대로다
+@export var squat_face_move: Texture2D
+@export var squat_face_rest: Texture2D
+## 쉬는 얼굴을 쓸 구간 — 앉은 깊이가 이보다 얕으면(=거의 다 섰으면) 쉬는 얼굴이다
+@export_range(0.0, 0.5, 0.01) var squat_rest_zone: float = 0.12
+## 스쿼트 얼굴을 쓸 때의 크기. 0이면 평소 머리 크기를 그대로 쓴다(크기 맞춤은 컬과 같이 돈다)
+@export var squat_face_scale: Vector2 = Vector2.ZERO
+## **앉을 때 몸이 떠는 폭(px)** — 깊이 앉을수록 세진다. 0이면 안 떤다
+@export var squat_shake: float = 0.5
+@export var squat_shake_speed: float = 40.0
+## 스쿼트 중에 평소 숨쉬기를 얼마나 죽일지(1이면 아예 끈다)
+@export_range(0.0, 1.0, 0.05) var squat_breath_mute: float = 1.0
+## **스쿼트 중에 손을 숨길지**(2026-10-05 사용자 지정) — 봉은 어깨에 메고 있어서
+## 손이 몸 옆에 어중간하게 떠 보인다. 끄면 손이 그대로 보인다
+@export var squat_hide_hands: bool = true
+
+## 0=평소, 1=스쿼트 자세
+var _squat_blend: float = 0.0
+var _squat_target: float = 0.0
+## 한 번(앉았다 서기) 안에서 지금 어디쯤인지(0~1)
+var _squat_time: float = 0.0
+## 지금 앉는 중인지(일어서는 중이면 false)
+var _squat_falling: bool = false
+## 떨림 시계
+var _squat_shake_t: float = 0.0
+## 지금 쉬는 얼굴인지 — 바뀔 때만 얼굴을 다시 칠한다
+var _squat_resting: bool = true
+## 어깨에 멘 원판 — 처음 쓸 때 만든다
+var _squat_plate: Node2D = null
+## 포즈 씬마다 읽어 둔 원판 [자리, 크기]
+static var _plate_cache: Dictionary = {}
+
+## 스쿼트 자세를 켜고 끈다(`skills/WorkoutSkill.gd`가 부른다)
+func set_squat(on: bool) -> void:
+	_squat_target = 1.0 if on else 0.0
+	if not on:
+		# 숨겨 둔 손을 되돌린다 — 안 그러면 운동이 끝나도 손이 없다
+		for hand in [_hand_l, _hand_r]:
+			if hand:
+				hand.visible = true
+	if on and _squat_blend <= 0.001:
+		_squat_time = 0.0
+		_squat_falling = true
+		_squat_resting = true
+	if squat_face_move != null or squat_face_rest != null:
+		_apply_base_head()
+
+## 지금 스쿼트 중인지
+func is_squatting() -> bool:
+	return _squat_target > 0.5
+
+func _update_squat(delta: float) -> void:
+	_squat_blend = move_toward(_squat_blend, _squat_target, delta / maxf(squat_blend_time, 0.01))
+	if _squat_blend <= 0.001:
+		_squat_falling = false
+		return
+	_squat_time = fposmod(_squat_time + delta / maxf(squat_cycle, 0.05), 1.0)
+	_squat_shake_t += delta
+	var fall: float = clampf(squat_fall_ratio, 0.1, 0.9)
+	_squat_falling = _squat_time < fall
+	# 허리를 펴고 선 순간에만 얼굴이 쉰다 — 바뀌는 순간에 한 번만 다시 칠한다
+	var resting: bool = _squat_depth() <= squat_rest_zone
+	if resting != _squat_resting:
+		_squat_resting = resting
+		if squat_face_move != null or squat_face_rest != null:
+			_apply_base_head()
+
+## 얼마나 앉았는지(0=허리 펴고 섬, 1=제일 깊이 앉음)
+func _squat_depth() -> float:
+	var fall: float = clampf(squat_fall_ratio, 0.1, 0.9)
+	var k: float = _squat_time / fall if _squat_time < fall else 1.0 - (_squat_time - fall) / (1.0 - fall)
+	# 양 끝에서 부드럽게 멎도록 사인 곡선을 한 번 태운다
+	return 0.5 - cos(clampf(k, 0.0, 1.0) * PI) * 0.5
+
+## 스쿼트 — 세 자세를 **서기 -> 중간 -> 앉기 -> 중간 -> 서기**로 오간다
+func _pose_squat() -> void:
+	if _squat_blend <= 0.001 or squat_up_pose == null or squat_mid_pose == null or squat_down_pose == null:
+		_show_squat_plate(false)
+		return
+	var k: float = _squat_depth()
+	var a: PackedScene = squat_up_pose if k < 0.5 else squat_mid_pose
+	var b: PackedScene = squat_mid_pose if k < 0.5 else squat_down_pose
+	var t: float = k * 2.0 if k < 0.5 else (k - 0.5) * 2.0
+	_apply_pose_scene(read_pose(a), _squat_blend)
+	_apply_pose_scene(read_pose(b), _squat_blend * t, false)
+	# **깊이 앉을수록 부르르 떤다**
+	if squat_shake > 0.0:
+		var amp: float = squat_shake * k * _squat_blend
+		var shake := Vector2(
+			sin(_squat_shake_t * squat_shake_speed) * amp,
+			cos(_squat_shake_t * squat_shake_speed * 1.31) * amp * 0.6)
+		for part in [_body, _head, _hand_l, _hand_r]:
+			if part:
+				part.position += shake
+	_update_squat_plate(t, a, b)
+	# 봉을 어깨에 멘 자세라 손은 안 보이는 게 낫다
+	if squat_hide_hands:
+		for hand in [_hand_l, _hand_r]:
+			if hand:
+				hand.visible = false
+
+## 어깨에 멘 원판을 자리에 놓는다.
+## 포즈 씬에 `SquatPlateView`가 있으면 **그 자리를 자세마다 읽어 이어 준다**(몸과 같이 움직인다).
+## 없으면 몸통 자리에서 `squat_plate_offset`만큼 떨어진 곳에 둔다
+func _update_squat_plate(t: float, a: PackedScene, b: PackedScene) -> void:
+	_ensure_squat_plate()
+	if _squat_plate == null:
+		return
+	_squat_plate.visible = true
+	var from: Vector2 = read_plate_spot(a)
+	var to: Vector2 = read_plate_spot(b)
+	if from.x < INF and to.x < INF:
+		_squat_plate.position = from.lerp(to, clampf(t, 0.0, 1.0))
+	elif _body:
+		_squat_plate.position = _body.position + squat_plate_offset
+
+## 원판을 처음 쓸 때 한 번 만든다
+func _ensure_squat_plate() -> void:
+	if _squat_plate != null and is_instance_valid(_squat_plate):
+		return
+	_squat_plate = (squat_plate_scene.instantiate() as Node2D) if squat_plate_scene != null else SquatPlate.new()
+	if _squat_plate == null:
+		return
+	if squat_plate_texture != null and "texture" in _squat_plate:
+		_squat_plate.texture = squat_plate_texture
+	_squat_plate.scale = squat_plate_size()
+	add_child(_squat_plate)
+	if squat_plate_in_front:
+		# 얼굴을 살짝 가리는 구도라 머리보다 앞에 둔다(사용자 스케치, 2026-10-05)
+		_squat_plate.z_as_relative = false
+		_squat_plate.z_index = 7
+
+func _show_squat_plate(on: bool) -> void:
+	if _squat_plate != null and is_instance_valid(_squat_plate) and _squat_plate.visible != on:
+		_squat_plate.visible = on
+
+## 쓸 원판 크기 — 포즈 씬(중간 자세)의 `SquatPlateView` Scale이 있으면 그걸 쓴다
+func squat_plate_size() -> Vector2:
+	for scene in [squat_mid_pose, squat_up_pose, squat_down_pose]:
+		var from_pose: Vector2 = read_plate_scale(scene)
+		if from_pose.x > 0.0:
+			return from_pose
+	return squat_plate_scale
+
+## 포즈 씬의 `SquatPlateView` 크기 — 없으면 (0,0)
+static func read_plate_scale(scene: PackedScene) -> Vector2:
+	return _read_plate(scene)[1] as Vector2
+
+## 포즈 씬의 `SquatPlateView` 자리 — 없으면 (INF, INF)
+static func read_plate_spot(scene: PackedScene) -> Vector2:
+	return _read_plate(scene)[0] as Vector2
+
+## 포즈 씬에서 원판의 [자리, 크기]를 읽는다. 씬마다 한 번만 읽는다
+static func _read_plate(scene: PackedScene) -> Array:
+	if scene == null:
+		return [Vector2.INF, Vector2.ZERO]
+	var key: String = scene.resource_path
+	if key != "" and _plate_cache.has(key):
+		return _plate_cache[key]
+	var out: Array = [Vector2.INF, Vector2.ZERO]
+	var root: Node = scene.instantiate()
+	if root:
+		var plate := root.find_child("SquatPlateView", true, false) as Node2D
+		if plate:
+			out = [plate.position, plate.scale.abs()]
+		root.free()
+	if key != "":
+		_plate_cache[key] = out
+	return out
+
+## 지금 써야 할 스쿼트 얼굴 — 스쿼트 중이 아니면 null
+func _squat_face() -> Texture2D:
+	if _squat_target <= 0.5:
+		return null
+	return squat_face_rest if _squat_resting else squat_face_move
+
+
+## --- 헬스장 런닝머신 (maps/GymMachine.gd, skills/WorkoutSkill.gd) ---
+
+@export_group("헬스장 런닝머신")
+## 달리기 자세 **세 장** — 왼발 앞 / 두 발 모음 / 오른발 앞.
+## **왼발앞 -> 모음 -> 오른발앞 -> 모음 -> 왼발앞**으로 오가며 한 걸음씩 번갈아 달린다.
+## 자리는 `maps/GymRunStudio.tscn`을 F6로 열어 맞춘다
+@export var run_left_pose: PackedScene
+@export var run_mid_pose: PackedScene
+@export var run_right_pose: PackedScene
+## **두 걸음(왼발+오른발)에 걸리는 시간(초).** 짧을수록 빨리 달린다
+@export var run_cycle: float = 0.52
+## 자세가 켜지고 꺼지는 데 걸리는 시간(초)
+@export var run_blend_time: float = 0.15
+## 달리는 동안 몸이 위아래로 통통 튀는 폭(px) — 한 걸음에 한 번씩 뜬다. 0이면 안 튄다
+@export var run_hop: float = 3.0
+## **달리는 동안 쓸 얼굴.** 비워 두면 평소 얼굴 그대로다
+@export var run_face: Texture2D
+## 달리기 얼굴을 쓸 때의 크기. 0이면 평소 머리 크기를 그대로 쓴다
+@export var run_face_scale: Vector2 = Vector2.ZERO
+## 달리는 동안 평소 숨쉬기를 얼마나 죽일지(1이면 아예 끈다)
+@export_range(0.0, 1.0, 0.05) var run_breath_mute: float = 1.0
+## 두 걸음(한 바퀴)마다 머리 위로 땀이 튀게 할지. **꺼 둔다**(2026-10-05 사용자 판단) —
+## 달리는 내내 땀이 나와서 시끄러웠다. 켜면 바벨 컬과 같은 땀이 나온다
+@export var run_sweat_on: bool = false
+## 땀이 튀는 자리 — 머리 꼭대기에서 이만큼 더 위(px)
+@export var run_sweat_lift: float = 12.0
+## **뒤로 간 손이 몸통 뒤로 숨을지.** 두 손이 다 몸 앞에 있으면 팔을 흔드는 게 아니라
+## 몸 앞에서 왔다 갔다 하는 것처럼 보인다(2026-10-05 사용자 지적)
+@export var run_hide_back_hand: bool = true
+## 뒤로 간 손에 줄 z — 몸통(0)보다 작아야 뒤로 간다
+@export var run_back_hand_z: int = -1
+
+## 0=평소, 1=달리는 자세
+var _run_blend: float = 0.0
+var _run_target: float = 0.0
+## 두 걸음 안에서 지금 어디쯤인지(0~1)
+var _run_time: float = 0.0
+## 손의 원래 z — 달리기가 끝나면 되돌린다. 아직 안 재 뒀으면 null
+var _hand_rest_z: Dictionary = {}
+
+## 달리기 자세를 켜고 끈다(`skills/WorkoutSkill.gd`가 부른다)
+func set_run(on: bool) -> void:
+	_run_target = 1.0 if on else 0.0
+	if on and _run_blend <= 0.001:
+		_run_time = 0.0
+		_remember_hand_z()
+	if not on:
+		_restore_hand_z()
+	if run_face != null:
+		_apply_base_head()
+
+## 손의 원래 z를 기억해 둔다(처음 한 번만)
+func _remember_hand_z() -> void:
+	for hand in [_hand_l, _hand_r]:
+		if hand and not _hand_rest_z.has(hand):
+			_hand_rest_z[hand] = hand.z_index
+
+## 기억해 둔 z로 손을 되돌린다
+func _restore_hand_z() -> void:
+	for hand in [_hand_l, _hand_r]:
+		if hand and _hand_rest_z.has(hand):
+			hand.z_index = _hand_rest_z[hand]
+
+## 지금 달리는 중인지
+func is_running_machine() -> bool:
+	return _run_target > 0.5
+
+func _update_run(delta: float) -> void:
+	_run_blend = move_toward(_run_blend, _run_target, delta / maxf(run_blend_time, 0.01))
+	if _run_blend <= 0.001:
+		return
+	var before: float = _run_time
+	_run_time = fposmod(_run_time + delta / maxf(run_cycle, 0.05), 1.0)
+	# 한 바퀴를 돌아 처음으로 넘어가는 순간 땀이 한 번 튄다
+	if run_sweat_on and _run_time < before:
+		_spawn_run_sweat()
+
+## 달리기 — **왼발앞 -> 모음 -> 오른발앞 -> 모음 -> 왼발앞**.
+## 앞의 반(0~0.5)이 왼발, 뒤의 반(0.5~1)이 오른발 차례다
+func _pose_run() -> void:
+	if _run_blend <= 0.001 or run_left_pose == null or run_mid_pose == null or run_right_pose == null:
+		return
+	# 한 걸음 안에서의 진행도(0=발 앞, 1=두 발 모음)를 사인으로 부드럽게 편다
+	var half: float = fposmod(_run_time * 2.0, 1.0)
+	var k: float = 0.5 - cos(clampf(half, 0.0, 1.0) * PI) * 0.5
+	var step_pose: PackedScene = run_left_pose if _run_time < 0.5 else run_right_pose
+	# 발 앞 -> 모음 -> (다음 걸음) 발 앞. 모음을 한가운데 두고 양쪽으로 편다
+	var a: PackedScene
+	var b: PackedScene
+	var t: float
+	if k < 0.5:
+		a = step_pose
+		b = run_mid_pose
+		t = k * 2.0
+	else:
+		a = run_mid_pose
+		b = run_right_pose if _run_time < 0.5 else run_left_pose
+		t = (k - 0.5) * 2.0
+	_apply_pose_scene(read_pose(a), _run_blend)
+	_apply_pose_scene(read_pose(b), _run_blend * t, false)
+	# **한 걸음마다 한 번씩 통통 뜬다** — 두 발이 모일 때가 제일 높다
+	if run_hop > 0.0:
+		var lift: float = -k * run_hop * _run_blend
+		for part in [_body, _head, _hand_l, _hand_r]:
+			if part:
+				part.position.y += lift
+	# **뒤로 간 손은 몸통 뒤로 숨는다** — 뒤에 있는 쪽(x가 작은 쪽)을 가린다
+	if run_hide_back_hand and _hand_l and _hand_r:
+		_remember_hand_z()
+		var left_is_back: bool = _hand_l.position.x < _hand_r.position.x
+		_hand_l.z_index = run_back_hand_z if left_is_back else int(_hand_rest_z.get(_hand_l, 0))
+		_hand_r.z_index = int(_hand_rest_z.get(_hand_r, 0)) if left_is_back else run_back_hand_z
+
+## 달리면서 머리 위로 땀을 튀긴다 — 바벨 컬의 땀을 그대로 쓴다
+func _spawn_run_sweat() -> void:
+	var keep: float = curl_sweat_lift
+	curl_sweat_lift = run_sweat_lift
+	var keep_on: bool = curl_sweat_on
+	curl_sweat_on = true
+	_spawn_curl_sweat()
+	curl_sweat_lift = keep
+	curl_sweat_on = keep_on
+
+## 지금 써야 할 달리기 얼굴 — 달리는 중이 아니면 null
+func _run_face_now() -> Texture2D:
+	return run_face if _run_target > 0.5 else null
+
+
+## --- 2P 색 (maps/Stage.gd) ---
+
+@export_group("2P 색")
+## **2P가 쓸 몸통 그림.** 두 사람이 같은 캐릭터를 골랐을 때 누가 누군지 보이라고 색만 바꿔 둔 것이다.
+## 비워 두면 2P도 평소 몸통을 그대로 쓴다(아직 색 그림이 없는 캐릭터)
+@export var p2_body_texture: Texture2D
+## 2P가 쓸 **몸통 돌리기** 그림들 — 비워 두면 머리를 돌리는 동안만 원래 색이 보인다.
+## `body_turn_textures`와 장수를 맞춰 넣을 것
+@export var p2_body_turn_textures: Array[Texture2D] = []
+
+## 지금 2P 색인지
+var _is_player_two: bool = false
+
+## **2P 색으로 갈아입힌다**(`maps/Stage.gd`가 2P를 만들 때 부른다).
+## 몸통은 걷기·돌기가 `_body_rest_texture`를 기준으로 삼으므로 그 기준까지 같이 바꾼다 —
+## 안 그러면 한 걸음 걷는 순간 원래 색으로 되돌아간다
+func set_player_two(on: bool) -> void:
+	_is_player_two = on
+	if not on or p2_body_texture == null:
+		return
+	_body_rest_texture = p2_body_texture
+	if _body:
+		_body.texture = p2_body_texture
+	if not p2_body_turn_textures.is_empty():
+		body_turn_textures = p2_body_turn_textures
+	else:
+		# **P2용 측면 몸통이 없으면 몸통 돌리기를 아예 끈다**(2026-10-05 사용자 판단) —
+		# 안 끄면 머리를 돌리는 동안만 1P 색 몸통이 튀어나온다. 머리는 그대로 돌아간다
+		body_turn_textures = []
+
+## 2P 색을 쓰는 중인지 — 다른 연출이 물어볼 수 있게 열어 둔다
+func is_player_two() -> bool:
+	return _is_player_two

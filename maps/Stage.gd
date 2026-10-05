@@ -324,6 +324,10 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 
 ## 라운드 승리 띠를 띄우고 끝날 때까지 기다린다. 띠를 못 찾으면 잠깐 쉬고 넘어간다
 func _play_round_banner(p1_won: bool, is_draw: bool) -> void:
+	# 방 설정에서 **승패 연출을 꺼 뒀으면** 띠 없이 넘어간다(최종 결과 화면은 그대로 뜬다)
+	if not GameState.result_cutscene_enabled:
+		await get_tree().create_timer(0.3).timeout
+		return
 	var scene: PackedScene = round_banner_scene
 	if scene == null and ResourceLoader.exists(DEFAULT_ROUND_BANNER):
 		scene = load(DEFAULT_ROUND_BANNER)
@@ -461,6 +465,13 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	if is_ai and GameState.game_mode == "story":
 		_apply_story_handicap(fighter)
 	add_child(fighter)
+	# **둘이 같은 캐릭터를 골랐을 때만** 2P의 몸 색을 바꾼다(2026-10-05 사용자 지정) —
+	# 서로 다른 캐릭터면 이미 생김새로 구분되므로 평소 색 그대로가 낫다.
+	# add_child 뒤에 불러야 한다(리그가 _ready에서 원래 몸통을 기억한 뒤여야 기준까지 같이 바뀐다)
+	if player_index == 2 and GameState.p1_character_path == GameState.p2_character_path:
+		var visual: Node = fighter.get_node_or_null("Visual")
+		if visual and visual.has_method("set_player_two"):
+			visual.set_player_two(true)
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
 		fighter.global_position = spawn.global_position

@@ -37,6 +37,7 @@
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3ReadyPose.tscn" id="33r"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3MidPose.tscn" id="33m"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3EndPose.tscn" id="33e"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸P2.png" id="60_p2body"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
 attack_raise_deg = -40.0
@@ -84,6 +85,7 @@ dual_hit2_end_pose = ExtResource("32e")
 dual_hit3_ready_pose = ExtResource("33r")
 dual_hit3_mid_pose = ExtResource("33m")
 dual_hit3_end_pose = ExtResource("33e")
+p2_body_texture = ExtResource("60_p2body")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

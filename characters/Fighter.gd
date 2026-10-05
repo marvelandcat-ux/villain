@@ -1359,6 +1359,10 @@ func _play_ultimate_cutin() -> void:
 	if skill_ultimate and "skip_cutin" in skill_ultimate and skill_ultimate.skip_cutin:
 		skill_ultimate.use(self)
 		return
+	# 방 설정에서 **궁극기 연출을 꺼 뒀으면** 컷인 없이 바로 나간다
+	if not GameState.ultimate_cutin_enabled:
+		skill_ultimate.use(self)
+		return
 	var cutin: Node = get_tree().get_first_node_in_group("ultimate_cutin")
 	if cutin and cutin.has_method("play"):
 		cutin.play(self)
