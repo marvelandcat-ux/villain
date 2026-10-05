@@ -128,7 +128,8 @@ func _build_backdrop() -> void:
 ## 기구를 캐릭터 **뒤에** 깐다 — 캐릭터가 기구 위 어디에 서는지 눈으로 맞추라고 띄운다.
 ## 리그보다 먼저 붙이므로 저절로 뒤에 깔린다
 func _build_machine() -> void:
-	var machine = load("res://maps/GymMachine.gd").new()
+	var machine := Sprite2D.new()
+	machine.set_script(load("res://maps/GymMachine.gd"))
 	machine.kind = machine_kind
 	machine.size_scale = machine_size_scale
 	if machine_texture != null:

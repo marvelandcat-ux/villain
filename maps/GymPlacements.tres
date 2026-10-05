@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1_b5q1l")
-curl = PackedVector2Array(-354.334, 432, 404.286, 430.952, 0, 100, -410.476, 431.905, 409.524, 433.81, 0, 100)
-squat = PackedVector2Array(400.476, 436.667, 0, 100, -403.81, 437.619, -8.0953, 99.0476, -406.19, 437.619, 400.476, 436.667)
-treadmill = PackedVector2Array(-1.90473, 113.9, -375.714, 450.567, 387.143, 449.614, 379.524, 452.471, -10.4762, 114.852, -375.714, 450.567)
+curl = PackedVector2Array(-520, 410, 520, 410, 0, 100, -520, 410, 520, 410, 0, 100)
+squat = PackedVector2Array(520, 410, 0, 100, -520, 410, 0, 100, -520, 410, 520, 410)
+treadmill = PackedVector2Array(0, 133.9, -520, 443.9, 520, 443.9, 520, 443.9, 0, 133.9, -520, 443.9)
 curl_flip = PackedByteArray(0, 0, 0, 0, 0, 0)
 squat_flip = PackedByteArray(1, 0, 0, 0, 0, 1)
 treadmill_flip = PackedByteArray(0, 0, 0, 0, 0, 0)

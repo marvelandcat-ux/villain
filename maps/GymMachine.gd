@@ -1,6 +1,6 @@
 @tool
 class_name GymMachine
-extends Node2D
+extends Sprite2D
 
 ## **헬스장 운동 기구** — 맵 전용 키로 운동하면 그 기구가 맡은 능력이 올라간다(기획서 21쪽).
 ##
@@ -14,8 +14,12 @@ extends Node2D
 ## `skills/WorkoutSkill.gd`다(캐릭터마다 하나씩 붙는다). 그래야 두 선수가 같은 기구를
 ## 각자 쓸 수 있고, 맞아서 끊기는 처리도 맞은 쪽 스킬이 혼자 맡는다.
 ##
-## 그림 파일이 아직 없어서 `_draw()`로 그린다. **`texture`를 꽂으면 그림을 대신 쓴다.**
-## 노드의 **원점이 바닥에 닿는 지점**이다 — `GymLayout`은 그래서 x만 섞으면 된다
+## **`Sprite2D`를 물려받는다**(2026-10-06). 그래야 에디터에서 네모 핸들을 끌어 크기를 잡고,
+## 인스펙터에서 그림을 바로 갈아 끼울 수 있다. 예전에는 `_draw()`로 그려서 핸들이 안 잡혔다.
+## 그림이 없으면 예전처럼 도형으로 그린다.
+##
+## 노드의 **원점이 바닥에 닿는 지점**이다 — 그림을 꽂으면 `offset`을 자동으로 맞춰
+## 밑변 가운데가 원점에 오게 한다. `GymLayout`은 그래서 x만 섞으면 된다
 
 enum Kind {
 	CURL,      ## 바벨 컬 — 공격력
@@ -36,12 +40,10 @@ enum Kind {
 @export var size_scale: float = 1.0:
 	set(value):
 		size_scale = value
+		_fit_texture()
 		queue_redraw()
-## 그림을 쓸 거면 여기에. 꽂으면 `_draw()` 대신 이 그림을 **바닥에 맞춰** 그린다
-@export var texture: Texture2D = null:
-	set(value):
-		texture = value
-		queue_redraw()
+## 그림 크기 배수. **이제는 노드 `scale`을 쓰는 게 낫다** — 에디터에서 핸들로 잡히기 때문이다.
+## 예전 맵이 이 값을 들고 있어서 남겨 뒀고, 꽂아 둔 그림에만 곱해진다
 
 @export_group("운동")
 ## 1초 운동하면 쌓이는 스펙.
@@ -104,7 +106,19 @@ var _gauge: float = -1.0
 ## 레일이 흘러간 거리 — 간격 하나만큼 가면 처음으로 되돌려 끝없이 돈다
 var _belt_offset: float = 0.0
 
+## 그림의 **밑변 가운데**가 노드 원점에 오게 맞춘다. 기구는 바닥에 서는 물건이라
+## 원점이 발밑이어야 자리를 섞을 때 x만 바꾸면 된다
+func _fit_texture() -> void:
+	if texture == null:
+		return
+	centered = false
+	var size: Vector2 = texture.get_size() * size_scale
+	offset = Vector2(-size.x * 0.5, -size.y) / maxf(size_scale, 0.0001)
+	# 그림 자체의 배수는 scale에 곱해 넣는다 — 핸들로 잡은 크기와 같이 먹는다
+	queue_redraw()
+
 func _ready() -> void:
+	_fit_texture()
 	if Engine.is_editor_hint():
 		return
 	# 운동 스킬이 이 그룹으로 기구를 찾는다(기구마다 Area2D를 두는 것보다 가볍다)
@@ -206,10 +220,8 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.22))
 		draw_circle(Vector2(0.0, -9.0), width() * 0.4, Color(0, 0, 0, shadow_alpha))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if texture != null:
-		var size: Vector2 = texture.get_size() * size_scale
-		draw_texture_rect(texture, Rect2(Vector2(-size.x * 0.5, -size.y), size), false)
-	else:
+	if texture == null:
+		# 그림이 없을 때만 도형으로 그린다. 그림이 있으면 Sprite2D가 알아서 그린다
 		match kind:
 			Kind.CURL:
 				_draw_curl()
