@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://s4pxfu4mi1ky"
-path="res://.godot/imported/거울에비친헬스장.png-eb5e31a69834f38fd57104f6d5a79420.ctex"
+uid="uid://dj38yv2aupys"
+path="res://.godot/imported/헬스.png-05301d1045664ff131d348e41b190c4f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/헬스장/거울에비친헬스장.png"
-dest_files=["res://.godot/imported/거울에비친헬스장.png-eb5e31a69834f38fd57104f6d5a79420.ctex"]
+source_file="res://sprite/맵/헬스장/헬스.png"
+dest_files=["res://.godot/imported/헬스.png-05301d1045664ff131d348e41b190c4f.ctex"]
 
 [params]
 

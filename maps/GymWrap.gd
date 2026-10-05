@@ -15,8 +15,10 @@ extends Node2D
 ## 넘어갈 때 **발밑 높이 차이는 그대로 둔다** — 뛰어오른 채로 끝에 닿으면 반대 층에서도 떠 있다.
 ## 그래야 이동이 끊기지 않고 이어지는 느낌이 난다
 
-## 맵의 좌우 끝(가운데에서의 거리). 이 선을 넘으면 넘어간다
-@export var edge_x: float = 884.0
+## 맵의 **왼쪽 끝과 오른쪽 끝** x. 이 선을 넘으면 반대 층 반대쪽에서 나온다.
+## 맵을 화면 좌표(0~1720)에 맞춰 놓아서 가운데가 0이 아니다 — 그래서 양끝을 따로 적는다
+@export var left_x: float = 0.0
+@export var right_x: float = 1720.0
 ## 넘어간 뒤 반대쪽 끝에서 **이만큼 안쪽**에 놓는다. 0이면 바로 또 넘어가 버린다
 @export var inset: float = 40.0
 ## 1층 바닥 윗면 y
@@ -43,7 +45,7 @@ func _check(fighter: Node2D) -> void:
 	if _locked.get(id, 0.0) > 0.0:
 		return
 	var at: Vector2 = fighter.global_position
-	if absf(at.x) < edge_x:
+	if at.x > left_x and at.x < right_x:
 		return
 	# 지금 어느 층에 있는지 — 두 바닥의 한가운데를 기준으로 가른다
 	var middle: float = (ground_y + upper_y) * 0.5
@@ -52,7 +54,7 @@ func _check(fighter: Node2D) -> void:
 	var drop: float = ground_y - upper_y
 	var new_y: float = at.y + (drop if on_upper else -drop)
 	# 반대쪽 끝으로 — 왼쪽 끝으로 나갔으면 오른쪽 끝에서 들어온다
-	var new_x: float = (edge_x - inset) if at.x <= -edge_x else -(edge_x - inset)
+	var new_x: float = (right_x - inset) if at.x <= left_x else (left_x + inset)
 	fighter.global_position = Vector2(new_x, new_y)
 	_locked[id] = cooldown
 	# 카메라가 따라오느라 주욱 끌려가지 않게, 넘어간 자리로 바로 옮겨 준다
