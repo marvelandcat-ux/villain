@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://d2p6i4uhgtekl" path="res://ui/cutin/SubwayVillainCutIn.tscn" id="2"]
+[ext_resource type="Texture2D" uid="uid://blrw7y88f3o4d" path="res://sprite/도감/전신/지하철 아저씨.png" id="3_ingame"]
+[ext_resource type="Texture2D" uid="uid://da3devh2r65r" path="res://sprite/메인메뉴/일러스트/지하철아저씨/지하철아저씨일러스트.png" id="4_illust"]
 
 [resource]
 script = ExtResource("1")
@@ -9,3 +11,9 @@ character_name = "지하철 아저씨"
 max_hp = 95
 move_speed = 425.25
 ultimate_cutin_scene = ExtResource("2")
+attack_rating = 4
+hp_rating = 2
+speed_rating = 5
+description = "출근길 지하철을 자기 구역으로 여기는 노인. 체력이 가장 낮고 이동 속도가 가장 빠르다."
+dex_ingame_texture = ExtResource("3_ingame")
+dex_illust_texture = ExtResource("4_illust")

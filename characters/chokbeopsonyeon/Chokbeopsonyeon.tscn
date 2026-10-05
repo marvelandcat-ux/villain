@@ -74,7 +74,7 @@ script = ExtResource("2")
 cooldown = 6.0
 dash_speed_multiplier = 1.7
 icon = ExtResource("11")
-skill_name = "브레이크가 \"없는\" 자전거"
+skill_name = "노브레이크 픽시"
 demo_video = ExtResource("21_vid_dash")
 description = "자전거로 앞을 향해 냅다 돌진한다. 부딪힌 상대는 튕겨 나가지만, 벽까지 밀고 가면 브레이크가 없어서 본인이 처박힌다."
 

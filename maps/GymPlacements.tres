@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="GymPlacement" format=3]
+
+[ext_resource type="Script" path="res://maps/GymPlacement.gd" id="1_b5q1l"]
+
+[resource]
+script = ExtResource("1_b5q1l")
+curl = PackedVector2Array(-708.6666, 281.99994, 808.5714, 280.9524, 0, 100, -820.95245, 281.90472, 819.04785, 283.80957, 0, 100)
+squat = PackedVector2Array(800.9524, 286.66675, 0, 100, -807.619, 287.61902, -16.190552, 99.04758, -812.3809, 287.61908, 800.9524, 286.66675)
+treadmill = PackedVector2Array(-3.8094482, 113.89993, -751.4286, 300.56668, 774.28564, 299.6143, 759.0475, 302.4714, -20.952332, 114.852325, -751.4286, 300.56668)
+curl_flip = PackedByteArray(0, 0, 0, 0, 0, 0)
+squat_flip = PackedByteArray(1, 0, 0, 0, 0, 1)
+treadmill_flip = PackedByteArray(0, 0, 0, 0, 0, 0)

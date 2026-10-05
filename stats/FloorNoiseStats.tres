@@ -1,9 +1,15 @@
 [gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://bjrsyl1q1nlar"]
 
 [ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://y8mu563seykp" path="res://sprite/도감/전신/층간소음 청년.png" id="2_ingame"]
 
 [resource]
 script = ExtResource("1")
 character_name = "층간소음 빌런"
 max_hp = 105
 move_speed = 398.25
+attack_rating = 3
+hp_rating = 5
+speed_rating = 2
+description = "아들을 안고 다니는 아버지. 체력이 가장 높고, 영역전개로 상대를 자기 집으로 끌어들인다."
+dex_ingame_texture = ExtResource("2_ingame")

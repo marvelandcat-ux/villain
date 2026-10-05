@@ -173,8 +173,12 @@ func accent() -> Color:
 		_:
 			return accent_curl
 
-## 좌우로 차지하는 폭 — 자리를 섞을 때 서로 안 겹치게 재는 값
+## 좌우로 차지하는 폭 — 자리를 섞을 때 서로 안 겹치게 재는 값.
+## **그림을 쓰면 그림 폭을 그대로 쓴다** — 도형 시절 숫자를 그대로 두면 그림과 따로 놀아
+## 기구끼리 겹치거나 쓸데없이 멀어진다(2026-10-06)
 func width() -> float:
+	if texture != null:
+		return texture.get_size().x * size_scale
 	match kind:
 		Kind.SQUAT:
 			return 190.0 * size_scale
@@ -183,8 +187,11 @@ func width() -> float:
 		_:
 			return 180.0 * size_scale
 
-## 꼭대기 높이(원점 기준, 음수) — 게이지를 그 위에 띄운다
+## 꼭대기 높이(원점 기준, 음수) — 게이지를 그 위에 띄운다.
+## 그림은 바닥(원점)에서 위로 그려지므로 그림 높이가 곧 꼭대기다
 func top_offset() -> float:
+	if texture != null:
+		return -texture.get_size().y * size_scale
 	match kind:
 		Kind.SQUAT:
 			return -150.0 * size_scale

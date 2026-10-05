@@ -15,6 +15,13 @@ extends Node2D
 ## 여기서 `PlayerSpawn1/2`를 옮겨 두면 `Stage._ready()`가 **옮겨진 자리**를 읽어 캐릭터를 세운다.
 ## 이 순서가 깨지면 선수들이 기구 속에 박힌 채 시작한다
 
+## **미리 짜 둔 배치표**(`maps/GymPlacements.tres`). 꽂혀 있고 배치가 하나라도 적혀 있으면
+## 아래의 "칸 깔고 섞기"를 **안 쓰고** 이 표에서 한 가지를 골라 그대로 놓는다.
+## 자리를 고치는 곳은 `maps/GymPlacementStudio.tscn`이다(F6로 열면 끌어서 맞추고 S로 저장)
+@export var placements: GymPlacement
+## 표를 꽂아 두고도 잠깐 옛 방식으로 돌려 보고 싶을 때 끈다
+@export var use_placements: bool = true
+
 ## 층마다 바닥 높이(y). **0번이 1층**이고, 선수는 늘 1층에서 시작한다
 @export var level_y: PackedFloat32Array = PackedFloat32Array([280.0, 100.0])
 ## 층마다 기구가 설 수 있는 좌우 한계
@@ -51,9 +58,38 @@ func _ready() -> void:
 			items.append(child)
 	if items.is_empty():
 		return
-	_scatter(items)
+	if use_placements and placements != null and placements.count() > 0:
+		_place_from_table(items)
+	else:
+		_scatter(items)
 	if move_spawns:
 		_place_spawns()
+
+## **직전 판에 쓴 배치 번호.** 씬이 통째로 다시 열려도 스크립트에 남아 있어서,
+## 연달아 같은 배치가 나오는 걸 막는 데 쓴다
+static var _last_index: int = -1
+
+## 배치표에서 한 가지를 골라 기구를 그 자리에 그대로 놓는다
+func _place_from_table(items: Array[GymMachine]) -> void:
+	var total: int = placements.count()
+	var pick: int = 0
+	if total > 1:
+		# 직전과 다른 번호를 고른다 — 남은 것 중에서 뽑고, 직전 번호 이상이면 한 칸 밀어 건너뛴다
+		pick = randi() % (total - 1) if _last_index >= 0 else randi() % total
+		if _last_index >= 0 and pick >= _last_index:
+			pick += 1
+	_last_index = pick
+	ground_x.clear()
+	# 1층과 2층을 가르는 높이 — 이 아래면 1층으로 본다(선수 자리를 1층 기구에 맞추기 때문)
+	var split: float = level_y[0]
+	if level_y.size() > 1:
+		split = (level_y[0] + level_y[1]) * 0.5
+	for machine in items:
+		machine.position = placements.spot(machine.kind, pick, machine.position)
+		machine.flip = placements.flipped(machine.kind, pick)
+		if machine.position.y >= split:
+			ground_x.append(machine.position.x)
+	ground_x.sort()
 
 ## 칸을 깔고 섞어서 기구를 하나씩 앉힌다
 func _scatter(items: Array[GymMachine]) -> void:
@@ -90,7 +126,9 @@ func _scatter(items: Array[GymMachine]) -> void:
 		var list: Array = taken[level]
 		list.sort_custom(func(a, b): return a[0] < b[0])
 		for i in range(1, list.size()):
-			var need: float = (list[i - 1][1].width() + list[i][1].width()) * 0.5 + min_gap
+			# 노드 scale까지 곱해야 **화면에 보이는** 폭이 된다 — 런닝머신처럼 가로를 따로 줄인 기구가 있다
+			var need: float = (list[i - 1][1].width() * absf(list[i - 1][1].scale.x)
+				+ list[i][1].width() * absf(list[i][1].scale.x)) * 0.5 + min_gap
 			if list[i][0] - list[i - 1][0] < need:
 				list[i][0] = list[i - 1][0] + need
 		# 오른쪽으로 밀린 만큼 전체를 되돌려 구간 안에 다시 넣는다

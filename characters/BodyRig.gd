@@ -5433,6 +5433,10 @@ func _spawn_curl_sweat() -> void:
 ## 손이 몸 옆에 어중간하게 떠 보인다. 끄면 손이 그대로 보인다
 @export var squat_hide_hands: bool = true
 
+## **스쿼트 때 손을 감춰 둔 상태인지.** 켜 뒀으면 자세가 풀릴 때 반드시 되돌려야 한다 —
+## 안 그러면 운동이 끝나도 손이 영영 안 보인다(2026-10-06 고침)
+var _squat_hands_off: bool = false
+
 ## 0=평소, 1=스쿼트 자세
 var _squat_blend: float = 0.0
 var _squat_target: float = 0.0
@@ -5453,10 +5457,7 @@ static var _plate_cache: Dictionary = {}
 func set_squat(on: bool) -> void:
 	_squat_target = 1.0 if on else 0.0
 	if not on:
-		# 숨겨 둔 손을 되돌린다 — 안 그러면 운동이 끝나도 손이 없다
-		for hand in [_hand_l, _hand_r]:
-			if hand:
-				hand.visible = true
+		_set_squat_hands(false)   # 자세가 아직 남아 있으면 다음 프레임에 다시 감춘다
 	if on and _squat_blend <= 0.001:
 		_squat_time = 0.0
 		_squat_falling = true
@@ -5492,9 +5493,21 @@ func _squat_depth() -> float:
 	return 0.5 - cos(clampf(k, 0.0, 1.0) * PI) * 0.5
 
 ## 스쿼트 — 세 자세를 **서기 -> 중간 -> 앉기 -> 중간 -> 서기**로 오간다
+## 스쿼트 중에만 손을 감춘다. 지금 상태와 같으면 아무것도 안 해서 다른 데서 건드린 걸 덮지 않는다
+func _set_squat_hands(off: bool) -> void:
+	if _squat_hands_off == off:
+		return
+	_squat_hands_off = off
+	for hand in [_hand_l, _hand_r]:
+		if hand:
+			hand.visible = not off
+
 func _pose_squat() -> void:
 	if _squat_blend <= 0.001 or squat_up_pose == null or squat_mid_pose == null or squat_down_pose == null:
 		_show_squat_plate(false)
+		# **여기서 꼭 되돌려야 한다** — 자세가 다 풀리면 아래 코드가 안 돌기 때문에,
+		# 감춰 둔 손을 돌려놓을 곳이 이 줄밖에 없다
+		_set_squat_hands(false)
 		return
 	var k: float = _squat_depth()
 	var a: PackedScene = squat_up_pose if k < 0.5 else squat_mid_pose
@@ -5512,11 +5525,9 @@ func _pose_squat() -> void:
 			if part:
 				part.position += shake
 	_update_squat_plate(t, a, b)
-	# 봉을 어깨에 멘 자세라 손은 안 보이는 게 낫다
-	if squat_hide_hands:
-		for hand in [_hand_l, _hand_r]:
-			if hand:
-				hand.visible = false
+	# 봉을 어깨에 멘 자세라 손은 안 보이는 게 낫다 — **스쿼트 중에만** 감춘다
+	_set_squat_hands(squat_hide_hands)
+
 
 ## 어깨에 멘 원판을 자리에 놓는다.
 ## 포즈 씬에 `SquatPlateView`가 있으면 **그 자리를 자세마다 읽어 이어 준다**(몸과 같이 움직인다).

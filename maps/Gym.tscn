@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
@@ -7,6 +7,10 @@
 [ext_resource type="Script" path="res://maps/GymMachine.gd" id="6_machine"]
 [ext_resource type="PackedScene" path="res://skills/WorkoutSkill.tscn" id="7_workout"]
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="8_treadmill_tex"]
+[ext_resource type="Texture2D" uid="uid://bad7ehns32pvc" path="res://sprite/맵/헬스장/측면바벨거치대.png" id="9_curl_tex"]
+[ext_resource type="Texture2D" uid="uid://c3rcjiddb7oif" path="res://sprite/맵/헬스장/스쿼트랙.png" id="10_squat_tex"]
+[ext_resource type="Resource" path="res://maps/GymPlacements.tres" id="11_places"]
+[ext_resource type="Texture2D" uid="uid://dlfp83fr7mbnx" path="res://sprite/맵/헬스장/도시밤.png" id="12_city"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(2496, 40)
@@ -24,6 +28,14 @@ map_skill_scene = ExtResource("7_workout")
 [node name="DecoBackdropSky" type="Polygon2D" parent="."]
 color = Color(0.1451, 0.1569, 0.1765, 1)
 polygon = PackedVector2Array(-3000, -2400, 3000, -2400, 3000, 280, -3000, 280)
+
+[node name="DecoCity" type="Sprite2D" parent="."]
+texture_repeat = 2
+modulate = Color(0.62, 0.66, 0.78, 1)
+position = Vector2(0, -170)
+texture = ExtResource("12_city")
+region_enabled = true
+region_rect = Rect2(0, 0, 2600, 500)
 
 [node name="DecoBackdropFloor" type="Polygon2D" parent="."]
 color = Color(0.0941, 0.0941, 0.0941, 1)
@@ -48,6 +60,7 @@ one_way_collision = true
 
 [node name="Equipment" type="Node2D" parent="."]
 script = ExtResource("5_layout")
+placements = ExtResource("11_places")
 level_min_x = PackedFloat32Array(-680, -500)
 level_max_x = PackedFloat32Array(680, 500)
 level_slots = PackedInt32Array(5, 3)
@@ -57,10 +70,14 @@ spawn_min_distance = 760.0
 [node name="BarbellCurl" type="Node2D" parent="Equipment"]
 script = ExtResource("6_machine")
 kind = 0
+size_scale = 0.085
+texture = ExtResource("9_curl_tex")
 
 [node name="Squat" type="Node2D" parent="Equipment"]
 script = ExtResource("6_machine")
 kind = 1
+size_scale = 0.118
+texture = ExtResource("10_squat_tex")
 
 [node name="Treadmill" type="Node2D" parent="Equipment"]
 script = ExtResource("6_machine")
