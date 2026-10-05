@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="GymBackdropSettings" format=3]
+
+[ext_resource type="Script" path="res://maps/GymBackdropSettings.gd" id="1_3122r"]
+
+[resource]
+script = ExtResource("1_3122r")
+city_center = Vector2(0, -265)
+city_scale = Vector2(0.6750003, 0.5700004)
+window_center = Vector2(0.9047241, -167.09515)
+window_scale = Vector2(0.26500002, 0.275)

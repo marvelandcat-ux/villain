@@ -1,390 +1,311 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=6 format=3 uid="uid://d4jh02vsxw10e"]
 
-[ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
-[ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
-[ext_resource type="Script" path="res://maps/GymLayout.gd" id="5_layout"]
-[ext_resource type="Script" path="res://maps/GymGuides.gd" id="19_guides"]
-[ext_resource type="Script" path="res://maps/GymMachine.gd" id="6_machine"]
-[ext_resource type="PackedScene" path="res://skills/WorkoutSkill.tscn" id="7_workout"]
-[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="8_treadmill_tex"]
-[ext_resource type="Texture2D" uid="uid://bad7ehns32pvc" path="res://sprite/맵/헬스장/측면바벨거치대.png" id="9_curl_tex"]
-[ext_resource type="Texture2D" uid="uid://c3rcjiddb7oif" path="res://sprite/맵/헬스장/스쿼트랙.png" id="10_squat_tex"]
-[ext_resource type="Resource" path="res://maps/GymPlacements.tres" id="11_places"]
-[ext_resource type="Texture2D" uid="uid://s4pxfu4mi1ky" path="res://sprite/맵/헬스장/거울에비친헬스장.png" id="18_interior"]
+[ext_resource type="Script" path="res://maps/GymBackdropScaler.gd" id="0_scaler"]
+[ext_resource type="Texture2D" uid="uid://c1tx5dj86yma6" path="res://sprite/맵/헬스장/도시야경.png" id="1_gt8d5"]
+[ext_resource type="Texture2D" uid="uid://c1u57gfav0im" path="res://sprite/맵/헬스장/헬스장벽2_타일s.png" id="2_b5fe7"]
+[ext_resource type="Texture2D" uid="uid://bpxm8uljl6lir" path="res://sprite/맵/헬스장/헬스장창프레임_보정.png" id="3_i48tu"]
 
-[ext_resource type="Texture2D" uid="uid://c1tx5dj86yma6" path="res://sprite/맵/헬스장/도시야경.png" id="bd_1_gt8d5"]
-[ext_resource type="Texture2D" uid="uid://c1u57gfav0im" path="res://sprite/맵/헬스장/헬스장벽2_타일s.png" id="bd_2_b5fe7"]
-[ext_resource type="Texture2D" uid="uid://bpxm8uljl6lir" path="res://sprite/맵/헬스장/헬스장창프레임_보정.png" id="bd_3_i48tu"]
+[node name="GymBackdropLayers" type="Node2D" unique_id=73033197]
+script = ExtResource("0_scaler")
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1248, 40)
+[node name="Sky" type="Node2D" parent="." unique_id=604266608]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
-size = Vector2(40, 1600)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor2f"]
-size = Vector2(640, 22)
-
-[node name="Gym" type="Node2D"]
-script = ExtResource("1")
-map_skill_scene = ExtResource("7_workout")
-
-[node name="DecoBackdropSky" type="Polygon2D" parent="."]
-color = Color(0.1451, 0.1569, 0.1765, 1)
-polygon = PackedVector2Array(-3000, -2400, 3000, -2400, 3000, 430, -3000, 430)
-
-[node name="Backdrop" type="Node2D" parent="."]
-
-[node name="Sky" type="Node2D" parent="Backdrop" ]
-[node name="SkyFill" type="Polygon2D" parent="Backdrop/Sky" ]
+[node name="SkyFill" type="Polygon2D" parent="Sky" unique_id=1926129527]
 polygon = PackedVector2Array(-1400, -620, 1400, -620, 1400, 140, -1400, 140)
 vertex_colors = PackedColorArray(0.05, 0.07, 0.18, 1, 0.05, 0.07, 0.18, 1, 0.13, 0.17, 0.34, 1, 0.13, 0.17, 0.34, 1)
-[node name="Stars" type="Polygon2D" parent="Backdrop/Sky" ]
+
+[node name="Stars" type="Polygon2D" parent="Sky" unique_id=582695899]
 color = Color(1, 0.98, 0.85, 0.85)
 polygon = PackedVector2Array(1061.9438, -104.34119, 1064.1438, -106.54118, 1066.3438, -104.34119, 1064.1438, -102.14119, 452.41766, -357.62662, 454.61768, -359.82663, 456.8177, -357.62662, 454.61768, -355.4266, 104.95393, -179.13403, 107.15393, -181.33403, 109.35393, -179.13403, 107.15393, -176.93404, 1295.5979, -604.7684, 1297.7979, -606.9684, 1299.9978, -604.7684, 1297.7979, -602.56836, -230.10454, -157.38873, -227.90454, -159.58873, -225.70454, -157.38873, -227.90454, -155.18874, -1082.3177, -123.68298, -1080.1178, -125.88298, -1077.9178, -123.68298, -1080.1178, -121.48299, 530.79364, -574.001, 532.99365, -576.201, 535.19366, -574.001, 532.99365, -571.80096, -391.9187, -604.80975, -389.7187, -607.00977, -387.51868, -604.80975, -389.7187, -602.60974, 711.16425, -489.0659, 713.36426, -491.2659, 715.5643, -489.0659, 713.36426, -486.86588, 442.08356, -175.11157, 444.28357, -177.31157, 446.48358, -175.11157, 444.28357, -172.91158, 296.18597, -149.16254, 298.386, -151.36253, 300.586, -149.16254, 298.386, -146.96254, -879.64276, -165.45685, -877.44275, -167.65685, -875.24274, -165.45685, -877.44275, -163.25685, 543.9451, -539.1304, 546.14514, -541.3304, 548.34515, -539.1304, 546.14514, -536.93036, -858.3394, -118.13248, -856.1394, -120.33247, -853.9394, -118.13248, -856.1394, -115.93248, 800.2253, -219.19565, 802.4253, -221.39565, 804.6253, -219.19565, 802.4253, -216.99565, -186.04338, -573.6267, -183.84338, -575.8267, -181.64339, -573.6267, -183.84338, -571.4267, -521.9922, -112.855896, -519.7922, -115.05589, -517.59216, -112.855896, -519.7922, -110.6559, -405.8526, -122.07242, -403.6526, -124.272415, -401.45258, -122.07242, -403.6526, -119.87242, -1195.1736, -560.7196, -1192.9736, -562.9196, -1190.7737, -560.7196, -1192.9736, -558.5196, -1239.979, -614.93195, -1237.779, -617.13196, -1235.5791, -614.93195, -1237.779, -612.73193, -1175.6316, -450.6464, -1173.4316, -452.8464, -1171.2317, -450.6464, -1173.4316, -448.44638, -305.22626, -145.0086, -303.02625, -147.2086, -300.82623, -145.0086, -303.02625, -142.80861, 1036.1855, -321.44922, 1038.3855, -323.64923, 1040.5854, -321.44922, 1038.3855, -319.2492, 419.44, -135.5618, 421.64, -137.7618, 423.84003, -135.5618, 421.64, -133.3618, -848.07983, -610.79535, -845.8798, -612.99536, -843.6798, -610.79535, -845.8798, -608.59534, -1375.7671, -458.84363, -1373.5671, -461.04364, -1371.3672, -458.84363, -1373.5671, -456.64362, 879.7797, -310.1656, 881.97974, -312.3656, 884.17975, -310.1656, 881.97974, -307.96558, 790.36053, -617.9781, 792.56055, -620.1781, 794.76056, -617.9781, 792.56055, -615.7781, -1117.6594, -132.19998, -1115.4595, -134.39998, -1113.2595, -132.19998, -1115.4595, -129.99998, -692.15765, -265.48456, -689.95764, -267.68457, -687.7576, -265.48456, -689.95764, -263.28455, 1135.0254, -192.5336, 1137.2253, -194.7336, 1139.4253, -192.5336, 1137.2253, -190.3336, -858.4953, -95.865234, -856.2953, -98.06523, -854.0953, -95.865234, -856.2953, -93.66524, 784.3547, -221.44775, 786.5547, -223.64775, 788.7547, -221.44775, 786.5547, -219.24776, -244.94365, -384.6883, -242.74365, -386.8883, -240.54366, -384.6883, -242.74365, -382.48828, -595.0407, -91.50885, -592.8407, -93.70885, -590.6407, -91.50885, -592.8407, -89.30885, 1178.0352, -148.1576, 1180.2351, -150.35759, 1182.435, -148.1576, 1180.2351, -145.9576, -82.001144, -137.54547, -79.80115, -139.74547, -77.60115, -137.54547, -79.80115, -135.34547, 1391.6917, -201.88779, 1393.8916, -204.08778, 1396.0916, -201.88779, 1393.8916, -199.68779, -634.07587, -414.92615, -631.87585, -417.12616, -629.67584, -414.92615, -631.87585, -412.72614, -901.71893, -481.25854, -899.5189, -483.45856, -897.3189, -481.25854, -899.5189, -479.05853, -1338.6357, -274.91995, -1336.4358, -277.11996, -1334.2358, -274.91995, -1336.4358, -272.71994, 508.9566, -500.61212, 511.15662, -502.81213, 513.3566, -500.61212, 511.15662, -498.4121, 435.63422, -102.02832, 437.83423, -104.22832, 440.03424, -102.02832, 437.83423, -99.82832, 248.24947, -151.501, 250.44946, -153.701, 252.64946, -151.501, 250.44946, -149.30101, -1272.6804, -201.96964, -1270.4805, -204.16963, -1268.2805, -201.96964, -1270.4805, -199.76964, -1004.11426, -285.28534, -1001.91425, -287.48535, -999.71423, -285.28534, -1001.91425, -283.08533, -148.55876, -349.74094, -146.35876, -351.94095, -144.15877, -349.74094, -146.35876, -347.54092, 1129.2563, -138.88348, 1131.4563, -141.08348, 1133.6563, -138.88348, 1131.4563, -136.68349, -132.11186, -569.8482, -129.91187, -572.0482, -127.71187, -569.8482, -129.91187, -567.6482, -984.9333, -97.28351, -982.7333, -99.483505, -980.53326, -97.28351, -982.7333, -95.08351, -657.01825, -156.51373, -654.81824, -158.71373, -652.6182, -156.51373, -654.81824, -154.31374, 524.37994, -263.24783, 526.57996, -265.44785, 528.77997, -263.24783, 526.57996, -261.04782, 1184.9104, -198.69269, 1187.1104, -200.89268, 1189.3103, -198.69269, 1187.1104, -196.49269, 1302.2339, -395.7594, 1304.4338, -397.9594, 1306.6338, -395.7594, 1304.4338, -393.5594, 703.17523, -305.40637, 705.37524, -307.60638, 707.57526, -305.40637, 705.37524, -303.20636, 592.5567, -196.95981, 594.7567, -199.1598, 596.9567, -196.95981, 594.7567, -194.75981, -421.33386, -177.76941, -419.13385, -179.9694, -416.93384, -177.76941, -419.13385, -175.56941, 337.0716, -332.63416, 339.2716, -334.83417, 341.47162, -332.63416, 339.2716, -330.43414, -7.1333494, -371.11786, -4.9333496, -373.31787, -2.7333496, -371.11786, -4.9333496, -368.91785, -448.27332, -591.3573, -446.0733, -593.5573, -443.8733, -591.3573, -446.0733, -589.1573, 342.71063, -318.0528, 344.91064, -320.2528, 347.11066, -318.0528, 344.91064, -315.85278, -479.42053, -203.11899, -477.22052, -205.31898, -475.0205, -203.11899, -477.22052, -200.91899, -195.59929, -306.50284, -193.39929, -308.70285, -191.1993, -306.50284, -193.39929, -304.30283, 1212.0884, -336.4651, 1214.2883, -338.6651, 1216.4883, -336.4651, 1214.2883, -334.26508, 50.4145, -229.81213, 52.614502, -232.01213, 54.814503, -229.81213, 52.614502, -227.61214, 641.76544, -162.14941, 643.96545, -164.34941, 646.16547, -162.14941, 643.96545, -159.94942, 291.02448, -208.6337, 293.2245, -210.8337, 295.4245, -208.6337, 293.2245, -206.4337, -460.30872, -499.0712, -458.1087, -501.2712, -455.9087, -499.0712, -458.1087, -496.8712, 657.4389, -379.60754, 659.6389, -381.80756, 661.8389, -379.60754, 659.6389, -377.40753, -327.7276, -323.63824, -325.5276, -325.83826, -323.32758, -323.63824, -325.5276, -321.43823)
 polygons = [PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7), PackedInt32Array(8, 9, 10, 11), PackedInt32Array(12, 13, 14, 15), PackedInt32Array(16, 17, 18, 19), PackedInt32Array(20, 21, 22, 23), PackedInt32Array(24, 25, 26, 27), PackedInt32Array(28, 29, 30, 31), PackedInt32Array(32, 33, 34, 35), PackedInt32Array(36, 37, 38, 39), PackedInt32Array(40, 41, 42, 43), PackedInt32Array(44, 45, 46, 47), PackedInt32Array(48, 49, 50, 51), PackedInt32Array(52, 53, 54, 55), PackedInt32Array(56, 57, 58, 59), PackedInt32Array(60, 61, 62, 63), PackedInt32Array(64, 65, 66, 67), PackedInt32Array(68, 69, 70, 71), PackedInt32Array(72, 73, 74, 75), PackedInt32Array(76, 77, 78, 79), PackedInt32Array(80, 81, 82, 83), PackedInt32Array(84, 85, 86, 87), PackedInt32Array(88, 89, 90, 91), PackedInt32Array(92, 93, 94, 95), PackedInt32Array(96, 97, 98, 99), PackedInt32Array(100, 101, 102, 103), PackedInt32Array(104, 105, 106, 107), PackedInt32Array(108, 109, 110, 111), PackedInt32Array(112, 113, 114, 115), PackedInt32Array(116, 117, 118, 119), PackedInt32Array(120, 121, 122, 123), PackedInt32Array(124, 125, 126, 127), PackedInt32Array(128, 129, 130, 131), PackedInt32Array(132, 133, 134, 135), PackedInt32Array(136, 137, 138, 139), PackedInt32Array(140, 141, 142, 143), PackedInt32Array(144, 145, 146, 147), PackedInt32Array(148, 149, 150, 151), PackedInt32Array(152, 153, 154, 155), PackedInt32Array(156, 157, 158, 159), PackedInt32Array(160, 161, 162, 163), PackedInt32Array(164, 165, 166, 167), PackedInt32Array(168, 169, 170, 171), PackedInt32Array(172, 173, 174, 175), PackedInt32Array(176, 177, 178, 179), PackedInt32Array(180, 181, 182, 183), PackedInt32Array(184, 185, 186, 187), PackedInt32Array(188, 189, 190, 191), PackedInt32Array(192, 193, 194, 195), PackedInt32Array(196, 197, 198, 199), PackedInt32Array(200, 201, 202, 203), PackedInt32Array(204, 205, 206, 207), PackedInt32Array(208, 209, 210, 211), PackedInt32Array(212, 213, 214, 215), PackedInt32Array(216, 217, 218, 219), PackedInt32Array(220, 221, 222, 223), PackedInt32Array(224, 225, 226, 227), PackedInt32Array(228, 229, 230, 231), PackedInt32Array(232, 233, 234, 235), PackedInt32Array(236, 237, 238, 239), PackedInt32Array(240, 241, 242, 243), PackedInt32Array(244, 245, 246, 247), PackedInt32Array(248, 249, 250, 251), PackedInt32Array(252, 253, 254, 255), PackedInt32Array(256, 257, 258, 259), PackedInt32Array(260, 261, 262, 263), PackedInt32Array(264, 265, 266, 267), PackedInt32Array(268, 269, 270, 271), PackedInt32Array(272, 273, 274, 275), PackedInt32Array(276, 277, 278, 279)]
-[node name="City" type="Sprite2D" parent="Backdrop" ]
+
+[node name="City" type="Sprite2D" parent="." unique_id=713219334]
 modulate = Color(0.62, 0.66, 0.78, 1)
 texture_repeat = 2
 position = Vector2(0, -150)
 scale = Vector2(0.2250, 0.1900)
-texture = ExtResource("bd_1_gt8d5")
+texture = ExtResource("1_gt8d5")
 region_enabled = true
 region_rect = Rect2(0, 0, 2600, 941)
-[node name="WallTop" type="TextureRect" parent="Backdrop" ]
+
+
+
+
+
+
+
+
+
+[node name="WallTop" type="TextureRect" parent="." unique_id=800000]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -700.0
 offset_top = -620.0
 offset_right = 700.0
 offset_bottom = -189.4
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallBottom" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallBottom" type="TextureRect" parent="." unique_id=800097]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -700.0
 offset_top = -50.6
 offset_right = 700.0
 offset_bottom = 100.0
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap0" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap0" type="TextureRect" parent="." unique_id=800194]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -700.0
 offset_top = -189.4
 offset_right = -636.6
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap1" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap1" type="TextureRect" parent="." unique_id=800291]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -602.4
 offset_top = -189.4
 offset_right = -548.1
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap2" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap2" type="TextureRect" parent="." unique_id=800388]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -513.9
 offset_top = -189.4
 offset_right = -459.6
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap3" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap3" type="TextureRect" parent="." unique_id=800485]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -425.4
 offset_top = -189.4
 offset_right = -371.1
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap4" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap4" type="TextureRect" parent="." unique_id=800582]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -336.9
 offset_top = -189.4
 offset_right = -282.6
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap5" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap5" type="TextureRect" parent="." unique_id=800679]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -248.3
 offset_top = -189.4
 offset_right = -194.2
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap6" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap6" type="TextureRect" parent="." unique_id=800776]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -159.8
 offset_top = -189.4
 offset_right = -105.7
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap7" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap7" type="TextureRect" parent="." unique_id=800873]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = -71.3
 offset_top = -189.4
 offset_right = -17.1
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap8" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap8" type="TextureRect" parent="." unique_id=800970]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 17.1
 offset_top = -189.4
 offset_right = 71.3
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap9" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap9" type="TextureRect" parent="." unique_id=801067]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 105.7
 offset_top = -189.4
 offset_right = 159.8
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap10" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap10" type="TextureRect" parent="." unique_id=801164]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 194.2
 offset_top = -189.4
 offset_right = 248.3
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap11" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap11" type="TextureRect" parent="." unique_id=801261]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 282.6
 offset_top = -189.4
 offset_right = 336.9
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap12" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap12" type="TextureRect" parent="." unique_id=801358]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 371.1
 offset_top = -189.4
 offset_right = 425.4
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap13" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap13" type="TextureRect" parent="." unique_id=801455]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 459.6
 offset_top = -189.4
 offset_right = 513.9
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGap14" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGap14" type="TextureRect" parent="." unique_id=801552]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 548.1
 offset_top = -189.4
 offset_right = 602.4
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="WallGapEnd" type="TextureRect" parent="Backdrop" ]
+
+[node name="WallGapEnd" type="TextureRect" parent="." unique_id=801649]
 modulate = Color(0.68, 0.7, 0.76, 1)
 texture_repeat = 2
 offset_left = 636.6
 offset_top = -189.4
 offset_right = 700.0
 offset_bottom = -50.6
-texture = ExtResource("bd_2_b5fe7")
+texture = ExtResource("2_b5fe7")
 expand_mode = 1
 stretch_mode = 1
-[node name="Frame0" type="Sprite2D" parent="Backdrop" ]
+
+[node name="Frame0" type="Sprite2D" parent="." unique_id=600000]
 position = Vector2(-619.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame1" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame1" type="Sprite2D" parent="." unique_id=600131]
 position = Vector2(-531.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame2" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame2" type="Sprite2D" parent="." unique_id=600262]
 position = Vector2(-442.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame3" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame3" type="Sprite2D" parent="." unique_id=600393]
 position = Vector2(-354.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame4" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame4" type="Sprite2D" parent="." unique_id=600524]
 position = Vector2(-265.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame5" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame5" type="Sprite2D" parent="." unique_id=600655]
 position = Vector2(-177.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame6" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame6" type="Sprite2D" parent="." unique_id=600786]
 position = Vector2(-88.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame7" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame7" type="Sprite2D" parent="." unique_id=600917]
 position = Vector2(0.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame8" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame8" type="Sprite2D" parent="." unique_id=601048]
 position = Vector2(88.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame9" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame9" type="Sprite2D" parent="." unique_id=601179]
 position = Vector2(177.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame10" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame10" type="Sprite2D" parent="." unique_id=601310]
 position = Vector2(265.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame11" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame11" type="Sprite2D" parent="." unique_id=601441]
 position = Vector2(354.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame12" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame12" type="Sprite2D" parent="." unique_id=601572]
 position = Vector2(442.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame13" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame13" type="Sprite2D" parent="." unique_id=601703]
 position = Vector2(531.0, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="Frame14" type="Sprite2D" parent="Backdrop" ]
+texture = ExtResource("3_i48tu")
+
+[node name="Frame14" type="Sprite2D" parent="." unique_id=601834]
 position = Vector2(619.5, -120.0)
 scale = Vector2(0.09365, 0.09553)
-texture = ExtResource("bd_3_i48tu")
-[node name="DecoBackdropFloor" type="Polygon2D" parent="."]
-color = Color(0.0941, 0.0941, 0.0941, 1)
-polygon = PackedVector2Array(-3000, 430, 3000, 430, 3000, 2400, -3000, 2400)
+texture = ExtResource("3_i48tu")
 
-
-[node name="Scenery" type="Sprite2D" parent="."]
-modulate = Color(0.8, 0.84, 0.92, 1)
-texture_repeat = 2
-position = Vector2(-614, 188)
-scale = Vector2(0.444, 0.444)
-texture = ExtResource("18_interior")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 2766, 627)
-
-[node name="Floor2F" type="StaticBody2D" parent="."]
-position = Vector2(0, 100)
-
-[node name="Slab" type="Polygon2D" parent="Floor2F"]
-color = Color(0.2196, 0.2235, 0.2588, 1)
-polygon = PackedVector2Array(-320, 0, 320, 0, 320, 22, -320, 22)
-
-[node name="SlabEdge" type="Line2D" parent="Floor2F"]
-points = PackedVector2Array(-320, 0, 320, 0)
-width = 4.0
-default_color = Color(0.6, 0.63, 0.71, 1)
-
-[node name="Collision" type="CollisionShape2D" parent="Floor2F"]
-position = Vector2(0, 11)
-shape = SubResource("RectangleShape2D_floor2f")
-one_way_collision = true
-
-[node name="Equipment" type="Node2D" parent="."]
-script = ExtResource("5_layout")
-level_y = PackedFloat32Array(430, 100)
-placements = ExtResource("11_places")
-level_min_x = PackedFloat32Array(-340, -250)
-level_max_x = PackedFloat32Array(340, 250)
-level_slots = PackedInt32Array(5, 3)
-spawn_limit_x = 540.0
-spawn_min_distance = 380.0
-
-[node name="BarbellCurl" type="Node2D" parent="Equipment"]
-script = ExtResource("6_machine")
-kind = 0
-size_scale = 0.085
-texture = ExtResource("9_curl_tex")
-
-[node name="Squat" type="Node2D" parent="Equipment"]
-script = ExtResource("6_machine")
-kind = 1
-size_scale = 0.118
-texture = ExtResource("10_squat_tex")
-
-[node name="Treadmill" type="Node2D" parent="Equipment"]
-script = ExtResource("6_machine")
-kind = 2
-face_dir = -1.0
-ground_sink = 33.9
-size_scale = 0.1474
-scale = Vector2(0.7665, 0.91525)
-texture = ExtResource("8_treadmill_tex")
-belt_rect = Rect2(-74.9, -37, 162.5, 6.2)
-
-[node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(0, 450)
-
-[node name="GroundCollision" type="CollisionShape2D" parent="Ground"]
-shape = SubResource("RectangleShape2D_ground")
-
-[node name="LeftWall" type="StaticBody2D" parent="."]
-position = Vector2(-624, -350)
-
-[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
-shape = SubResource("RectangleShape2D_wall")
-
-[node name="RightWall" type="StaticBody2D" parent="."]
-position = Vector2(624, -350)
-
-[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
-shape = SubResource("RectangleShape2D_wall")
-
-[node name="PlayerSpawn1" type="Marker2D" parent="."]
-position = Vector2(-390, 390)
-
-[node name="PlayerSpawn2" type="Marker2D" parent="."]
-position = Vector2(390, 390)
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(0, 150)
-script = ExtResource("3")
-
-[node name="CombatHUD" parent="." instance=ExtResource("2")]
-
-[node name="Guides" type="Node2D" parent="."]
-script = ExtResource("19_guides")

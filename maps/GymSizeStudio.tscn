@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://netauxbuuo7"]
+
+[ext_resource type="Script" uid="uid://dsyqamacriqo3" path="res://maps/GymSizeGuide.gd" id="1_guide"]
+[ext_resource type="PackedScene" uid="uid://d4jh02vsxw10e" path="res://maps/GymBackdropLayers.tscn" id="2_layers"]
+[ext_resource type="Script" uid="uid://cjbcbucytha1o" path="res://maps/GymMachine.gd" id="3_machine"]
+[ext_resource type="Texture2D" uid="uid://bad7ehns32pvc" path="res://sprite/맵/헬스장/측면바벨거치대.png" id="4_curl"]
+[ext_resource type="Texture2D" uid="uid://c3rcjiddb7oif" path="res://sprite/맵/헬스장/스쿼트랙.png" id="5_squat"]
+[ext_resource type="Texture2D" uid="uid://r202y3ffye26" path="res://sprite/맵/헬스장/언닝머신.png" id="6_tread"]
+[ext_resource type="PackedScene" uid="uid://b4d01k58qbjx2" path="res://characters/akpeulleo/AkpeulleoRig.tscn" id="7_rig1"]
+[ext_resource type="PackedScene" uid="uid://cpgh7vviu5b4a" path="res://characters/iljin/IljinRig.tscn" id="8_rig2"]
+[ext_resource type="PackedScene" uid="uid://dcb56b8rkjkix" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="9_rig3"]
+
+[node name="GymSizeStudio" type="Node2D" unique_id=2011913781]
+script = ExtResource("1_guide")
+ruler_spots = PackedFloat32Array(-1100, 1100)
+
+[node name="Backdrop" parent="." unique_id=1518545705 instance=ExtResource("2_layers")]
+position = Vector2(0, -264)
+
+[node name="BarbellCurl" type="Node2D" parent="." unique_id=349033738]
+position = Vector2(-880, 432)
+scale = Vector2(2, 2)
+script = ExtResource("3_machine")
+size_scale = 0.085
+texture = ExtResource("4_curl")
+
+[node name="Squat" type="Node2D" parent="." unique_id=165281652]
+position = Vector2(1103, 441)
+scale = Vector2(3, 3)
+script = ExtResource("3_machine")
+kind = 1
+size_scale = 0.118
+texture = ExtResource("5_squat")
+
+[node name="Treadmill" type="Node2D" parent="." unique_id=1398472829]
+position = Vector2(-41, -107.99997)
+scale = Vector2(1.766, 2.11)
+script = ExtResource("3_machine")
+kind = 2
+size_scale = 0.1474
+texture = ExtResource("6_tread")
+ground_sink = 33.9
+face_dir = -1.0
+
+[node name="Rig1" parent="." unique_id=649919746 instance=ExtResource("7_rig1")]
+position = Vector2(-563, 338.00003)
+scale = Vector2(3, 3)
+
+[node name="Rig2" parent="." unique_id=1176549945 instance=ExtResource("8_rig2")]
+position = Vector2(-252, 333.00003)
+scale = Vector2(3, 3)
+
+[node name="Rig3" parent="." unique_id=555300797 instance=ExtResource("9_rig3")]
+position = Vector2(293, -248)
+scale = Vector2(3, 3)
