@@ -183,6 +183,9 @@ var clash_minigame_enabled: bool = true
 var guard_enabled: bool = true
 ## 꺼두면 방향키 두 번을 눌러도 대시(Fighter.can_dash())가 아예 안 나간다(RoomSettings에서 설정)
 var dash_enabled: bool = true
+## 두 선수의 최대 체력에 곱하는 배율(RoomSettings에서 설정, 2026-10-05).
+## 1.0 = 원래 체력, 0.5 = 절반(순삭 난타전), 2.0 = 두 배(장기전)
+var hp_multiplier: float = 1.0
 ## 꺼두면 **궁극기 컷인 연출**을 건너뛰고 바로 궁이 나간다(RoomSettings에서 설정, 2026-10-05).
 ## 자기 연출을 가진 궁(층간소음 영역전개)은 이 값과 상관없이 제 연출을 그대로 보여준다
 var ultimate_cutin_enabled: bool = true

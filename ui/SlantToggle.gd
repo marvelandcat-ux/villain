@@ -78,6 +78,14 @@ func _on_pressed() -> void:
 	is_on = not is_on
 	state_changed.emit(is_on)
 
+## **밖에서 상태를 정한다**(방향키로 켜고 끌 때) — 눌렀을 때와 똑같이 연출하고 알린다
+func set_on(on: bool) -> void:
+	if is_on == on:
+		return
+	is_on = on
+	set_process(true)
+	state_changed.emit(is_on)
+
 ## 연출 없이 지금 상태로 맞춘다 (화면을 처음 열 때 저장된 값을 반영하는 용도)
 func set_on_instant(on: bool) -> void:
 	is_on = on
