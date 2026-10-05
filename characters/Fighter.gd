@@ -52,6 +52,10 @@ const DEFAULT_DASH_DURATION: float = 0.04
 const DEFAULT_DASH_COOLDOWN: float = 2.5
 ## 대시 중 잔상을 남기는 간격(초). 대시가 0.04초뿐이라 매 물리 프레임 남긴다(0.04면 시작 잔상 하나만 나왔다)
 const DASH_TRAIL_INTERVAL: float = 0.015
+## 대시할 때 출발점부터 멈춘 자리까지 남는 하얀 스피드 라인(combat/SpeedLines.gd, 2026-10-05 사용자 요청).
+## 이 시간 동안 줄이 몸을 따라 늘어나고(대시 뒤 미끄러지는 것까지), 그 뒤 꼬리부터 지워진다
+const DASH_SPEED_LINE_TIME: float = 0.1
+const SPEED_LINES_SCRIPT := preload("res://combat/SpeedLines.gd")
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
 ## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
 const AIR_TRAIL_INTERVAL: float = 0.04
@@ -193,9 +197,9 @@ var damage_reduction: float = 0.0
 ## 받는 데미지에 곱하는 배수 — `set_modifier`로 거는 버프용(0.6 = 40% 덜 받음).
 ## `damage_reduction`은 `set_modifier`로 걸면 다 풀릴 때 1.0(완전 무효)이 되므로 버프는 이쪽을 쓸 것
 var damage_taken_multiplier: float = 1.0
-## 방어·대시 쿨타임에 곱하는 배수 — `set_modifier`로 건다(고양이 아주머니 주황 고양이 옷 0.5).
+## 대시 쿨타임에 곱하는 배수 — `set_modifier`로 건다(고양이 아주머니 주황 고양이 옷 0.5).
 ## 쿨 길이는 그대로 두고 **도는 속도**를 1/배수로 바꾼다(쿨 파이 비율이 안 어긋나게)
-var guard_dash_cooldown_multiplier: float = 1.0
+var dash_cooldown_multiplier: float = 1.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중).
 ## **읽을 때는 아래 두 가지를 합쳐서 본다** — 시간제 무적(`grant_invincibility`)과
 ## "이 동작이 끝날 때까지" 무적(`push_invincible`)을 따로 세야 서로를 꺼버리지 않는다.
@@ -1150,11 +1154,21 @@ func dash(direction: float) -> bool:
 	_dash_time = dash_duration
 	_dash_trail_timer = 0.0
 	_spawn_dash_afterimage()
+	_spawn_dash_speed_lines()
 	return true
 
 ## 대시 잔상 — 푸른빛을 입혀서 남긴다
 func _spawn_dash_afterimage() -> void:
 	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
+
+## 대시 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집히고 몸을 따라 움직인다)
+func _spawn_dash_speed_lines() -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var lines = SPEED_LINES_SCRIPT.new()
+	parent.add_child(lines)
+	lines.setup(self, _dash_dir, DASH_SPEED_LINE_TIME)
 
 ## duration초 동안 날아가는 몸 뒤로 잔상을 남긴다 — 그네에 튕길 때(Swing)·스프링 시소로 높이 튈 때(SpringJumpPad) 맵이 부른다.
 ## 이미 남기는 중이면 남은 시간과 비교해 더 긴 쪽을 쓴다
@@ -1533,7 +1547,7 @@ func apply_physics(delta: float) -> void:
 	if _blocked_attack_left > 0.0:
 		_blocked_attack_left = maxf(_blocked_attack_left - delta, 0.0)
 	if _guard_cooldown_left > 0.0:
-		_guard_cooldown_left = maxf(_guard_cooldown_left - delta / maxf(guard_dash_cooldown_multiplier, 0.05), 0.0)
+		_guard_cooldown_left = maxf(_guard_cooldown_left - delta, 0.0)
 	if _guard_time > 0.0:
 		_guard_time = maxf(_guard_time - delta, 0.0)
 		velocity.x = 0.0
@@ -1549,7 +1563,7 @@ func apply_physics(delta: float) -> void:
 	# 대시 — 짧은 시간 동안 입력보다 우선해서 수평 속도를 덮어쓴다.
 	# 맞으면 그 자리에서 끊긴다(넉백이 대시를 이겨야 콤보가 성립한다)
 	if _dash_cooldown_left > 0.0:
-		_dash_cooldown_left = maxf(_dash_cooldown_left - delta / maxf(guard_dash_cooldown_multiplier, 0.05), 0.0)
+		_dash_cooldown_left = maxf(_dash_cooldown_left - delta / maxf(dash_cooldown_multiplier, 0.05), 0.0)
 	if _dash_time > 0.0:
 		if _hitstun_time > 0.0 or is_grabbed:
 			_dash_time = 0.0

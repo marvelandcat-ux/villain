@@ -3,8 +3,9 @@ extends Skill
 
 ## 고양이 아주머니 궁극기(R) — 스킬2로 **지금 고른 고양이**(`custom_data["cat_kind"]`)에 따라 갈린다.
 ## - 검은 고양이: 고양이를 겨드랑이에 끼고 엉덩이를 앞으로 — 기본공격이 `black_shots`발짜리 똥 유탄(`CatPoopShell`, 범위 피해)이 된다. 다 쏘면 끝
-## - 주황 고양이: 고양이 옷을 입는다(`orange_duration`초) — 스킬1·2는 못 쓰고, 기본공격 피해·받는 피해·
-##   기본공격/방어/대시 쿨이 좋아지고 입는 순간 체력 회복. 스킬 봉인은 `custom_data["cat_suit"]`를 두 스킬이 본다.
+## - 주황 고양이: 고양이 옷을 입는다(**라운드 끝까지**) — 스킬1·2·궁은 못 쓰고(이동·점프·방어·대시·평타·맵 스킬만),
+##   기본공격 피해·공격 속도·대시 쿨이 좋아지고 받는 피해가 줄어든다. 스킬 봉인은 `custom_data["cat_suit"]`를 두 스킬이 본다.
+##   평타는 주먹 잽(1타)·반대 손 잽(2타)·머리 잡아 등 뒤로 패대기(3타, `CatSuitCombo`를 평타 자식으로 붙인다).
 ##   그림은 머리·몸통·손·발을 통째로 `고양이 아줌마 합체/` 그림으로 갈아입는다(리그 `set_head_outfit`/`set_body_outfit`)
 ## - 흰 고양이(임시): 흰 고양이를 가슴 앞에 들고 `white_duration`초 동안 기본공격이 빠른 할퀴기가 된다
 ## 검은·흰은 기본공격 자리를 `CatPoopShot`(발사 콜백만 있는 대체 평타)으로 잠깐 바꿔 끼우고 끝나면 되돌린다
@@ -13,6 +14,7 @@ const SHOT_SCRIPT := preload("res://skills/CatPoopShot.gd")
 const SHELL_SCRIPT := preload("res://skills/CatPoopShell.gd")
 const HELD_CAT_SCRIPT := preload("res://skills/CatHeldVisual.gd")
 const HELD_WHITE_SCRIPT := preload("res://skills/CatHeldWhite.gd")
+const SUIT_COMBO_SCRIPT := preload("res://skills/CatSuitCombo.gd")
 const KIND_BLACK := 0
 const KIND_ORANGE := 1
 const KIND_WHITE := 2
@@ -36,14 +38,11 @@ const MODIFIER_ID := "cat_suit"
 @export var held_cat_offset: Vector2 = Vector2(12.0, 4.0)
 
 @export_group("주황 고양이 (고양이 옷)")
-@export var orange_duration: float = 10.0
 ## 기본공격 피해 배수
 @export var orange_damage_mult: float = 1.5
-## 입는 순간 회복량
-@export var orange_heal: int = 30
-## 받는 피해 배수(0.6 = 40% 덜 받음)
-@export var orange_damage_taken: float = 0.6
-## 기본공격·방어·대시 쿨 배수(0.5 = 절반)
+## 받는 피해 배수(0.9 = 10% 덜 받음)
+@export var orange_damage_taken: float = 0.9
+## 기본공격·대시 쿨 배수(0.5 = 절반). 방어 쿨은 그대로(2026-10-05 사용자 요청)
 @export var orange_cooldown_mult: float = 0.5
 
 @export_group("주황 고양이 옷 그림")
@@ -98,6 +97,10 @@ var _held = null
 var _saved_head: Dictionary = {}
 var _saved_body: Dictionary = {}
 var _saved_limbs: Dictionary = {}
+## 고양이 옷 평타 — 붙인 3타 장치와, 입기 전 리그 잽 설정·3타 날아가기 이펙트
+var _suit_combo: Node = null
+var _saved_unarmed_thrust: bool = false
+var _saved_finisher_trail: bool = true
 
 func can_use() -> bool:
 	return super() and _mode == Mode.NONE
@@ -118,7 +121,8 @@ func _execute(fighter: Fighter) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	if _mode == Mode.ORANGE or _mode == Mode.WHITE:
+	# 주황(고양이 옷)은 라운드 끝까지 간다 — 시간을 세지 않는다
+	if _mode == Mode.WHITE:
 		_time_left -= delta
 		if _time_left <= 0.0:
 			_end_mode()
@@ -226,23 +230,51 @@ func _scratch(fighter: Fighter) -> void:
 
 func _start_orange(fighter: Fighter) -> void:
 	_mode = Mode.ORANGE
-	_time_left = orange_duration
 	fighter.custom_data["cat_suit"] = true
 	fighter.set_modifier("basic_attack_damage_multiplier", MODIFIER_ID, orange_damage_mult)
 	fighter.set_modifier("damage_taken_multiplier", MODIFIER_ID, orange_damage_taken)
-	fighter.set_modifier("guard_dash_cooldown_multiplier", MODIFIER_ID, orange_cooldown_mult)
+	fighter.set_modifier("dash_cooldown_multiplier", MODIFIER_ID, orange_cooldown_mult)
 	# 기본공격 쿨은 attack_speed_multiplier만큼 빨리 돈다 — 쿨 x0.5 = 속도 x2
 	fighter.set_modifier("attack_speed_multiplier", MODIFIER_ID, 1.0 / maxf(orange_cooldown_mult, 0.05))
-	fighter.heal(orange_heal)
 	_wear_suit(fighter)
+	_attach_suit_combo(fighter)
 
 func _end_orange_effects() -> void:
 	if not _has_fighter or not is_instance_valid(_fighter):
 		return
 	_fighter.custom_data.erase("cat_suit")
-	for property in ["basic_attack_damage_multiplier", "damage_taken_multiplier", "guard_dash_cooldown_multiplier", "attack_speed_multiplier"]:
+	for property in ["basic_attack_damage_multiplier", "damage_taken_multiplier", "dash_cooldown_multiplier", "attack_speed_multiplier"]:
 		_fighter.clear_modifier(property, MODIFIER_ID)
+	_detach_suit_combo(_fighter)
 	_take_off_suit(_fighter)
+
+## 고양이 옷 평타로 바꾼다 — 1·2타는 리그 맨손 잽(양손 번갈아), 3타는 평타 자식으로 붙인 `CatSuitCombo`가
+## 머리를 잡아 패대기친다. 3타가 날아가기 대신 잡기가 되므로 날아가는 이펙트는 끈다
+func _attach_suit_combo(fighter: Fighter) -> void:
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and "unarmed_thrust" in visual:
+		_saved_unarmed_thrust = visual.unarmed_thrust
+		visual.unarmed_thrust = true
+	var basic: Node = fighter.basic_attack
+	if basic == null or not is_instance_valid(basic):
+		return
+	if "finisher_trail" in basic:
+		_saved_finisher_trail = basic.finisher_trail
+		basic.finisher_trail = false
+	_suit_combo = SUIT_COMBO_SCRIPT.new()
+	basic.add_child(_suit_combo)
+
+## 고양이 옷 평타를 원래대로
+func _detach_suit_combo(fighter: Fighter) -> void:
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and "unarmed_thrust" in visual:
+		visual.unarmed_thrust = _saved_unarmed_thrust
+	var basic: Node = fighter.basic_attack
+	if basic != null and is_instance_valid(basic) and "finisher_trail" in basic:
+		basic.finisher_trail = _saved_finisher_trail
+	if _suit_combo != null and is_instance_valid(_suit_combo):
+		_suit_combo.queue_free()
+	_suit_combo = null
 
 ## 리그의 머리·몸통·손발 그림을 고양이 옷(합체 그림)으로 갈아입힌다
 func _wear_suit(fighter: Fighter) -> void:
@@ -297,13 +329,13 @@ func _squash(fighter: Fighter) -> void:
 	if visual and visual.has_method("play_squash"):
 		visual.play_squash(Vector2(1.06, 0.94))
 
-## 쓰는 중이면 남은 비율(검은 = 남은 탄, 주황·흰 = 남은 시간) — 쿨 파이가 금색으로 그린다
+## 쓰는 중이면 남은 비율(검은 = 남은 탄, 흰 = 남은 시간, 주황 = 라운드 끝까지라 늘 가득) — 쿨 파이가 금색으로 그린다
 func active_ratio() -> float:
 	match _mode:
 		Mode.BLACK:
 			return float(_shots_left) / maxf(float(black_shots), 1.0)
 		Mode.ORANGE:
-			return clampf(_time_left / maxf(orange_duration, 0.001), 0.0, 1.0)
+			return 1.0
 		Mode.WHITE:
 			return clampf(_time_left / maxf(white_duration, 0.001), 0.0, 1.0)
 	return -1.0

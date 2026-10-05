@@ -834,6 +834,20 @@ var held_item_l_thrown: bool = false
 ## 뿌리치듯 던지는 손짓
 @export var grab_slam_hand_offset: Vector2 = Vector2(-14, -18)
 
+## --- 머리 잡아 패대기(고양이 아주머니 고양이 옷 3타): 두 손을 앞으로 뻗어 머리를 잡고, 머리 위로 넘겨 등 뒤 바닥에 꽂는다 ---
+## 두 손이 모이는 자리(리그 원점 기준, +x = 앞) — 뻗어 잡는 곳 / 머리 위를 지나는 곳 / 등 뒤 바닥 쪽으로 꽂는 곳
+@export var head_grab_reach: Vector2 = Vector2(44, -30)
+@export var head_throw_top: Vector2 = Vector2(-2, -80)
+@export var head_throw_end: Vector2 = Vector2(-48, 10)
+## 넘기는 동안 몸이 뒤로 젖혀지는 각도(도, 음수 = 뒤로)
+@export var head_throw_lean_deg: float = -22.0
+## 넘기는 동안 **고개만 더** 뒤로 젖히는 각도(도, 음수 = 뒤로) — 브리지하듯 목이 꺾인다. 몸 젖힘에 더해진다
+@export var head_throw_head_deg: float = -40.0
+## 고개를 꺾는 축(목, 리그 원점 기준) — 머리 그림 가운데가 아니라 여기를 중심으로 돈다
+@export var head_throw_neck: Vector2 = Vector2(0, -12)
+## 두 손이 위아래로 벌어지는 간격(px) — 머리를 위아래에서 감싸 쥔다
+@export var head_grab_hand_gap: float = 16.0
+
 ## --- 유선 마우스 던지기 (악플러 스킬1): 마우스를 어깨 뒤로 젖혀 들었다가 앞으로 뿌린다 ---
 ## 젖혀 들었을 때 오른손 위치(리그 원점 기준) — 어깨 높이로 뒤로 당긴 자세.
 ## y를 -6보다 위로 올리면 손과 마우스가 머리(55px)에 파묻히니 주의
@@ -1241,6 +1255,11 @@ var _grab_duration: float = 1.0
 ## 전체 동작 중 "뻗어서 잡기"가 끝나는 지점, "들고 버티기"가 끝나는 지점(그 뒤는 내리꽂기)의 진행도 비율
 var _grab_reach_ratio: float = 0.2
 var _grab_slam_ratio: float = 0.8
+## 잡기 동작 종류 — `_grab_time`을 같이 써서 방향 전환 막기 등 조건이 그대로 따라온다
+enum GrabMode { SUPLEX, HEAD_REACH, HEAD_THROW }
+var _grab_mode: GrabMode = GrabMode.SUPLEX
+## 머리 잡기 중 두 손 가운데(리그 로컬) — 잡힌 상대를 손에 붙여 옮기는 쪽이 읽는다
+var _head_grab_point: Vector2 = Vector2.ZERO
 ## 마우스 던지기 동작에 남은 시간(초). 0보다 크면 젖혔다 뿌리는 중이다
 var _cast_time: float = 0.0
 var _cast_duration: float = 0.34
@@ -3185,11 +3204,87 @@ func play_grab_motion(reach_duration: float, hold_duration: float, slam_duration
 	_grab_reach_ratio = clampf(reach_duration / _grab_duration, 0.01, 0.98)
 	_grab_slam_ratio = clampf((reach_duration + hold_duration) / _grab_duration, _grab_reach_ratio + 0.01, 0.99)
 	_grab_time = _grab_duration
+	_grab_mode = GrabMode.SUPLEX
+
+## 머리 잡기 — 두 손을 앞으로 뻗어(reach) 잡은 채 버티다가(hold) 빈손으로 돌아온다(back).
+## 맞으면 그 자리에서 `play_head_throw`로 이어진다
+func play_head_grab(reach_duration: float, hold_duration: float, back_duration: float) -> void:
+	_grab_duration = maxf(reach_duration + hold_duration + back_duration, 0.05)
+	_grab_reach_ratio = clampf(reach_duration / _grab_duration, 0.01, 0.98)
+	_grab_slam_ratio = clampf((reach_duration + hold_duration) / _grab_duration, _grab_reach_ratio + 0.01, 0.99)
+	_grab_time = _grab_duration
+	_grab_mode = GrabMode.HEAD_REACH
+
+## 머리 잡아 패대기 — 잡은 자리에서 머리 위로 넘겨(throw) 등 뒤 바닥에 꽂고, 제자리로 돌아온다(recover)
+func play_head_throw(throw_duration: float, recover_duration: float) -> void:
+	_grab_duration = maxf(throw_duration + recover_duration, 0.05)
+	_grab_reach_ratio = clampf(throw_duration / _grab_duration, 0.01, 0.99)
+	_grab_time = _grab_duration
+	_grab_mode = GrabMode.HEAD_THROW
+
+## 넘기는 진행도(0~1)에 따른 두 손 가운데 — 뻗은 자리 → 머리 위 → 등 뒤 바닥을 잇는 곡선(2차 베지어)
+func _head_throw_path(t: float) -> Vector2:
+	var a: Vector2 = head_grab_reach.lerp(head_throw_top, t)
+	var b: Vector2 = head_throw_top.lerp(head_throw_end, t)
+	return a.lerp(b, t)
+
+## 지금 두 손이 쥐고 있는 머리 자리(리그 로컬). 머리 잡기 중이 아니면 뻗는 자리를 돌려준다
+func head_grab_point() -> Vector2:
+	return _head_grab_point if _grab_time > 0.0 and _grab_mode != GrabMode.SUPLEX else head_grab_reach
+
+## 머리 잡기·패대기 자세 — 두 손을 한 점(가운데)에 위아래로 모으고, 넘기는 동안 몸을 뒤로 젖힌다
+func _pose_head_grab() -> void:
+	var progress: float = 1.0 - _grab_time / _grab_duration
+	var point: Vector2
+	var lean: float = 0.0
+	var head_bend: float = 0.0
+	if _grab_mode == GrabMode.HEAD_REACH:
+		var mid: Vector2 = (_rest_positions[_hand_r] + _rest_positions[_hand_l]) * 0.5 if (_hand_r and _hand_l) else Vector2.ZERO
+		if progress < _grab_reach_ratio:
+			# ① 앞으로 확 뻗는다(끝으로 갈수록 느려지게)
+			var t: float = progress / _grab_reach_ratio
+			point = mid.lerp(head_grab_reach, 1.0 - (1.0 - t) * (1.0 - t))
+		elif progress < _grab_slam_ratio:
+			# ② 뻗은 채 움켜쥔다
+			point = head_grab_reach
+		else:
+			# ③ 빈손으로 돌아온다
+			var t2: float = (progress - _grab_slam_ratio) / (1.0 - _grab_slam_ratio)
+			point = head_grab_reach.lerp(mid, t2 * t2 * (3.0 - 2.0 * t2))
+	else:
+		if progress < _grab_reach_ratio:
+			# ① 머리 위로 넘겨 등 뒤 바닥에 꽂는다 — 처음엔 무겁게, 끝에서 확 내리꽂게(가속)
+			var t: float = progress / _grab_reach_ratio
+			point = _head_throw_path(t * t)
+			lean = sin(PI * t) * head_throw_lean_deg
+			# 고개는 몸보다 빨리 젖혀져 머리 위를 지날 때 가장 많이 꺾이고, 꽂을 때 돌아온다
+			head_bend = sin(PI * minf(t * 1.3, 1.0)) * head_throw_head_deg
+		else:
+			# ② 꽂은 자리에서 제자리로
+			var t2: float = (progress - _grab_reach_ratio) / (1.0 - _grab_reach_ratio)
+			var mid2: Vector2 = (_rest_positions[_hand_r] + _rest_positions[_hand_l]) * 0.5 if (_hand_r and _hand_l) else Vector2.ZERO
+			point = head_throw_end.lerp(mid2, t2 * t2 * (3.0 - 2.0 * t2))
+	_head_grab_point = point
+	var gap := Vector2(0, head_grab_hand_gap * 0.5)
+	if _hand_r:
+		_hand_r.position = point - gap
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.position = point + gap
+		_hand_l.rotation = 0.0
+	rotation = deg_to_rad(lean)
+	if _head and not is_zero_approx(head_bend):
+		var a: float = deg_to_rad(head_bend)
+		_head.position = head_throw_neck + (_head.position - head_throw_neck).rotated(a)
+		_head.rotation += a
 
 ## 백 서플렉스 진행도에 따라 두 손과 몸 전체 기울기를 잡는다 (걷기·공격보다 우선한다).
 ## 두 손을 옆으로 뻗어 위아래로 겹쳐 잡는다(오른손 위/왼손 아래) — 한 손이 아니라 두 손으로
 ## 붙잡는 그림이라 왼손도 오른손과 같은 목표로 모은다
 func _pose_grab() -> void:
+	if _grab_mode != GrabMode.SUPLEX:
+		_pose_head_grab()
+		return
 	var progress: float = 1.0 - _grab_time / _grab_duration
 	var hand_gap := Vector2(0, grab_hand_gap * 0.5)
 	if progress < _grab_reach_ratio:

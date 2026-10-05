@@ -79,5 +79,8 @@ func _draw() -> void:
 		var t: float = s.age / s.life
 		var col: Color = streak_color
 		col.a *= 1.0 - t
-		# 진행 방향의 반대로 길게 눕는다
-		draw_line(s.pos, s.pos - Vector2(_dir * s.len, 0.0), col, s.width)
+		# 진행 방향의 반대로 길게 눕는다 — 앞쪽 끝은 진하고 뒤쪽 꼬리로 갈수록 투명해진다(2026-10-05 사용자 요청)
+		var tail_col: Color = col
+		tail_col.a = 0.0
+		draw_polyline_colors(PackedVector2Array([s.pos, s.pos - Vector2(_dir * s.len, 0.0)]),
+			PackedColorArray([col, tail_col]), s.width)

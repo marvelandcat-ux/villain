@@ -29,6 +29,19 @@ paths:
 - 조명 `CanvasModulate` + 형광등. 빛나는 물체는 unshaded. **가산 색은 CanvasModulate가 곱해지므로 조명을 바꾸면 다시 잡을 것**
 - 먼 층 `DecoBackground`(CanvasGroup + `far_blur`), 앞 기둥 `ForegroundPillars.gd`. 역 이름판을 옮기면 `SignBand`·`SignBandOutline`도
 
+## 악플러의 집 `maps/TrashRoom.tscn` — 암전 + (예정) 엄마 등짝
+
+- 사용자가 에디터에서 배치·크기를 직접 잡음(2026-10-05). 땅 y=280, 벽 안쪽 -614 ~ 1194(**좌우 비대칭**, 두께 60). 발판 윗면: 왼쪽 -66(-614~-234)·가운데 12(-127~314)·오른쪽 -10(614~1194), **모두 원웨이**
+- ⚠️ **StaticBody2D(발판)에 scale 걸지 말 것** — 그림 scale·판정 size를 따로 맞춤. 그림을 키우면 판정도 다시
+- 양쪽 발판은 바닥에서 이단 점프로 못 닿음 — **계단 → 가운데 발판 → 점프**가 의도된 동선(사용자 확인)
+- 계단 `Stair`(`SlopeStair.gd`): 그림 `악플러 집 계단.png` flip_h, 배율 0.2872. 판정은 계단 발판 가운데를 잇는 ~36도 원웨이 사각형(아래 끝은 땅 속), 맨 윗 계단은 가운데 발판 판정을 x=314까지 늘려서 덮음. **계단 그림을 옮기거나 키우면 판정도**. 이 맵에서만 `floor_snap_length`↑·`floor_constant_speed`
+- 카메라: 지붕 `Wall5`(90도 돌린 벽, 윗면 y -611) ~ 땅 그림 아래 354만 보임 — `use_ceiling`/`ceiling_y`/`floor_bottom_y`. 멀리 물러나 화면이 그보다 높아지면 **가운데 정렬 + 위아래 검은 띠**(`CameraRig._build_letterbox`, 월드 z 4000 사각형이라 HUD 안 덮음). **지붕을 옮기면 `ceiling_y`도**
+- 이 맵 카메라엔 `limit_top`/`limit_bottom`을 쓰지 말 것 — 위아래 한계가 겹치면 한쪽이 이겨서 가운데 정렬이 깨진다
+- 스폰 -397 / 1030(벽 사이 비율 0.12 / 0.91)
+- 암전 `Blackout.gd`: 어두운 동안 `cooldown_pies` 그룹 호출로 방어·대시·빨간 X(패링) 숨김, 금색(궁 사용 중)은 유지. `MonitorLight`는 사용자가 꺼 둠(visible=false)
+- 문 `DoorLeft`/`DoorRight` = 엄마 기믹 자리. TODO: 엄마가 문 열고 나와 근처 플레이어 등짝 때리기
+- 장식은 전부 `Deco*`(미리보기 크기 기준 제외)
+
 ## 헬스장 `maps/Gym.tscn`
 
 - 2층 발판 + 기구 셋(바벨 컬 = 기본공격력 / 스쿼트 랙 = 점프력 / 런닝머신 = 이동속도). `WorkoutSkill`: 운동 중 발 묶임, 맞음·때림·멀어짐이면 끊김, 스펙은 배수(`custom_data["gym_spec"]`)

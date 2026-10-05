@@ -17,8 +17,9 @@ extends Skill
 ## 뒷바퀴 위치(캐릭터 원점 기준) — x는 진행 반대쪽(뒤)이라 음수, y는 바닥 높이. x는 진행 방향으로 반전된다
 @export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
 ## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출).
-## 2026-10-01 사용자 요청으로 꺼짐 — 대신 출발 바람(takeoff_wind)이 돌진 내내 반복해서 나온다
-@export var wind_lines: bool = false
+## 2026-10-01 사용자 요청으로 껐다가 2026-10-05 하얀 스피드 라인(combat/SpeedLines.gd)으로 다시 켬 —
+## 출발점부터 지나간 자리까지 맵에 고정된 줄이 남는다(출발 바람 takeoff_wind와 같이 나온다)
+@export var wind_lines: bool = true
 ## 뒷바퀴 자리에 점프할 때와 같은 바람 줄기(combat/JumpWind.gd)를 진행 방향으로 뻗는다 — 출발 순간 + 돌진 내내 takeoff_wind_interval마다(2026-10-01 사용자 요청)
 @export var takeoff_wind: bool = true
 ## 돌진 중 출발 바람을 몇 초마다 다시 뻗을지. 0이면 출발 순간 한 번만
@@ -56,7 +57,7 @@ extends Skill
 
 ## 타입을 안 붙이고 preload로 가져온다 — 새 class_name은 전역 클래스 캐시가 갱신되기 전엔
 ## 못 찾아서 파싱 에러가 난다(ShoulderChargeSkill이 ChargeWind를 가져오는 것과 같은 이유)
-const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
+const SPEED_LINES := preload("res://combat/SpeedLines.gd")
 const BIKE_WRECK := preload("res://combat/BikeWreck.gd")
 const JUMP_WIND := preload("res://combat/JumpWind.gd")
 var _wind = null
@@ -111,7 +112,7 @@ func _spawn_takeoff_wind(fighter: Fighter) -> void:
 	wind.global_position = fighter.global_position + Vector2(rear_wheel_offset.x * _direction, takeoff_wind_y)
 	wind.setup(Vector2(_direction, 0.0), false)
 
-## 몸 주위로 흐르는 바람 줄을 띄운다 — **맵에 붙이고 시전자를 따라다니게 한다**
+## 출발점부터 지나간 자리까지 하얀 스피드 라인을 남긴다 — **맵에 붙인다**
 ## (캐릭터의 자식으로 달면 좌우 반전에 같이 뒤집혀서 바람이 진행 방향과 반대로 흐른다)
 func _start_wind(fighter: Fighter) -> void:
 	if not wind_lines:
@@ -119,7 +120,7 @@ func _start_wind(fighter: Fighter) -> void:
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return
-	_wind = CHARGE_WIND.new()
+	_wind = SPEED_LINES.new()
 	parent.add_child(_wind)
 	_wind.setup(fighter, _direction, dash_duration)
 

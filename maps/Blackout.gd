@@ -4,7 +4,8 @@ extends CanvasModulate
 ## 방 조명이 주기적으로 나갔다 들어오는 "암전" 기믹 (악플러의 방).
 ## CanvasModulate 자신이 곧 방 전체 조명이라 color를 직접 조절한다 — 씬에 이 노드 하나만 두면 된다.
 ## CombatHUD는 별도 CanvasLayer라 영향을 안 받아서, 암전 중에도 체력·타이머는 그대로 보인다.
-## 시야만 가리는 연출이라 판정·데미지는 평소와 똑같이 들어간다
+## 시야만 가리는 연출이라 판정·데미지는 평소와 똑같이 들어간다.
+## 캐릭터 등 뒤 쿨타임 원(`CooldownPies`)은 조명을 안 받으므로, 어두운 동안엔 방어·대시·빨간 X(패링 잠금)를 따로 숨긴다
 
 ## 암전이 다시 오기까지의 주기(초). 불이 완전히 돌아온 시점부터 잰다
 @export var interval: float = 12.0
@@ -55,9 +56,15 @@ func _process(delta: float) -> void:
 ## 경고(깜빡임) -> 암전(+모니터 빛) -> 유지 -> 복귀 순서로 진행한다
 func _run_sequence() -> void:
 	await _flicker()
+	_set_pies_hidden(true)
 	await _fade_to(blackout_brightness, glow_alpha, light_energy)
 	await _wait(blackout_duration)
+	_set_pies_hidden(false)
 	await _fade_to(1.0, 0.0, 0.0)
+
+## 쿨타임 원 숨기기/보이기 — 라운드가 리로드되면 원도 새로 만들어지므로 따로 되돌릴 필요는 없다
+func _set_pies_hidden(value: bool) -> void:
+	get_tree().call_group("cooldown_pies", "set_blackout_hidden", value)
 
 ## 꺼지기 전 형광등처럼 flicker_count번만 깜빡이고 바로 암전으로 들어간다
 func _flicker() -> void:
