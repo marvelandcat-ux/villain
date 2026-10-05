@@ -166,10 +166,10 @@ func in_range(point: Vector2) -> bool:
 	# **바닥에 묻어 둔 만큼은 빼고 잰다** — 기구를 내렸다고 운동할 수 있는 자리까지
 	# 같이 내려가면, 런닝머신 앞에 서 있어도 범위 밖이 되어 버린다
 	d.y += ground_sink
-	# ⚠️ 예전엔 `use_range_x * size_scale`로 쟀는데, 그건 **도형으로 그리던 시절**(size_scale 1.0)에
-	# 맞춰 둔 식이다. 그림을 꽂으면서 size_scale이 0.15쯤으로 내려가자 범위까지 1/7로 줄어
-	# 기구 바로 앞에 서도 운동이 안 됐다(2026-10-05). 이제 **노드 크기**만 반영한다
-	return absf(d.x) <= use_range_x * absf(scale.x) and absf(d.y) <= use_range_y * absf(scale.y)
+	# ⚠️ **크기 배율을 곱하지 않는다.** 예전엔 size_scale을, 그다음엔 노드 scale을 곱했는데
+	# Sprite2D로 바꾸면서 노드 scale이 곧 그림 축소 배율(0.1쯤)이 되어 범위가 9px로 줄었다 —
+	# 기구 바로 앞에 서도 운동이 안 됐다(2026-10-06 발견). 범위는 월드 px 그대로 쓴다
+	return absf(d.x) <= use_range_x and absf(d.y) <= use_range_y
 
 ## 게이지를 갱신한다(-1이면 아무도 안 쓰는 중)
 func set_gauge(ratio: float) -> void:

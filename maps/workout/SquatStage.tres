@@ -1,0 +1,14 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://maps/workout/LimbStageData.gd" id="1_data"]
+[ext_resource type="Texture2D" uid="uid://bcbvxtvxh3nko" path="res://sprite/맵/헬스장/덤벨컬핏줄-Photoroom.png" id="2_vein1"]
+[ext_resource type="Texture2D" uid="uid://p5bv71tp52jk" path="res://sprite/맵/헬스장/덤벨컬핏줄2-Photoroom.png" id="3_vein2"]
+[ext_resource type="Texture2D" uid="uid://cyhwplltmb4hw" path="res://sprite/맵/헬스장/덤벨컬핏줄3-Photoroom.png" id="4_vein3"]
+[ext_resource type="Texture2D" uid="uid://pq0cyryhwuf1" path="res://sprite/맵/헬스장/반짝반짝.png" id="5_spark"]
+
+[resource]
+script = ExtResource("1_data")
+limb = "feet"
+vein_textures = Array[Texture2D]([ExtResource("2_vein1"), ExtResource("3_vein2"), ExtResource("4_vein3")])
+sparkle_texture = ExtResource("5_spark")
+entries = {}

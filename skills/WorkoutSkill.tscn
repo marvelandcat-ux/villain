@@ -1,6 +1,12 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://skills/WorkoutSkill.gd" id="1_w"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_gear"]
+[ext_resource type="Resource" path="res://maps/workout/CurlStage.tres" id="3_curl"]
+[ext_resource type="Resource" path="res://maps/workout/SquatStage.tres" id="4_squat"]
 
 [node name="WorkoutSkill" type="Node"]
 script = ExtResource("1_w")
+treadmill_gear = ExtResource("2_gear")
+curl_stage = ExtResource("3_curl")
+squat_stage = ExtResource("4_squat")

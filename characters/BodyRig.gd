@@ -1433,7 +1433,7 @@ func _ready() -> void:
 		_eat_bowl_rest_scale = _eat_bowl.scale
 		_eat_bowl.visible = false
 
-## 헬스장 스펙만큼 손·발 그림을 키운다(기획서 "강화된 부위가 변해 한눈에 보임").
+## 헬스장 단계만큼 손·발 그림을 키운다(기획서 "강화된 부위가 변해 한눈에 보임") — `set_limb_stage()`가 값을 넣는다.
 ## **원래 크기에 곱한다** — 캐릭터마다 손·발 그림 크기가 달라서 절대값으로 쓰면 다 어긋난다.
 ## 리그의 다른 곳은 손·발 `scale`을 건드리지 않으므로 여기서만 쓰면 안 싸운다
 func _apply_muscle() -> void:
@@ -1441,14 +1441,15 @@ func _apply_muscle() -> void:
 		return
 	_muscle_arm_shown = muscle_arm
 	_muscle_leg_shown = muscle_leg
+	# _tex_fit: 단계 그림(금빛 주먹 등)으로 바꿔 꼈을 때 원래 손·발과 같은 크기로 보이게 맞추는 배율
 	if _hand_l:
-		_hand_l.scale = _hand_rest_scale * muscle_arm
+		_hand_l.scale = _hand_rest_scale * muscle_arm * _hand_tex_fit
 	if _hand_r:
-		_hand_r.scale = _hand_rest_scale * muscle_arm
+		_hand_r.scale = _hand_rest_scale * muscle_arm * _hand_tex_fit
 	if _foot_l:
-		_foot_l.scale = _foot_rest_scale * muscle_leg
+		_foot_l.scale = _foot_rest_scale * muscle_leg * _foot_tex_fit
 	if _foot_r:
-		_foot_r.scale = _foot_rest_scale * muscle_leg
+		_foot_r.scale = _foot_rest_scale * muscle_leg * _foot_tex_fit
 
 func _process(delta: float) -> void:
 	if _knocked_out:
@@ -1680,7 +1681,11 @@ func _process(delta: float) -> void:
 	_update_domain_jump(delta)
 	# 아이 드롭킥 — 나갔다 들어오는 시간
 	_kid_kick_left = maxf(_kid_kick_left - delta, 0.0)
+	# 런닝머신 장비 단계면 머리·몸·손 제자리를 그 자리(+ 로켓은 공중에 뜬 높이)로
+	_update_gear_lift(delta)
 	_apply_pose(speed_ratio)
+	# 헬스장 런닝머신 단계 장비(바퀴·로켓 신발) — 발 자세가 다 정해진 뒤에 따라붙는다
+	_update_treadmill_gear(delta)
 	_update_smear(delta)
 	_update_fan_ghosts(delta)
 
@@ -1707,11 +1712,13 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 들어 올리기는 "앞으로 옮겨지는 중"인 발에만 — 앞뒤 위치가 sin이라 그 변화 방향(cos)이 양수인 동안이다.
 	# 가운데를 지나며 가장 높이 뜨고 앞에 닿을 때 내려앉는다. 그동안 다른 발은 바닥을 디딘 채 뒤로 밀린다
 	var stepping: float = cos(_phase)
-	_pose_foot(_foot_l, maxf(swing, 0.0) * amount, swing * amount, maxf(stepping, 0.0) * amount)
-	_pose_foot(_foot_r, maxf(-swing, 0.0) * amount, -swing * amount, maxf(-stepping, 0.0) * amount)
+	# 런닝머신 장비(바퀴·로켓 신발)를 끼웠으면 걷지 않고 미끄러진다 — 발걸음·들썩임을 끈다
+	var step_amount: float = amount * (1.0 - _gear_glide)
+	_pose_foot(_foot_l, maxf(swing, 0.0) * step_amount, swing * step_amount, maxf(stepping, 0.0) * step_amount)
+	_pose_foot(_foot_r, maxf(-swing, 0.0) * step_amount, -swing * step_amount, maxf(-stepping, 0.0) * step_amount)
 
 	# 발이 가장 높이 들렸을 때 몸도 같이 뜨게 해서 한 걸음마다 한 번씩 들썩인다. 위쪽이 음수라 빼준다
-	var bob: float = -absf(swing) * body_bob * amount
+	var bob: float = -absf(swing) * body_bob * step_amount
 	# 가만히 서 있을 때(바닥·안 걷는 중)만 몸/머리/손이 숨쉬듯 위아래로 미묘하게 움직인다. 걷기 시작하면 서서히 사라진다.
 	# 손은 몸통과 다른 박자(위상 차이)로, 좌우 손도 살짝 어긋나게 해서 같이 움직이는 어색함을 없앤다
 	var on_floor_now: bool = _fighter == null or (is_instance_valid(_fighter) and _fighter.is_on_floor())
@@ -1754,6 +1761,9 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 손은 발과 반대로 흔들린다. sin은 앞쪽 절반(왼발이 나가는 동안)에 양수라
 	# 그때 오른손이 앞으로 나가고 왼손이 뒤로 빠진다
 	var arm: float = sin(_phase) * amount * hand_swing
+	# 바퀴로 달리는 동안(런닝머신 위 포함)엔 걷기 박자 대신 바퀴 박자로 손을 앞뒤로 흔든다
+	if _gear_ride > 0.0:
+		arm = lerpf(arm, sin(_gear_ride_phase) * hand_swing * gear_ride_hand_scale, _gear_ride)
 	if _hand_l:
 		_hand_l.position.x = _rest_positions[_hand_l].x - arm
 	if _hand_r:
@@ -5687,6 +5697,9 @@ func _update_run(delta: float) -> void:
 func _pose_run() -> void:
 	if _run_blend <= 0.001 or run_left_pose == null or run_mid_pose == null or run_right_pose == null:
 		return
+	# **발 장비(바퀴·부스터)를 끼웠으면 달리지 않는다** — 발이 없으니 장비 자세 그대로 서서 바퀴만 돌고 불꽃만 뿜는다
+	if _gear_glide > 0.0:
+		return
 	# 한 걸음 안에서의 진행도(0=발 앞, 1=두 발 모음)를 사인으로 부드럽게 편다
 	var half: float = fposmod(_run_time * 2.0, 1.0)
 	var k: float = 0.5 - cos(clampf(half, 0.0, 1.0) * PI) * 0.5
@@ -5729,8 +5742,422 @@ func _spawn_run_sweat() -> void:
 	curl_sweat_on = keep_on
 
 ## 지금 써야 할 달리기 얼굴 — 달리는 중이 아니면 null
+## **발 장비(바퀴·부스터)를 달면 평소 얼굴** — 두 발로 달릴 때만 힘든 얼굴이다(2026-10-06 사용자)
 func _run_face_now() -> Texture2D:
-	return run_face if _run_target > 0.5 else null
+	return run_face if _run_target > 0.5 and _gear_glide <= 0.0 else null
+
+
+## --- 헬스장 운동 단계가 옮기는 제자리 (런닝머신 장비·바벨 컬·스쿼트 단계가 같이 쓴다) ---
+## 단계마다 머리·몸·손·발 제자리를 옮기는데, 여러 운동 단계가 겹칠 수 있어서(손을 옮기는 런닝머신 + 손을 옮기는 컬)
+## **옮긴 만큼을 층별로 따로 들고 더한다** — 한 단계가 다른 단계 자리를 덮어쓰지 않는다
+
+## {층 이름: {조각: 옮긴 만큼}}
+var _rest_layers: Dictionary = {}
+## {조각: 처음 옮기기 전 제자리} — 옮기는 층이 하나도 안 남으면 이 값으로 되돌린다
+var _rest_layer_base: Dictionary = {}
+
+## 아무 단계도 안 옮긴 원래 제자리
+func _base_rest(part: Node2D) -> Vector2:
+	if _rest_layer_base.has(part):
+		return _rest_layer_base[part]
+	return _rest_positions.get(part, part.position)
+
+## 한 층이 옮기는 만큼을 바꾼다(빈 사전이면 그 층을 뺀다)
+func _set_rest_layer(layer: String, shifts: Dictionary) -> void:
+	for part in shifts:
+		if not _rest_layer_base.has(part) and _rest_positions.has(part):
+			_rest_layer_base[part] = _rest_positions[part]
+	if shifts.is_empty():
+		_rest_layers.erase(layer)
+	else:
+		_rest_layers[layer] = shifts
+	_refresh_rest_layers()
+
+## 층들을 더해 제자리를 다시 잡는다. 런닝머신 장비를 끼웠으면 뜬 높이·바퀴 궤도도 머리·몸·손에 더한다
+func _refresh_rest_layers() -> void:
+	var lift: Vector2 = _gear_lift() + _gear_orbit if _gear_glide > 0.0 else Vector2.ZERO
+	var lifted: Array = [_head, _body, _hand_l, _hand_r]
+	for part in _rest_layer_base.keys():
+		var total := Vector2.ZERO
+		var used: bool = false
+		for shifts in _rest_layers.values():
+			if shifts.has(part):
+				total += shifts[part]
+				used = true
+		if used and _gear_glide > 0.0 and part in lifted:
+			total += lift
+		if used:
+			_rest_positions[part] = _rest_layer_base[part] + total
+		else:
+			_rest_positions[part] = _rest_layer_base[part]
+			_rest_layer_base.erase(part)
+
+## 단계 기본 자리를 잡는 데 쓸 **원래 제자리** {조각 이름: {position, scale, texture, offset, centered}}
+## (`TreadmillGearData`·`LimbStageData`의 `default_entry`가 받는 꼴)
+func stage_rest_info() -> Dictionary:
+	var info: Dictionary = {}
+	for part_name in ["FootL", "FootR", "Head", "Body", "HandL", "HandR"]:
+		var part := _pose_part(part_name) as Sprite2D
+		if part == null or not _rest_positions.has(part):
+			continue
+		var is_foot: bool = part == _foot_l or part == _foot_r
+		var is_hand: bool = part == _hand_l or part == _hand_r
+		var scale_now: Vector2 = part.scale
+		if is_foot:
+			scale_now = _foot_rest_scale
+		elif is_hand:
+			scale_now = _hand_rest_scale
+		info[part_name] = {
+			"position": _base_rest(part),
+			"scale": scale_now,
+			"texture": _limb_saved_tex.get(part, part.texture),
+			"offset": part.offset,
+			"centered": part.centered,
+		}
+	return info
+
+
+## --- 헬스장 런닝머신 단계 장비 (maps/workout/TreadmillGearData.gd, skills/WorkoutSkill.gd) ---
+## 런닝머신 스택이 오르면 발이 자전거 바퀴 -> 스포츠카 바퀴 -> 로켓 부스터로 바뀐다.
+## **장비는 하나다** — 두 발을 대신하는 외바퀴·부스터 하나(2026-10-06 사용자 디자인). 두 발 그림을 다 숨기고 그 자리에 세운다.
+## 로켓 단계는 **공중에 떠서** 둥실거리며 다닌다(그림만 뜬다 — 판정은 땅 그대로).
+## 자리는 `maps/workout/Treadmill*Studio.tscn`에서 캐릭터마다 맞춘다
+
+const JET_FLAME_SCRIPT := preload("res://combat/JetFlame.gd")
+const GEAR_BODY_PARTS: Array[String] = ["Head", "Body", "HandL", "HandR"]
+
+## 지금 단계("" 없음 / bike / car / rocket)
+var _gear_stage: String = ""
+## 바퀴처럼 굴러가는 단계인지
+var _gear_rolls: bool = false
+## 장비를 끼운 동안 1 — 걷기 발걸음·들썩임·런닝머신 달리기 자세를 끈다(장비가 발을 대신한다)
+var _gear_glide: float = 0.0
+## 장비 {"L": Sprite2D} — 보통 "L" 하나다. **왼발 그림의 자식**으로 붙여 발과 같은 순서(몸통 뒤)에 그려진다.
+## 자리표에 "R"까지 있으면(두 발 따로) 각 장비가 그 발의 움직임(발차기·내딛기)을 따라간다
+var _gear_nodes: Dictionary = {}
+## 장비의 제자리 {"L": [위치, 각도, 크기]}(리그 좌표)
+var _gear_rest: Dictionary = {}
+## 로켓 불꽃 {"L": Node2D}과 장비 그림 안 자리 {"L": [위치, 각도, 크기]} — 장비보다 먼저 붙여 장비 뒤에 그린다
+var _gear_flames: Dictionary = {}
+var _gear_flame_rest: Dictionary = {}
+## 바퀴가 굴러간 각도(라디안)
+var _gear_spin: float = 0.0
+## 공중에 뜨는 높이(리그 px)와 둥실거림 폭(px)·빠르기(초당 왕복 수) — 로켓 단계만 0이 아니다
+var _gear_hover: float = 0.0
+var _gear_bob: float = 0.0
+var _gear_bob_speed: float = 0.0
+var _gear_bob_time: float = 0.0
+## 바퀴로 달리는 정도(0 서 있음 ~ 1 달림)와 그 박자(라디안), 몸이 그리는 둥근 궤도 — 손 흔들기·몸 궤도가 같이 쓴다
+var _gear_ride: float = 0.0
+var _gear_ride_phase: float = 0.0
+var _gear_orbit: Vector2 = Vector2.ZERO
+
+@export_group("런닝머신 바퀴 몸짓")
+## **바퀴로 달리는 동안**(땅에서 움직이거나 런닝머신 위) 손을 앞뒤로 흔들고 몸이 앞뒤로 둥근 궤도로 살짝 흔들린다(2026-10-06 사용자).
+## 한 번 흔드는 데 걸리는 시간(초)
+@export var gear_ride_cycle: float = 0.55
+## 몸(머리·몸통·손)이 도는 둥근 궤도의 반지름(px) — 가로(앞뒤)·세로
+@export var gear_ride_orbit: Vector2 = Vector2(1.8, 1.1)
+## 손 흔드는 폭 — 걸을 때 폭(hand_swing)의 몇 배
+@export var gear_ride_hand_scale: float = 1.0
+
+## **런닝머신 단계 장비를 끼우거나 뺀다**(stage ""이면 뺀다).
+## entry는 {조각 이름: [위치, 각도, 크기]} — 머리·몸·손은 **제자리를 옮긴다**(걷기·공격이 다 제자리 기준이라
+## 같이 따라온다). 두 발 그림은 숨기고 장비 그림(texture, 없으면 원래 발 그림)을 세운다.
+## hover > 0이면 그만큼 공중에 떠서 bob 폭으로 둥실거린다
+func set_treadmill_gear(stage: String, entry: Dictionary, texture: Texture2D, rolls: bool,
+		hover: float = 0.0, bob: float = 0.0, bob_speed: float = 0.0) -> void:
+	_clear_treadmill_gear()
+	if stage == "":
+		return
+	_gear_stage = stage
+	_gear_rolls = rolls
+	_gear_hover = hover
+	_gear_bob = bob
+	_gear_bob_speed = bob_speed
+	_gear_bob_time = 0.0
+	# 머리·몸·손을 장비 단계 자리로 — 안 적힌 조각도 0으로 넣어 둔다(같이 떠야 하므로)
+	var shifts: Dictionary = {}
+	for part_name in GEAR_BODY_PARTS:
+		var part: Node2D = _pose_part(part_name)
+		if part == null or not _rest_positions.has(part):
+			continue
+		shifts[part] = (entry[part_name][0] as Vector2) - _base_rest(part) if entry.has(part_name) else Vector2.ZERO
+	# 장비·불꽃은 전부 왼발 그림 밑에 붙인다(그리는 순서 = 불꽃 -> 장비 -> 몸통)
+	var host: Sprite2D = _foot_l if _foot_l else _foot_r
+	if host == null:
+		return
+	for side in ["L", "R"]:
+		if entry.has("Flame" + side) and entry.has("Gear" + side):
+			var flame: Node2D = JET_FLAME_SCRIPT.new()
+			flame.name = "JetFlame" + side
+			host.add_child(flame)
+			_gear_flames[side] = flame
+			_gear_flame_rest[side] = entry["Flame" + side]
+	for side in ["L", "R"]:
+		if not entry.has("Gear" + side):
+			continue
+		var foot: Sprite2D = _foot_l if side == "L" else _foot_r
+		var gear := Sprite2D.new()
+		gear.name = "TreadmillGear" + side
+		gear.texture = texture if texture != null else (foot.texture if foot else null)
+		host.add_child(gear)
+		_gear_nodes[side] = gear
+		_gear_rest[side] = entry["Gear" + side]
+	# 장비가 두 발을 대신한다 — 발 그림만 지운다(self_modulate는 자식인 장비에 안 번진다)
+	if not _gear_nodes.is_empty():
+		for foot in [_foot_l, _foot_r]:
+			if foot:
+				foot.self_modulate.a = 0.0
+	_gear_glide = 1.0
+	_gear_ride = 0.0
+	_gear_orbit = Vector2.ZERO
+	_set_rest_layer("treadmill", shifts)
+	_sync_foot_marks()
+	_update_treadmill_gear(0.0)
+	_apply_base_head()
+
+## 지금 낀 단계("" = 없음)
+func treadmill_gear_stage() -> String:
+	return _gear_stage
+
+## 장비를 빼고 머리·몸·손 제자리와 발 그림을 되돌린다
+func _clear_treadmill_gear() -> void:
+	for node in _gear_nodes.values() + _gear_flames.values():
+		if is_instance_valid(node):
+			node.queue_free()
+	_gear_nodes.clear()
+	_gear_rest.clear()
+	_gear_flames.clear()
+	_gear_flame_rest.clear()
+	for foot in [_foot_l, _foot_r]:
+		if foot:
+			foot.self_modulate.a = 1.0
+	var had_gear: bool = _gear_glide > 0.0
+	_gear_stage = ""
+	_gear_glide = 0.0
+	_gear_hover = 0.0
+	_gear_bob = 0.0
+	_gear_ride = 0.0
+	_gear_orbit = Vector2.ZERO
+	_set_rest_layer("treadmill", {})
+	_sync_foot_marks()
+	if had_gear:
+		_apply_base_head()
+
+## 지금 공중에 뜬 만큼(둥실거림 포함, 위가 음수) — 머리·몸·손·장비에 똑같이 더한다
+func _gear_lift() -> Vector2:
+	if is_zero_approx(_gear_hover) and is_zero_approx(_gear_bob):
+		return Vector2.ZERO
+	return Vector2(0.0, -_gear_hover + sin(_gear_bob_time * TAU * _gear_bob_speed) * _gear_bob)
+
+## **자세 계산 전에** 뜬 높이·바퀴 궤도를 다시 재서 제자리에 반영한다 —
+## 걷기·공격·손에 든 물건이 다 이 제자리 기준이라 통째로 같이 뜨고 흔들린다
+func _update_gear_lift(delta: float) -> void:
+	if _gear_glide <= 0.0:
+		return
+	_gear_bob_time += delta
+	# 바퀴로 달리는 중인지 — 땅에서 움직이거나 런닝머신 위에서 달리는 중
+	var riding: bool = false
+	if _gear_rolls:
+		if _run_target > 0.5:
+			riding = true
+		elif _fighter and is_instance_valid(_fighter):
+			riding = _fighter.is_on_floor() and absf(_fighter.velocity.x) > 20.0
+		elif manual_speed_ratio > 0.05:
+			riding = true
+	_gear_ride = move_toward(_gear_ride, 1.0 if riding else 0.0, delta * 5.0)
+	if _gear_ride > 0.0:
+		_gear_ride_phase = fposmod(_gear_ride_phase + delta * TAU / maxf(gear_ride_cycle, 0.05), TAU)
+	# 몸이 앞뒤로 둥근 궤도를 그린다(앞으로 나갈 때 살짝 내려가고, 뒤로 올 때 살짝 올라온다)
+	_gear_orbit = Vector2(cos(_gear_ride_phase) * gear_ride_orbit.x, sin(_gear_ride_phase) * gear_ride_orbit.y) * _gear_ride
+	_refresh_rest_layers()
+
+## 매 프레임 장비를 제자리에 맞춘다(자세 계산이 다 끝난 뒤).
+## 바퀴는 움직인 거리만큼 굴리고, 불꽃은 빠를수록 길게 뿜는다.
+## 장비 크기는 편집 씬에서 맞춘 그대로다 — 스쿼트로 발이 커져도 바퀴는 안 커진다
+func _update_treadmill_gear(delta: float) -> void:
+	if _gear_nodes.is_empty():
+		return
+	# 리그 좌표로 앞(+x)으로 얼마나 빨리 가는지 — 리그가 뒤집혀 있으면 화면 속도 부호도 뒤집힌다
+	var gx: float = global_transform.x.x
+	var forward: float = 0.0
+	var power: float = 0.0
+	if _fighter and is_instance_valid(_fighter) and not is_zero_approx(gx):
+		var max_speed: float = _fighter.stats.move_speed * _fighter.move_speed_multiplier
+		forward = _fighter.velocity.x / gx
+		power = clampf(absf(_fighter.velocity.x) / maxf(max_speed, 1.0), 0.0, 1.0)
+		# 런닝머신 위에선 제자리지만 벨트 위를 달린다 — 최고 속도로 굴리고 불꽃도 가득
+		if _run_target > 0.5:
+			forward = max_speed / absf(gx)
+			power = 1.0
+	elif manual_speed_ratio >= 0.0:
+		power = clampf(manual_speed_ratio, 0.0, 1.0)
+	var first: Sprite2D = _gear_nodes.values()[0]
+	if _gear_rolls and first.texture != null:
+		var first_scale: Vector2 = _gear_rest.values()[0][2]
+		var radius: float = first.texture.get_width() * 0.5 * absf(first_scale.x)
+		_gear_spin = fposmod(_gear_spin + forward * delta / maxf(radius, 0.5), TAU)
+	# 장비가 하나면 두 발을 대신하는 것이라 한쪽 발 움직임을 따라가지 않는다
+	var single: bool = _gear_nodes.size() == 1
+	var lift: Vector2 = _gear_lift()
+	for side in _gear_nodes:
+		var gear: Sprite2D = _gear_nodes[side]
+		var foot: Sprite2D = _foot_l if side == "L" else _foot_r
+		if not is_instance_valid(gear):
+			continue
+		var rest: Array = _gear_rest[side]
+		var rest_scale: Vector2 = rest[2]
+		var moved: Vector2 = Vector2.ZERO
+		var tilt: float = 0.0
+		if not single and foot:
+			moved = foot.position - _rest_positions[foot]
+			tilt = foot.rotation
+		var pos: Vector2 = rest[0] + moved + lift
+		var angle: float = rest[1] + (_gear_spin if _gear_rolls else tilt)
+		gear.global_transform = global_transform * Transform2D(angle, rest_scale, 0.0, pos)
+		# 불꽃은 장비 그림 안 자리 — 바퀴처럼 돌지는 않게 굴린 각도는 빼고 붙인다
+		var flame: Node2D = _gear_flames.get(side) as Node2D
+		if flame and is_instance_valid(flame):
+			var f: Array = _gear_flame_rest[side]
+			var shoe: Transform2D = global_transform * Transform2D(rest[1] + tilt, rest_scale, 0.0, pos)
+			flame.global_transform = shoe * Transform2D(f[1], f[2], 0.0, f[0])
+			flame.power = power
+
+## 레벨업 폭죽이 터질 부위 — "hands"면 두 손, "feet"면 두 발(장비를 끼웠으면 장비).
+## 부르는 쪽이 이 목록의 **가운데에 하나만** 터뜨린다
+func burst_anchors(part: String) -> Array[Node2D]:
+	var out: Array[Node2D] = []
+	if part == "hands":
+		for hand in [_hand_l, _hand_r]:
+			if hand:
+				out.append(hand)
+		return out
+	if not _gear_nodes.is_empty():
+		for gear in _gear_nodes.values():
+			if is_instance_valid(gear):
+				out.append(gear)
+		return out
+	for foot in [_foot_l, _foot_r]:
+		if foot:
+			out.append(foot)
+	return out
+
+
+## --- 헬스장 바벨 컬(손)·스쿼트(발) 단계 (maps/workout/LimbStageData.gd, skills/WorkoutSkill.gd) ---
+## 두 운동은 부위만 다르고 똑같다(2026-10-06 사용자): 4스택부터 커지고 핏줄(💢) 하나가 울끈불끈,
+## 7스택부터 1.5배에 핏줄 셋, 10스택은 금빛 + 주위에 다이아몬드 반짝이.
+## 자리는 `maps/workout/Curl*Studio.tscn`·`Squat*Studio.tscn`에서 캐릭터마다 맞춘다
+
+const PULSE_SCRIPT := preload("res://combat/PulseSprite.gd")
+const GOLD_SHADER := preload("res://characters/GoldLimb.gdshader")
+
+## 부위별 지금 단계 {"hands": "vein1" 등}
+var _limb_stage: Dictionary = {}
+## 부위별로 붙인 핏줄·반짝이 {"hands": [Sprite2D, ...]}
+var _limb_marks: Dictionary = {}
+## 그림을 바꿔 낀 조각의 원래 그림 {조각: Texture2D}
+var _limb_saved_tex: Dictionary = {}
+## 금빛 셰이더를 입힌 조각들
+var _limb_gold_parts: Array = []
+## 그림을 바꿔서 생긴 크기 보정 — 새 그림이 원래 손·발과 같은 크기로 보이게 곱한다
+var _hand_tex_fit: float = 1.0
+var _foot_tex_fit: float = 1.0
+
+func _limb_parts(limb: String) -> Array:
+	return [_hand_l, _hand_r] if limb == "hands" else [_foot_l, _foot_r]
+
+## 지금 그 부위 단계("" = 없음)
+func limb_stage(limb: String) -> String:
+	return _limb_stage.get(limb, "")
+
+## **바벨 컬(hands)·스쿼트(feet) 단계를 입히거나 벗긴다**(stage ""이면 벗긴다).
+## entry: {"HandL": [위치, 각도, 크기], ..., "HandR/Vein1": [위치, 각도, 크기, 그림 경로], ...}
+## — 손·발은 **제자리를 옮기고**, "조각/이름"은 그 조각의 자식으로 붙는 핏줄(Vein*)·반짝이(Spark*)다.
+## size: 원래 크기의 몇 배 / texture: 바꿔 낄 그림(없으면 그대로) / fit: 그 그림을 원래 크기로 맞추는 배율 / gold: 금빛 셰이더
+func set_limb_stage(limb: String, stage: String, entry: Dictionary, size: float,
+		texture: Texture2D = null, fit: float = 1.0, gold: bool = false) -> void:
+	_clear_limb_stage(limb)
+	if stage == "":
+		return
+	_limb_stage[limb] = stage
+	var shifts: Dictionary = {}
+	var marks: Array = []
+	for part in _limb_parts(limb):
+		if part == null:
+			continue
+		var key: String = String(part.name)
+		if entry.has(key) and _rest_positions.has(part):
+			shifts[part] = (entry[key][0] as Vector2) - _base_rest(part)
+		if texture != null:
+			_limb_saved_tex[part] = part.texture
+			part.texture = texture
+		elif gold:
+			var mat := ShaderMaterial.new()
+			mat.shader = GOLD_SHADER
+			part.material = mat
+			_limb_gold_parts.append(part)
+		# 핏줄·반짝이 — 이 조각 그림 안 좌표라 손·발이 커지고 움직이면 같이 따라간다
+		for mark_key in entry:
+			if not String(mark_key).begins_with(key + "/"):
+				continue
+			var data: Array = entry[mark_key]
+			var mark: Sprite2D = PULSE_SCRIPT.new()
+			mark.name = String(mark_key).get_slice("/", 1)
+			if data.size() > 3 and String(data[3]) != "" and ResourceLoader.exists(String(data[3])):
+				mark.texture = load(String(data[3]))
+			mark.position = data[0]
+			mark.rotation = data[1]
+			mark.scale = data[2]
+			mark.mode = 1 if mark.name.begins_with("Spark") else 0
+			part.add_child(mark)
+			marks.append(mark)
+	_limb_marks[limb] = marks
+	_set_rest_layer("limb_" + limb, shifts)
+	if limb == "hands":
+		muscle_arm = size
+		_hand_tex_fit = fit if texture != null else 1.0
+	else:
+		muscle_leg = size
+		_foot_tex_fit = fit if texture != null else 1.0
+	_muscle_arm_shown = -1.0   # 크기를 바로 다시 입히게
+	_apply_muscle()
+	_sync_foot_marks()
+
+## 그 부위 단계를 벗긴다 — 핏줄·반짝이를 떼고 그림·크기·제자리를 되돌린다
+func _clear_limb_stage(limb: String) -> void:
+	# 바로 떼어 낸다 — 같은 프레임에 다음 단계 핏줄을 같은 이름(Vein1)으로 붙이면 이름이 밀려 바뀐다
+	for mark in _limb_marks.get(limb, []):
+		if is_instance_valid(mark):
+			if mark.get_parent():
+				mark.get_parent().remove_child(mark)
+			mark.queue_free()
+	_limb_marks.erase(limb)
+	for part in _limb_parts(limb):
+		if part == null:
+			continue
+		if _limb_saved_tex.has(part):
+			part.texture = _limb_saved_tex[part]
+			_limb_saved_tex.erase(part)
+		if part in _limb_gold_parts:
+			part.material = null
+			_limb_gold_parts.erase(part)
+	_limb_stage.erase(limb)
+	_set_rest_layer("limb_" + limb, {})
+	if limb == "hands":
+		muscle_arm = 1.0
+		_hand_tex_fit = 1.0
+	else:
+		muscle_leg = 1.0
+		_foot_tex_fit = 1.0
+	_muscle_arm_shown = -1.0
+	_apply_muscle()
+
+## 런닝머신 장비가 발을 대신하는 동안엔 발에 붙은 핏줄·반짝이도 숨긴다(발 그림이 안 보이니까)
+func _sync_foot_marks() -> void:
+	for mark in _limb_marks.get("feet", []):
+		if is_instance_valid(mark):
+			mark.visible = _gear_nodes.is_empty()
 
 
 ## --- 2P 색 (maps/Stage.gd) ---

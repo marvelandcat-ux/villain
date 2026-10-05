@@ -24,6 +24,7 @@
 action_head_texture = ExtResource("7_dashface")
 action_head_scale = Vector2(0.052, 0.052)
 hurt_head_texture = ExtResource("8_hurtface")
+run_face = ExtResource("8_hurtface")
 ko_head_texture = ExtResource("11_koface")
 attack_raise_deg = -20.0
 attack_swing_deg = 45.0
