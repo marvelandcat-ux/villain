@@ -4179,6 +4179,28 @@ func set_body_outfit(outfit: Dictionary) -> void:
 	_body.scale = _body_rest_scale
 	_body.position = _rest_positions[_body]
 
+## 지금 쓴 머리(평소 그림·배율·제자리·머리 돌리기 세트) — set_head_outfit()으로 되돌릴 때 쓴다
+func get_head_outfit() -> Dictionary:
+	if _head == null:
+		return {}
+	return {"texture": _head_rest_texture, "scale": _head_rest_scale, "position": _rest_positions.get(_head, _head.position),
+		"turn": head_turn_textures, "anchors": head_turn_anchors, "faces_left": head_turn_faces_left}
+
+## 머리를 통째로 바꿔 쓴다(고양이 아주머니 주황 궁 고양이 옷, 2026-10-05) — 평소 그림·배율·제자리·머리 돌리기 세트를 한 번에 바꾼다.
+## outfit은 get_head_outfit()과 같은 모양. 돌던 중이면 먼저 평소 머리로 되돌린 뒤 바꾼다
+func set_head_outfit(outfit: Dictionary) -> void:
+	if _head == null or outfit.is_empty():
+		return
+	_clear_head_frame()
+	_head_rest_texture = outfit["texture"]
+	_head_rest_scale = outfit["scale"]
+	_rest_positions[_head] = outfit["position"]
+	head_turn_textures = outfit["turn"]
+	head_turn_anchors = outfit["anchors"]
+	head_turn_faces_left = outfit["faces_left"]
+	_head.position = _rest_positions[_head]
+	_apply_base_head()
+
 ## 머리를 그림 한 장(tex, 머리 공 here, 왼쪽을 보는지 faces_left)으로 바꿔 끼운다 — _set_head_frame과 뒤통수가 같이 쓴다
 func _set_head_image(tex: Texture2D, here: Vector3, faces_left: bool, dir: float) -> void:
 	_turn_applied = true

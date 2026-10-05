@@ -4,7 +4,8 @@ extends Skill
 ## 고양이 아주머니 궁극기(R) — 스킬2로 **지금 고른 고양이**(`custom_data["cat_kind"]`)에 따라 갈린다.
 ## - 검은 고양이: 고양이를 겨드랑이에 끼고 엉덩이를 앞으로 — 기본공격이 `black_shots`발짜리 똥 유탄(`CatPoopShell`, 범위 피해)이 된다. 다 쏘면 끝
 ## - 주황 고양이: 고양이 옷을 입는다(`orange_duration`초) — 스킬1·2는 못 쓰고, 기본공격 피해·받는 피해·
-##   기본공격/방어/대시 쿨이 좋아지고 입는 순간 체력 회복. 스킬 봉인은 `custom_data["cat_suit"]`를 두 스킬이 본다
+##   기본공격/방어/대시 쿨이 좋아지고 입는 순간 체력 회복. 스킬 봉인은 `custom_data["cat_suit"]`를 두 스킬이 본다.
+##   그림은 머리·몸통·손·발을 통째로 `고양이 아줌마 합체/` 그림으로 갈아입는다(리그 `set_head_outfit`/`set_body_outfit`)
 ## - 흰 고양이(임시): 흰 고양이를 가슴 앞에 들고 `white_duration`초 동안 기본공격이 빠른 할퀴기가 된다
 ## 검은·흰은 기본공격 자리를 `CatPoopShot`(발사 콜백만 있는 대체 평타)으로 잠깐 바꿔 끼우고 끝나면 되돌린다
 
@@ -12,7 +13,6 @@ const SHOT_SCRIPT := preload("res://skills/CatPoopShot.gd")
 const SHELL_SCRIPT := preload("res://skills/CatPoopShell.gd")
 const HELD_CAT_SCRIPT := preload("res://skills/CatHeldVisual.gd")
 const HELD_WHITE_SCRIPT := preload("res://skills/CatHeldWhite.gd")
-const HOOD_SCRIPT := preload("res://skills/CatSuitHood.gd")
 const KIND_BLACK := 0
 const KIND_ORANGE := 1
 const KIND_WHITE := 2
@@ -45,7 +45,29 @@ const MODIFIER_ID := "cat_suit"
 @export var orange_damage_taken: float = 0.6
 ## 기본공격·방어·대시 쿨 배수(0.5 = 절반)
 @export var orange_cooldown_mult: float = 0.5
-@export var orange_tint: Color = Color(1.0, 0.75, 0.35)
+
+@export_group("주황 고양이 옷 그림")
+## 머리 옆모습과 머리 돌리기 그림(측면1 -> 정면 순), 그림마다 머리 공 (중심 x, 중심 y, 지름) — 0번이 옆모습. 그림을 바꾸면 다시 잴 것
+@export var suit_head_texture: Texture2D = preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체.png")
+@export var suit_head_turn_textures: Array[Texture2D] = [
+	preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체 측면 1.png"),
+	preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체 측면 2.png"),
+	preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체 측면 3.png")]
+@export var suit_head_turn_anchors: Array[Vector3] = [Vector3(624, 669, 1043), Vector3(607, 672, 1021), Vector3(632, 664, 1072), Vector3(629, 654, 1073)]
+@export var suit_head_turn_faces_left: Array[bool] = [false, false, false, false]
+## 머리 공 지름이 평소 머리의 1.1배(사용자 요청으로 키움), 턱 끝 높이·가로 가운데는 평소와 같게 역산한 배율·자리
+@export var suit_head_scale: Vector2 = Vector2(0.04899, 0.04899)
+@export var suit_head_position: Vector2 = Vector2(-2.97, -37.04)
+## 몸통(정면)과 몸 돌리기 그림 — 배율·자리는 보이는 영역이 평소 몸통과 같게 역산
+@export var suit_body_texture: Texture2D = preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체 몸.png")
+@export var suit_body_turn_textures: Array[Texture2D] = [
+	preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 몸 측면 2.png"),
+	preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체 몸 측면 3.png")]
+@export var suit_body_scale: Vector2 = Vector2(0.028248, 0.03693)
+@export var suit_body_position: Vector2 = Vector2(-0.23, 1.15)
+## 손·발 — 평소 손·발과 같은 캔버스라 그림만 바꾼다
+@export var suit_hand_texture: Texture2D = preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌마 합체 손.png")
+@export var suit_foot_texture: Texture2D = preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌맘 합체 발.png")
 
 @export_group("흰 고양이 (할퀴기, 임시)")
 @export var white_duration: float = 10.0
@@ -72,7 +94,10 @@ var _time_left: float = 0.0
 var _saved_basic: Skill = null
 var _shot = null
 var _held = null
-var _hood = null
+## 고양이 옷을 입기 전 머리·몸통·손발 그림 — 벗을 때 되돌린다
+var _saved_head: Dictionary = {}
+var _saved_body: Dictionary = {}
+var _saved_limbs: Dictionary = {}
 
 func can_use() -> bool:
 	return super() and _mode == Mode.NONE
@@ -209,25 +234,48 @@ func _start_orange(fighter: Fighter) -> void:
 	# 기본공격 쿨은 attack_speed_multiplier만큼 빨리 돈다 — 쿨 x0.5 = 속도 x2
 	fighter.set_modifier("attack_speed_multiplier", MODIFIER_ID, 1.0 / maxf(orange_cooldown_mult, 0.05))
 	fighter.heal(orange_heal)
-	fighter.set_tint(MODIFIER_ID, orange_tint)
-	var visual: Node = fighter.get_node_or_null("Visual")
-	var head: Node2D = visual.get_node_or_null("Head") if visual else null
-	if head:
-		_hood = HOOD_SCRIPT.new()
-		_hood.name = "CatSuitHood"
-		_hood.scale = Vector2(1.0 / maxf(absf(head.scale.x), 0.0001), 1.0 / maxf(absf(head.scale.y), 0.0001))
-		head.add_child(_hood)
+	_wear_suit(fighter)
 
 func _end_orange_effects() -> void:
-	if is_instance_valid(_hood):
-		_hood.queue_free()
-	_hood = null
 	if not _has_fighter or not is_instance_valid(_fighter):
 		return
 	_fighter.custom_data.erase("cat_suit")
 	for property in ["basic_attack_damage_multiplier", "damage_taken_multiplier", "guard_dash_cooldown_multiplier", "attack_speed_multiplier"]:
 		_fighter.clear_modifier(property, MODIFIER_ID)
-	_fighter.clear_tint(MODIFIER_ID)
+	_take_off_suit(_fighter)
+
+## 리그의 머리·몸통·손발 그림을 고양이 옷(합체 그림)으로 갈아입힌다
+func _wear_suit(fighter: Fighter) -> void:
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual == null or not visual.has_method("set_head_outfit"):
+		return
+	_saved_head = visual.get_head_outfit()
+	_saved_body = visual.get_body_outfit()
+	visual.set_head_outfit({"texture": suit_head_texture, "scale": suit_head_scale, "position": suit_head_position,
+		"turn": suit_head_turn_textures, "anchors": suit_head_turn_anchors,
+		"faces_left": suit_head_turn_faces_left})
+	visual.set_body_outfit({"texture": suit_body_texture, "scale": suit_body_scale, "position": suit_body_position, "turn": suit_body_turn_textures})
+	_saved_limbs = {}
+	for part_name in ["HandL", "HandR", "FootL", "FootR"]:
+		var part := visual.get_node_or_null(part_name) as Sprite2D
+		if part:
+			_saved_limbs[part_name] = part.texture
+			part.texture = suit_hand_texture if part_name.begins_with("Hand") else suit_foot_texture
+
+## 고양이 옷을 벗긴다 — 입기 전 그림으로 되돌린다
+func _take_off_suit(fighter: Fighter) -> void:
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual == null or not visual.has_method("set_head_outfit"):
+		return
+	visual.set_head_outfit(_saved_head)
+	visual.set_body_outfit(_saved_body)
+	for part_name in _saved_limbs:
+		var part := visual.get_node_or_null(part_name) as Sprite2D
+		if part:
+			part.texture = _saved_limbs[part_name]
+	_saved_head = {}
+	_saved_body = {}
+	_saved_limbs = {}
 
 # --- 공용 ---
 

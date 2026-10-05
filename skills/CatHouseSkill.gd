@@ -82,6 +82,8 @@ func _place_house(fighter: Fighter) -> void:
 	_house.max_cats = max_cats
 	_house.owner_fighter = fighter
 	map.add_child(_house)
+	# 그리기 순서: 집 < 아주머니 < 고양이 — 집을 아주머니 바로 앞 순서로 옮긴다(고양이는 나중에 맨 뒤로 붙어 위에 그려짐)
+	map.move_child(_house, fighter.get_index())
 	_house.global_position = Vector2(x, ground_y)
 	_house.set_progress(0.0)
 

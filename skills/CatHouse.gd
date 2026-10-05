@@ -11,23 +11,29 @@ extends Node2D
 ## 그래서 `take_damage()`/`take_map_damage()`/`is_guarding`을 갖춘다. 다 짓기 전엔 판정이 없다.
 ## 다 지으면 몸통 크기의 StaticBody2D(기본 레이어 1 = 맵 벽·바닥과 같음)가 붙어 **상대를 벽처럼 막고**, 지붕 위엔 올라설 수 있다.
 ## 지은 사람과 **모든 고양이**는 그 몸을 통과한다(고양이는 집 안에서 태어나고 집 사이를 오가다 끼기 쉽다 — 벽은 `cat_house_solids` 그룹).
-## 그림은 임시로 `_draw()` — 네모난 몸통 + 네모난 지붕 판 + 문 구멍
+## 그림은 `고양이집.png`(종이 박스)를 `_draw()`로 그린다 — 짓는 중엔 아래부터 잘라 보이고, 다 지으면 오른쪽 큰 면 가운데에 고양이 얼굴 간판
 
 const CAT_FOLLOWER := preload("res://skills/CatFollower.gd")
 const HURTBOX_SCRIPT := preload("res://combat/Hurtbox.gd")
+const BOX_TEXTURE := preload("res://sprite/고양이 아줌마/고양이집.png")
+## 박스 그림에서 잰 자리(그림 픽셀) — **그림을 바꾸면 다시 잴 것**
+## 보이는 영역(지붕 처마 포함, 알파 1/4 이상)
+const BOX_OPAQUE := Rect2(188, 79, 1186, 832)
+## 막는 몸·피격 판정 — 벽 왼쪽 끝 ~ 오른쪽 끝, 지붕 꼭대기 ~ 바닥(처마는 뺀다)
+const BOX_WALLS := Rect2(250, 85, 1080, 826)
+## 오른쪽 큰 면(손잡이 구멍 있는 면)의 가운데 — 고양이 간판 자리
+const BOX_FRONT_CENTER := Vector2(838, 615)
 
 @export var max_hp: int = 40
 @export var spawn_interval: float = 7.0
 ## 주인의 고양이가 맵에 이만큼 있으면 더 안 내보낸다
 @export var max_cats: int = 4
-## 집 크기(px) — 몸통 가로·세로, 지붕 판 두께·양옆으로 튀어나온 길이
-@export var body_size: Vector2 = Vector2(56.0, 40.0)
-@export var roof_thickness: float = 12.0
-@export var roof_overhang: float = 7.0
-@export var wall_color: Color = Color(0.86, 0.68, 0.45)
-@export var roof_color: Color = Color(0.72, 0.25, 0.2)
-@export var door_color: Color = Color(0.18, 0.12, 0.1)
-@export var outline_color: Color = Color(0.15, 0.1, 0.08)
+## 박스 그림 전체 가로(px, 처마 포함) — 세로·판정은 그림 비율로 따라간다
+@export var house_width: float = 70.0
+## 고양이 얼굴 간판 반지름(px)
+@export var icon_radius: float = 9.0
+## 부서질 때 파편 색(종이 박스)
+@export var wall_color: Color = Color(0.91, 0.72, 0.47)
 
 ## 이 집이 내보내는 고양이 종류(CatFollower.Kind) — 설치 당시 선택으로 고정, 지붕 간판도 이 종류
 var cat_kind: int = 0
@@ -75,25 +81,25 @@ func _add_hurtbox() -> void:
 	hurtbox.name = "Hurtbox"
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	var h: float = body_size.y + roof_thickness
-	rect.size = Vector2(body_size.x, h)
+	var walls: Rect2 = _walls_local()
+	rect.size = walls.size
 	shape.shape = rect
-	shape.position = Vector2(0.0, -h * 0.5)
+	shape.position = walls.get_center()
 	hurtbox.add_child(shape)
 	add_child(hurtbox)
 	if _has_owner and is_instance_valid(owner_fighter):
 		hurtbox.immune_source = owner_fighter
 
-## 벽처럼 막는 몸 — 판정 상자와 같은 크기(지붕 판의 튀어나온 부분은 뺀다)
+## 벽처럼 막는 몸 — 판정 상자와 같은 크기(지붕 처마는 뺀다)
 func _add_solid() -> void:
 	_solid = StaticBody2D.new()
 	_solid.name = "Solid"
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	var h: float = body_size.y + roof_thickness
-	rect.size = Vector2(body_size.x, h)
+	var walls: Rect2 = _walls_local()
+	rect.size = walls.size
 	shape.shape = rect
-	shape.position = Vector2(0.0, -h * 0.5)
+	shape.position = walls.get_center()
 	_solid.add_child(shape)
 	# 고양이가 집 벽 그룹을 보고 예외를 걸 수 있게 — add_child 전에 넣어야 고양이 _ready가 못 놓친다
 	_solid.add_to_group("cat_house_solids")
@@ -131,7 +137,7 @@ func _break() -> void:
 		var burst := CrashBurst.new()
 		burst.color = wall_color
 		parent.add_child(burst)
-		burst.global_position = global_position + Vector2(0.0, -body_size.y * 0.5)
+		burst.global_position = global_position + _walls_local().get_center()
 	queue_free()
 
 func _spawn_cat() -> void:
@@ -159,38 +165,28 @@ func _process(delta: float) -> void:
 		_flash = maxf(_flash - delta, 0.0)
 		queue_redraw()
 
+## 그림 픽셀 좌표를 집 로컬 좌표로 — 보이는 영역의 가로 가운데·맨 아래가 원점(바닥 가운데)
+func _box_to_local(p: Vector2) -> Vector2:
+	var k: float = house_width / BOX_OPAQUE.size.x
+	return Vector2((p.x - BOX_OPAQUE.get_center().x) * k, (p.y - BOX_OPAQUE.end.y) * k)
+
+## 막는 몸·판정 상자(집 로컬)
+func _walls_local() -> Rect2:
+	var top_left: Vector2 = _box_to_local(BOX_WALLS.position)
+	return Rect2(top_left, _box_to_local(BOX_WALLS.end) - top_left)
+
 func _draw() -> void:
-	var w: float = body_size.x
-	var h: float = body_size.y
-	var total: float = h + roof_thickness
 	# 짓는 중엔 아래부터 progress만큼만 보이고 반투명하다
-	var shown: float = total * _progress
-	if shown <= 0.5:
+	var shown_px: float = BOX_OPAQUE.size.y * _progress
+	if shown_px <= 1.0:
 		return
 	var alpha: float = 1.0 if _built else 0.75
 	var tint := Color(1, 1, 1, alpha)
 	if _flash > 0.0:
 		tint = Color(1.0, 0.45, 0.45, alpha)
-	var body_h: float = minf(shown, h)
-	draw_rect(Rect2(-w * 0.5 - 1.5, -body_h - 1.5, w + 3.0, body_h + 1.5), outline_color * tint)
-	draw_rect(Rect2(-w * 0.5, -body_h, w, body_h), wall_color * tint)
-	# 판자 줄
-	var y: float = -10.0
-	while y > -body_h:
-		draw_line(Vector2(-w * 0.5, y), Vector2(w * 0.5, y), (wall_color.darkened(0.25)) * tint, 1.0)
-		y -= 10.0
-	# 문 구멍(아치 대신 네모 + 위 반원)
-	var door := Vector2(18.0, 22.0)
-	var door_h: float = minf(door.y, body_h)
-	draw_rect(Rect2(-door.x * 0.5, -door_h, door.x, door_h), door_color * tint)
-	if body_h >= door.y + door.x * 0.5:
-		draw_circle(Vector2(0.0, -door.y), door.x * 0.5, door_color * tint)
-	# 지붕 판 — 몸통 위에 양옆으로 튀어나온 네모
-	if shown > h:
-		var roof_h: float = shown - h
-		var rx: float = w * 0.5 + roof_overhang
-		draw_rect(Rect2(-rx - 1.5, -h - roof_h - 1.5, rx * 2.0 + 3.0, roof_h + 3.0), outline_color * tint)
-		draw_rect(Rect2(-rx, -h - roof_h, rx * 2.0, roof_h), roof_color * tint)
-		# 다 지었으면 지붕 위에 작은 고양이 얼굴 간판
-		if _built:
-			CAT_FOLLOWER.draw_face(self, cat_kind, Vector2(0.0, -h - roof_thickness * 0.5), roof_thickness * 0.45)
+	var src := Rect2(BOX_OPAQUE.position.x, BOX_OPAQUE.end.y - shown_px, BOX_OPAQUE.size.x, shown_px)
+	var top_left: Vector2 = _box_to_local(src.position)
+	draw_texture_rect_region(BOX_TEXTURE, Rect2(top_left, _box_to_local(src.end) - top_left), src, tint)
+	# 다 지었으면 오른쪽 큰 면 가운데에 고양이 얼굴 간판
+	if _built:
+		CAT_FOLLOWER.draw_face(self, cat_kind, _box_to_local(BOX_FRONT_CENTER), icon_radius)
