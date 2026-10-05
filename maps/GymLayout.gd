@@ -1,3 +1,4 @@
+@tool
 class_name GymLayout
 extends Node2D
 
@@ -48,14 +49,47 @@ extends Node2D
 ## 선수 자리의 높이 — 1층 바닥에서 이만큼 **위**다(캐릭터 원점이 발보다 30px 위라 그만큼 띄운다)
 @export var spawn_lift: float = 40.0
 
+@export_group("에디터 미리보기")
+## 에디터에서 기구를 **배치표 몇 번(0부터)으로 놓아 보일지**. 게임에선 안 쓴다 — 라운드마다 무작위다.
+## 에디터에서 기구를 끌어 옮기면 그 자리가 배치표에 바로 저장되고, **같은 자리를 쓰는 다른 배치도 같이 옮겨진다**
+## (가로는 그 자리 전체, 세로는 그 기구만 — 런닝머신처럼 기구마다 묻는 깊이가 달라서)
+@export var editor_preview: int = 0:
+	set(value):
+		editor_preview = maxi(value, 0)
+		if Engine.is_editor_hint() and is_inside_tree():
+			_show_preview()
+## 크기 비교용으로 **에디터에만** 세워 둘 캐릭터 씬 경로. 씬에 저장되지 않고 게임에도 안 나온다.
+## 경로로 받는 이유: 씬을 직접 물려 두면 게임에서 맵을 열 때도 그 캐릭터들을 다 불러온다
+@export var editor_characters: PackedStringArray = PackedStringArray():
+	set(value):
+		editor_characters = value
+		if Engine.is_editor_hint() and is_inside_tree():
+			_show_characters()
+## 위 캐릭터들이 설 **발바닥 자리**(같은 번호끼리 짝). 맵 가운데보다 오른쪽이면 왼쪽을 본다
+@export var editor_character_feet: PackedVector2Array = PackedVector2Array():
+	set(value):
+		editor_character_feet = value
+		if Engine.is_editor_hint() and is_inside_tree():
+			_show_characters()
+
 ## 이번 판에 1층에 놓인 기구들의 x(왼쪽부터) — 선수 자리를 잡을 때 쓰고, 밖에서도 읽을 수 있게 남긴다
 var ground_x: Array[float] = []
 
+## 에디터: {기구: 미리보기로 놓아 준 자리 / 뒤집기} — 끌어 옮긴 걸 알아채는 데 쓴다
+var _shown: Dictionary = {}
+var _shown_flip: Dictionary = {}
+## 에디터: 끄는 중엔 저장을 미루고, 손을 뗀 다음 프레임에 한 번만 배치표를 저장한다
+var _save_pending: bool = false
+## 에디터: 세워 둔 비교용 캐릭터들(주인 없이 붙여서 씬에 저장되지 않는다)
+var _preview_nodes: Array[Node] = []
+
 func _ready() -> void:
-	var items: Array[GymMachine] = []
-	for child in get_children():
-		if child is GymMachine:
-			items.append(child)
+	if Engine.is_editor_hint():
+		_show_preview()
+		_show_characters()
+		return
+	set_process(false)
+	var items: Array[GymMachine] = _machines()
 	if items.is_empty():
 		return
 	if use_placements and placements != null and placements.count() > 0:
@@ -170,3 +204,100 @@ func _move_spawn(spawn_name: String, x: float) -> void:
 		return
 	var ground: float = level_y[0] if level_y.size() > 0 else 280.0
 	marker.global_position = Vector2(x, ground - spawn_lift)
+
+## 자식 기구들
+func _machines() -> Array[GymMachine]:
+	var items: Array[GymMachine] = []
+	for child in get_children():
+		if child is GymMachine:
+			items.append(child)
+	return items
+
+# ---------------------------------------------------------------- 에디터 미리보기
+
+## 에디터: 배치표 editor_preview번대로 기구를 놓아 보인다
+func _show_preview() -> void:
+	_shown.clear()
+	_shown_flip.clear()
+	if placements == null or placements.count() == 0:
+		return
+	var index: int = mini(editor_preview, placements.count() - 1)
+	for machine in _machines():
+		machine.position = placements.spot(machine.kind, index, machine.position)
+		machine.flip = placements.flipped(machine.kind, index)
+		_shown[machine] = machine.position
+		_shown_flip[machine] = machine.flip
+
+## 에디터: 기구를 끌어 옮기거나 뒤집었으면 배치표에 옮겨 적는다
+func _process(_delta: float) -> void:
+	if not Engine.is_editor_hint() or placements == null:
+		return
+	var changed: bool = false
+	for machine in _machines():
+		if not _shown.has(machine):
+			continue
+		var old: Vector2 = _shown[machine]
+		if not machine.position.is_equal_approx(old):
+			_move_spot(machine.kind, old, machine.position)
+			_shown[machine] = machine.position
+			changed = true
+		if machine.flip != _shown_flip.get(machine, machine.flip):
+			_flip_at_spot(machine.kind, machine.position, machine.flip)
+			_shown_flip[machine] = machine.flip
+			changed = true
+	if changed:
+		_save_pending = true
+	elif _save_pending:
+		_save_pending = false
+		ResourceSaver.save(placements)
+
+## 배치표에서 old 자리를 쓰는 칸을 전부 옮긴다 — 가로는 그 자리의 모든 기구, 세로는 그 기구만
+func _move_spot(kind: int, old: Vector2, now: Vector2) -> void:
+	var delta: Vector2 = now - old
+	for k in [GymPlacement.Kind.CURL, GymPlacement.Kind.SQUAT, GymPlacement.Kind.TREADMILL]:
+		for i in placements.count():
+			var at: Vector2 = placements.spot(k, i)
+			if not _same_spot(at, old):
+				continue
+			at.x += delta.x
+			if k == kind:
+				at.y += delta.y
+			placements.set_spot(k, i, at, placements.flipped(k, i))
+
+## 배치표에서 그 기구가 이 자리에 설 때의 뒤집기를 전부 바꾼다
+func _flip_at_spot(kind: int, at: Vector2, flipped: bool) -> void:
+	for i in placements.count():
+		var spot: Vector2 = placements.spot(kind, i)
+		if _same_spot(spot, at):
+			placements.set_spot(kind, i, spot, flipped)
+
+## 같은 자리인지 — x가 같고 같은 층(런닝머신은 묻는 깊이만큼 y가 다르다)
+func _same_spot(a: Vector2, b: Vector2) -> bool:
+	return absf(a.x - b.x) < 0.5 and absf(a.y - b.y) < 60.0
+
+## 에디터: 크기 비교용 캐릭터를 세운다. 주인(owner)을 안 정해서 씬에 저장되지 않는다
+func _show_characters() -> void:
+	for node in _preview_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_preview_nodes.clear()
+	if editor_characters.is_empty() or editor_character_feet.is_empty():
+		return
+	var center_x: float = 0.0
+	for feet in editor_character_feet:
+		center_x += feet.x
+	center_x /= editor_character_feet.size()
+	for i in mini(editor_characters.size(), editor_character_feet.size()):
+		var scene := load(editor_characters[i]) as PackedScene
+		if scene == null:
+			continue
+		var body := scene.instantiate() as Node2D
+		if body == null:
+			continue
+		# 캐릭터 원점은 발바닥보다 30px 위다
+		body.position = editor_character_feet[i] - Vector2(0.0, 30.0) - position
+		var visual := body.get_node_or_null("Visual") as Node2D
+		if visual and editor_character_feet[i].x > center_x:
+			visual.scale.x = -absf(visual.scale.x)
+		add_child(body)
+		_preview_nodes.append(body)

@@ -25,12 +25,36 @@ extends Node2D
 @export var ground_y: float = 410.0
 ## 2층 바닥 윗면 y
 @export var upper_y: float = 100.0
+## 2층 바닥 판 **아랫면** y = 1층 천장. 2층에서 높이 뛴 채 내려오면 판 속에 박히지 않게 이 아래로 내려놓는다
+@export var lower_ceiling_y: float = 145.0
 
 ## 방금 넘어온 선수는 잠깐 다시 안 넘기게 막는다 — 안 그러면 두 층을 깜빡거린다
 @export var cooldown: float = 0.25
 
+## 캐릭터 원점에서 몸 충돌 윗끝까지(몸 캡슐 높이 60의 반)
+const BODY_HALF := 30.0
+
 ## {선수: 남은 잠금 시간}
 var _locked: Dictionary = {}
+
+func _ready() -> void:
+	# AI가 "끝까지 걸어가면 다른 층"이라는 걸 알 수 있게 찾을 이름표를 단다
+	add_to_group("level_wrap")
+
+## 이 위치가 2층인지. **2층 바닥 윗면 하나로 가른다** — 2층 선수의 원점은 늘 그 위,
+## 1층 선수는 천장(2층 판 아랫면)에 막혀 그 아래다. 두 바닥의 한가운데로 가르면
+## 1층에서 이단 점프한 선수(원점이 천장 밑까지 올라감)를 2층으로 잘못 봐서 땅 밑으로 보냈다
+func is_upper(pos: Vector2) -> bool:
+	return pos.y < upper_y
+
+## from에서 to가 있는 **다른 층**으로 가려면 걸어가야 할 x(맵 끝 바깥). 같은 층이면 NAN.
+## 왼쪽 끝으로 나가면 반대 층 오른쪽 끝에서 나오므로, "끝까지 걷는 거리 + 나온 자리에서 to까지"가 짧은 쪽을 고른다
+func exit_x_toward(from: Vector2, to: Vector2) -> float:
+	if is_upper(from) == is_upper(to):
+		return NAN
+	var via_left: float = (from.x - left_x) + absf(to.x - (right_x - inset))
+	var via_right: float = (right_x - from.x) + absf(to.x - (left_x + inset))
+	return left_x - 10.0 if via_left <= via_right else right_x + 10.0
 
 func _physics_process(delta: float) -> void:
 	for key in _locked.keys():
@@ -47,17 +71,17 @@ func _check(fighter: Node2D) -> void:
 	var at: Vector2 = fighter.global_position
 	if at.x > left_x and at.x < right_x:
 		return
-	# 지금 어느 층에 있는지 — 두 바닥의 한가운데를 기준으로 가른다
-	var middle: float = (ground_y + upper_y) * 0.5
-	var on_upper: bool = at.y < middle
 	# 층을 바꾸면 발밑 높이가 그만큼 통째로 움직인다
 	var drop: float = ground_y - upper_y
-	var new_y: float = at.y + (drop if on_upper else -drop)
+	var new_y: float = at.y - drop
+	if is_upper(at):
+		# 1층으로 — 2층에서 높이 뛴 채였으면 천장(2층 판) 속에 박히니 머리가 천장 밑에 오게 내린다
+		new_y = maxf(at.y + drop, lower_ceiling_y + BODY_HALF + 2.0)
 	# 반대쪽 끝으로 — 왼쪽 끝으로 나갔으면 오른쪽 끝에서 들어온다
 	var new_x: float = (right_x - inset) if at.x <= left_x else (left_x + inset)
 	fighter.global_position = Vector2(new_x, new_y)
 	_locked[id] = cooldown
-	# 카메라가 따라오느라 주욱 끌려가지 않게, 넘어간 자리로 바로 옮겨 준다
+	# 따라가는 카메라면 화면이 주욱 끌려가지 않게 곧바로 맞춘다(고정 카메라는 그대로 둔다)
 	var cam: Node = get_parent().get_node_or_null("Camera2D")
-	if cam is Node2D:
-		(cam as Node2D).global_position.x = new_x
+	if cam and cam.has_method("snap_to_fighters"):
+		cam.call("snap_to_fighters")

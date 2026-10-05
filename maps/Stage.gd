@@ -50,6 +50,9 @@ static var show_debug_grid: bool = false
 ## 체력·스킬 판(`CombatHUD`의 선수 판 둘)을 **화면 위쪽 좌·우 구석**으로 올릴지.
 ## 놀이터처럼 아래쪽에 발판·모래밭이 있어서 평소 자리(아래)에 두면 바닥 기믹을 가리는 맵에서 켠다
 @export var hud_panels_top: bool = false
+## 아래 자리일 때 두 선수 판을 평소보다 **이만큼 더 내린다**(px). 바닥이 화면 아래쪽에 있어서
+## 평소 자리면 서 있는 캐릭터를 가리는 맵(헬스장 1층)에서 쓴다. 0이면 평소 자리
+@export var hud_panels_drop: float = 0.0
 ## 쓰러질 때 화면 전체 슬로모션 배속 (0.3 = 30% 속도)
 @export var knockout_time_scale: float = 0.3
 ## 슬로모션이 이어지는 시간(초, **실제 시간**) — 끝나면 원래 속도로 돌아온다
@@ -127,6 +130,8 @@ func _ready() -> void:
 	if _combat_hud:
 		if _combat_hud.has_method("set_panels_top"):
 			_combat_hud.set_panels_top(hud_panels_top)
+		if _combat_hud.has_method("set_panels_drop"):
+			_combat_hud.set_panels_drop(hud_panels_drop)
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 

@@ -17,6 +17,18 @@
 [ext_resource type="Texture2D" uid="uid://bad7ehns32pvc" path="res://sprite/맵/헬스장/측면바벨거치대.png" id="16_curl"]
 [ext_resource type="Texture2D" uid="uid://c3rcjiddb7oif" path="res://sprite/맵/헬스장/스쿼트랙.png" id="17_squat"]
 [ext_resource type="Texture2D" uid="uid://cnqof0sqm4ksh" path="res://sprite/맵/헬스장/헬스장벽면.png" id="18_wall"]
+[ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="19_blur"]
+[ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="20_parallax"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_far"]
+shader = ExtResource("19_blur")
+shader_parameter/blur_px = 1.6
+shader_parameter/dim = 0.15
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_back"]
+shader = ExtResource("19_blur")
+shader_parameter/blur_px = 0.8
+shader_parameter/dim = 0.08
 
 [sub_resource type="RectangleShape2D" id="Shape_slab"]
 size = Vector2(1760, 45)
@@ -27,15 +39,22 @@ size = Vector2(1760, 40)
 [node name="Gym" type="Node2D" unique_id=1416216186]
 script = ExtResource("1")
 map_skill_scene = ExtResource("7")
+hud_panels_drop = 48.0
 
-[node name="NightSky" type="ColorRect" parent="." unique_id=511641765]
+[node name="DecoFar" type="CanvasGroup" parent="."]
+material = SubResource("ShaderMaterial_far")
+script = ExtResource("20_parallax")
+factor = Vector2(0.6, 0.8)
+reference = Vector2(860, 360)
+
+[node name="NightSky" type="ColorRect" parent="DecoFar" unique_id=511641765]
 offset_left = -20.0
 offset_top = 41.0
 offset_right = 1740.0
 offset_bottom = 301.0
 color = Color(0.07, 0.09, 0.2, 1)
 
-[node name="City" type="Sprite2D" parent="." unique_id=973944363]
+[node name="City" type="Sprite2D" parent="DecoFar" unique_id=973944363]
 modulate = Color(0.62, 0.66, 0.78, 1)
 texture_repeat = 2
 position = Vector2(-20, 123)
@@ -45,7 +64,13 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 7333.33, 941)
 
-[node name="Wall2FTop" type="TextureRect" parent="." unique_id=681319587]
+[node name="DecoBack" type="CanvasGroup" parent="."]
+material = SubResource("ShaderMaterial_back")
+script = ExtResource("20_parallax")
+factor = Vector2(0.85, 1)
+reference = Vector2(860, 360)
+
+[node name="Wall2FTop" type="TextureRect" parent="DecoBack" unique_id=681319587]
 texture_repeat = 2
 offset_left = -20.0
 offset_top = 41.0
@@ -55,7 +80,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Wall2FBottom" type="TextureRect" parent="." unique_id=126254649]
+[node name="Wall2FBottom" type="TextureRect" parent="DecoBack" unique_id=126254649]
 texture_repeat = 2
 offset_left = -20.0
 offset_top = 274.824
@@ -65,9 +90,9 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Windows" type="Node2D" parent="." unique_id=675500846]
+[node name="Windows" type="Node2D" parent="DecoBack" unique_id=675500846]
 
-[node name="Pillar0" type="TextureRect" parent="Windows" unique_id=603152109]
+[node name="Pillar0" type="TextureRect" parent="DecoBack/Windows" unique_id=603152109]
 texture_repeat = 2
 offset_left = -20.0
 offset_top = 67.176
@@ -77,7 +102,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar1" type="TextureRect" parent="Windows" unique_id=398541899]
+[node name="Pillar1" type="TextureRect" parent="DecoBack/Windows" unique_id=398541899]
 texture_repeat = 2
 offset_left = 146.108
 offset_top = 67.176
@@ -87,7 +112,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar2" type="TextureRect" parent="Windows" unique_id=622531907]
+[node name="Pillar2" type="TextureRect" parent="DecoBack/Windows" unique_id=622531907]
 texture_repeat = 2
 offset_left = 316.108
 offset_top = 67.176
@@ -97,7 +122,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar3" type="TextureRect" parent="Windows" unique_id=1129021782]
+[node name="Pillar3" type="TextureRect" parent="DecoBack/Windows" unique_id=1129021782]
 texture_repeat = 2
 offset_left = 486.108
 offset_top = 67.176
@@ -107,7 +132,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar4" type="TextureRect" parent="Windows" unique_id=881923816]
+[node name="Pillar4" type="TextureRect" parent="DecoBack/Windows" unique_id=881923816]
 texture_repeat = 2
 offset_left = 656.108
 offset_top = 67.176
@@ -117,7 +142,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar5" type="TextureRect" parent="Windows" unique_id=2089785986]
+[node name="Pillar5" type="TextureRect" parent="DecoBack/Windows" unique_id=2089785986]
 texture_repeat = 2
 offset_left = 826.108
 offset_top = 67.176
@@ -127,7 +152,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar6" type="TextureRect" parent="Windows" unique_id=223641649]
+[node name="Pillar6" type="TextureRect" parent="DecoBack/Windows" unique_id=223641649]
 texture_repeat = 2
 offset_left = 996.108
 offset_top = 67.176
@@ -137,7 +162,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar7" type="TextureRect" parent="Windows" unique_id=1373890262]
+[node name="Pillar7" type="TextureRect" parent="DecoBack/Windows" unique_id=1373890262]
 texture_repeat = 2
 offset_left = 1166.11
 offset_top = 67.176
@@ -147,7 +172,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar8" type="TextureRect" parent="Windows" unique_id=63605465]
+[node name="Pillar8" type="TextureRect" parent="DecoBack/Windows" unique_id=63605465]
 texture_repeat = 2
 offset_left = 1336.11
 offset_top = 67.176
@@ -157,7 +182,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar9" type="TextureRect" parent="Windows" unique_id=700655475]
+[node name="Pillar9" type="TextureRect" parent="DecoBack/Windows" unique_id=700655475]
 texture_repeat = 2
 offset_left = 1506.11
 offset_top = 67.176
@@ -167,7 +192,7 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Pillar10" type="TextureRect" parent="Windows" unique_id=2012964021]
+[node name="Pillar10" type="TextureRect" parent="DecoBack/Windows" unique_id=2012964021]
 texture_repeat = 2
 offset_left = 1676.11
 offset_top = 67.176
@@ -177,57 +202,57 @@ texture = ExtResource("18_wall")
 expand_mode = 1
 stretch_mode = 1
 
-[node name="Frame0" type="Sprite2D" parent="Windows" unique_id=1320816439]
+[node name="Frame0" type="Sprite2D" parent="DecoBack/Windows" unique_id=1320816439]
 position = Vector2(95, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame1" type="Sprite2D" parent="Windows" unique_id=1227383427]
+[node name="Frame1" type="Sprite2D" parent="DecoBack/Windows" unique_id=1227383427]
 position = Vector2(265, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame2" type="Sprite2D" parent="Windows" unique_id=1887825828]
+[node name="Frame2" type="Sprite2D" parent="DecoBack/Windows" unique_id=1887825828]
 position = Vector2(435, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame3" type="Sprite2D" parent="Windows" unique_id=1193196457]
+[node name="Frame3" type="Sprite2D" parent="DecoBack/Windows" unique_id=1193196457]
 position = Vector2(605, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame4" type="Sprite2D" parent="Windows" unique_id=1860764658]
+[node name="Frame4" type="Sprite2D" parent="DecoBack/Windows" unique_id=1860764658]
 position = Vector2(775, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame5" type="Sprite2D" parent="Windows" unique_id=27296400]
+[node name="Frame5" type="Sprite2D" parent="DecoBack/Windows" unique_id=27296400]
 position = Vector2(945, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame6" type="Sprite2D" parent="Windows" unique_id=1116976055]
+[node name="Frame6" type="Sprite2D" parent="DecoBack/Windows" unique_id=1116976055]
 position = Vector2(1115, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame7" type="Sprite2D" parent="Windows" unique_id=1244854301]
+[node name="Frame7" type="Sprite2D" parent="DecoBack/Windows" unique_id=1244854301]
 position = Vector2(1285, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame8" type="Sprite2D" parent="Windows" unique_id=1024388445]
+[node name="Frame8" type="Sprite2D" parent="DecoBack/Windows" unique_id=1024388445]
 position = Vector2(1455, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Frame9" type="Sprite2D" parent="Windows" unique_id=1246831955]
+[node name="Frame9" type="Sprite2D" parent="DecoBack/Windows" unique_id=1246831955]
 position = Vector2(1625, 171)
 scale = Vector2(0.143, 0.143)
 texture = ExtResource("14_frame")
 
-[node name="Ceiling" type="Sprite2D" parent="." unique_id=96779494]
+[node name="Ceiling" type="Sprite2D" parent="DecoBack" unique_id=96779494]
 texture_repeat = 2
 position = Vector2(-20, 0)
 scale = Vector2(0.561644, 0.561644)
@@ -236,14 +261,13 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 3133.66, 73)
 
-[node name="Scenery1F" type="Sprite2D" parent="." unique_id=1299644548]
-texture_repeat = 2
+[node name="Scenery1F" type="Sprite2D" parent="DecoBack" unique_id=1299644548]
 position = Vector2(-20, 346)
-scale = Vector2(0.585106, 0.585106)
+scale = Vector2(0.701754, 0.701754)
 texture = ExtResource("10_gym")
 centered = false
 region_enabled = true
-region_rect = Rect2(0, 0, 3008, 556)
+region_rect = Rect2(0, 78.125, 2508, 387.875)
 
 [node name="Floor2F" type="StaticBody2D" parent="." unique_id=2083166714]
 position = Vector2(860, 301)
@@ -251,7 +275,6 @@ position = Vector2(860, 301)
 [node name="Slab" type="TextureRect" parent="Floor2F" unique_id=25372722]
 texture_repeat = 2
 offset_left = -877.0
-offset_top = 1.0
 offset_right = 883.0
 offset_bottom = 46.0
 texture = ExtResource("12_floor")
@@ -268,11 +291,21 @@ position = Vector2(860, 641)
 [node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=1529753317]
 shape = SubResource("Shape_ground")
 
+[node name="Slab" type="Sprite2D" parent="Ground"]
+position = Vector2(-880, -27.7193)
+scale = Vector2(0.701754, 0.701754)
+texture = ExtResource("10_gym")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 459, 2508, 97)
+
 [node name="Equipment" type="Node2D" parent="." unique_id=1670688646]
 script = ExtResource("4")
 placements = ExtResource("8")
 level_y = PackedFloat32Array(621, 301)
 move_spawns = false
+editor_characters = PackedStringArray("res://characters/chokbeopsonyeon/Chokbeopsonyeon.tscn", "res://characters/akpeulleo/Akpeulleo.tscn", "res://characters/subwayvillain/SubwayVillain.tscn")
+editor_character_feet = PackedVector2Array(440, 621, 1280, 621, 640, 301)
 
 [node name="BarbellCurl" type="Sprite2D" parent="Equipment" unique_id=1148199592]
 scale = Vector2(0.085, 0.085)
@@ -309,6 +342,7 @@ position = Vector2(1280, 581)
 script = ExtResource("6")
 ground_y = 621
 upper_y = 301
+lower_ceiling_y = 346.0
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=906512191]
 position = Vector2(860, 360)
