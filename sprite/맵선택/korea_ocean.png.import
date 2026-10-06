@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xs6sdu1jgsbr"
-path="res://.godot/imported/조명.png-17c3dd593552740cd420abe735a9b7d5.ctex"
+uid="uid://y1i5puc46wxd"
+path="res://.godot/imported/korea_ocean.png-cde0b8817ee1b7044ef09ec09e457b6c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/번화가/조명.png"
-dest_files=["res://.godot/imported/조명.png-17c3dd593552740cd420abe735a9b7d5.ctex"]
+source_file="res://sprite/맵선택/korea_ocean.png"
+dest_files=["res://.godot/imported/korea_ocean.png-cde0b8817ee1b7044ef09ec09e457b6c.ctex"]
 
 [params]
 

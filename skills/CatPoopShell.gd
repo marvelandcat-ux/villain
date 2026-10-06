@@ -2,7 +2,13 @@ extends Node2D
 
 ## 검은 고양이 똥 유탄 — 고양이 아주머니 궁극기(검은 고양이)가 쏜다. 포물선으로 날아가다 땅·벽에 닿거나 **상대 피격 판정(Hurtbox)에 닿는 즉시**
 ## 터져서 `radius` 안에 범위 피해(스플래시). 피해는 그 자리에 잠깐 켜는 원형 Hitbox가 준다(방어·숫자·스파크가 평소대로).
-## 그림은 임시로 `_draw()`(갈색 똬리). `setup()`은 맵에 add_child 한 **뒤에** 부른다
+## 그림은 `고양이 똥.png`(BBOX만 잘라 `poop_size`로 줄임). 터질 때 `CatPoopBlast`가 충격파 + 맞는 범위 원을 보여 준다.
+## `setup()`은 맵에 add_child 한 **뒤에** 부른다
+
+const POOP_TEXTURE := preload("res://sprite/고양이 아줌마/고양이들/고양이 똥.png")
+## 그림에서 똥이 차지하는 영역(px) — **그림을 바꾸면 다시 잴 것**
+const POOP_BBOX := Rect2(127, 143, 1026, 982)
+const BLAST_SCRIPT := preload("res://skills/CatPoopBlast.gd")
 
 @export var gravity_force: float = 1200.0
 ## 아무 데도 안 닿을 때의 안전 수명(초)
@@ -12,6 +18,8 @@ extends Node2D
 ## 터지는 판정이 켜져 있는 시간(초) — 한 프레임만 켜면 겹침을 놓친다
 @export var burst_time: float = 0.12
 @export var poop_color: Color = Color(0.45, 0.28, 0.12)
+## 날아가는 똥 그림의 가로 크기(px)
+@export var poop_size: float = 20.0
 
 var _velocity: Vector2 = Vector2.ZERO
 var _owner_fighter: Fighter = null
@@ -33,6 +41,13 @@ func setup(owner_fighter: Fighter, velocity: Vector2, damage: int, radius: float
 	_radius = radius
 	_knockback = Vector2(absf(knockback.x) * signf(velocity.x if velocity.x != 0.0 else 1.0), knockback.y)
 	z_index = 20
+	var sprite := Sprite2D.new()
+	sprite.texture = POOP_TEXTURE
+	sprite.region_enabled = true
+	sprite.region_rect = POOP_BBOX
+	sprite.scale = Vector2.ONE * (poop_size / POOP_BBOX.size.x)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	add_child(sprite)
 	var contact := Area2D.new()
 	contact.monitorable = false
 	var shape := CollisionShape2D.new()
@@ -93,21 +108,11 @@ func _explode() -> void:
 	map.add_child(hitbox)
 	hitbox.global_position = global_position
 	Timers.self_destruct(hitbox, burst_time)
-	var burst := CrashBurst.new()
-	burst.color = poop_color
-	burst.radius = _radius * 0.7
-	burst.shard_count = 12
-	map.add_child(burst)
-	burst.global_position = global_position
+	var blast = BLAST_SCRIPT.new()
+	blast.radius = _radius
+	map.add_child(blast)
+	blast.global_position = global_position
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("add_trauma"):
 		cam.add_trauma(0.2)
 	queue_free()
-
-func _draw() -> void:
-	var outline := Color(0.18, 0.1, 0.04)
-	var layers: Array[Vector3] = [Vector3(0.0, 4.0, 7.0), Vector3(0.0, -1.0, 5.5), Vector3(0.5, -5.5, 3.8), Vector3(1.5, -9.0, 2.2)]
-	for l in layers:
-		draw_circle(Vector2(l.x, l.y), l.z + 1.2, outline)
-	for l in layers:
-		draw_circle(Vector2(l.x, l.y), l.z, poop_color)

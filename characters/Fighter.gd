@@ -50,10 +50,10 @@ const DEFAULT_DASH_SPEED: float = 2800.0
 const DEFAULT_DASH_DURATION: float = 0.04
 ## 다음 대시까지 기다리는 시간(초)
 const DEFAULT_DASH_COOLDOWN: float = 2.5
-## 대시 중 잔상을 남기는 간격(초). 대시가 0.04초뿐이라 매 물리 프레임 남긴다(0.04면 시작 잔상 하나만 나왔다)
-const DASH_TRAIL_INTERVAL: float = 0.015
-## 점프할 때 몸 뒤로 남는 하얀 스피드 라인 — 지나간 길을 따라 휘는 혜성 꼬리(combat/DashTrailLines.gd).
-## 2026-10-06 사용자 요청으로 대시에서 점프로 옮김. 이 시간(초) 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다.
+## 대시할 때 몸 뒤로 남는 하얀 스피드 라인 — 지나간 길을 따라 휘는 혜성 꼬리(combat/DashTrailLines.gd, 2026-10-06 사용자 요청).
+## 대시(약 0.1초) + 그 뒤 0.5초 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다
+const DASH_SPEED_LINE_TIME: float = 0.6
+## 점프할 때 몸 뒤로 남는 하얀 스피드 라인 — 대시와 같은 혜성 꼬리(combat/DashTrailLines.gd). 이 시간(초) 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다.
 ## 기본 점프가 꼭대기까지 약 0.42초(478 / 1150)라 올라가는 동안만 남게 맞췄다 — TODO: 보고 조절
 const JUMP_SPEED_LINE_TIME: float = 0.4
 ## 점프 줄은 길에 수직(좌우)으로 이 범위 안에 퍼진다 — 세로로 뛰니 몸 폭 안쪽으로
@@ -133,11 +133,10 @@ var facing: float = 1.0
 var _air_jumps_left: int = 0
 ## 직전 프레임에 바닥에 있었는지 — "이번 프레임에 착지했다"를 잡는 데 쓴다
 var _was_on_floor: bool = true
-## 대시가 남은 시간 / 대시 방향 / 다음 대시까지 남은 쿨타임 / 다음 잔상까지 남은 시간
+## 대시가 남은 시간 / 대시 방향 / 다음 대시까지 남은 쿨타임
 var _dash_time: float = 0.0
 var _dash_dir: float = 0.0
 var _dash_cooldown_left: float = 0.0
-var _dash_trail_timer: float = 0.0
 ## 이 캐릭터만 대시 쿨에 더하는 초(황근출 짜장면 먹기가 먹을 때마다 늘림, 라운드 끝까지)
 var dash_cooldown_bonus: float = 0.0
 ## 날아갈 때 잔상이 남은 시간 / 다음 잔상까지 남은 시간 (start_air_trail이 켠다)
@@ -1156,13 +1155,21 @@ func dash(direction: float) -> bool:
 		dash_override.take_over_dash(self, _dash_dir)
 		return true
 	_dash_time = dash_duration
-	_dash_trail_timer = 0.0
-	_spawn_dash_afterimage()
+	_spawn_dash_speed_lines()
 	return true
 
-## 대시 잔상 — 푸른빛을 입혀서 남긴다
+## 푸른 잔상 하나 — 이제 대시는 안 쓰고 순간이동(CounterSkill)이 떠난 자리에 남길 때만 쓴다
 func _spawn_dash_afterimage() -> void:
 	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
+
+## 대시 스피드 라인 — 2026-10-06 사용자 요청으로 푸른 잔상 대신. 점프 줄과 같은 혜성 꼬리를 **맵에 붙여** 몸 뒤로 남긴다
+func _spawn_dash_speed_lines() -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var lines = DASH_TRAIL_LINES_SCRIPT.new()
+	parent.add_child(lines)
+	lines.setup(self, DASH_SPEED_LINE_TIME)
 
 ## 점프 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집힌다). 줄은 지나간 자리를 맵 좌표로 기록해서 긋는다
 func _spawn_jump_speed_lines() -> void:
@@ -1584,10 +1591,6 @@ func apply_physics(delta: float) -> void:
 		else:
 			_dash_time = maxf(_dash_time - delta, 0.0)
 			velocity.x = _dash_stop_before_fighters(_dash_dir * dash_speed, delta)
-			_dash_trail_timer -= delta
-			if _dash_trail_timer <= 0.0:
-				_dash_trail_timer = DASH_TRAIL_INTERVAL
-				_spawn_dash_afterimage()
 	# 그네·스프링 시소로 날아가는 중이면 잔상을 남긴다
 	_update_air_trail(delta)
 	# 돌진 스킬 등이 이동을 가로챘으면 그쪽이 최종 결정권을 갖는다 (대시보다 뒤에 둔 이유)

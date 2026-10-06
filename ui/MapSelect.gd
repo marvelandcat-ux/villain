@@ -1,31 +1,78 @@
 class_name MapSelect
 extends Control
 
-## 맵을 고르면 바로 그 맵으로 씬 전환 — 캐릭터는 이미 CharacterSelect에서 GameState에 저장돼 있다.
-## 각 칸에는 MapPreview가 그 맵의 실제 바닥·벽 색과 배치를 미니 스케치로 그려서 맵 모습을 미리 보여준다.
-## 배경 양옆에는 CharacterSelect에서 확정한 P1/P2 캐릭터가 인게임 몸(BodyRig)으로 서 있다 —
-## 뭘 골랐는지 다시 한번 눈으로 확인시켜주는 용도
+## 맵 선택 — 우주에 떠 있는 대한민국 지구본(임시 그림), 지도 위 핀(`MapPin`)을 눌러 맵을 고른다.
+## **바다만 돈다**(2026-10-06 사용자 요청) — 한반도와 핀은 늘 정면에 고정, 바다·구름 그림만 밀려 지나간다.
+## 고르면 평평한 지도로 펼쳐지고 → 핀 쪽으로 확대된 뒤 → 그 맵으로 들어간다.
+## 지구본 그림은 `KoreaGlobe.gdshader`(그림 좌표 계산은 아래 `_uv_at()`과 짝), 표면 그림은 `tools/make_korea_globe.py`가 만든다.
+## 배경 양옆에는 CharacterSelect에서 확정한 P1/P2 캐릭터가 인게임 몸(BodyRig)으로 서 있다
 
 ## 서 있는 캐릭터 배율 — 1.0이면 실제 대전 화면에서 보이는 것과 똑같은 크기(인게임 크기)로 서 있다
 const STANDEE_SCALE := 1.0
+const PIN_SCRIPT := preload("res://ui/MapPin.gd")
 
-@onready var _map_grid: GridContainer = $Center/VBox/MapGrid
+## 맵마다 지도 위 자리(경도, 위도) — **임시**(사용자가 나중에 정함). 여기 없는 맵은 DEFAULT_PIN에 선다
+const MAP_PINS := {
+	"지하철역": Vector2(126.98, 37.57),     # 서울
+	"놀이터": Vector2(128.90, 37.75),       # 강릉
+	"악플러의 집": Vector2(127.38, 36.35),  # 대전
+	"헬스장": Vector2(126.85, 35.16),       # 광주
+	"번화가": Vector2(129.08, 35.18),       # 부산
+}
+const DEFAULT_PIN := Vector2(127.8, 36.8)
+
+## 표면 그림의 경위도 배치 — ⚠️ tools/make_korea_globe.py의 같은 이름 값과 똑같아야 한다
+const CENTER_LON := 127.5
+const CENTER_LAT := 38.0
+const PX_PER_DEG := 60.0
+const TEX_SIZE := Vector2(2048, 1024)
+
+## 지구본 중심·반지름(px), 기울기(라디안), 바다가 도는 속도(초당 그림 가로 몇 바퀴)
+const GLOBE_CENTER := Vector2(640, 320)
+const GLOBE_RADIUS := 220.0
+const GLOBE_TILT := -0.3
+const SPIN_SPEED := 1.0 / 24.0
+## 펼친 지도의 반 크기(px)와 그 가로가 보여 주는 그림 폭(u) — 한반도가 세로로 꽉 차게
+const FLAT_HALF := Vector2(540, 260)
+const FLAT_SPAN_U := 0.62
+## 고른 뒤 연출 시간(초): 펼치기 / 확대
+const UNFOLD_TIME := 0.9
+const ZOOM_TIME := 0.7
+const ZOOM_TO := 4.0
+
+@onready var _globe: ColorRect = $Globe
+@onready var _pins: Control = $Pins
+@onready var _random_button: Button = $RandomButton
 @onready var _p1_standee: Node2D = $P1Standee
 @onready var _p2_standee: Node2D = $P2Standee
 
-var _map_buttons: Dictionary = {}  # {map_name: Button} — 룰렛 연출에서 흰 테두리를 옮길 때 씀
-var _is_spinning: bool = false
+var _pin_nodes: Dictionary = {}  # {map_name: MapPin}
+var _spin: float = 0.0           # 바다 그림을 가로로 민 양(u) — 땅은 안 움직인다
+var _flatten: float = 0.0
+var _zoom: float = 1.0
+var _zoom_uv: Vector2 = Vector2(0.5, 0.5)
+## 고르는 연출 중(핀·버튼 잠금, 자동 회전 멈춤)
+var _busy: bool = false
+var _picked: String = ""
 
 func _ready() -> void:
 	for map_name in GameState.MAPS.keys():
-		var button := _make_tile(map_name, GameState.MAPS[map_name], _on_map_picked.bind(map_name))
-		_map_grid.add_child(button)
-		_map_buttons[map_name] = button
-	_map_grid.add_child(_make_tile("?", "", _on_random_pressed))
+		var pin = PIN_SCRIPT.new()
+		pin.map_name = map_name
+		pin.pressed.connect(_on_map_picked.bind(map_name))
+		_pins.add_child(pin)
+		_pin_nodes[map_name] = pin
+	_random_button.pressed.connect(_on_random_pressed)
 
 	# P1(왼쪽)은 오른쪽(가운데)을, P2(오른쪽)은 왼쪽(가운데)을 보게 마주 세운다
 	_spawn_standee(_p1_standee, GameState.p1_character_path, 1.0)
 	_spawn_standee(_p2_standee, GameState.p2_character_path, -1.0)
+	_apply_globe()
+
+func _process(delta: float) -> void:
+	if not _busy:
+		_spin = fposmod(_spin + SPIN_SPEED * minf(delta, 0.05), 1.0)
+	_apply_globe()
 
 ## container 자리에 그 캐릭터의 인게임 몸(BodyRig)을 세운다. Fighter가 없으니 걷지 않고
 ## 가만히 서서 숨쉬는 동작만 돈다 — CharacterSelect의 미리보기 상자와 같은 원리
@@ -37,161 +84,108 @@ func _spawn_standee(container: Node2D, character_path: String, facing: float) ->
 	container.add_child(rig)
 	rig.scale = Vector2(STANDEE_SCALE * facing, STANDEE_SCALE)
 
-func _make_tile(label: String, map_path: String, callback: Callable) -> Button:
-	var button := Button.new()
-	button.clip_text = false
-	_apply_tile_style(button)
-	button.pressed.connect(callback)
+## 셰이더 값을 넣고 핀을 지도 위 자리로 옮긴다
+func _apply_globe() -> void:
+	var mat := _globe.material as ShaderMaterial
+	if mat:
+		mat.set_shader_parameter("rect_size", _globe.size)
+		mat.set_shader_parameter("center", GLOBE_CENTER)
+		mat.set_shader_parameter("radius", GLOBE_RADIUS)
+		mat.set_shader_parameter("tilt", GLOBE_TILT)
+		mat.set_shader_parameter("spin", _spin)
+		mat.set_shader_parameter("flatten", _flatten)
+		mat.set_shader_parameter("flat_half", FLAT_HALF)
+		mat.set_shader_parameter("flat_span_u", FLAT_SPAN_U)
+		mat.set_shader_parameter("zoom", _zoom)
+		mat.set_shader_parameter("zoom_uv", _zoom_uv)
+	for map_name in _pin_nodes:
+		var pin = _pin_nodes[map_name]
+		var spot: Dictionary = _screen_of(_pin_uv(map_name))
+		pin.visible = spot.visible and (_picked == "" or map_name == _picked)
+		if pin.visible:
+			pin.place_tip(spot.pos)
 
-	if map_path == "":
-		button.text = label
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", 28)
-		return button
+# ---------------------------------------------------------------- 지도 좌표
 
-	var preview := MapPreview.new()
-	preview.anchor_right = 1.0
-	preview.anchor_bottom = 1.0
-	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview.set_map(map_path)
-	button.add_child(preview)
+## 맵 핀의 그림 좌표(u, v)
+func _pin_uv(map_name: String) -> Vector2:
+	var lon_lat: Vector2 = MAP_PINS.get(map_name, DEFAULT_PIN)
+	return Vector2(
+		0.5 + (lon_lat.x - CENTER_LON) * PX_PER_DEG / TEX_SIZE.x,
+		0.5 - (lon_lat.y - CENTER_LAT) * PX_PER_DEG / TEX_SIZE.y)
 
-	var name_label := Label.new()
-	name_label.text = label
-	name_label.anchor_right = 1.0
-	name_label.anchor_top = 1.0
-	name_label.anchor_bottom = 1.0
-	name_label.offset_top = -20
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_label.add_theme_font_size_override("font_size", 12)
-	name_label.add_theme_constant_override("outline_size", 4)
-	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	button.add_child(name_label)
+## 지구본 중심 기준 화면 점 p(px)가 보여 주는 그림 좌표 — ⚠️ KoreaGlobe.gdshader와 똑같은 계산
+func _uv_at(p: Vector2) -> Vector2:
+	var q: Vector2 = p.rotated(-GLOBE_TILT * (1.0 - _flatten)) / GLOBE_RADIUS
+	var z: float = sqrt(maxf(1.0 - q.length_squared(), 0.0))
+	var lat: float = asin(clampf(-q.y, -1.0, 1.0))
+	var lon: float = atan2(q.x, z)
+	var sphere := Vector2(0.5 + lon / TAU, 0.5 - lat / PI)
+	var du: float = FLAT_SPAN_U / (2.0 * FLAT_HALF.x)
+	var flat := Vector2(0.5 + p.x * du, 0.5 + p.y * du * 2.0)
+	flat = _zoom_uv + (flat - _zoom_uv) / _zoom
+	return sphere.lerp(flat, _flatten)
 
-	return button
+## 땅 그림 좌표 uv가 화면 어디에 보이는지 {pos, visible}. 둥글 땐 바로 계산하고, 펼치는 중이면 거기서 뉴턴법으로 맞춘다
+func _screen_of(uv: Vector2) -> Dictionary:
+	var target := Vector2(0.5 + wrapf(uv.x - 0.5, -0.5, 0.5), uv.y)
+	var lon: float = (target.x - 0.5) * TAU
+	var lat: float = (0.5 - target.y) * PI
+	var z: float = cos(lat) * cos(lon)
+	var q := Vector2(cos(lat) * sin(lon), -sin(lat)) * GLOBE_RADIUS
+	var p: Vector2 = q.rotated(GLOBE_TILT * (1.0 - _flatten))
+	if _flatten > 0.0 or not is_equal_approx(_zoom, 1.0):
+		for i in 8:
+			var err: Vector2 = _uv_at(p) - target
+			if err.length() < 0.00001:
+				break
+			var h: float = 0.5
+			var jx: Vector2 = (_uv_at(p + Vector2(h, 0)) - _uv_at(p)) / h
+			var jy: Vector2 = (_uv_at(p + Vector2(0, h)) - _uv_at(p)) / h
+			var det: float = jx.x * jy.y - jy.x * jx.y
+			if absf(det) < 1e-12:
+				break
+			p -= Vector2(jy.y * err.x - jy.x * err.y, -jx.y * err.x + jx.x * err.y) / det
+	var on_front: bool = z > 0.15 or _flatten > 0.5
+	return {"pos": GLOBE_CENTER + p, "visible": on_front}
 
-func _apply_tile_style(button: Button) -> void:
-	button.custom_minimum_size = Vector2(160, 90)
-	# hover/pressed/focus(마우스로 올렸거나 키보드로 이동해 지금 고르고 있는 칸)는 두꺼운 흰 테두리로 강조,
-	# normal은 은은한 회색 테두리로 눈에 덜 띄게 해서 "지금 뭘 고르는 중인지"가 한눈에 구분되게 한다
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var is_highlighted: bool = state != "normal"
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.16, 0.16, 0.19, 1) if is_highlighted else Color(0.09, 0.09, 0.11, 1)
-		var border_width: int = 4 if is_highlighted else 2
-		style.border_width_left = border_width
-		style.border_width_right = border_width
-		style.border_width_top = border_width
-		style.border_width_bottom = border_width
-		style.border_color = Color(1, 1, 1) if is_highlighted else Color(0.6, 0.6, 0.65)
-		style.corner_radius_top_left = 4
-		style.corner_radius_top_right = 4
-		style.corner_radius_bottom_left = 4
-		style.corner_radius_bottom_right = 4
-		button.add_theme_stylebox_override(state, style)
+# ---------------------------------------------------------------- 고르기
 
-## 고른 맵으로 바로 들어가지 않고, 그 맵을 크게 보여주는 팝업을 잠깐 띄운 뒤,
-## 홀로그램 타일이 화면을 뒤덮었다가 새 맵 위에서 걷히는 연출과 함께 들어간다.
-## SceneTransition(오토로드)이 씬 전환에 걸쳐 타일을 들고 있으므로, 덮은 채로 씬이 바뀌고
-## 새 맵이 자리잡은 뒤에 타일이 걷히며 드러난다 — 이 화면(MapSelect)은 그동안 사라져도 상관없다
+## 핀을 누름 → 펼치기 → 핀 쪽으로 확대 → 맵으로
 func _on_map_picked(map_name: String) -> void:
-	var picked_button: Button = _map_buttons.get(map_name)
-	if picked_button:
-		SelectionRipple.spawn(picked_button)
-	_set_map_buttons_disabled(true)
-	# 파동이 다 퍼지는 모습을 보여준 뒤에 어두운 팝업으로 덮는다
-	await _wait(SelectionRipple.total_duration())
-	await _show_map_popup(map_name)
+	if _picked != "":
+		return
+	_busy = true
+	_picked = map_name
+	_set_buttons_disabled(true)
+	var uv: Vector2 = _pin_uv(map_name)
+	var tween := create_tween()
+	tween.tween_method(_set_flatten, 0.0, 1.0, UNFOLD_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_callback(func(): _zoom_uv = uv)
+	tween.tween_method(_set_zoom, 1.0, ZOOM_TO, ZOOM_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tween.finished
 	GameState.selected_map_path = GameState.MAPS[map_name]
 	SceneTransition.go_to_scene(GameState.selected_map_path)
 
-## 화면 전체를 어둡게 가리고 가운데에 큰 MapPreview + 맵 이름을 잠깐 보여준다.
-## MapPreview는 칸에 쓰던 것과 같은 스크립트라, 크기만 키우면 그대로 큰 미리보기가 된다
-func _show_map_popup(map_name: String) -> void:
-	var overlay := ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.8)
-	overlay.anchor_right = 1.0
-	overlay.anchor_bottom = 1.0
-	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(overlay)
-
-	var panel := PanelContainer.new()
-	panel.anchor_left = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_bottom = 0.5
-	panel.offset_left = -320
-	panel.offset_right = 320
-	panel.offset_top = -220
-	panel.offset_bottom = 220
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.09, 0.09, 0.11, 1)
-	style.border_width_left = 4
-	style.border_width_right = 4
-	style.border_width_top = 4
-	style.border_width_bottom = 4
-	style.border_color = Color(1, 1, 1)
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	panel.add_theme_stylebox_override("panel", style)
-	overlay.add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
-	panel.add_child(vbox)
-
-	var name_label := Label.new()
-	name_label.text = map_name
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 28)
-	vbox.add_child(name_label)
-
-	var preview := MapPreview.new()
-	preview.custom_minimum_size = Vector2(560, 320)
-	preview.set_map(GameState.MAPS[map_name])
-	vbox.add_child(preview)
-
-	await _wait(1.1)
-
-## 캐릭터 선택 화면의 룰렛과 같은 방식 — 흰 테두리(포커스)가 빠르게 옮겨다니다가 점점 느려지며 멈춘다.
-## 대기는 이 노드의 자식 Timer로 만들어서, 연출 도중 뒤로 나가 씬이 정리되면 Timer도 같이 사라져
-## 남은 연출이 그냥 실행되지 않고 끝난다(에러 없이 조용히 중단됨)
+## 랜덤 — 바다가 빠르게 돌다 느려지는 동안 핀을 차례로 강조(포커스)하다가 멈춘 핀으로 들어간다.
+## 대기는 자식 Timer라 연출 중 뒤로 나가 씬이 정리되면 조용히 끝난다
 func _on_random_pressed() -> void:
-	if _is_spinning:
+	if _busy:
 		return
-	_is_spinning = true
-	_set_map_buttons_disabled(true)
-
+	_busy = true
+	_set_buttons_disabled(true)
 	var keys: Array = GameState.MAPS.keys()
-	var start_index: int = randi() % keys.size()
-	var spin_count: int = keys.size() * 3  # 최소 3바퀴는 돌고 멈추게
-	var final_key: String = keys[start_index]
-	for i in range(spin_count):
-		final_key = keys[(start_index + i) % keys.size()]
-		_focus_tile(final_key)
-		var progress := float(i) / float(spin_count - 1)
-		await _wait(lerp(0.0133, 0.22, progress))
-
-	_set_map_buttons_disabled(false)
-	_is_spinning = false
-	_on_map_picked(final_key)
-
-func _focus_tile(map_name: String) -> void:
-	var button: Button = _map_buttons.get(map_name)
-	if button:
-		button.grab_focus()
-
-func _set_map_buttons_disabled(disabled: bool) -> void:
-	for child in _map_grid.get_children():
-		child.disabled = disabled
+	var start: int = randi() % keys.size()
+	var steps: int = keys.size() * 3
+	var pick: String = keys[start]
+	var tween := create_tween()
+	tween.tween_method(_set_spin, _spin, _spin + 1.5, 2.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	for i in steps:
+		pick = keys[(start + i) % keys.size()]
+		_pin_nodes[pick].grab_focus()
+		await _wait(lerpf(0.0133, 0.22, float(i) / float(steps - 1)))
+	_spin = fposmod(_spin, 1.0)
+	_on_map_picked(pick)
 
 func _wait(duration: float) -> void:
 	var timer := Timer.new()
@@ -202,9 +196,23 @@ func _wait(duration: float) -> void:
 	await timer.timeout
 	timer.queue_free()
 
+func _set_spin(value: float) -> void:
+	_spin = value
+
+func _set_flatten(value: float) -> void:
+	_flatten = value
+
+func _set_zoom(value: float) -> void:
+	_zoom = value
+
+func _set_buttons_disabled(disabled: bool) -> void:
+	for pin in _pin_nodes.values():
+		pin.disabled = disabled
+	_random_button.disabled = disabled
+
 func _on_back_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("ui_cancel") and not _busy:
 		_on_back_pressed()

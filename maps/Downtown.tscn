@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://fvx8mp04yfvy"]
+[gd_scene format=3 uid="uid://khlfrcuo8ikf"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
 [ext_resource type="Texture2D" uid="uid://csx3s3srb6bke" path="res://sprite/맵/번화가/번화가.png" id="4"]
 

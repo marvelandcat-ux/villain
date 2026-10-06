@@ -5,26 +5,33 @@ extends Hitbox
 ## **시전자의 입을 매 프레임 따라다닌다** — 걸어가며 겨눌 수 있고 돌아서면 연기도 같이 돈다.
 ## 연기 안에 있는 동안 `repeat_interval`마다 계속 조금씩 맞는다(화염방사기와 같은 방식).
 ## 그림 없이 `_draw()`로 그리므로 연기 스프라이트를 받으면 여기만 바꾸면 된다.
+## 뿜은 덩어리는 **맵 좌표**에 남는다(몸을 따라 미끄러지지 않음) — 앞으로 뿜어져 느려지면 위로 피어오르며 퍼지고,
+## 가장자리가 흐린 덩어리 몇 개를 겹쳐 그려 뭉게뭉게 보이게 한다(2026-10-06 사용자 요청: 부자연스러움 개선)
 
 ## 입에서 연기가 뻗는 길이(px)와 끝에서의 반폭(px)
 @export var reach: float = 190.0
 @export var spread: float = 30.0
 ## 연기 덩어리를 얼마마다 하나씩 뿜는지(초)
-@export var puff_interval: float = 0.05
+@export var puff_interval: float = 0.035
 ## 덩어리가 앞으로 나가는 속도(px/초)와 위로 뜨는 속도
 @export var puff_speed: float = 300.0
 @export var puff_rise: float = 26.0
 ## 덩어리 하나가 사라지기까지(초) — 이 시간에 걸쳐 커지며 옅어진다
-@export var puff_life: float = 1.1
+@export var puff_life: float = 1.4
 ## 덩어리 처음·마지막 반지름(px)
 @export var puff_radius_start: float = 2.5
-@export var puff_radius_end: float = 16.0
+@export var puff_radius_end: float = 22.0
+## 느려진 덩어리가 위로 피어오르는 가속(px/초²)과 좌우로 일렁이는 폭(px/초)
+@export var puff_buoyancy: float = 70.0
+@export var puff_wobble: float = 18.0
 ## 맞을 때마다 뒤로 밀리는 힘 / 살짝 뜨는 힘 (연기를 맞으면 주춤주춤 밀려난다).
 ## 너무 세게 주면 상대가 연기 밖으로 밀려나 한 번밖에 못 맞는다
 @export var knockback_push: float = 95.0
 @export var knockback_lift: float = 35.0
 ## 연기 색
 @export var smoke_color: Color = Color(0.72, 0.73, 0.75, 0.55)
+## 입 바로 앞의 막 뿜은 연기 색(더 하얗고 진하다) — 멀어질수록 smoke_color로 바뀐다
+@export var smoke_fresh_color: Color = Color(0.92, 0.92, 0.94, 0.7)
 
 ## 연기 덩어리 하나
 class Puff:
@@ -33,6 +40,8 @@ class Puff:
 	var age: float = 0.0
 	var life: float = 0.9
 	var seed: float = 0.0
+	## 덩어리를 이루는 작은 뭉치들의 자리(반지름 1 기준)와 크기 배수
+	var blobs: Array[Vector3] = []
 
 var _caster: Fighter = null
 var _mouth: Vector2 = Vector2.ZERO
@@ -111,9 +120,14 @@ func _make_puff() -> Puff:
 	if is_zero_approx(dir):
 		dir = 1.0
 	# 앞으로 빠르게 나가면서 조금씩 위로 뜬다 — 속도를 조금씩 다르게 줘야 뭉치지 않는다
-	p.vel = Vector2(dir * puff_speed * randf_range(0.7, 1.15), -puff_rise * randf_range(0.4, 1.3))
-	p.life = puff_life * randf_range(0.8, 1.2)
+	# 입에서 맵 좌표로 출발 — 덩어리는 뿜은 뒤 몸을 따라오지 않는다
+	p.pos = global_position + Vector2(randf_range(-2.0, 2.0), randf_range(-2.0, 2.0))
+	p.vel = Vector2(dir * puff_speed * randf_range(0.7, 1.15), -puff_rise * randf_range(0.4, 1.3) + randf_range(-12.0, 12.0))
+	p.life = puff_life * randf_range(0.75, 1.25)
 	p.seed = randf() * TAU
+	for i in randi_range(2, 4):
+		var a: float = randf() * TAU
+		p.blobs.append(Vector3(cos(a) * randf_range(0.2, 0.6), sin(a) * randf_range(0.2, 0.5), randf_range(0.55, 0.9)))
 	return p
 
 func _advance_puffs(delta: float) -> void:
@@ -122,18 +136,36 @@ func _advance_puffs(delta: float) -> void:
 		p.age += delta
 		if p.age >= p.life:
 			continue
-		# 앞으로 갈수록 느려지고(공기 저항) 위아래로 조금 흔들린다
-		p.vel.x = move_toward(p.vel.x, 0.0, puff_speed * 0.8 * delta)
+		# 앞으로 갈수록 느려지고(공기 저항), 느려질수록 따뜻한 연기답게 위로 피어오른다
+		p.vel.x = move_toward(p.vel.x, 0.0, puff_speed * 1.1 * delta)
+		var slow: float = 1.0 - clampf(absf(p.vel.x) / puff_speed, 0.0, 1.0)
+		p.vel.y -= puff_buoyancy * (0.3 + slow) * delta
+		p.vel.y = maxf(p.vel.y, -90.0)
 		p.pos += p.vel * delta
-		p.pos.y += sin(p.age * 6.0 + p.seed) * 6.0 * delta
+		# 좌우로 천천히 일렁인다(덩어리마다 박자가 다름)
+		p.pos.x += sin(p.age * 3.0 + p.seed) * puff_wobble * slow * delta
 		alive.append(p)
 	_puffs = alive
 
 func _draw() -> void:
 	for p in _puffs:
 		var t: float = p.age / p.life
-		var r: float = lerpf(puff_radius_start, puff_radius_end, t)
-		var col: Color = smoke_color
-		# 처음엔 진하게 나왔다가 끝으로 갈수록 투명해진다
-		col.a *= (1.0 - t) * (1.0 - t * 0.3)
-		draw_circle(p.pos, r, col)
+		# 빨리 커지다가 천천히 — 뿜자마자 확 퍼지는 느낌
+		var r: float = lerpf(puff_radius_start, puff_radius_end, 1.0 - pow(1.0 - t, 2.2))
+		var col: Color = smoke_fresh_color.lerp(smoke_color, clampf(t * 2.5, 0.0, 1.0))
+		# 처음엔 진하게 나왔다가 끝으로 갈수록 투명해진다(나올 때도 0.06초에 걸쳐 살짝 번진다)
+		col.a *= (1.0 - t) * (1.0 - t * 0.3) * clampf(p.age / 0.06, 0.0, 1.0)
+		var center: Vector2 = to_local(p.pos)
+		for b in p.blobs:
+			# 뭉치가 시간이 지나며 조금씩 돌아 모양이 바뀐다
+			var off := Vector2(b.x, b.y).rotated(p.age * 0.8 * (1.0 if p.seed > PI else -1.0)) * r
+			_draw_soft_circle(center + off, r * b.z, col)
+
+## 가장자리가 흐린 원 — 작은 원을 겹쳐 가운데만 진하게
+func _draw_soft_circle(at: Vector2, radius: float, col: Color) -> void:
+	if radius < 0.5 or col.a <= 0.003:
+		return
+	var layer: Color = col
+	layer.a = col.a * 0.32
+	for k in 4:
+		draw_circle(at, radius * (1.0 - 0.18 * float(k)), layer)

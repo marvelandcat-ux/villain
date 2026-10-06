@@ -19,6 +19,7 @@ paths:
 - 방 설정 `RoomSettings`: 버튼 연결은 `_ready()` 코드로
 - 도감 `CharacterDex`(⚠️ TODO: 놀이터 설명이 옛 기믹). `FanTile.gd`(@tool) 네 점 모양 버튼
 - 초상화: 크기·위치는 `ui/PortraitFrames.tscn`, 전부 `GameState.frame_portrait()` 경유. 스킬 로고 `Skill.icon`(투명 여백 잘라 넣기)
+- 맵 선택 `MapSelect`(2026-10-06, 임시 그림): 우주(`SpaceBackdrop`) + 대한민국 지구본(`KoreaGlobe.gdshader`) — **바다만 돎**: `korea_ocean.png`(돎)·`korea_land.png`(고정, 투명) = `tools/make_korea_globe.py`. 핀(`MapPin`, 자리 `MAP_PINS` 경위도)도 고정. 핀 → 펼치기(`flatten`) → 확대 → 맵. ⚠️ 셰이더 UV 계산 ↔ `_uv_at()`, 파이썬 `CENTER_*`/`PX_PER_DEG` ↔ 스크립트 상수는 짝
 - 숨겨진 캐릭터: 선택창에서 **aaddssww** → `_toggle_hidden_mode`. 경로 `GameState.character_path()`. 타이틀 구경·도감엔 안 나옴
 
 ## 대전 진행
