@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_x42e1"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/AkpeulleoRig.tscn" id="2_fx24p"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketCurlDownPose.tscn" id="3_dfhsn"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketCurlMidPose.tscn" id="4_wi8kl"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketCurlUpPose.tscn" id="5_qbj8b"]
+
+[node name="AkpeulleoRocketCurlStudio" type="Node2D" unique_id=274428914]
+script = ExtResource("1_x42e1")
+rig_scene = ExtResource("2_fx24p")
+gear_stage = "rocket"
+pose_a = ExtResource("3_dfhsn")
+pose_b = ExtResource("4_wi8kl")
+pose_c = ExtResource("5_qbj8b")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=537046066]

@@ -4658,7 +4658,8 @@ func _reset_held_items() -> void:
 ##    자연스럽게 가야 하는 경우에 쓴다.
 ##  - false: **적어 둔 숫자 그대로** 보간한다. 평타 키프레임 사이에 쓴다 —
 ##    짧은 쪽으로 돌면 0도 → 180도 → 360도로 적어 둔 **한 바퀴 돌기**가 도로 되감긴다
-func _apply_pose_scene(pose: Dictionary, t: float, shortest: bool = true, skip: Array = []) -> void:
+func _apply_pose_scene(pose: Dictionary, t: float, shortest: bool = true, skip: Array = [],
+		gear_aware: bool = false) -> void:
 	for part_name in pose:
 		if skip.has(part_name):
 			continue
@@ -4667,8 +4668,27 @@ func _apply_pose_scene(pose: Dictionary, t: float, shortest: bool = true, skip: 
 			continue
 		var data: Array = pose[part_name]
 		var target: float = data[1] as float
-		part.position = part.position.lerp(data[0] as Vector2, t)
+		var want: Vector2 = data[0] as Vector2
+		if gear_aware:
+			want += _gear_offset(part)
+		part.position = part.position.lerp(want, t)
 		part.rotation = lerp_angle(part.rotation, target, t) if shortest else lerpf(part.rotation, target, t)
+
+## **런닝머신 장비를 낀 동안 이 조각이 제자리에서 얼마나 비켜나 있는지.**
+##
+## 로켓을 신으면 머리·몸·손은 장비 단계 자리로 옮겨지고 거기에 뜬 높이(`hover` 16px)까지 더해진다.
+## 그런데 운동 자세(`Gym*Pose.tscn`)에 적힌 자리는 **땅에 서 있을 때 기준**이라, 그냥 입히면
+## 자세에 적힌 조각만 땅으로 내려오고 **자세에 없는 조각(컬의 머리)은 뜬 채로 남아 몸이 분리된다**
+## (2026-10-06 실측: 머리 y -48, 몸 y 3). 그래서 자세를 이 어긋남 **위에 얹는다**.
+##
+## 장비 자리가 적힌 조각은 그 어긋남을, 안 적힌 조각(발)은 **뜬 높이만** 쓴다 — 발까지 같이 떠야
+## 로켓이 몸에 붙어 따라다닌다(장비는 왼발 그림의 자식이다)
+func _gear_offset(part: Node2D) -> Vector2:
+	if part == null or _gear_glide <= 0.0:
+		return Vector2.ZERO
+	if _rest_layer_base.has(part) and _rest_positions.has(part):
+		return _rest_positions[part] - _rest_layer_base[part]
+	return _gear_lift() + _gear_orbit
 
 ## 돌진 구간에 맞는 포즈 씬 — -1 준비 / 1 돌진 중 / 2 끝난 직후. 안 넣어 둔 칸은 null
 func _dual_dash_pose(phase: float) -> PackedScene:
@@ -5119,6 +5139,12 @@ func play_knockout(trail_dir: float = 1.0) -> void:
 @export var curl_down_pose: PackedScene
 @export var curl_mid_pose: PackedScene
 @export var curl_up_pose: PackedScene
+## **런닝머신 장비(자전거 바퀴·로켓 신발 등)를 낀 동안 쓸 컬 자세 세 장.**
+## 비워 두면 위의 평소 자세를 그대로 쓴다(뜬 높이는 `_gear_offset`이 알아서 얹는다).
+## 발이 없어지고 몸이 떠 있는 상태라 팔다리 각이 달라야 자연스러워서 따로 둔다 — 2026-10-06
+@export var curl_down_pose_gear: PackedScene
+@export var curl_mid_pose_gear: PackedScene
+@export var curl_up_pose_gear: PackedScene
 ## 한 번 올렸다 내리는 데 걸리는 시간(초)
 @export var curl_cycle: float = 1.6
 ## 한 번 중에서 **올리는 데 쓰는 몫**(나머지가 내리는 시간). 0.45면 올릴 때가 조금 빠르다
@@ -5227,6 +5253,19 @@ func _update_curl(delta: float) -> void:
 	if _curl_time < before:
 		_curl_sweat_done = false
 
+## **지금 써야 할 자세 세 장**(아래/중간/위 또는 서기/중간/앉기).
+## 런닝머신 장비를 끼고 있고 그 쪽 자세가 채워져 있으면 그걸, 아니면 평소 것을 쓴다.
+## **세 장이 다 채워져 있을 때만** 갈아탄다 — 한 장만 넣으면 섞여서 더 이상해진다
+func _curl_poses() -> Array:
+	if _gear_glide > 0.0 and curl_down_pose_gear and curl_mid_pose_gear and curl_up_pose_gear:
+		return [curl_down_pose_gear, curl_mid_pose_gear, curl_up_pose_gear]
+	return [curl_down_pose, curl_mid_pose, curl_up_pose]
+
+func _squat_poses() -> Array:
+	if _gear_glide > 0.0 and squat_up_pose_gear and squat_mid_pose_gear and squat_down_pose_gear:
+		return [squat_up_pose_gear, squat_mid_pose_gear, squat_down_pose_gear]
+	return [squat_up_pose, squat_mid_pose, squat_down_pose]
+
 ## 바벨 컬 — 세 자세를 **아래 -> 중간 -> 위 -> 중간 -> 아래**로 오간다
 func _pose_curl() -> void:
 	if _curl_blend <= 0.001 or curl_down_pose == null or curl_mid_pose == null or curl_up_pose == null:
@@ -5238,11 +5277,12 @@ func _pose_curl() -> void:
 	# 양 끝에서 부드럽게 멎도록 사인 곡선을 한 번 태운다 — 등속이면 기계처럼 보인다
 	k = 0.5 - cos(clampf(k, 0.0, 1.0) * PI) * 0.5
 	# 아래 -> 중간 -> 위를 한 줄로 잇는다. 앞 자세를 깔고 뒤 자세로 덮는 방식은 영역전개 점프와 같다
-	var a: PackedScene = curl_down_pose if k < 0.5 else curl_mid_pose
-	var b: PackedScene = curl_mid_pose if k < 0.5 else curl_up_pose
+	var poses: Array = _curl_poses()
+	var a: PackedScene = poses[0] if k < 0.5 else poses[1]
+	var b: PackedScene = poses[1] if k < 0.5 else poses[2]
 	var t: float = k * 2.0 if k < 0.5 else (k - 0.5) * 2.0
-	_apply_pose_scene(read_pose(a), _curl_blend)
-	_apply_pose_scene(read_pose(b), _curl_blend * t, false)
+	_apply_pose_scene(read_pose(a), _curl_blend, true, [], true)
+	_apply_pose_scene(read_pose(b), _curl_blend * t, false, [], true)
 	# **바벨이 내려가면 몸도 같이 내려간다** — k가 0(바벨이 제일 아래)일 때 가장 낮다.
 	# 발은 빼고 위쪽 조각만 내린다(발이 같이 내려가면 땅을 뚫는다)
 	if curl_body_dip != 0.0:
@@ -5409,6 +5449,10 @@ func _spawn_curl_sweat() -> void:
 @export var squat_up_pose: PackedScene
 @export var squat_mid_pose: PackedScene
 @export var squat_down_pose: PackedScene
+## **장비를 낀 동안 쓸 스쿼트 자세 세 장**(비우면 위의 평소 자세를 쓴다) — 컬 쪽과 같은 이유
+@export var squat_up_pose_gear: PackedScene
+@export var squat_mid_pose_gear: PackedScene
+@export var squat_down_pose_gear: PackedScene
 ## 한 번 앉았다 서는 데 걸리는 시간(초)
 @export var squat_cycle: float = 1.8
 ## 한 번 중에서 **앉는 데 쓰는 몫**(나머지가 일어서는 시간)
@@ -5520,11 +5564,12 @@ func _pose_squat() -> void:
 		_set_squat_hands(false)
 		return
 	var k: float = _squat_depth()
-	var a: PackedScene = squat_up_pose if k < 0.5 else squat_mid_pose
-	var b: PackedScene = squat_mid_pose if k < 0.5 else squat_down_pose
+	var poses: Array = _squat_poses()
+	var a: PackedScene = poses[0] if k < 0.5 else poses[1]
+	var b: PackedScene = poses[1] if k < 0.5 else poses[2]
 	var t: float = k * 2.0 if k < 0.5 else (k - 0.5) * 2.0
-	_apply_pose_scene(read_pose(a), _squat_blend)
-	_apply_pose_scene(read_pose(b), _squat_blend * t, false)
+	_apply_pose_scene(read_pose(a), _squat_blend, true, [], true)
+	_apply_pose_scene(read_pose(b), _squat_blend * t, false, [], true)
 	# **깊이 앉을수록 부르르 떤다**
 	if squat_shake > 0.0:
 		var amp: float = squat_shake * k * _squat_blend

@@ -1,11 +1,11 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://0r2tje117rqp"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_2ewoj"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_jbpu7"]
-[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_exdc5"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 몸.png" id="4_xfnyf"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_gqa5g"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 머리.png" id="6_utdsp"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_2ewoj"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_jbpu7"]
+[ext_resource type="Texture2D" uid="uid://d5j57gv4txsc" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_exdc5"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="4_xfnyf"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="5_gqa5g"]
+[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/축법소년/축법소년 머리.png" id="6_utdsp"]
 
 [node name="ChokbeopsonyeonBikeStudio" type="Node2D" unique_id=1059167814]
 position = Vector2(651, 302)
@@ -25,7 +25,7 @@ texture = ExtResource("4_xfnyf")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
 z_index = 1
-position = Vector2(-24.833334, -18.166668)
+position = Vector2(-25.666668, -13.500001)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_gqa5g")
 flip_h = true
@@ -37,6 +37,6 @@ scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_gqa5g")
 
 [node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
-position = Vector2(2, -46)
+position = Vector2(1.5, -46.5)
 scale = Vector2(0.055, 0.055)
 texture = ExtResource("6_utdsp")

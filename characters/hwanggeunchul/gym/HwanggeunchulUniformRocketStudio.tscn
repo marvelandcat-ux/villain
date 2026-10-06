@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://is7t17h8t8gs"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_d4lo4"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_h2f5a"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 다리.png" id="3_8oh0j"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_mqmsu"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="5_o5s0x"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="6_eagr3"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병.png" id="7_gy2mp"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_d4lo4"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_h2f5a"]
+[ext_resource type="Texture2D" uid="uid://da6imh6for67v" path="res://sprite/황근출 해병/황근출 해병 다리.png" id="3_8oh0j"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_mqmsu"]
+[ext_resource type="Texture2D" uid="uid://cpuedg7wk1aip" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="5_o5s0x"]
+[ext_resource type="Texture2D" uid="uid://cfltoaj28thag" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="6_eagr3"]
+[ext_resource type="Texture2D" uid="uid://yddqfaytn2lo" path="res://sprite/황근출 해병/황근출 해병.png" id="7_gy2mp"]
 
 [node name="HwanggeunchulUniformRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -17,8 +17,9 @@ character = "황근출 해병"
 data = ExtResource("2_h2f5a")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(3.0892487, 26.937204)
-scale = Vector2(0.12151323, 0.12151323)
+position = Vector2(0.41055298, 18.73703)
+rotation = -0.286234
+scale = Vector2(0.20943162, 0.20943163)
 texture = ExtResource("3_8oh0j")
 
 [node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]

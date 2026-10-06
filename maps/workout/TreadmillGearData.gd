@@ -75,6 +75,20 @@ func gear_texture(character: String, stage: String) -> Texture2D:
 			return rocket_shoes.get(character, null) as Texture2D
 	return null
 
+## **장비 그림을 갈아 끼운다**(편집 씬에서 GearL에 그림을 끌어다 놓으면 여기로 들어온다).
+##
+## ⚠️ **자전거·스포츠카 바퀴는 전 캐릭터가 같은 그림 한 장을 쓴다** — 한 캐릭터 편집 씬에서 바꾸면
+## 모두가 같이 바뀐다. 로켓 신발만 캐릭터마다 다르다(자기 신발에 번개를 그린 것이라서)
+func set_gear_texture(character: String, stage: String, tex: Texture2D) -> void:
+	match stage:
+		STAGE_BIKE:
+			bike_texture = tex
+		STAGE_CAR:
+			car_texture = tex
+		STAGE_ROCKET:
+			rocket_shoes[character] = tex
+	emit_changed()
+
 ## 바퀴처럼 굴러가는 단계인지
 func rolls(stage: String) -> bool:
 	return stage == STAGE_BIKE or stage == STAGE_CAR

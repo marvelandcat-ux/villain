@@ -1,11 +1,11 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://daxey3l0mhk1t"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_o42br"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_nyybx"]
-[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_45vim"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="4_7sfx2"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="5_onji8"]
-[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병.png" id="6_jsdr7"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_o42br"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_nyybx"]
+[ext_resource type="Texture2D" uid="uid://c3u0e1scb08ek" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_45vim"]
+[ext_resource type="Texture2D" uid="uid://cpuedg7wk1aip" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="4_7sfx2"]
+[ext_resource type="Texture2D" uid="uid://cfltoaj28thag" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="5_onji8"]
+[ext_resource type="Texture2D" uid="uid://yddqfaytn2lo" path="res://sprite/황근출 해병/황근출 해병.png" id="6_jsdr7"]
 
 [node name="HwanggeunchulUniformCarStudio" type="Node2D" unique_id=221854591]
 position = Vector2(640, 300)
@@ -16,27 +16,27 @@ character = "황근출 해병"
 data = ExtResource("2_nyybx")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1748233894]
-position = Vector2(3.0838795, 18.556465)
-scale = Vector2(0.022041935, 0.022041935)
+position = Vector2(3.0855916, 18.73223)
+scale = Vector2(0.02147127, 0.02147127)
 texture = ExtResource("3_45vim")
 
 [node name="Body" type="Sprite2D" parent="." unique_id=1697612583]
-position = Vector2(0.49, 1.78)
+position = Vector2(2.9999995, -8.999999)
 scale = Vector2(0.02485, 0.03267)
 texture = ExtResource("4_7sfx2")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1546205166]
-position = Vector2(-27, 6)
+position = Vector2(-24.666666, -6.166667)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_onji8")
 flip_h = true
 
 [node name="HandR" type="Sprite2D" parent="." unique_id=1873908622]
-position = Vector2(27, 3)
+position = Vector2(31.5, -6)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_onji8")
 
 [node name="Head" type="Sprite2D" parent="." unique_id=467851654]
-position = Vector2(-0.58, -36.93)
+position = Vector2(2.499997, -45.166668)
 scale = Vector2(0.058, 0.058)
 texture = ExtResource("6_jsdr7")

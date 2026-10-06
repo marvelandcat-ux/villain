@@ -21,12 +21,12 @@ texture = ExtResource("3_pi16p")
 
 [node name="Body" type="Sprite2D" parent="." unique_id=1697612583]
 position = Vector2(2.6666677, -10.833333)
-scale = Vector2(0.030106781, 0.03644505)
+scale = Vector2(0.0266, 0.0322)
 texture = ExtResource("4_o6hu7")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1546205166]
 z_index = 1
-position = Vector2(-25.5, -9)
+position = Vector2(-24.666666, -10.666667)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_0avc7")
 flip_h = true

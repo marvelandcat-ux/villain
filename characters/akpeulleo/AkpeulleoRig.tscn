@@ -30,8 +30,20 @@
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRunLeftPose.tscn" id="gym_run_left_pose"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRunMidPose.tscn" id="gym_run_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketCurlDownPose.tscn" id="gym_curl_down_pose_gear"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketCurlMidPose.tscn" id="gym_curl_mid_pose_gear"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketCurlUpPose.tscn" id="gym_curl_up_pose_gear"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatUpPose.tscn" id="gym_squat_up_pose_gear"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatMidPose.tscn" id="gym_squat_mid_pose_gear"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatDownPose.tscn" id="gym_squat_down_pose_gear"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
+curl_down_pose_gear = ExtResource("gym_curl_down_pose_gear")
+curl_mid_pose_gear = ExtResource("gym_curl_mid_pose_gear")
+curl_up_pose_gear = ExtResource("gym_curl_up_pose_gear")
+squat_up_pose_gear = ExtResource("gym_squat_up_pose_gear")
+squat_mid_pose_gear = ExtResource("gym_squat_mid_pose_gear")
+squat_down_pose_gear = ExtResource("gym_squat_down_pose_gear")
 curl_down_pose = ExtResource("gym_curl_down_pose")
 curl_mid_pose = ExtResource("gym_curl_mid_pose")
 curl_up_pose = ExtResource("gym_curl_up_pose")

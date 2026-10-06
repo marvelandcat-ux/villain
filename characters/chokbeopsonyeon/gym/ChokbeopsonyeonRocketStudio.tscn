@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://xok7k22gvymt"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_al83t"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_6ym1h"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/런닝머신10스택.png" id="3_1832t"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_8deiv"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 몸.png" id="5_1l07t"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_fs16o"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 머리.png" id="7_4do6t"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_al83t"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_6ym1h"]
+[ext_resource type="Texture2D" uid="uid://4aql1kf8mvf6" path="res://sprite/축법소년/런닝머신10스택.png" id="3_1832t"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_8deiv"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="5_1l07t"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_fs16o"]
+[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/축법소년/축법소년 머리.png" id="7_4do6t"]
 
 [node name="ChokbeopsonyeonRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -16,7 +16,7 @@ stage = "rocket"
 data = ExtResource("2_6ym1h")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(2.0000038, 19.833338)
+position = Vector2(3.5000038, 18.333338)
 scale = Vector2(0.20518363, 0.2051836)
 texture = ExtResource("3_1832t")
 

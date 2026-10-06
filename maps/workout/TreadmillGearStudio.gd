@@ -13,7 +13,9 @@ extends Node2D
 ## - 머리·몸·손은 **자리만** 게임에 들어간다(각도·크기를 바꿔도 안 들어간다)
 ## - 장비(GearL)는 자리·각도·크기를 다 쓴다 — 크기는 네모 핸들로 잡는다
 ## - 불꽃은 장비 그림 안 좌표라 장비를 키우면 같이 커진다
-## - 로켓 신발 그림이 없는 캐릭터는 GearL에 새 그림을 끌어다 놓으면 그 캐릭터 신발로 저장된다
+## - **GearL에 새 그림을 끌어다 놓으면 그 단계의 장비 그림이 바뀐다**(저장까지 자동).
+##   ⚠️ **자전거·스포츠카 바퀴는 전 캐릭터 공용 한 장**이라 한 명한테서 바꾸면 모두 바뀐다.
+##   로켓 신발만 캐릭터마다 다르다(자기 신발에 번개를 그린 것이라서)
 ## - **reset_to_default**를 켜면 그 캐릭터·단계를 기본 자리로 되돌린다
 ## - 회색 가로줄 = 땅(발바닥 높이), 작은 십자 = 캐릭터 원점(발바닥보다 30px 위).
 ##   **로켓은 게임에서 공중에 뜬다** — 땅선이 뜨는 높이(`rocket_hover_height`)만큼 아래에 그려지고,
@@ -61,10 +63,11 @@ func _process(_delta: float) -> void:
 	if not Engine.is_editor_hint() or data == null or _loaded == "":
 		return
 	var gear_l := get_node_or_null("GearL") as Sprite2D
-	# 신발 그림을 갈아 끼웠으면 그 캐릭터 신발로 적고 반대 발도 같이 바꾼다
-	if stage == "rocket" and gear_l and gear_l.texture != _last_gear_texture and gear_l.texture != null:
+	# **장비 그림을 갈아 끼웠으면 그대로 저장한다**(2026-10-06). 예전엔 로켓 신발만 저장돼서,
+	# 자전거·스포츠카 바퀴는 편집 씬에서 그림을 바꿔도 다시 열면 옛 그림으로 돌아갔다
+	if gear_l and gear_l.texture != _last_gear_texture and gear_l.texture != null:
 		_last_gear_texture = gear_l.texture
-		data.rocket_shoes[_loaded] = gear_l.texture
+		data.set_gear_texture(_loaded, stage, gear_l.texture)
 		var gear_r := get_node_or_null("GearR") as Sprite2D
 		if gear_r:
 			gear_r.texture = gear_l.texture
@@ -79,6 +82,13 @@ func _process(_delta: float) -> void:
 		ResourceSaver.save(data)
 
 func _draw() -> void:
+	# **이 단계의 그림이 공용인지 그 캐릭터 것인지** 화면에 적어 둔다 — 자전거 바퀴를 한 명한테서
+	# 바꿨는데 전원이 바뀌어 당황하는 일을 막는다. **땅선 아래에 적는다** — 머리 위에 두면
+	# 루트가 y 302에 있어서 게임으로 띄웠을 때 화면 위로 잘려 나간다(실측)
+	var font: Font = ThemeDB.fallback_font
+	if font:
+		var note: String = "로켓 신발 = 이 캐릭터 전용" if stage == "rocket" else "이 바퀴 그림은 전 캐릭터 공용 (바꾸면 모두 바뀐다)"
+		draw_string(font, Vector2(-88, 44), note, HORIZONTAL_ALIGNMENT_LEFT, -1, 5, Color(1, 0.85, 0.3))
 	# 땅(발바닥 높이)과 캐릭터 원점. 로켓은 그만큼 떠 있으니 진짜 땅을 그만큼 아래에 그린다
 	var hover: float = data.rocket_hover_height if (data and stage == "rocket") else 0.0
 	draw_line(Vector2(-90, 30 + hover), Vector2(90, 30 + hover), Color(0.6, 0.6, 0.6, 0.8), 0.4)

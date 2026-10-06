@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://urw1s5m0s5x1"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_wobly"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_e67s7"]
-[ext_resource type="Texture2D" path="res://sprite/일진/런닝머신10스택.png" id="3_mkqqm"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_ag70l"]
-[ext_resource type="Texture2D" path="res://sprite/일진/일진 몸.png" id="5_2bht3"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_p6qxx"]
-[ext_resource type="Texture2D" path="res://sprite/일진/일진머리.png" id="7_kv1mk"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_wobly"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_e67s7"]
+[ext_resource type="Texture2D" uid="uid://dfiq3jtd36h1" path="res://sprite/일진/런닝머신10스택.png" id="3_mkqqm"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_ag70l"]
+[ext_resource type="Texture2D" uid="uid://blx0n0rkqua6n" path="res://sprite/일진/일진 몸.png" id="5_2bht3"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_p6qxx"]
+[ext_resource type="Texture2D" uid="uid://bmqkcwteuwg03" path="res://sprite/일진/일진머리.png" id="7_kv1mk"]
 
 [node name="IljinRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -17,8 +17,9 @@ character = "일진"
 data = ExtResource("2_e67s7")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(3.046719, 23.407246)
-scale = Vector2(0.20657249, 0.20657249)
+position = Vector2(0.5000044, 18.16667)
+rotation = -0.2268928
+scale = Vector2(0.21724984, 0.21724984)
 texture = ExtResource("3_mkqqm")
 
 [node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]

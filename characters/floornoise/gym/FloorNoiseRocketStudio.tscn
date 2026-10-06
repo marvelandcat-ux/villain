@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://ckshqin2igm2"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_2hiix"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_rtv7j"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="3_exwao"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_4p2li"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="5_5sbl0"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_gjcv6"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="7_ct3no"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_2hiix"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_rtv7j"]
+[ext_resource type="Texture2D" uid="uid://6shjavroe8hu" path="res://sprite/층간소음/층간소음발.png" id="3_exwao"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_4p2li"]
+[ext_resource type="Texture2D" uid="uid://c67skkj6ibwg4" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="5_5sbl0"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_gjcv6"]
+[ext_resource type="Texture2D" uid="uid://bbhmttifgeiro" path="res://sprite/층간소음/층간소음얼굴찐.png" id="7_ct3no"]
 
 [node name="FloorNoiseRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -17,8 +17,9 @@ character = "층간소음 빌런"
 data = ExtResource("2_rtv7j")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(1.4999995, 26.66)
-scale = Vector2(0.12, 0.12)
+position = Vector2(-0.16666234, 19.333332)
+rotation = -0.25307274
+scale = Vector2(0.18277359, 0.18277359)
 texture = ExtResource("3_exwao")
 
 [node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]

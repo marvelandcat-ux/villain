@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dtw1gc0lmbf47"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_wnq78"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_w4p3t"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰발.png" id="3_byyae"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_x8yqr"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="5_krb1e"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_n02kq"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰머리.png" id="7_ljfse"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_wnq78"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_w4p3t"]
+[ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="3_byyae"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_x8yqr"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="5_krb1e"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_n02kq"]
+[ext_resource type="Texture2D" uid="uid://clr6pqihia4xb" path="res://sprite/storymode/경찰서/경찰머리.png" id="7_ljfse"]
 
 [node name="PoliceRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -17,8 +17,9 @@ character = "주인공"
 data = ExtResource("2_w4p3t")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(4.940607, 26.937204)
-scale = Vector2(0.12151323, 0.12151323)
+position = Vector2(2.9090044, 19.990547)
+rotation = -0.11170107
+scale = Vector2(0.25224742, 0.21539523)
 texture = ExtResource("3_byyae")
 
 [node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]

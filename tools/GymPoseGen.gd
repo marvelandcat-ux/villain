@@ -36,6 +36,25 @@ const SOURCE_POSES: Array = [
 ## 이 씬들은 원래 `character`를 바꿔 가며 쓰게 만들어져 있지만(한 씬으로 전 캐릭터),
 ## **캐릭터마다 한 장씩** 뽑아 두면 그 캐릭터 폴더에서 바로 열 수 있다(2026-10-06 사용자 요청).
 ## 고친 자리는 어느 쪽으로 열든 같은 `.tres`(`TreadmillGear.tres`)의 **그 캐릭터 칸**에 저장된다
+## **장비를 낀 상태의 자세 한 벌**을 따로 만들 캐릭터들. 로켓을 신으면 발이 없어지고 몸이 떠서
+## 팔다리 각이 달라야 자연스럽다 — 평소 자세와 **따로 둔다**(리그의 `*_pose_gear` 칸).
+## 2026-10-06 사용자가 "악플러로 기준 잡겠다"고 해서 악플러만 먼저 뽑는다.
+## 기준이 잡히면 여기 이름을 더해 다른 캐릭터에게도 뽑으면 된다
+@export var gear_characters: PackedStringArray = PackedStringArray(["악플러"])
+## 그 자세가 어느 장비 단계를 전제로 하는지(편집 씬이 이 장비를 끼고 띄운다)
+@export_enum("bike", "car", "rocket") var gear_stage: String = "rocket"
+
+## 장비 상태로 베껴 갈 자세 — [운동, 칸 이름]. 원본은 **그 캐릭터의 평소 자세**다
+const GEAR_POSES: Array = [
+	["Curl", "Down"], ["Curl", "Mid"], ["Curl", "Up"],
+	["Squat", "Up"], ["Squat", "Mid"], ["Squat", "Down"],
+]
+## 장비 상태 편집 씬 — [운동, 자세 세 장의 칸 이름]
+const GEAR_STUDIOS: Array = [
+	["Curl", ["Down", "Mid", "Up"]],
+	["Squat", ["Up", "Mid", "Down"]],
+]
+
 const SOURCE_STAGES: Array = [
 	["Bike", "res://maps/workout/TreadmillBikeStudio.tscn"],
 	["Car", "res://maps/workout/TreadmillCarStudio.tscn"],
@@ -97,6 +116,23 @@ func _ready() -> void:
 				continue
 			if _make_stage_studio(row[1], out, who, "%s%sStudio" % [prefix, row[0]]):
 				made += 1
+		if gear_characters.has(who):
+			var tag: String = gear_stage.capitalize()
+			for row in GEAR_POSES:
+				var src: String = dir.path_join("%s%s%sPose.tscn" % [prefix, row[0], row[1]])
+				var out: String = dir.path_join("%s%s%s%sPose.tscn" % [prefix, tag, row[0], row[1]])
+				if ResourceLoader.exists(out) or not ResourceLoader.exists(src):
+					skipped += 1
+					continue
+				if _copy_pose(src, out, dir.path_join("%s%s%sStudio.tscn" % [prefix, tag, row[0]])):
+					made += 1
+			for row in GEAR_STUDIOS:
+				var out: String = dir.path_join("%s%s%sStudio.tscn" % [prefix, tag, row[0]])
+				if ResourceLoader.exists(out):
+					skipped += 1
+					continue
+				if _make_gear_studio(dir, prefix, tag, row[0], row[1], out):
+					made += 1
 		print("%s -> %s" % [who, dir])
 	print("새로 만든 씬 %d개 / 이미 있어 건너뛴 것 %d개" % [made, skipped])
 	if not Engine.is_editor_hint():
@@ -150,6 +186,39 @@ func _make_studio(src_path: String, out_path: String, rig_path: String, dir: Str
 	var keys: Array[String] = ["pose_a", "pose_b", "pose_c"]
 	for i in 3:
 		var pose_path: String = dir.path_join("%s%s%sPose.tscn" % [prefix, motion, frames[i]])
+		if keys[i] in root and ResourceLoader.exists(pose_path):
+			root.set(keys[i], load(pose_path))
+	return _save(root, out_path)
+
+## 평소 자세 한 장을 **장비 상태용으로 베껴** 둔다. 값은 그대로 두고 F6 연결만 새 편집 씬으로 바꾼다 —
+## 여기서부터는 사람이 눈으로 보고 고친다(발이 없어진 만큼 팔다리를 다시 잡아야 한다)
+func _copy_pose(src_path: String, out_path: String, studio_path: String) -> bool:
+	var scene := load(src_path) as PackedScene
+	if scene == null:
+		return false
+	var root: Node = scene.instantiate()
+	if root == null:
+		return false
+	if "alone_opens_scene" in root:
+		root.alone_opens_scene = studio_path
+	return _save(root, out_path)
+
+## 장비 상태 편집 씬 한 장. 그 캐릭터의 평소 편집 씬을 베껴 **장비를 끼우고** 자세 셋만 갈아 끼운다
+func _make_gear_studio(dir: String, prefix: String, tag: String, motion: String,
+		frames: Array, out_path: String) -> bool:
+	var src: String = dir.path_join("%s%sStudio.tscn" % [prefix, motion])
+	var scene := load(src) as PackedScene
+	if scene == null:
+		return false
+	var root: Node = scene.instantiate()
+	if root == null:
+		return false
+	root.name = "%s%s%sStudio" % [prefix, tag, motion]
+	if "gear_stage" in root:
+		root.gear_stage = gear_stage
+	var keys: Array[String] = ["pose_a", "pose_b", "pose_c"]
+	for i in 3:
+		var pose_path: String = dir.path_join("%s%s%s%sPose.tscn" % [prefix, tag, motion, frames[i]])
 		if keys[i] in root and ResourceLoader.exists(pose_path):
 			root.set(keys[i], load(pose_path))
 	return _save(root, out_path)

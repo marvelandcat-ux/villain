@@ -1,11 +1,11 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bx166qev8fq10"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_77jxc"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_n24ww"]
-[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_eci3e"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="4_4of8o"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_lqdue"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰머리.png" id="6_q078y"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_77jxc"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_n24ww"]
+[ext_resource type="Texture2D" uid="uid://c3u0e1scb08ek" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_eci3e"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="4_4of8o"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="5_lqdue"]
+[ext_resource type="Texture2D" uid="uid://clr6pqihia4xb" path="res://sprite/storymode/경찰서/경찰머리.png" id="6_q078y"]
 
 [node name="PoliceCarStudio" type="Node2D" unique_id=221854591]
 position = Vector2(640, 300)
@@ -16,27 +16,27 @@ character = "주인공"
 data = ExtResource("2_n24ww")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1748233894]
-position = Vector2(4.935238, 18.556465)
-scale = Vector2(0.022041935, 0.022041935)
+position = Vector2(4.9369497, 18.73223)
+scale = Vector2(0.02147127, 0.02147127)
 texture = ExtResource("3_eci3e")
 
 [node name="Body" type="Sprite2D" parent="." unique_id=1697612583]
-position = Vector2(2.0256002, 3.053)
+position = Vector2(7.833329, -12)
 scale = Vector2(0.0268, 0.030507652)
 texture = ExtResource("4_4of8o")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1546205166]
-position = Vector2(-27, 7)
+position = Vector2(-21.666666, -5)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_lqdue")
 flip_h = true
 
 [node name="HandR" type="Sprite2D" parent="." unique_id=1873908622]
-position = Vector2(30, 5)
+position = Vector2(37.333336, -6.5)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_lqdue")
 
 [node name="Head" type="Sprite2D" parent="." unique_id=467851654]
-position = Vector2(0, -27.000002)
+position = Vector2(6.5000005, -44.33333)
 scale = Vector2(0.045834586, 0.045551606)
 texture = ExtResource("6_q078y")

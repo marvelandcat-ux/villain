@@ -1,11 +1,11 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cry4jad7qubck"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_nf42f"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_3wnkl"]
-[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_mb0dj"]
-[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이몸.png" id="4_fj704"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_k1ijf"]
-[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 머리 (1).png" id="6_db40p"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_nf42f"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_3wnkl"]
+[ext_resource type="Texture2D" uid="uid://d5j57gv4txsc" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_mb0dj"]
+[ext_resource type="Texture2D" uid="uid://b7b7wtl07ydjq" path="res://sprite/주정뱅이/몸/주정뱅이몸.png" id="4_fj704"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="5_k1ijf"]
+[ext_resource type="Texture2D" uid="uid://hkpwwfwymm6i" path="res://sprite/주정뱅이/몸/주정뱅이 머리 (1).png" id="6_db40p"]
 
 [node name="JujeongbaengiBikeStudio" type="Node2D" unique_id=1059167814]
 position = Vector2(651, 302)
@@ -20,22 +20,22 @@ scale = Vector2(0.022643764, 0.022643764)
 texture = ExtResource("3_mb0dj")
 
 [node name="Body" type="Sprite2D" parent="." unique_id=1848509384]
-position = Vector2(0.9600017, 1.4500003)
+position = Vector2(6.333334, -15.333333)
 scale = Vector2(0.10488372, 0.114444435)
 texture = ExtResource("4_fj704")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
-position = Vector2(-27, 6)
+position = Vector2(-20.5, -15.5)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_k1ijf")
 flip_h = true
 
 [node name="HandR" type="Sprite2D" parent="." unique_id=1436182245]
-position = Vector2(27, 3)
+position = Vector2(33.333332, -17)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("5_k1ijf")
 
 [node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
-position = Vector2(-2, -31.4)
+position = Vector2(3.1666663, -46.83333)
 scale = Vector2(0.045, 0.0507)
 texture = ExtResource("6_db40p")

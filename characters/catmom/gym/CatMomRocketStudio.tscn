@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://b48riya8p0jkx"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_sakqf"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_nseuj"]
-[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/런닝머신10스택.png" id="3_1704d"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_n8fok"]
-[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/치마.png" id="5_ib51u"]
-[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/손.png" id="6_kivc7"]
-[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/캣맘머리.png" id="7_hy5km"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_sakqf"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_nseuj"]
+[ext_resource type="Texture2D" uid="uid://clrdfph8wchic" path="res://sprite/고양이 아줌마/런닝머신10스택.png" id="3_1704d"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_n8fok"]
+[ext_resource type="Texture2D" uid="uid://bgjh3mm7rk8ly" path="res://sprite/고양이 아줌마/치마.png" id="5_ib51u"]
+[ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="6_kivc7"]
+[ext_resource type="Texture2D" uid="uid://g2b2q88ckkhw" path="res://sprite/고양이 아줌마/캣맘머리.png" id="7_hy5km"]
 
 [node name="CatMomRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -17,8 +17,8 @@ character = "고양이 아주머니"
 data = ExtResource("2_nseuj")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(3.046719, 22.580956)
-scale = Vector2(0.20657249, 0.20657249)
+position = Vector2(0.17254412, 20.333336)
+scale = Vector2(0.21781138, 0.20657249)
 texture = ExtResource("3_1704d")
 
 [node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]

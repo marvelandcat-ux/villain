@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://ctd1ntemn0uvx"]
 
-[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_ph36m"]
-[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_qypjh"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/런닝머신10스택.png" id="3_n7cb1"]
-[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_poami"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸.png" id="5_ahvmn"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/손.png" id="6_ejr3p"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런머리.png" id="7_7251j"]
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_ph36m"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_qypjh"]
+[ext_resource type="Texture2D" uid="uid://b764mhntg2br4" path="res://sprite/지하철빌/런닝머신10스택.png" id="3_n7cb1"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_poami"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="5_ahvmn"]
+[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="6_ejr3p"]
+[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌/지하철빌런머리.png" id="7_7251j"]
 
 [node name="SubwayVillainRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)
@@ -17,8 +17,8 @@ character = "지하철 아저씨"
 data = ExtResource("2_qypjh")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
-position = Vector2(2.6464849, 23.621563)
-scale = Vector2(0.20140818, 0.20140818)
+position = Vector2(1.070312, 19.333336)
+scale = Vector2(0.22640236, 0.20140818)
 texture = ExtResource("3_n7cb1")
 
 [node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]

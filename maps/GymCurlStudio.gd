@@ -28,6 +28,12 @@ extends Node2D
 ## 움직여 볼 캐릭터의 몸(BodyRig) 씬. **비우면 악플러 리그를 쓴다** —
 ## 기본 리그(`characters/BodyRig.tscn`)는 머리 그림이 없어서 목 위가 비어 보인다
 @export var rig_scene: PackedScene
+## **런닝머신 장비를 낀 채로 볼지.** `off`면 맨발, `rocket`이면 로켓 신발을 신고 떠 있는 상태다.
+## 맨발이 아니면 자세가 리그의 **`*_pose_gear` 칸**으로 들어간다 — 평소 자세와 따로 저장된다.
+## (`@export_enum`은 빈 문자열 칸을 못 받아서 "off"를 쓴다)
+@export_enum("off", "bike", "car", "rocket") var gear_stage: String = "off"
+## 장비 자리표(비우면 `maps/workout/TreadmillGear.tres`를 쓴다)
+@export var gear_data: Resource
 ## 자세 세 장 — 컬이면 아래(팔 편) / 중간 / 위(다 올림), 스쿼트면 서기 / 중간 / 앉기
 @export var pose_a: PackedScene
 @export var pose_b: PackedScene
@@ -168,7 +174,40 @@ func _build_rig() -> void:
 	_rig.position = rig_at
 	_rig.scale = Vector2(-rig_scale if rig_flip else rig_scale, rig_scale)
 	add_child(_rig)
+	_equip_gear()
 	_set_motion(true)
+
+## 장비를 낀 채로 보는 중인지
+func _gear_on() -> bool:
+	return gear_stage != "" and gear_stage != "off"
+
+## 런닝머신 장비를 끼워 준다 — `WorkoutSkill._apply_treadmill_gear()`가 게임에서 하는 것과 같은 순서다.
+## **리그를 붙인 뒤에 불러야 한다**(제자리가 잡혀 있어야 기본 자리를 계산할 수 있다)
+func _equip_gear() -> void:
+	if not _gear_on() or _rig == null or not _rig.has_method("set_treadmill_gear"):
+		return
+	var data: Resource = gear_data if gear_data != null else load("res://maps/workout/TreadmillGear.tres")
+	if data == null:
+		return
+	var who: String = _character_name()
+	var texture: Texture2D = data.gear_texture(who, gear_stage)
+	var entry: Dictionary = data.entry(who, gear_stage)
+	if entry.is_empty():
+		entry = data.default_entry(_rig.stage_rest_info(), texture, gear_stage)
+	var hover: Array = data.hover_of(gear_stage)
+	_rig.set_treadmill_gear(gear_stage, entry, texture, data.rolls(gear_stage), hover[0], hover[1], hover[2])
+
+## 지금 띄운 리그가 어느 캐릭터인지 — 장비 자리표를 캐릭터별로 찾으려면 이름이 필요하다.
+## 리그 씬 경로로 역으로 찾는다(`RigReader`가 들고 있는 표 하나만 본다)
+func _character_name() -> String:
+	var path: String = rig_scene.resource_path if rig_scene else ""
+	if path == "":
+		return "악플러"
+	var reader := load("res://maps/workout/RigReader.gd")
+	for who in reader.names():
+		if reader.path_of(who) == path:
+			return who
+	return "악플러"
 
 ## 자세 세 장을 정지로 늘어놓는다 — 어느 자세를 고쳐야 하는지 눈으로 고르라고
 func _build_frames() -> void:
@@ -220,11 +259,13 @@ func _pose_list() -> Array:
 
 ## 리그에 자세를 꽂을 때 쓰는 칸 이름
 func _rig_keys() -> Array:
+	# 장비를 낀 채로 보는 중이면 **장비용 칸**에 꽂는다(평소 자세를 덮어쓰지 않게)
+	var tail: String = "_gear" if _gear_on() else ""
 	if motion == 1:
-		return ["squat_up_pose", "squat_mid_pose", "squat_down_pose"]
+		return ["squat_up_pose" + tail, "squat_mid_pose" + tail, "squat_down_pose" + tail]
 	if motion == 2:
 		return ["run_left_pose", "run_mid_pose", "run_right_pose"]
-	return ["curl_down_pose", "curl_mid_pose", "curl_up_pose"]
+	return ["curl_down_pose" + tail, "curl_mid_pose" + tail, "curl_up_pose" + tail]
 
 ## 리그에 시간을 꽂을 때 쓰는 칸 이름
 func _time_keys() -> Array:
