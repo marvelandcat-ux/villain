@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_d0hqq"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰발.png" id="2_f0gy5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="3_7sog6"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_7dws8"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰머리.png" id="5_833wf"]
+
+[node name="GymRunMidPose" type="Node2D" unique_id=2074786649]
+scale = Vector2(8, 8)
+script = ExtResource("1_d0hqq")
+alone_opens_scene = "res://characters/police/gym/PoliceRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1033579826]
+position = Vector2(2, 24)
+rotation = -0.1
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_f0gy5")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=23696759]
+position = Vector2(3, 26)
+rotation = 0.05
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_f0gy5")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1952060983]
+position = Vector2(1.2, -1)
+rotation = 0.09
+scale = Vector2(0.0268, 0.030507652)
+texture = ExtResource("3_7sog6")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1035700774]
+position = Vector2(-3, 6)
+rotation = -0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_7dws8")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1940676698]
+position = Vector2(4, 5)
+rotation = 0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_7dws8")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=652749131]
+position = Vector2(-1.5, -28)
+rotation = 0.05
+scale = Vector2(0.045834586, 0.045551606)
+texture = ExtResource("5_833wf")

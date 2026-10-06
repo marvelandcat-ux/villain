@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_ww1l1"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn" id="2_fso5k"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformSquatUpPose.tscn" id="3_tg8b5"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformSquatMidPose.tscn" id="4_xipsw"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformSquatDownPose.tscn" id="5_y3w02"]
+
+[node name="HwanggeunchulUniformSquatStudio" type="Node2D" unique_id=514317354]
+script = ExtResource("1_ww1l1")
+motion = 1
+rig_scene = ExtResource("2_fso5k")
+pose_a = ExtResource("3_tg8b5")
+pose_b = ExtResource("4_xipsw")
+pose_c = ExtResource("5_y3w02")
+curl_cycle = 1.8
+curl_rise_ratio = 0.45
+curl_blend_time = 0.2
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=800020420]

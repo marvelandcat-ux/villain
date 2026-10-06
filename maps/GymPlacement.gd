@@ -11,7 +11,9 @@ extends Resource
 ## 셋을 한 배열에 섞지 않고 기구마다 배열을 따로 둔 이유는, 배열 길이가 서로 어긋나도
 ## 그 기구만 기본 자리로 떨어지고 나머지는 멀쩡히 돌기 때문이다.
 ##
-## 자리를 고치는 곳: `maps/GymPlacementStudio.tscn`을 F6로 열면 끌어서 맞추고 S로 저장한다
+## 자리를 고치는 곳: **이 `.tres`를 인스펙터에서 직접 고친다.** 끌어서 맞추던 편집 씬
+## (`GymPlacementStudio`)은 2026-10-06 '개혁'에서 스크립트가 빠지며 죽어서 지웠다
+## (되살리려면 `git show b94dda2^:maps/GymPlacementStudio.gd`)
 
 ## 기구 종류 — `GymMachine.Kind`와 같은 번호다
 enum Kind { CURL, SQUAT, TREADMILL }

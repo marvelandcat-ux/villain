@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_d4lo4"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_h2f5a"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 다리.png" id="3_8oh0j"]
+[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_mqmsu"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="5_o5s0x"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="6_eagr3"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병.png" id="7_gy2mp"]
+
+[node name="HwanggeunchulUniformRocketStudio" type="Node2D" unique_id=1505023825]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_d4lo4")
+stage = "rocket"
+character = "황근출 해병"
+data = ExtResource("2_h2f5a")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
+position = Vector2(3.0892487, 26.937204)
+scale = Vector2(0.12151323, 0.12151323)
+texture = ExtResource("3_8oh0j")
+
+[node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]
+show_behind_parent = true
+z_index = -1
+position = Vector2(-65.020004, 11.099998)
+script = ExtResource("4_mqmsu")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1850118347]
+position = Vector2(0.49, 1.78)
+scale = Vector2(0.02485, 0.03267)
+texture = ExtResource("5_o5s0x")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1763705476]
+position = Vector2(-27, 6)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_eagr3")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=273377424]
+position = Vector2(27, 3)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_eagr3")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1531073183]
+position = Vector2(-0.58, -36.93)
+scale = Vector2(0.058, 0.058)
+texture = ExtResource("7_gy2mp")

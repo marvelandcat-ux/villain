@@ -18,7 +18,8 @@ extends Node2D
 
 ## **미리 짜 둔 배치표**(`maps/GymPlacements.tres`). 꽂혀 있고 배치가 하나라도 적혀 있으면
 ## 아래의 "칸 깔고 섞기"를 **안 쓰고** 이 표에서 한 가지를 골라 그대로 놓는다.
-## 자리를 고치는 곳은 `maps/GymPlacementStudio.tscn`이다(F6로 열면 끌어서 맞추고 S로 저장)
+## 자리는 지금 `.tres`를 인스펙터에서 직접 고친다 — 끌어서 맞추던 편집 씬(`GymPlacementStudio`)은
+## 2026-10-06 '개혁'에서 스크립트가 빠지며 죽어서 지웠다(되살리려면 `git show b94dda2^:maps/GymPlacementStudio.gd`)
 @export var placements: GymPlacement
 ## 표를 꽂아 두고도 잠깐 옛 방식으로 돌려 보고 싶을 때 끈다
 @export var use_placements: bool = true

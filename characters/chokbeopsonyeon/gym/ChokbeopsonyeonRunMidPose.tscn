@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_mjgji"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 발.png" id="2_ta50t"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 몸.png" id="3_wlqsr"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_uqlnq"]
+[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 머리.png" id="5_honcq"]
+
+[node name="GymRunMidPose" type="Node2D" unique_id=2006481722]
+scale = Vector2(8, 8)
+script = ExtResource("1_mjgji")
+alone_opens_scene = "res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=302016885]
+position = Vector2(2, 24)
+rotation = -0.1
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_ta50t")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=860659207]
+position = Vector2(3, 26)
+rotation = 0.05
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_ta50t")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=51029528]
+position = Vector2(1.2, -1)
+rotation = 0.09
+scale = Vector2(0.0266, 0.0322)
+texture = ExtResource("3_wlqsr")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=518233678]
+z_index = 1
+position = Vector2(-3, 6)
+rotation = -0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_uqlnq")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=916115806]
+z_index = 1
+position = Vector2(4, 5)
+rotation = 0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_uqlnq")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1587314940]
+position = Vector2(-1.5, -28)
+rotation = 0.05
+scale = Vector2(0.055, 0.055)
+texture = ExtResource("5_honcq")

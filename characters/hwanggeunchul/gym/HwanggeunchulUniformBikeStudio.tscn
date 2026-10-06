@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_565ja"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_e826i"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_sm58d"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="4_qi547"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="5_0gdm5"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병.png" id="6_mgv14"]
+
+[node name="HwanggeunchulUniformBikeStudio" type="Node2D" unique_id=1059167814]
+position = Vector2(651, 302)
+scale = Vector2(6, 6)
+script = ExtResource("1_565ja")
+character = "황근출 해병"
+data = ExtResource("2_e826i")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1462793950]
+position = Vector2(3.1726491, 18.733402)
+scale = Vector2(0.022643764, 0.022643764)
+texture = ExtResource("3_sm58d")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1848509384]
+position = Vector2(0.49, 1.78)
+scale = Vector2(0.02485, 0.03267)
+texture = ExtResource("4_qi547")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
+position = Vector2(-27, 6)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_0gdm5")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1436182245]
+position = Vector2(27, 3)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_0gdm5")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
+position = Vector2(-0.58, -36.93)
+scale = Vector2(0.058, 0.058)
+texture = ExtResource("6_mgv14")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://buypdf5wmusqa"]
+[gd_scene load_steps=37 format=3 uid="uid://buypdf5wmusqa"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="2_head"]
@@ -35,8 +35,33 @@
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3Mid.tscn" id="33m"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHit3End.tscn" id="33e"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통P2.png" id="60_p2body"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/올라잇층간소음.png" id="gym_face_rise"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/입벌리고있는층간소음.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=1130472801 instance=ExtResource("1_rig")]
+curl_face_rise = ExtResource("gym_face_rise")
+curl_face_fall = ExtResource("gym_face_fall")
+squat_face_move = ExtResource("gym_face_rise")
+squat_face_rest = ExtResource("gym_face_fall")
+run_face = ExtResource("gym_face_fall")
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 rest_pose = ExtResource("6_pose")
 guard_pose = ExtResource("8_guard")
 action_head_texture = ExtResource("11_smile")

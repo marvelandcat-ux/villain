@@ -9,8 +9,26 @@
 [ext_resource type="Texture2D" uid="uid://burq4yuut8dtc" path="res://sprite/storymode/경찰서/경찰90도.png" id="7_side"]
 [ext_resource type="Texture2D" uid="uid://dgmitov0uim7n" path="res://sprite/storymode/경찰서/경찰45도_몸.png" id="8_side45"]
 [ext_resource type="Script" uid="uid://4ystuepvifgv" path="res://characters/EyeBlink.gd" id="99_blink"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceRunRightPose.tscn" id="gym_run_right_pose"]
 
 [node name="BodyRig" unique_id=2119973844 instance=ExtResource("1_rig")]
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 weapon_switch = true
 held_item_armed = false
 unarmed_thrust = true

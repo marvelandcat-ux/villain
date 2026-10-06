@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_vhd2n"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_kp07j"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_2y8qw"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸.png" id="4_8wmpw"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/손.png" id="5_giwim"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런머리.png" id="6_523k3"]
+
+[node name="SubwayVillainCarStudio" type="Node2D" unique_id=221854591]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_vhd2n")
+stage = "car"
+character = "지하철 아저씨"
+data = ExtResource("2_kp07j")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1748233894]
+position = Vector2(3.0838795, 18.556465)
+scale = Vector2(0.022041935, 0.022041935)
+texture = ExtResource("3_2y8qw")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1697612583]
+position = Vector2(0.73, 0.7)
+scale = Vector2(0.0252, 0.0279)
+texture = ExtResource("4_8wmpw")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1546205166]
+position = Vector2(-27, 4)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_giwim")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1873908622]
+position = Vector2(27, 3)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_giwim")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=467851654]
+position = Vector2(-1.48, -33.63)
+scale = Vector2(0.0456, 0.0485)
+texture = ExtResource("6_523k3")

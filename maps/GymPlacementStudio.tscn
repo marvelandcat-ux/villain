@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://dgwbeawlntm5q"]
-
-[ext_resource type="Script" path="res://maps/GymPlacementStudio.gd" id="1_studio"]
-
-[node name="GymPlacementStudio" type="Node2D" unique_id=230183420]
-script = ExtResource("1_studio")

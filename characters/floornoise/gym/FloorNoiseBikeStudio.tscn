@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_b183g"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_awwcv"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_rl27l"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="4_anuoy"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_po66g"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="6_ofg0v"]
+
+[node name="FloorNoiseBikeStudio" type="Node2D" unique_id=1059167814]
+position = Vector2(651, 302)
+scale = Vector2(6, 6)
+script = ExtResource("1_b183g")
+character = "층간소음 빌런"
+data = ExtResource("2_awwcv")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1462793950]
+position = Vector2(1.5823612, 18.558361)
+scale = Vector2(0.022361774, 0.022361774)
+texture = ExtResource("3_rl27l")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1848509384]
+position = Vector2(-0.5000005, 2.75)
+scale = Vector2(0.023967315, 0.0315)
+texture = ExtResource("4_anuoy")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
+position = Vector2(-22.5, 6.375)
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("5_po66g")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1436182245]
+z_index = 3
+position = Vector2(20.375, 6.3750014)
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("5_po66g")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
+position = Vector2(-6.7499995, -24.124998)
+scale = Vector2(0.045, 0.045)
+texture = ExtResource("6_ofg0v")

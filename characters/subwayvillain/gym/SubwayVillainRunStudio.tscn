@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_5lqta"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="2_qid2w"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunLeftPose.tscn" id="3_0ndop"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunMidPose.tscn" id="4_b51u1"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunRightPose.tscn" id="5_56q5d"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="6_upuag"]
+
+[node name="SubwayVillainRunStudio" type="Node2D" unique_id=1485296810]
+script = ExtResource("1_5lqta")
+motion = 2
+rig_scene = ExtResource("2_qid2w")
+pose_a = ExtResource("3_0ndop")
+pose_b = ExtResource("4_b51u1")
+pose_c = ExtResource("5_56q5d")
+curl_cycle = 0.52
+curl_blend_time = 0.15
+rig_scale = 4.0
+rig_at = Vector2(0, -20)
+rig_flip = true
+show_machine = true
+machine_texture = ExtResource("6_upuag")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=142864468]

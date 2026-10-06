@@ -5,8 +5,26 @@
 [ext_resource type="Texture2D" uid="uid://brvy4lkvc7c4d" path="res://sprite/인베이전/몸통.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://dokd7rrskjgpo" path="res://sprite/인베이전/인베이전손.png" id="4_hand"]
 [ext_resource type="Texture2D" uid="uid://d1y4eapyhiekr" path="res://sprite/악플러/몸/악플러발.png" id="5_foot"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionRunRightPose.tscn" id="gym_run_right_pose"]
 
 [node name="BodyRig3" unique_id=1383366129 instance=ExtResource("1_rig")]
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 unarmed_thrust = true
 unarmed_guard_hand = true
 

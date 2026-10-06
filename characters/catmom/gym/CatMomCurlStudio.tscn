@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_yej54"]
+[ext_resource type="PackedScene" path="res://characters/catmom/CatMomRig.tscn" id="2_n8sih"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlDownPose.tscn" id="3_vv300"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlMidPose.tscn" id="4_pmxsh"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlUpPose.tscn" id="5_sih4o"]
+
+[node name="CatMomCurlStudio" type="Node2D" unique_id=3715665]
+script = ExtResource("1_yej54")
+rig_scene = ExtResource("2_n8sih")
+pose_a = ExtResource("3_vv300")
+pose_b = ExtResource("4_pmxsh")
+pose_c = ExtResource("5_sih4o")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=943854686]

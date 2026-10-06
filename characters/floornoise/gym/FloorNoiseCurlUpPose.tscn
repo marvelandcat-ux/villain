@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_5nn6t"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="2_dyyyn"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_c8cgu"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_kqm0b"]
+[ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_1crch"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_qt18q"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="7_82b2p"]
+
+[node name="GymCurlUpPose" type="Node2D" unique_id=2012438508]
+scale = Vector2(8, 8)
+script = ExtResource("1_5nn6t")
+alone_opens_scene = "res://characters/floornoise/gym/FloorNoiseCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1244860897]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_dyyyn")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1486804147]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_dyyyn")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=786714909]
+position = Vector2(0.96, 0.4)
+rotation = -0.025
+scale = Vector2(0.023967315, 0.0315)
+texture = ExtResource("3_c8cgu")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=685989720]
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("4_kqm0b")
+script = ExtResource("5_1crch")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=2096501213]
+position = Vector2(-15, -7)
+rotation = -0.3
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("6_qt18q")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1542603554]
+z_index = 3
+position = Vector2(13, -8)
+rotation = -0.3
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("6_qt18q")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=1784336611]
+position = Vector2(-2, -26)
+scale = Vector2(0.045, 0.045)
+texture = ExtResource("7_82b2p")

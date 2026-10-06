@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_fp62r"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_cuyhj"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_dswl5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="4_i75n1"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_p04ly"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰머리.png" id="6_xnyh2"]
+
+[node name="PoliceBikeStudio" type="Node2D" unique_id=1059167814]
+position = Vector2(651, 302)
+scale = Vector2(6, 6)
+script = ExtResource("1_fp62r")
+character = "주인공"
+data = ExtResource("2_cuyhj")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1462793950]
+position = Vector2(5.0240073, 18.733402)
+scale = Vector2(0.022643764, 0.022643764)
+texture = ExtResource("3_dswl5")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1848509384]
+position = Vector2(2.0256002, 3.053)
+scale = Vector2(0.0268, 0.030507652)
+texture = ExtResource("4_i75n1")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
+position = Vector2(-27, 7)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_p04ly")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1436182245]
+position = Vector2(30, 5)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_p04ly")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
+position = Vector2(0, -27.000002)
+scale = Vector2(0.045834586, 0.045551606)
+texture = ExtResource("6_xnyh2")

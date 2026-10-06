@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_dno2e"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/JujeongbaengiRig.tscn" id="2_plav2"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiSquatUpPose.tscn" id="3_a5qgv"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiSquatMidPose.tscn" id="4_1mcrx"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiSquatDownPose.tscn" id="5_owlfm"]
+
+[node name="JujeongbaengiSquatStudio" type="Node2D" unique_id=1497662333]
+script = ExtResource("1_dno2e")
+motion = 1
+rig_scene = ExtResource("2_plav2")
+pose_a = ExtResource("3_a5qgv")
+pose_b = ExtResource("4_1mcrx")
+pose_c = ExtResource("5_owlfm")
+curl_cycle = 1.8
+curl_rise_ratio = 0.45
+curl_blend_time = 0.2
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=375041233]

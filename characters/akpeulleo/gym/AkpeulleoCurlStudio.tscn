@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_s6gvy"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/AkpeulleoRig.tscn" id="2_f3n74"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlDownPose.tscn" id="3_4elg3"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlMidPose.tscn" id="4_iau5y"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlUpPose.tscn" id="5_q5q3p"]
+
+[node name="AkpeulleoCurlStudio" type="Node2D" unique_id=274428914]
+script = ExtResource("1_s6gvy")
+rig_scene = ExtResource("2_f3n74")
+pose_a = ExtResource("3_4elg3")
+pose_b = ExtResource("4_iau5y")
+pose_c = ExtResource("5_q5q3p")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=537046066]

@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_kpyrs"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="2_m1xly"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_i1rhj"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_xc8ct"]
+[ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_qtgn5"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_b0yco"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="7_1vmop"]
+
+[node name="GymCurlDownPose" type="Node2D" unique_id=1835853255]
+scale = Vector2(8, 8)
+script = ExtResource("1_kpyrs")
+alone_opens_scene = "res://characters/floornoise/gym/FloorNoiseCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1438164359]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_m1xly")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=74666269]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_m1xly")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1669532973]
+position = Vector2(0.96, 2.2)
+rotation = 0.02
+scale = Vector2(0.023967315, 0.0315)
+texture = ExtResource("3_i1rhj")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=585331779]
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("4_xc8ct")
+script = ExtResource("5_qtgn5")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=568055325]
+position = Vector2(-17, 18)
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("6_b0yco")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1624750391]
+z_index = 3
+position = Vector2(15, 19)
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("6_b0yco")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=781200610]
+position = Vector2(-2, -26)
+scale = Vector2(0.045, 0.045)
+texture = ExtResource("7_1vmop")

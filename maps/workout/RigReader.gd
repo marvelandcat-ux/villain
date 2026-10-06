@@ -5,6 +5,11 @@ extends RefCounted
 ## 리그 씬을 화면에 올리지 않고 조각 그림·제자리만 뽑는다 — 기본 자세 씬(rest_pose)이 있으면 리그가 켜질 때처럼 먼저 입힌다
 
 const GAME_STATE_PATH := "res://GameState.gd"
+## **`GameState.CHARACTER_RIGS`에 없지만 조작할 수 있는 리그.** 주인공(경찰)은 훈련장 전용이라
+## 그 표에 안 올라 있는데, 헬스장에는 들어올 수 있으니 편집 씬 목록에는 있어야 한다
+const EXTRA_RIGS := {
+	"주인공": "res://characters/police/PoliceRig.tscn",
+}
 ## 읽어 오는 리그 조각들
 const RIG_PARTS: Array[String] = ["FootL", "FootR", "Body", "Head", "HandL", "HandR"]
 
@@ -12,15 +17,25 @@ const RIG_PARTS: Array[String] = ["FootL", "FootR", "Body", "Head", "HandL", "Ha
 static func names() -> PackedStringArray:
 	return PackedStringArray(_rigs().keys())
 
+## 이름 -> 리그 씬 경로(없으면 빈 문자열)
+static func path_of(who: String) -> String:
+	return String(_rigs().get(who, ""))
+
 static func _rigs() -> Dictionary:
 	var script := load(GAME_STATE_PATH) as GDScript
 	if script == null:
-		return {}
-	return script.get_script_constant_map().get("CHARACTER_RIGS", {})
+		return EXTRA_RIGS.duplicate()
+	var out: Dictionary = script.get_script_constant_map().get("CHARACTER_RIGS", {}).duplicate()
+	out.merge(EXTRA_RIGS)
+	return out
 
 ## 캐릭터 리그의 조각별 {position, rotation, scale, texture, offset, centered, flip_h, region_enabled, region_rect, z_index}
 static func read(who: String) -> Dictionary:
-	var path: String = String(_rigs().get(who, ""))
+	return read_path(String(_rigs().get(who, "")))
+
+## 이름 대신 **리그 씬 경로로** 읽는다 — `CHARACTER_RIGS`에 안 올라 있는 리그(주인공/경찰)도 있어서
+## 이름으로만 찾으면 못 읽는다. `read()`도 이걸 거쳐 간다
+static func read_path(path: String) -> Dictionary:
 	if path == "" or not ResourceLoader.exists(path):
 		return {}
 	var rig: Node = (load(path) as PackedScene).instantiate()

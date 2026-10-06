@@ -21,8 +21,26 @@
 [ext_resource type="Texture2D" path="res://sprite/악플러/몸/올라잇악플러.png" id="70_curl_rise"]
 [ext_resource type="Texture2D" path="res://sprite/악플러/몸/힘든 악플러.png" id="71_curl_fall"]
 [ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러몸통P2.png" id="60_p2body"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRunRightPose.tscn" id="gym_run_right_pose"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 attack_raise_deg = 25.0
 attack_swing_deg = 70.0
 attack_raise_offset = Vector2(-24, 4)

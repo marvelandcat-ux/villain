@@ -4,8 +4,26 @@
 [ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="2_uniform"]
 [ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병  몸 옷 측면 2.png" id="3_uniform_turn1"]
 [ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 옷 측면3.png" id="4_uniform_turn2"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunRightPose.tscn" id="gym_run_right_pose"]
 
 [node name="BodyRig" instance=ExtResource("1_rig")]
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 body_turn_textures = Array[Texture2D]([ExtResource("3_uniform_turn1"), ExtResource("4_uniform_turn2")])
 
 [node name="Body" parent="." index="2"]

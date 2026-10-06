@@ -389,7 +389,10 @@ func _save_edit() -> void:
 		if key in _edit_node:
 			_edit_node.set(key, true)
 	if "alone_opens_scene" in _edit_node:
-		_edit_node.alone_opens_scene = "res://maps/GymCurlStudio.tscn"
+		# **이 편집 씬 자신**을 적어 둔다 — 캐릭터별 편집 씬이 생겨서, 공용 씬 경로로 박아 두면
+		# 저장하는 순간 그 자세의 F6가 엉뚱한 캐릭터 편집 씬으로 끌려간다(2026-10-06)
+		var mine: String = scene_file_path
+		_edit_node.alone_opens_scene = mine if mine != "" else "res://maps/GymCurlStudio.tscn"
 	if "preview_scale" in _edit_node:
 		_edit_node.scale = Vector2(_edit_node.preview_scale, _edit_node.preview_scale)
 	_edit_node.position = Vector2.ZERO

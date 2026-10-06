@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_l42bn"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰발.png" id="2_f2u7u"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="3_halb0"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_55ur4"]
+[ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_fo6ih"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_ctjul"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰머리.png" id="7_bprp0"]
+
+[node name="GymCurlUpPose" type="Node2D" unique_id=1746874806]
+scale = Vector2(8, 8)
+script = ExtResource("1_l42bn")
+alone_opens_scene = "res://characters/police/gym/PoliceCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=50389140]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_f2u7u")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=862201038]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_f2u7u")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1355012503]
+position = Vector2(0.96, 0.4)
+rotation = -0.025
+scale = Vector2(0.0268, 0.030507652)
+texture = ExtResource("3_halb0")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=510616766]
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("4_55ur4")
+script = ExtResource("5_fo6ih")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=445304902]
+position = Vector2(-15, -7)
+rotation = -0.3
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_ctjul")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1720393222]
+position = Vector2(13, -8)
+rotation = -0.3
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_ctjul")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=2014097324]
+position = Vector2(-2, -26)
+scale = Vector2(0.045834586, 0.045551606)
+texture = ExtResource("7_bprp0")

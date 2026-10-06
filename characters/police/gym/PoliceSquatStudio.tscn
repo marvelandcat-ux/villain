@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_lm65p"]
+[ext_resource type="PackedScene" path="res://characters/police/PoliceRig.tscn" id="2_c4x56"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceSquatUpPose.tscn" id="3_3q5kw"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceSquatMidPose.tscn" id="4_tgbt4"]
+[ext_resource type="PackedScene" path="res://characters/police/gym/PoliceSquatDownPose.tscn" id="5_5a0sy"]
+
+[node name="PoliceSquatStudio" type="Node2D" unique_id=574797725]
+script = ExtResource("1_lm65p")
+motion = 1
+rig_scene = ExtResource("2_c4x56")
+pose_a = ExtResource("3_3q5kw")
+pose_b = ExtResource("4_tgbt4")
+pose_c = ExtResource("5_5a0sy")
+curl_cycle = 1.8
+curl_rise_ratio = 0.45
+curl_blend_time = 0.2
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=596851340]

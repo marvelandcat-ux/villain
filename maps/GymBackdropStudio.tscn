@@ -1,8 +1,0 @@
-[gd_scene format=3 uid="uid://cvu6q5384snxg"]
-
-[ext_resource type="Script" path="res://maps/GymBackdropStudio.gd" id="1_studio"]
-[ext_resource type="PackedScene" path="res://maps/GymBackdropLayers.tscn" id="2_layers"]
-
-[node name="GymBackdropStudio" type="Node2D" unique_id=1902133450]
-script = ExtResource("1_studio")
-backdrop_scene = ExtResource("2_layers")

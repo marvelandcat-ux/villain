@@ -294,7 +294,58 @@
 
 - 2층 발판 + 기구 셋(바벨 컬 = 기본공격력 / 스쿼트 랙 = 점프력 / 런닝머신 = 이동속도). 맵 스킬 `WorkoutSkill`: 운동 중 발 묶임, 맞음·때림·멀어짐 등이면 끊김, 스펙은 쌓는 족족 배수(`custom_data["gym_spec"]`)
 - 공격력은 기본공격에만(`compute_basic_damage()`). `GymLayout.gd`는 자식 `_ready()`가 부모보다 먼저라는 것에 기대 스폰을 옮김. `muscle_arm`/`muscle_leg`
-- 땅 y=280, 2층 y=100(이단 점프 한계 180px), 벽 ±604. TODO: 운동 모션·기구 그림·배경
+- 땅 y=280, 2층 y=100(이단 점프 한계 180px), 벽 ±604. TODO: 기구 그림·배경
+
+#### 운동 자세는 **캐릭터마다 따로** (2026-10-06)
+
+운동 자세 아홉 장(컬 3 / 스쿼트 3 / 달리기 3)은 원래 `characters/gym/Gym*Pose.tscn` **한 벌을 전 캐릭터가 같이 썼다.**
+`BodyRig._apply_pose_scene()`은 자세 씬에서 **자리와 각도만** 읽으므로(크기는 `rest_pose`만 읽는다),
+같은 자리를 머리 큰 캐릭터에게 먹이면 원판이 얼굴을 덮는다. 그래서 캐릭터마다 한 벌씩 만들었다.
+
+- 자리: `characters/<폴더>/gym/<이름>{Curl,Squat,Run}{칸}Pose.tscn` + 편집 씬 `<이름>{Curl,Squat,Run}Studio.tscn`
+  - 열 명 x (자세 9 + 편집 씬 3) = **120개**. 리그마다 그 아홉 장이 `curl_down_pose`... 로 꽂혀 있다
+  - 고치는 법: **편집 씬을 F6로 열면** 그 캐릭터가 운동한다 → `1/2/3`으로 한 장 크게 띄우고 → 끌어서 맞추고 → `S`로 그 자세 씬에 저장. 자세 씬을 F6로 열어도 짝인 편집 씬이 열린다(`PosePreview.alone_opens_scene`)
+- **만드는 건 `tools/GymPoseGen.tscn`**(F6 또는 헤드리스로 실행). 공용 자세를 베껴 **그림만 그 캐릭터 것으로 갈아 끼운다**(자리·각도는 시작점으로 그대로 둔다)
+  - ⚠️ **이미 있는 파일은 절대 안 덮어쓴다.** 캐릭터를 새로 넣고 다시 돌리면 **없는 것만** 생긴다 — 손으로 맞춰 둔 자세를 날리지 않으려고
+  - ⚠️ 돌린 뒤 **리그 씬에 아홉 줄을 꽂는 건 따로 해야 한다**(`curl_down_pose = ExtResource(...)` ...). 생성기는 자세 파일만 만든다
+  - `GameState.CHARACTER_RIGS`에 없는 리그는 생성기의 `EXTRA_RIGS`에 적는다(지금 주인공/경찰 하나)
+- **실측: 리그들의 제자리는 거의 똑같다**(Body (1,1) / HandL (-27,4) / HandR (27,3) / FootL (-8,26) / FootR (14,27) / Head (-4~2,-32~-34)). 전부 `BodyRig.tscn`을 인스턴스해서 **그림과 배율만** 다르기 때문이다 — 그래서 캐릭터별로 손봐야 하는 건 "자리를 처음부터 다시"가 아니라 **그림 크기 차이만큼의 보정**이다
+#### 운동 얼굴 두 장 (2026-10-06)
+
+운동 중 표정은 **힘줄 때 = 올라잇 / 그 외 = 힘든(입 벌린 것)** 두 장이다. 타이밍은 `BodyRig`가 정하므로
+(`_curl_rising`이 바뀔 때 `_apply_base_head()`), **리그에 그림 두 장만 꽂으면 악플러와 똑같이 돈다.**
+
+| 리그 export | 들어가는 얼굴 |
+|---|---|
+| `curl_face_rise` / `squat_face_move` | 올라잇 |
+| `curl_face_fall` / `squat_face_rest` / `run_face` | 힘든(입 벌린 것) |
+
+- 꽂은 캐릭터: 악플러·금쪽이·주정뱅이·지하철 아저씨·층간소음 빌런·일진
+- **그림이 없어서 못 꽂은 캐릭터: 고양이 아주머니 · 황근출 해병 · 인베이전 · 주인공(경찰).** 그림이 나오면 리그에 두 줄만 더하면 된다
+- 얼굴 그림이 평소 머리와 크기가 다르면 `curl_face_match_size`(기본 켬)가 **살색 높이**를 재서 맞춘다
+- 바벨을 손 앞에 그릴지는 `curl_bar_in_front`(기본 끔 = 손이 봉 위). **금쪽이만 켜 뒀다**(2026-10-06 요청)
+
+#### 변신 단계(핏줄·황금·바퀴·부스터) 편집 — **이미 캐릭터별이다**
+
+`maps/workout/`의 편집 씬들은 처음부터 캐릭터별로 만들어져 있다. 루트의 **`character`** 를 바꾸면 그 캐릭터 몸으로 바뀌고,
+조각을 끌어 놓는 순간 `.tres`에 **그 캐릭터·그 단계 자리로 바로 저장된다**(Ctrl+S 불필요).
+
+| 씬 | 단계 | 저장되는 곳 |
+|---|---|---|
+| `Curl{Vein1,Vein3,Gold}Studio.tscn` | 핏줄 1·3스택 / 황금 손 | `CurlStage.tres` |
+| `Squat{Vein1,Vein3,Gold}Studio.tscn` | 같은 것의 발 | `SquatStage.tres` |
+| `Treadmill{Bike,Car,Rocket}Studio.tscn` | 자전거 바퀴 / 스포츠카 바퀴 / 로켓 신발 | `TreadmillGear.tres` |
+
+- **캐릭터마다 한 장씩도 뽑아 뒀다**(2026-10-06): `characters/<폴더>/gym/<이름>{Bike,Car,Rocket}Studio.tscn`.
+  `character`가 그 캐릭터로 박혀 있을 뿐 원본과 같은 씬이라, **어느 쪽으로 열든 고친 자리는 같은 `.tres`의 그 캐릭터 칸**에 저장된다
+  - 만드는 건 `tools/GymPoseGen.tscn`이 같이 한다. ⚠️ 뽑을 때 **프레임을 넘기면 안 된다** — 이 씬들은 `_process`에서
+    "조각이 움직였나" 보고 `.tres`에 바로 저장하므로, 한 프레임이라도 돌면 기본값을 덮어써 버린다
+  - 핏줄·황금 쪽(`Curl/Squat{Vein1,Vein3,Gold}Studio`)은 아직 원본 한 장뿐이다 — 필요하면 생성기의 `SOURCE_STAGES`에 줄만 더하면 된다
+- `character`는 **고르는 목록**이다(`_validate_property`가 힌트를 넣어 준다). 목록은
+  `RigReader.names()` = `GameState.CHARACTER_RIGS` + `RigReader.EXTRA_RIGS`(주인공/경찰) **한 곳**에서만 온다
+  — 주인공(경찰)은 2026-10-06에 `EXTRA_RIGS`로 더했다(그 전엔 목록에서 빠져 있었다)
+
+- ⚠️ 편집 씬에서 `S`로 저장할 때 `alone_opens_scene`을 **그 편집 씬 자신(`scene_file_path`)**으로 적는다. 예전엔 공용 `GymCurlStudio.tscn`으로 박혀 있어서, 캐릭터별 자세를 저장하면 F6가 엉뚱한 캐릭터로 끌려갔다
 
 ### 공사현장 `maps/CollapsingApartment.tscn`
 
@@ -350,6 +401,38 @@
 ## 훈련장 `maps/TrainingGround.tscn`
 
 - 물리값·게임 속도 슬라이더(static var — 영구 반영은 `DEFAULT_*`), 모든 스킬 쿨 0. `Engine.time_scale`은 `_exit_tree`에서 복구. 충돌 보기 `CollisionDebugView.gd`, 바닥 눈금자 `FloorRuler.gd`
+
+### ⚠️ 그림을 갈아 끼울 땐 **uid도 같이** 바꾼다 (2026-10-06)
+
+`.tscn`/`.tres`의 참조는 이렇게 생겼다:
+
+```
+[ext_resource type="Texture2D" uid="uid://cf5dlqlyj3jys" path="res://.../런닝머신(8~9).png" id="3_car"]
+```
+
+**Godot은 `uid`를 먼저 본다.** 경로만 새 그림으로 바꾸고 uid를 그대로 두면 **옛 그림이 그대로 나온다**(조용히).
+새 uid는 그 그림의 `.png.import` 첫머리 `uid=` 줄에 있다. uid가 아예 없는 줄(생성기가 만든 씬 등)은 경로만 바꾸면 된다.
+
+- 바퀴(스포츠카 단계)를 `런닝머신(8~9).png`(민 휠) -> `헬스장바퀴.png`(타이어 있는 버전)로 갈아 끼운 예:
+  12개 파일(캐릭터별 `*CarStudio.tscn` 10 + 원본 스튜디오 + `TreadmillGear.tres`)에서 **경로와 uid를 같이** 바꿨다
+- 캔버스 크기가 같으면(둘 다 1254x1254) 맞춰 둔 자리·배율이 안 흔들린다. **다른 크기 그림으로 바꾸면 단계 자리를 다시 봐야 한다**
+
+### ⚠️ 헤드리스 검사가 **스크립트 오류를 놓친다**(2026-10-06에 실제로 겪음)
+
+`load(path) == null`로만 보는 검사는 **파싱 오류를 못 잡는다** — 중복 함수처럼 컴파일이 깨져도
+`load()`가 null이 아닌 걸 돌려줘서 "실패 0"으로 통과한다. 검사 출력에서 **`SCRIPT ERROR` / `Parse Error`를
+같이 grep**할 것.
+
+```
+godot --headless --path . res://_chk.tscn 2>&1 | grep -iE ">>> |씬 [0-9]+ \||SCRIPT ERROR|Parse Error"
+```
+
+파일 하나만 빠르게 볼 땐 `godot --headless --check-only --script <경로>`(종료코드 0 = 정상).
+⚠️ 단 이 방법은 **오토로드를 안 올린다** — `GameState`를 쓰는 스크립트는 "Identifier not found: GameState"가
+뜨지만 **가짜 경보**다.
+
+⚠️ **남이 만든 파일에 함수를 더할 땐 같은 이름이 이미 있는지 먼저 본다.** `_validate_property`를
+`_get_property_list`만 찾아보고 없다고 단정했다가 중복으로 넣어 씬이 안 열렸다
 
 ## GDScript 코드 스타일
 

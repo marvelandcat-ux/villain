@@ -1,0 +1,60 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_vgasv"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러발.png" id="2_qc10t"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/몸통.png" id="3_kehjx"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/인베이전손.png" id="4_2glq0"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/인베이전머리측면.png" id="5_qlmg3"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/원판.png" id="6_hoju5"]
+[ext_resource type="Script" path="res://combat/SquatPlate.gd" id="7_q3wpr"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/바벨정면.png" id="8_bnapj"]
+
+[node name="GymSquatUpPose" type="Node2D" unique_id=1016202466]
+scale = Vector2(8, 8)
+script = ExtResource("1_vgasv")
+alone_opens_scene = "res://characters/invasion/gym/InvasionSquatStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=917014024]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_qc10t")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1483950970]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_qc10t")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=2006926623]
+position = Vector2(0.96, 1.45)
+scale = Vector2(0.0305, 0.0345)
+texture = ExtResource("3_kehjx")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1885995481]
+position = Vector2(-16, -13)
+rotation = -0.25
+scale = Vector2(0.089482754, 0.089482754)
+texture = ExtResource("4_2glq0")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=760501096]
+position = Vector2(14, -14)
+rotation = -0.25
+scale = Vector2(0.08258621, 0.08258621)
+texture = ExtResource("4_2glq0")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=161151687]
+position = Vector2(-2, -26)
+scale = Vector2(0.041, 0.041)
+texture = ExtResource("5_qlmg3")
+
+[node name="SquatPlateView" type="Sprite2D" parent="." unique_id=127148786]
+z_index = 7
+z_as_relative = false
+position = Vector2(-13, -24)
+scale = Vector2(0.0295, 0.0295)
+texture = ExtResource("6_hoju5")
+script = ExtResource("7_q3wpr")
+
+[node name="HubView" type="Sprite2D" parent="SquatPlateView" unique_id=96223402]
+scale = Vector2(0.28, 0.28)
+texture = ExtResource("8_bnapj")

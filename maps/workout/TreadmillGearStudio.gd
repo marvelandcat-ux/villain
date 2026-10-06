@@ -25,7 +25,8 @@ const EDIT_PARTS: Array[String] = ["Body", "Head", "HandL", "HandR"]
 
 ## 이 씬이 맡은 단계
 @export_enum("bike", "car", "rocket") var stage: String = "bike"
-## 맞춰 볼 캐릭터(목록은 `GameState.CHARACTER_RIGS`)
+## 맞춰 볼 캐릭터. **인스펙터에서 목록으로 고른다**(아래 `_validate_property`가 리그 목록을 넣어 준다) —
+## 손으로 적던 때는 한 글자만 틀려도 조용히 빈 화면이 됐다
 @export var character: String = "금쪽이":
 	set(value):
 		character = value

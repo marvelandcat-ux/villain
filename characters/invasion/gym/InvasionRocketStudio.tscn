@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_i0dle"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_mr1w3"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러발.png" id="3_lvu2h"]
+[ext_resource type="Script" path="res://combat/JetFlame.gd" id="4_gl8tq"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/몸통.png" id="5_w1q20"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/인베이전손.png" id="6_5boe1"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/인베이전머리측면.png" id="7_88abk"]
+
+[node name="InvasionRocketStudio" type="Node2D" unique_id=1505023825]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_i0dle")
+stage = "rocket"
+character = "인베이전"
+data = ExtResource("2_mr1w3")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
+position = Vector2(2.9406033, 24.528349)
+scale = Vector2(0.12151323, 0.12151323)
+texture = ExtResource("3_lvu2h")
+
+[node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]
+show_behind_parent = true
+z_index = -1
+position = Vector2(-65.020004, 11.099998)
+script = ExtResource("4_gl8tq")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1850118347]
+position = Vector2(2, -2)
+scale = Vector2(0.0305, 0.0345)
+texture = ExtResource("5_w1q20")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1763705476]
+position = Vector2(-24, -2)
+scale = Vector2(0.089482754, 0.089482754)
+texture = ExtResource("6_5boe1")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=273377424]
+position = Vector2(25, 0)
+scale = Vector2(0.08258621, 0.08258621)
+texture = ExtResource("6_5boe1")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1531073183]
+position = Vector2(-1, -30)
+scale = Vector2(0.041, 0.041)
+texture = ExtResource("7_88abk")

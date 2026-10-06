@@ -14,7 +14,7 @@ script = ExtResource("1_studio")
 data = ExtResource("2_data")
 
 [node name="GearL" type="Sprite2D" parent="." unique_id=1462793950]
-position = Vector2(1.8333321, 16.999998)
+position = Vector2(2.4999988, 18.666664)
 scale = Vector2(0.02253182, 0.02253182)
 texture = ExtResource("3_6xba2")
 
