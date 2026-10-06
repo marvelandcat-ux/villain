@@ -1,17 +1,20 @@
 shader_type canvas_item;
 
 // 맵 선택 지구본 — 등장방형 지도 그림(가로 = 경도 한 바퀴)을 공에 감아 그린다.
-// **바다만 돈다**: 땅 그림(land_tex, 투명 배경)은 정면에 고정, 바다 그림(ocean_tex)만 spin만큼 밀려 돈다.
+// 바다 그림(ocean_tex)과 땅 그림(land_tex, 투명 배경)을 겹쳐 그리고, 둘 다 spin만큼 밀어 같이 돈다.
 // flatten 0 = 둥근 지구본, 1 = 평평하게 펼친 지도. 그 사이는 두 방식의 그림 좌표(UV)를 섞어서 공이 펴지듯 보인다.
 // ⚠️ 그림 좌표 계산은 ui/MapSelect.gd의 _uv_at()과 똑같아야 한다(핀 자리) — 한쪽을 고치면 같이 고칠 것
 
 uniform sampler2D ocean_tex : source_color, repeat_enable, filter_linear_mipmap;
-uniform sampler2D land_tex : source_color, filter_linear_mipmap;
+uniform sampler2D land_tex : source_color, repeat_disable, filter_linear_mipmap;
+// 땅 그림이 지구 전체 그림(바다 그림) 안에서 차지하는 자리(u0, v0, 가로, 세로) — 펼쳐 확대해도 안 깨지게 한반도만 고해상도로 따로 그렸다.
+// ⚠️ tools/make_korea_globe.py를 돌리면 찍히는 land_rect 값과 같아야 한다
+uniform vec4 land_rect = vec4(0.3828125, 0.20703125, 0.263671875, 0.615234375);
 // 이 사각형(ColorRect)의 크기와, 그 안에서 지구본 중심(px)·반지름(px)
 uniform vec2 rect_size = vec2(1280.0, 720.0);
 uniform vec2 center = vec2(640.0, 330.0);
 uniform float radius = 230.0;
-// 바다 그림을 가로로 얼마나 밀었는지(u) — 늘리면 바다가 돈다. 땅은 늘 u 0.5가 정면
+// 그림을 가로로 얼마나 밀었는지(u) — 늘리면 지구본이 돈다. 0이면 한반도(u 0.5)가 정면
 uniform float spin = 0.0;
 // 지구본 축 기울기(라디안) — 펼칠수록 0으로
 uniform float tilt = -0.3;
@@ -52,7 +55,11 @@ void fragment() {
 	vec2 p = UV * rect_size - center;
 	vec2 uv = mix(sphere_uv(p), flat_uv(p), flatten);
 	vec4 surface = texture(ocean_tex, uv + vec2(spin, 0.0));
-	vec4 land = texture(land_tex, uv);
+	vec2 world = vec2(fract(uv.x + spin), uv.y);
+	vec2 luv = (world - land_rect.xy) / land_rect.zw;
+	// 땅 그림 바깥은 바다(가장자리 픽셀이 늘어나 보이지 않게 직접 가린다). 미분은 fract 이음매가 없는 uv로 잡는다
+	vec4 land = textureGrad(land_tex, luv, dFdx(uv) / land_rect.zw, dFdy(uv) / land_rect.zw);
+	land.a *= step(0.0, luv.x) * step(luv.x, 1.0) * step(0.0, luv.y) * step(luv.y, 1.0);
 	surface.rgb = mix(surface.rgb, land.rgb, land.a);
 
 	// 둥근 공 → 둥근 모서리 사각형 (초타원 지수를 키운다)

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ds4g6cyo6b6e4"
-path="res://.godot/imported/korea_land.png-fe32c7a3c1433eb2f7757f21a8fe5472.ctex"
+uid="uid://c6qysjlnyv7ld"
+path="res://.godot/imported/건물3 .png-cf96e41518702d99cbf76426c35ef93d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵선택/korea_land.png"
-dest_files=["res://.godot/imported/korea_land.png-fe32c7a3c1433eb2f7757f21a8fe5472.ctex"]
+source_file="res://sprite/맵/번화가/건물3 .png"
+dest_files=["res://.godot/imported/건물3 .png-cf96e41518702d99cbf76426c35ef93d.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

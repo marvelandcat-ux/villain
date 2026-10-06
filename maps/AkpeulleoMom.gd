@@ -17,6 +17,10 @@ signal vanished
 const DISPLAY_NAME := "악플러집 엄마"
 ## 몸 캡슐(r20 h60) 원점에서 발바닥까지
 const FEET_OFFSET := 30.0
+## 점프 스피드 라인 — 캐릭터 점프(`Fighter._spawn_jump_speed_lines`)와 같은 것
+const SPEED_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
+const JUMP_SPEED_LINE_TIME := 0.4
+const LEAP_SPEED_LINE_TIME := 0.7
 ## 3타 날아가기 이펙트 (평타 마무리와 같은 것)
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 ## 암전 때 켜지는 노란 십자 눈빛 — 리그 Head 자식으로 붙인다
@@ -289,6 +293,7 @@ func _leap_to(target: Vector2) -> void:
 	velocity.x = (target.x - global_position.x) / maxf(t, 0.1)
 	_set_facing(signf(velocity.x))
 	_leaping = true
+	_spawn_speed_lines(LEAP_SPEED_LINE_TIME)
 
 # ---------------------------------------------------------------- 발판 길찾기 (1단 점프)
 
@@ -354,6 +359,18 @@ func _takeoff_x(cur: Dictionary, nxt: Dictionary, x: float) -> float:
 func _jump() -> void:
 	if is_on_floor():
 		velocity.y = Fighter.jump_velocity
+		_spawn_speed_lines(JUMP_SPEED_LINE_TIME)
+
+## 지나간 길을 따라 하얀 줄을 남긴다 — 엄마 자식이면 좌우 반전에 뒤집히므로 부모(맵 쪽)에 붙인다
+func _spawn_speed_lines(life: float) -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var lines = SPEED_LINES_SCRIPT.new()
+	lines.offset_along_normal = true
+	lines.spread_y = Vector2(-18.0, 18.0)
+	parent.add_child(lines)
+	lines.setup(self, life)
 
 ## 밟고 있는 통과 발판과의 충돌만 잠깐 꺼서 아래층으로 내려간다(`Fighter.drop_through_platform`과 같은 방식)
 func _drop_through() -> bool:
