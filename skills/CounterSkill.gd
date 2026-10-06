@@ -58,7 +58,8 @@ var _prev_time_scale: float = 1.0
 var _flash = null
 ## 반격이 맞기 전까지 두 사람을 묶어 둘 자리 {Fighter: Vector2} — 비어 있으면 안 묶는다(필중, 2026-10-02 사용자 요청)
 var _lock_positions: Dictionary = {}
-var _lock_opponent: Fighter = null
+## 반격 대상 — 때린 몸이다(캐릭터 또는 일진 패거리·고양이 같은 소환물). 그래서 Fighter로 못박지 않는다
+var _lock_opponent: Node2D = null
 
 func _ready() -> void:
 	super()
@@ -72,14 +73,17 @@ func _physics_process(_delta: float) -> void:
 		if not is_instance_valid(f):
 			continue
 		f.global_position = _lock_positions[f]
-		f.velocity = Vector2.ZERO
-		f.start_busy(0.1)
-	if is_instance_valid(_lock_opponent):
-		_lock_opponent.apply_hitstun(0.1)
-		if _lock_opponent.is_guarding:
-			_lock_opponent.cancel_guard(true)
+		if "velocity" in f:
+			f.velocity = Vector2.ZERO
+		if f is Fighter:
+			f.start_busy(0.1)
+	if is_instance_valid(_lock_opponent) and _lock_opponent is Fighter:
+		var foe: Fighter = _lock_opponent
+		foe.apply_hitstun(0.1)
+		if foe.is_guarding:
+			foe.cancel_guard(true)
 
-func _lock(fighter: Fighter, opponent: Fighter) -> void:
+func _lock(fighter: Fighter, opponent: Node2D) -> void:
 	_lock_opponent = opponent
 	_lock_positions = {fighter: fighter.global_position, opponent: opponent.global_position}
 
@@ -124,21 +128,26 @@ func _end_stance() -> void:
 	_fighter.clear_tint("counter_stance")
 	_set_rig_stance(false)
 
-## `Fighter.try_counter()`가 부른다 — 맞는 순간 피해 대신 반격을 시작한다
-func trigger_counter(fighter: Fighter) -> void:
+## `Fighter.try_counter()`가 부른다 — 맞는 순간 피해 대신 반격을 시작한다.
+## **반격은 때린 몸(attacker)에게 간다** — 일진 패거리·고양이 같은 소환물에게 맞았으면 그 소환물을 벤다.
+## 때린 몸을 모르면(판정 없이 직접 피해를 준 스킬) 상대 캐릭터에게 간다
+func trigger_counter(fighter: Fighter, attacker: Node = null) -> void:
 	if not _in_stance:
 		return
 	_end_stance()
 	fighter.end_busy()
 	fighter.grant_invincibility(counter_invincible)
-	var opponent: Fighter = fighter.find_opponent()
-	if opponent == null or not is_instance_valid(opponent):
+	var opponent: Node2D = _counter_target(fighter, attacker)
+	if opponent == null:
 		return
 	# 상대를 연출 동안 그 자리에 묶는다 — 느려진 동안 빠져나가면 후려치기가 허공을 친다
-	opponent.cancel_finisher_flight()
-	opponent.cancel_guard(true)
-	opponent.velocity = Vector2.ZERO
-	opponent.apply_hitstun(slow_time * slow_scale + 0.1)
+	if opponent is Fighter:
+		var foe: Fighter = opponent
+		foe.cancel_finisher_flight()
+		foe.cancel_guard(true)
+		foe.apply_hitstun(slow_time * slow_scale + 0.1)
+	if "velocity" in opponent:
+		opponent.set("velocity", Vector2.ZERO)
 	_start_slow()
 	_teleport_behind(fighter, opponent)
 	# 반격이 맞을 때까지 둘 다 그 자리에 묶는다 — 상대가 빠져나가거나 막아서 헛치는 일이 없게(필중)
@@ -150,11 +159,33 @@ func trigger_counter(fighter: Fighter) -> void:
 	Timers.after(self, swing_at, func(): _play_swing(fighter), true)
 	Timers.after(self, slow_time, func(): _strike(fighter), true)
 
+## 반격할 몸 — 때린 몸이 살아 있고 맞을 수 있으면(take_damage) 그쪽, 아니면 상대 캐릭터
+func _counter_target(fighter: Fighter, attacker: Node) -> Node2D:
+	if attacker != null and is_instance_valid(attacker) and attacker != fighter \
+			and attacker is Node2D and attacker.has_method("take_damage"):
+		return attacker
+	var foe: Fighter = fighter.find_opponent()
+	return foe if foe != null and is_instance_valid(foe) else null
+
+## 몸이 바라보는 쪽(+1/-1, 모르면 0) — 캐릭터는 facing, 소환물은 `_facing()`/`_facing`(일진 패거리·고양이)
+func _facing_of(body: Node2D) -> float:
+	if body is Fighter:
+		return (body as Fighter).facing
+	if body.has_method("_facing"):
+		return signf(float(body.call("_facing")))
+	var v = body.get("_facing")
+	if v is float or v is int:
+		return signf(float(v))
+	return 0.0
+
 ## 상대가 바라보는 반대쪽(등 뒤)으로 옮긴다. 그쪽이 벽이면 벽 앞에서 멈춘다
-func _teleport_behind(fighter: Fighter, opponent: Fighter) -> void:
+func _teleport_behind(fighter: Fighter, opponent: Node2D) -> void:
 	if fighter.has_method("_spawn_dash_afterimage"):
 		fighter._spawn_dash_afterimage()
-	var back: float = -opponent.facing if not is_zero_approx(opponent.facing) else signf(fighter.global_position.x - opponent.global_position.x)
+	var opp_facing: float = _facing_of(opponent)
+	var back: float = -opp_facing if not is_zero_approx(opp_facing) else signf(fighter.global_position.x - opponent.global_position.x)
+	if is_zero_approx(back):
+		back = -fighter.facing
 	var from: Vector2 = opponent.global_position
 	var target: Vector2 = from + Vector2(back * behind_distance, 0.0)
 	var hit: Dictionary = PhysicsQuery.raycast_ignoring_fighters(fighter, from, target + Vector2(back * 20.0, 0.0))
@@ -189,8 +220,8 @@ func _strike(fighter: Fighter) -> void:
 		_unlock()
 		return
 	# 필중 — 무적(대시 등)이 걸려 있어도 이 한 방은 들어간다
-	if is_instance_valid(_lock_opponent):
-		_lock_opponent.is_invincible = false
+	if is_instance_valid(_lock_opponent) and _lock_opponent is Fighter:
+		(_lock_opponent as Fighter).is_invincible = false
 	hitbox.damage = fighter.compute_damage(counter_damage)
 	# 피격 반응(움찔·콤보 수)용 넉백 — 실제 날아가는 속도는 명중 뒤 launch_finisher가 덮어쓴다
 	hitbox.knockback = Vector2(220.0 * fighter.facing, -90.0)
@@ -205,7 +236,7 @@ func _strike(fighter: Fighter) -> void:
 func _disable_hitbox() -> void:
 	# 판정이 켜진 동안 겹침 신호가 안 왔으면(묶인 자리가 판정과 어긋난 경우) 상대 허트박스를 직접 때린다
 	if _striking and is_instance_valid(_lock_opponent):
-		var hurt := _lock_opponent.get_node_or_null("Hurtbox") as Hurtbox
+		var hurt := _find_hurtbox(_lock_opponent)
 		if hurt:
 			hitbox._try_hit(hurt)
 	_unlock()
@@ -213,7 +244,17 @@ func _disable_hitbox() -> void:
 	hitbox.monitoring = false
 	hitbox.monitorable = false
 
-## 맞았으면 평타 3타처럼 날린다 — 값은 이 캐릭터 평타(ComboMeleeAttack)의 finisher_* 를 그대로 빌린다
+## 몸의 Hurtbox — 보통 "Hurtbox"라는 이름의 자식, 이름이 다르면 자식 중 첫 Hurtbox
+func _find_hurtbox(body: Node) -> Hurtbox:
+	var hurt := body.get_node_or_null("Hurtbox") as Hurtbox
+	if hurt:
+		return hurt
+	for child in body.get_children():
+		if child is Hurtbox:
+			return child
+	return null
+
+## 맞았으면 평타 3타처럼 날린다(캐릭터만 — 소환물은 판정의 넉백으로 밀려난다) — 값은 이 캐릭터 평타(ComboMeleeAttack)의 finisher_* 를 그대로 빌린다
 func _on_hitbox_connected(victim: Node) -> void:
 	if not _striking:
 		return

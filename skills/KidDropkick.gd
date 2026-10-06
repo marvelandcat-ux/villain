@@ -41,11 +41,8 @@ func on_combo_swing(fighter: Fighter, step: int) -> void:
 		_zoom_to_kid(fighter, visual)
 		return
 	# 솟아오르는 동안은 그대로 두고, 앞으로 뻗는 순간부터 느려지며 화면이 당겨진다
-	var tree: SceneTree = fighter.get_tree()
-	if tree == null:
-		_zoom_to_kid(fighter, visual)
-		return
-	tree.create_timer(maxf(slow_delay, 0.0)).timeout.connect(func(): _start_slow(fighter, visual))
+	# 스킬 자식 Timer로 기다린다 — 그 사이 라운드가 끝나 캐릭터가 지워져도 타이머째 사라져 에러가 안 난다
+	Timers.after(self, maxf(slow_delay, 0.01), func(): _start_slow(fighter, visual))
 
 ## 느리게 + 클로즈업을 같이 건다
 func _start_slow(fighter: Fighter, visual: Node) -> void:

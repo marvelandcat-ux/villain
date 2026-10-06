@@ -14,22 +14,8 @@
 [ext_resource type="Texture2D" uid="uid://bu8i8yynoimxq" path="res://sprite/맵/튜토리얼/군대 막사.png" id="13_barracks"]
 [ext_resource type="Texture2D" uid="uid://bio3ekygknc8f" path="res://sprite/맵/튜토리얼/국기 1.png" id="14_flag1"]
 [ext_resource type="Shader" uid="uid://cct33r6314sp" path="res://maps/FlagFlutter.gdshader" id="15_flag_shader"]
-[ext_resource type="Shader" path="res://maps/Sunlight.gdshader" id="17_sunlight"]
-[ext_resource type="PackedScene" uid="uid://dqk3m8speechbub" path="res://maps/SpeechBubble.tscn" id="18_bubble"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_sunlight"]
-shader = ExtResource("17_sunlight")
-shader_parameter/sun_pos = Vector2(0.5, -1)
-shader_parameter/ray_color = Color(1, 0.95, 0.72, 1)
-shader_parameter/strength = 0.6
-shader_parameter/glow_strength = 0.5
-shader_parameter/sun_width = 0.6
-shader_parameter/sun_height = 0.35
-shader_parameter/ray_count = 42.0
-shader_parameter/ray_sharpness = 1.4
-shader_parameter/ray_reach = 3.0
-shader_parameter/sway_speed = 0.2
-shader_parameter/aspect = 1.777
+[ext_resource type="Shader" uid="uid://dtrkoee5vqvka" path="res://maps/Sunlight.gdshader" id="17_sunlight"]
+[ext_resource type="PackedScene" uid="uid://dkd5b0gex52q0" path="res://maps/SpeechBubble.tscn" id="18_bubble"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_flag"]
 shader = ExtResource("15_flag_shader")
@@ -49,6 +35,20 @@ size = Vector2(40, 2400)
 
 [sub_resource type="RectangleShape2D" id="Shape_ceiling"]
 size = Vector2(2440, 40)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sunlight"]
+shader = ExtResource("17_sunlight")
+shader_parameter/sun_pos = Vector2(0.5, -1)
+shader_parameter/ray_color = Color(1, 0.95, 0.72, 1)
+shader_parameter/strength = 0.6
+shader_parameter/glow_strength = 0.5
+shader_parameter/sun_width = 0.6
+shader_parameter/sun_height = 0.35
+shader_parameter/ray_count = 42.0
+shader_parameter/ray_sharpness = 1.4
+shader_parameter/ray_reach = 3.0
+shader_parameter/sway_speed = 0.2
+shader_parameter/aspect = 1.777
 
 [node name="Tutorial" type="Node2D" unique_id=713366777]
 texture_filter = 4
@@ -135,7 +135,7 @@ texture = ExtResource("14_flag1")
 [node name="InstructorSpawn" type="Marker2D" parent="." unique_id=2040561113]
 position = Vector2(250, 363)
 
-[node name="InstructorBubble" parent="." instance=ExtResource("18_bubble")]
+[node name="InstructorBubble" parent="." unique_id=1446566434 instance=ExtResource("18_bubble")]
 position = Vector2(250, 308)
 
 [node name="Ground" type="StaticBody2D" parent="." unique_id=325628157]
@@ -175,10 +175,10 @@ position = Vector2(1200, -500)
 [node name="Collision" type="CollisionShape2D" parent="RightWall" unique_id=1399198582]
 shape = SubResource("Shape_edge_wall")
 
-[node name="Ceiling" type="StaticBody2D" parent="."]
+[node name="Ceiling" type="StaticBody2D" parent="." unique_id=301715944]
 position = Vector2(0, -1700)
 
-[node name="Collision" type="CollisionShape2D" parent="Ceiling"]
+[node name="Collision" type="CollisionShape2D" parent="Ceiling" unique_id=1383116042]
 shape = SubResource("Shape_ceiling")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=728178402]

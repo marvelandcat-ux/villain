@@ -57,13 +57,17 @@ const OUTLINE_COLOR := Color(0.1, 0.08, 0.08)
 @export_group("공통")
 ## 벽에 막혔을 때 뛰어넘으려는 점프 속도(px/초)
 @export var hop_speed: float = 360.0
-@export var gravity_force: float = 1150.0
-## 상대 발이 이만큼(px) 넘게 위에 있고 가로로 jump_reach_x 안이면 뛰어오른다 — 발판 위로 따라간다
+## 상대 발이 이만큼(px) 넘게 위에 있고 가로로 jump_reach_x 안이면 뛰어오른다 — 발판 위로 따라간다.
+## 점프 힘·중력은 **플레이어와 똑같다**(`Fighter.jump_velocity`/`air_jump_velocity`/`gravity`/`fall_gravity_multiplier`).
+## 꼭대기에서도 아직 목표 발판보다 아래면 공중에서 한 번 더 뛴다(플레이어 2단 점프와 같은 횟수 `Fighter.max_air_jumps`)
 @export var jump_trigger_height: float = 40.0
 @export var jump_reach_x: float = 170.0
-## 목표 높이보다 더 뛰는 여유(px)와 점프 속도 상한(px/초 — 900이면 약 350px까지)
-@export var jump_extra_height: float = 30.0
-@export var max_jump_speed: float = 900.0
+## 공중 점프를 쓰는 시점 — 올라가는 속도가 이 값(px/초)보다 느려지면(꼭대기 근처) 판단한다
+@export var air_jump_apex_speed: float = 60.0
+## 착지 순간 몸이 납작해지는 정도 — 플레이어(1.33, 0.75)보다 약하게. 원점이 발바닥이라 발은 바닥에 붙은 채 눌린다
+@export var land_squash: Vector2 = Vector2(1.15, 0.87)
+## 찌그러짐이 원래 크기로 돌아오는 속도 (플레이어와 같은 값)
+@export var squash_recover_speed: float = 2.5
 ## 한 번 뛰고/내려오고 다음까지 쉬는 시간(초) — 발판 끝에서 콩콩 반복하지 않게
 @export var jump_cooldown: float = 0.4
 ## 땅에 이만큼(초) 붙어 있어야 다시 뛴다 — 공중에서 발판 끝을 스치는 순간 또 뛰어 2단 점프처럼 되지 않게
@@ -110,6 +114,11 @@ var _sprite = null
 var _jump_cd: float = 0.0
 ## 땅에 계속 붙어 있은 시간(초) — 떠 있으면 0
 var _ground_time: float = 0.0
+## 공중에서 몇 번 더 뛸 수 있는지 — 땅에 닿으면 Fighter.max_air_jumps로 채운다
+var _air_jumps_left: int = 0
+## 지난 프레임에 땅에 있었는지(착지 순간 감지) / 지금 찌그러진 정도(1,1 = 원래)
+var _was_on_floor: bool = true
+var _squash: Vector2 = Vector2.ONE
 var current_hp: int = 0
 ## Hurtbox 쪽 방어 판정이 읽는다 — 고양이는 막지 않는다
 var is_guarding: bool = false
@@ -245,7 +254,15 @@ func _die() -> void:
 func _physics_process(delta: float) -> void:
 	_age +=minf(delta, 0.05)
 	if not is_on_floor():
-		velocity.y += gravity_force * delta
+		# 플레이어와 같은 중력 — 떨어질 때만 fall_gravity_multiplier가 붙는다
+		var g: float = Fighter.gravity
+		if velocity.y > 0.0:
+			g *= Fighter.fall_gravity_multiplier
+		velocity.y += g * delta
+	else:
+		# 공중 점프는 따라가려고 뛰어오른 점프에서만 쓴다 — 걸어서 떨어지거나 장애물을 넘을 땐 안 쓴다
+		_air_jumps_left = 0
+	_update_squash(delta)
 	if _flash_left > 0.0:
 		_flash_left = maxf(_flash_left - delta, 0.0)
 	if _stun_left > 0.0:
@@ -277,6 +294,8 @@ func _physics_process(delta: float) -> void:
 		var vertical: Fighter = _vertical_target()
 		if vertical and _dash_left <= 0.0:
 			_follow_vertically(vertical)
+	elif not is_on_floor() and _dash_left <= 0.0:
+		_try_air_jump(_vertical_target())
 		# 낮은 장애물만 폴짝 넘는다 — 맵 벽처럼 높은 벽 앞에서 콩콩대며 넘어가려 들지 않게
 		if kind != Kind.ORANGE and want_x != 0.0 and is_on_wall() and velocity.y >= 0.0 and _can_hop_over():
 			velocity.y = -hop_speed
@@ -446,8 +465,8 @@ func _follow_vertically(target: Fighter) -> void:
 	var dx: float = target.global_position.x - global_position.x
 	var dy: float = target.global_position.y + 30.0 - global_position.y
 	if dy < -jump_trigger_height and absf(dx) < jump_reach_x:
-		var rise: float = -dy + jump_extra_height
-		velocity.y = -minf(sqrt(2.0 * gravity_force * rise), max_jump_speed)
+		velocity.y = Fighter.jump_velocity
+		_air_jumps_left = Fighter.max_air_jumps
 		_jump_cd = jump_cooldown
 	elif dy > drop_trigger_height:
 		var platform: Node = _one_way_floor()
@@ -457,6 +476,23 @@ func _follow_vertically(target: Fighter) -> void:
 				if is_instance_valid(platform):
 					remove_collision_exception_with(platform))
 			_jump_cd = jump_cooldown
+
+## 땅에서 뛰어오른 뒤 꼭대기 근처인데 발이 아직 목표 발판보다 아래면 공중에서 한 번 더 뛴다(플레이어 2단 점프와 같은 힘)
+func _try_air_jump(target: Fighter) -> void:
+	if target == null or _air_jumps_left <= 0 or velocity.y < -air_jump_apex_speed:
+		return
+	var dy: float = target.global_position.y + 30.0 - global_position.y
+	if dy < -10.0:
+		_air_jumps_left -= 1
+		velocity.y = Fighter.air_jump_velocity
+
+## 착지 순간 몸을 살짝 납작하게 눌렀다가 천천히 편다(플레이어 BodyRig와 같은 방식, 세기만 약하게)
+func _update_squash(delta: float) -> void:
+	var on_floor: bool = is_on_floor()
+	if on_floor and not _was_on_floor:
+		_squash = land_squash
+	_was_on_floor = on_floor
+	_squash = _squash.move_toward(Vector2.ONE, delta * squash_recover_speed)
 
 ## 지금 밟고 선 바닥이 원웨이 발판이면 그 바디, 아니면 null(맨바닥은 뚫고 떨어지면 안 된다)
 func _one_way_floor() -> Node:
@@ -477,7 +513,7 @@ func _update_sprite() -> void:
 		return
 	var pop: float = clampf(_age / maxf(pop_time, 0.01), 0.0, 1.0)
 	var s: float = 0.6 + 0.4 * pop
-	_sprite.scale = Vector2(_facing * s, s)
+	_sprite.scale = Vector2(_facing * s * _squash.x, s * _squash.y)
 	_sprite.walk_phase = _walk_phase
 	_sprite.modulate = Color(1.0, 0.4, 0.4) if _flash_left > 0.0 else Color(1, 1, 1)
 	# 맞고 밀려나는 동안 눈을 감는다

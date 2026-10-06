@@ -40,6 +40,11 @@ var _left: float = 0.0
 var _spawn_left: float = 0.0
 var _puffs: Array[Puff] = []
 var _shape: CollisionShape2D = null
+## 연기가 켜진 뒤 흐른 시간(초)과, 상대(Hurtbox)마다 마지막으로 맞힌 시각 {Hurtbox: float}.
+## Hitbox는 판정을 벗어나면 대기시간을 지워 버려서, 좌우로 돌아 판정을 넘겼다 들였다 하면 들어올 때마다 바로 맞았다.
+## 그래서 벗어났다 돌아와도 repeat_interval이 지나기 전엔 다시 못 때리게 여기서 따로 센다
+var _clock: float = 0.0
+var _last_hit_at: Dictionary = {}
 
 ## 스킬이 스폰 직후 부른다. 입 위치는 캐릭터 원점 기준 오프셋(x는 바라보는 방향으로 자동 반전)
 func setup(caster: Fighter, mouth_offset: Vector2, dmg: int, tick: float, life: float) -> void:
@@ -59,6 +64,7 @@ func setup(caster: Fighter, mouth_offset: Vector2, dmg: int, tick: float, life: 
 	monitorable = true
 
 func _process(delta: float) -> void:
+	_clock += delta
 	super(delta)   # Hitbox가 겹친 상대에게 tick마다 다시 데미지를 준다
 	if not is_instance_valid(_caster):
 		_left = 0.0
@@ -78,6 +84,15 @@ func _process(delta: float) -> void:
 	queue_redraw()
 	if _left <= 0.0 and _puffs.is_empty():
 		queue_free()
+
+## 같은 상대는 판정을 나갔다 들어와도 repeat_interval에 한 번만 맞는다
+func _try_hit(area: Area2D) -> bool:
+	if _last_hit_at.has(area) and _clock - float(_last_hit_at[area]) < repeat_interval - 0.001:
+		return false
+	if not super(area):
+		return false
+	_last_hit_at[area] = _clock
+	return true
 
 ## 입 위치·방향을 따라간다. 판정 사각형은 입에서 앞으로 reach/2만큼 나간 자리에 둔다
 func _follow_caster() -> void:

@@ -20,6 +20,8 @@ class Line:
 @export var line_color: Color = Color(1.0, 1.0, 1.0, 0.6)
 ## 줄이 생기는 높이 범위 (몸 기준, y는 음수가 위쪽)
 @export var spread_y: Vector2 = Vector2(-40.0, 24.0)
+## true면 spread_y만큼 위아래가 아니라 **지나간 길에 수직으로** 띄운다(점프처럼 세로로 움직일 때)
+@export var offset_along_normal: bool = false
 ## 꼬리에 남기는 시간(초) — 이보다 오래된 자리는 지워진다. 길수록 꼬리가 길다
 @export var trail_time: float = 0.25
 ## 앞쪽 끝이 투명해지는 길이(px) — 줄이 짧으면 줄 길이의 30%까지만
@@ -43,7 +45,12 @@ var _lines: Array[Line] = []
 func setup(caster: Node2D, life: float) -> void:
 	_caster = caster
 	_left = life
-	z_index = -1   # 캐릭터 뒤에 깔린다
+	# 캐릭터 뒤에 깔린다 — z는 시전자와 같게 두고 트리 순서만 시전자 바로 앞으로.
+	# 음수 z로 두면 배경이 z 0인 맵(번화가·헬스장·튜토리얼 숲)에선 배경 그림 뒤로 숨어서 안 보였다
+	z_index = caster.z_index
+	z_as_relative = caster.z_as_relative
+	if caster.get_parent() == get_parent():
+		get_parent().move_child(self, caster.get_index())
 	global_position = Vector2.ZERO
 	# 높이 범위를 줄 개수만큼 나눠 칸마다 하나씩 — 줄끼리 너무 붙지 않게
 	var band: float = (spread_y.y - spread_y.x) / maxf(line_count, 1)
@@ -128,7 +135,12 @@ func _draw() -> void:
 			while idx < dist.size() - 2 and dist[idx + 1] < s:
 				idx += 1
 			var t: float = inverse_lerp(dist[idx], dist[idx + 1], s)
-			pts.append(path[idx].lerp(path[idx + 1], clampf(t, 0.0, 1.0)) + Vector2(0.0, l.y))
+			var off := Vector2(0.0, l.y)
+			if offset_along_normal:
+				# 길에 수직으로 띄운다 — 세로로 뛸 때 줄들이 좌우로 나란히 선다
+				var dir: Vector2 = (path[idx + 1] - path[idx]).normalized()
+				off = Vector2(-dir.y, dir.x) * l.y
+			pts.append(path[idx].lerp(path[idx + 1], clampf(t, 0.0, 1.0)) + off)
 			# 투명(앞쪽 끝) → 진함 → 투명(꼬리)
 			if s < head + soft:
 				cols.append(clear_col.lerp(peak_col, (s - head) / maxf(soft, 0.01)))

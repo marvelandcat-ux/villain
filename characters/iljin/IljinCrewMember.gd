@@ -251,6 +251,9 @@ func _fire_spit() -> void:
 		# 일진이 이미 사라졌으면 주인 없는 판정(맵 피해)이 된다
 		var shooter: Fighter = _owner_fighter if is_instance_valid(_owner_fighter) else null
 		spit.setup(_facing(), spit_speed, spit_damage, shooter)
+		# 카운터 반격이 일진이 아니라 침을 뱉은 이 패거리에게 오도록 실제로 쏜 몸을 적어 둔다
+		if "attacker_body" in spit:
+			spit.attacker_body = self
 	# **setup 다음에 부를 것** — setup이 rotation을 수평으로 덮어쓴다
 	if spit.has_method("aim"):
 		spit.aim(_aim)

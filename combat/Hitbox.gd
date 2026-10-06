@@ -71,6 +71,9 @@ var debris_enabled: bool = true
 ## 씬에 저장되지 않는 런타임 값이라 다른 판정에는 영향이 없다(기본 1)
 var hitstop_multiplier: float = 1.0
 var shake_multiplier: float = 1.0
+## 실제로 때린 몸 — 소환물이 쏜 투사체처럼 판정이 맵에 붙어 있어 부모로 못 찾을 때 쏜 쪽이 넣어 준다.
+## 비워 두면 `get_attacker()`가 부모를 거슬러 올라가 찾는다. 카운터 반격이 누구에게 갈지 정하는 데 쓴다
+var attacker_body: Node = null
 ## repeat_interval을 쓸 때, 겹쳐 있는 Hurtbox마다 다음 타격까지 남은 시간 {Hurtbox: float}
 var _repeat_cooldowns: Dictionary = {}
 
@@ -120,7 +123,7 @@ func _try_hit(area: Area2D) -> bool:
 	var kb: Vector2 = _compute_knockback(area)
 	# 이 한 방이 방어에 막히는지 먼저 판정해서 팝업·무기 깜빡임에 같이 쓴다
 	var blocked: bool = _is_blocked_by_guard(area)
-	if not area.take_hit(damage, kb, source_fighter, pop_override):
+	if not area.take_hit(damage, kb, source_fighter, pop_override, get_attacker()):
 		return false
 	if blocked:
 		_notify_blocked_by_guard()
@@ -142,6 +145,19 @@ func _try_hit(area: Area2D) -> bool:
 		_spawn_damage_number(area.global_position, damage, combo)
 	connected.emit(victim)
 	return true
+
+## 이 판정으로 실제로 때린 몸(캐릭터 또는 일진 패거리·고양이 같은 소환물). 순서:
+## `attacker_body` → 부모를 거슬러 올라가 처음 만나는 **맞을 수 있는 몸**(take_damage가 있는 Node2D) → `source_fighter`.
+## 맵에 붙은 투사체처럼 몸을 못 찾으면 주인 캐릭터가 된다
+func get_attacker() -> Node:
+	if attacker_body != null and is_instance_valid(attacker_body):
+		return attacker_body
+	var node: Node = get_parent()
+	while node != null:
+		if node is Node2D and node.has_method("take_damage"):
+			return node
+		node = node.get_parent()
+	return source_fighter if _has_source and is_instance_valid(_source_fighter) else null
 
 ## 이 한 방이 상대 방어에 막히는지. **주인 없는 히트박스(맵 기믹)는 방어를 뚫으므로 false다** —
 ## Hurtbox.take_hit이 source_fighter가 null이면 ignore_guard로 넘기는 것과 같은 규칙이라야

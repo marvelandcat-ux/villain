@@ -52,9 +52,12 @@ const DEFAULT_DASH_DURATION: float = 0.04
 const DEFAULT_DASH_COOLDOWN: float = 2.5
 ## 대시 중 잔상을 남기는 간격(초). 대시가 0.04초뿐이라 매 물리 프레임 남긴다(0.04면 시작 잔상 하나만 나왔다)
 const DASH_TRAIL_INTERVAL: float = 0.015
-## 대시할 때 몸 뒤로 남는 하얀 스피드 라인 — 지나간 길을 따라 휘는 혜성 꼬리(combat/DashTrailLines.gd, 2026-10-06 사용자 요청).
-## 대시(약 0.1초) + 그 뒤 0.5초 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다
-const DASH_SPEED_LINE_TIME: float = 0.6
+## 점프할 때 몸 뒤로 남는 하얀 스피드 라인 — 지나간 길을 따라 휘는 혜성 꼬리(combat/DashTrailLines.gd).
+## 2026-10-06 사용자 요청으로 대시에서 점프로 옮김. 이 시간(초) 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다.
+## 기본 점프가 꼭대기까지 약 0.42초(478 / 1150)라 올라가는 동안만 남게 맞췄다 — TODO: 보고 조절
+const JUMP_SPEED_LINE_TIME: float = 0.4
+## 점프 줄은 길에 수직(좌우)으로 이 범위 안에 퍼진다 — 세로로 뛰니 몸 폭 안쪽으로
+const JUMP_SPEED_LINE_SPREAD: Vector2 = Vector2(-18.0, 18.0)
 const DASH_TRAIL_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
 ## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
@@ -179,7 +182,7 @@ var movement_override = null
 ## ⚠️ 한 프레임 늦게 가로채면 그 사이에 평소 대시가 이미 한 프레임치(약 47px) 튀어 나간다
 var dash_override = null
 ## 카운터 자세(`CounterSkill`)가 자신을 등록해두는 슬롯. 이게 있는 동안 캐릭터의 공격에 맞으면
-## 피해 대신 `trigger_counter(fighter)`가 불린다(`try_counter()`). 타입은 movement_override와 같은 이유로 비워 둔다
+## 피해 대신 `trigger_counter(fighter, attacker)`가 불린다(`try_counter()`). 타입은 movement_override와 같은 이유로 비워 둔다
 var counter_stance = null
 
 ## 이동속도/점프력/공격력/쿨타임 진행속도 배수 — 버프·디버프 스킬이 일시적으로 바꾼다
@@ -956,13 +959,14 @@ func can_be_grabbed() -> bool:
 	return not blocks_debuff() and not has_super_armor() and counter_stance == null
 
 ## 카운터 자세 중이면 반격을 시작하고 true — 이번 피해는 없던 일이 된다. 자세가 아니면 false
-func try_counter() -> bool:
+## attacker = 실제로 때린 몸(캐릭터·소환물). 모르면 null — 반격은 그때 상대 캐릭터에게 간다
+func try_counter(attacker: Node = null) -> bool:
 	if counter_stance == null or not is_instance_valid(counter_stance):
 		counter_stance = null
 		return false
 	var stance = counter_stance
 	counter_stance = null
-	stance.trigger_counter(self)
+	stance.trigger_counter(self, attacker)
 	return true
 
 ## duration초 동안 무적 상태로 만든다
@@ -1154,21 +1158,23 @@ func dash(direction: float) -> bool:
 	_dash_time = dash_duration
 	_dash_trail_timer = 0.0
 	_spawn_dash_afterimage()
-	_spawn_dash_speed_lines()
 	return true
 
 ## 대시 잔상 — 푸른빛을 입혀서 남긴다
 func _spawn_dash_afterimage() -> void:
 	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
 
-## 대시 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집힌다). 줄은 지나간 자리를 맵 좌표로 기록해서 긋는다
-func _spawn_dash_speed_lines() -> void:
+## 점프 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집힌다). 줄은 지나간 자리를 맵 좌표로 기록해서 긋는다
+func _spawn_jump_speed_lines() -> void:
 	var parent: Node = get_parent()
 	if parent == null:
 		return
 	var lines = DASH_TRAIL_LINES_SCRIPT.new()
+	# 세로로 뛰면 위아래로 띄운 줄이 한 줄로 겹친다 → 길에 수직으로 띄운다(값은 add_child 전에)
+	lines.offset_along_normal = true
+	lines.spread_y = JUMP_SPEED_LINE_SPREAD
 	parent.add_child(lines)
-	lines.setup(self, DASH_SPEED_LINE_TIME)
+	lines.setup(self, JUMP_SPEED_LINE_TIME)
 
 ## duration초 동안 날아가는 몸 뒤로 잔상을 남긴다 — 그네에 튕길 때(Swing)·스프링 시소로 높이 튈 때(SpringJumpPad) 맵이 부른다.
 ## 이미 남기는 중이면 남은 시간과 비교해 더 긴 쪽을 쓴다
@@ -1207,7 +1213,10 @@ func _spawn_afterimage(tint: Color, fade: float) -> void:
 		return
 	ghost.set_script(null)
 	parent.add_child(ghost)
-	ghost.z_index = -2   # 본체(0)와 그 손(1)보다 확실히 뒤로
+	# 본체 뒤, 배경 앞 — z는 본체와 같게 두고 트리 순서만 본체 바로 앞으로.
+	# 음수 z로 두면 배경이 z 0인 맵(번화가·헬스장·튜토리얼 숲)에선 배경 그림 뒤로 숨었다
+	ghost.z_index = z_index + visual.z_index
+	parent.move_child(ghost, get_index())
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
 	ghost.modulate = tint
@@ -1262,7 +1271,8 @@ func jump() -> void:
 		velocity.y = air_jump_velocity * jump_multiplier
 	else:
 		return
-	_spawn_jump_wind(air)
+	# 발밑 바람 줄기(_spawn_jump_wind)는 2026-10-06 사용자 요청으로 뺐다 — 하얀 스피드 라인으로 대신한다
+	_spawn_jump_speed_lines()
 	if vault_jump:
 		_play_vault_effect()
 	# 점프하는 순간 몸이 세로로 늘어나는 연출 (그 메서드가 있는 비주얼만)

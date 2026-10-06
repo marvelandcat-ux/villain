@@ -7,7 +7,7 @@ extends CharacterBody2D
 ##
 ## **Fighter가 아니다**(`IljinCrewMember`와 같은 이유) — "fighters" 그룹에 들어가면 카메라·AI·승패 판정이 엄마를 캐릭터로 착각한다.
 ## Hurtbox가 없어서 **맞지 않는다**. 이단 점프는 없다(1단 점프만, 사용자 지정) — 1단으로 못 가는 발판 위는 피난처가 된다.
-## 그림은 임시로 고양이 아줌마 리그(TODO: 엄마 그림이 나오면 Visual 교체)
+## 그림은 `AkpeulleoMomRig`(엄마 스프라이트 머리·몸통 + 손발은 고양이 아줌마 것을 빌려 씀)
 
 ## 다른 문 앞에 도착했다 — 기믹이 그 문을 열고 `vanish()`를 부른다
 signal exit_reached
@@ -19,10 +19,13 @@ const DISPLAY_NAME := "악플러집 엄마"
 const FEET_OFFSET := 30.0
 ## 3타 날아가기 이펙트 (평타 마무리와 같은 것)
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
+## 암전 때 켜지는 노란 십자 눈빛 — 리그 Head 자식으로 붙인다
+const EYE_GLOW := preload("res://maps/MomEyeGlow.gd")
 
-## 이동속도 기준이 되는 스탯 — 실제 걷는 속도는 move_speed x speed_ratio
+## 걷는 속도 = **쫓는 플레이어의 이동속도**(그 캐릭터 스탯 move_speed) x speed_ratio.
+## 쫓는 상대가 없을 때(문으로 돌아갈 때 등)는 마지막으로 쫓던 상대, 그것도 없으면 이 스탯을 쓴다
 @export var base_stats: CharacterStats
-@export var speed_ratio: float = 0.8
+@export var speed_ratio: float = 1.0
 ## 나와서 들어갈 때까지 머무는 시간(초). 이게 지나면 다른 문으로 향한다
 @export var stay_time: float = 16.0
 ## 나오자마자 하는 대사와 말풍선이 떠 있는 시간(초)
@@ -34,8 +37,9 @@ const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 ## --- 등짝 (3타처럼) ---
 @export var damage: int = 20
 ## 앞쪽으로 닿는 거리(px)와 위아래로 인정하는 범위(px)
-@export var attack_range: float = 50.0
-@export var attack_height: float = 45.0
+## (2026-10-06 사용자 요청으로 네모 범위 전체를 1.6배: 50→80, 45→72)
+@export var attack_range: float = 80.0
+@export var attack_height: float = 72.0
 ## 휘두르기 시작부터 맞는 순간까지(초) — **평타 3타 준비시간(0.223초)과 같게**
 @export var strike_delay: float = 0.223
 ## 때린 뒤 굳어 있는 시간 / 다음 등짝까지 쉬는 시간(초)
@@ -47,6 +51,9 @@ const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 @export var launch_stun: float = 0.4
 @export var launch_turns: float = 1.0
 @export var launch_max_scale: float = 2.0
+## 등짝 휘두를 때 말풍선 대사, 동작이 끝나고도 더 떠 있는 시간(초)
+@export var smash_line: String = "등짝 스매쉬!"
+@export var smash_line_linger: float = 0.4
 
 ## 다른 문까지 이 시간(초) 안에 못 가면 그 자리에서 사라진다(길이 막혔을 때 영원히 남지 않게)
 @export var exit_timeout: float = 10.0
@@ -71,6 +78,10 @@ var _attack_cd: float = 0.0
 var _leaping: bool = false
 ## 이미 사라지는 중인지(두 번 사라지지 않게)
 var _vanishing: bool = false
+## 말풍선 대사 번호 — 앞 대사의 닫기 타이머가 새 대사를 일찍 닫지 않게
+var _say_id: int = 0
+## 걷는 속도를 따라갈 상대(마지막으로 쫓던 플레이어)
+var _speed_ref: Fighter = null
 ## 몸 충돌을 이미 꺼 둔 캐릭터들 {instance_id: true}
 var _ignored: Dictionary = {}
 
@@ -88,6 +99,7 @@ func _ready() -> void:
 	floor_snap_length = 12.0
 	floor_constant_speed = true
 	_collect_platforms()
+	_attach_eye_glow()
 	# 방 가운데를 보고 나온다
 	_set_facing(signf(exit_feet.x - global_position.x))
 	modulate.a = 0.0
@@ -95,8 +107,7 @@ func _ready() -> void:
 	if _bubble:
 		# 말풍선이 방 바깥(벽 쪽)으로 삐져나가지 않게 방 안쪽으로 띄운다
 		_bubble.bubble_center = Vector2(absf(_bubble.bubble_center.x) * _facing, _bubble.bubble_center.y)
-		_bubble.say(line)
-		Timers.after(self, line_time, _bubble.close)
+		_say(line, line_time)
 
 func _physics_process(delta: float) -> void:
 	delta = minf(delta, 0.05)
@@ -129,6 +140,17 @@ func _change_state(s: int) -> void:
 	_state_time = 0.0
 	_nav_next = null
 
+## 말풍선에 대사를 띄우고 duration초 뒤 닫는다(그 사이 새 대사가 뜨면 그쪽 타이머가 닫는다)
+func _say(text: String, duration: float) -> void:
+	if _bubble == null:
+		return
+	_say_id += 1
+	var id: int = _say_id
+	_bubble.say(text)
+	Timers.after(self, duration, func() -> void:
+		if id == _say_id:
+			_bubble.close())
+
 ## 문 안으로 사라진다 — 기믹이 문을 연 뒤 부른다
 func vanish() -> void:
 	if _vanishing:
@@ -148,6 +170,8 @@ func _update_chase(delta: float) -> void:
 		_update_attack(delta)
 		return
 	var foe: Fighter = _find_target()
+	if foe:
+		_speed_ref = foe
 	# 라운드가 끝났으면(KO 연출·결과 화면) 더 때리지 않고 서 있는다
 	if foe == null or _round_over():
 		velocity.x = 0.0
@@ -169,10 +193,14 @@ func _start_attack(dir: float) -> void:
 	velocity.x = 0.0
 	_attack_left = strike_delay + attack_recover
 	_struck = false
+	_say(smash_line, strike_delay + attack_recover + smash_line_linger)
 	if _visual and _visual.has_method("play_attack_swing"):
 		# 리그의 "내리치기 시작" 비율로 모션 길이를 역산해 맞는 순간을 strike_delay에 맞춘다(3번째 휘두르기 = 마무리 손)
 		var ratio: float = _visual.strike_time(1.0) if _visual.has_method("strike_time") else 0.4
 		_visual.play_attack_swing(2, strike_delay / maxf(ratio, 0.01))
+		# 평타처럼 휘두르는 손에 하얀 궤적을 남긴다(2026-10-06 사용자 요청) — 스윙을 정한 **다음에** 켠다
+		if _visual.has_method("play_swing_trail"):
+			_visual.play_swing_trail()
 
 func _update_attack(delta: float) -> void:
 	velocity.x = 0.0
@@ -190,7 +218,7 @@ func _strike() -> void:
 			continue
 		var target: Fighter = f
 		var dx: float = target.global_position.x - global_position.x
-		if absf(dx) > attack_range + 10.0 or dx * _facing < -20.0:
+		if absf(dx) > attack_range + 16.0 or dx * _facing < -32.0:
 			continue
 		if absf(target.global_position.y - global_position.y) > attack_height:
 			continue
@@ -444,6 +472,8 @@ func _plan_next(start: Dictionary, goal: Dictionary):
 
 func _walk_speed() -> float:
 	var base: float = base_stats.move_speed if base_stats else 411.75
+	if _speed_ref != null and is_instance_valid(_speed_ref) and _speed_ref.stats:
+		base = _speed_ref.stats.move_speed
 	return base * speed_ratio
 
 func _walk(dir: float) -> void:
@@ -479,3 +509,12 @@ func _ignore_fighter_bodies() -> void:
 		_ignored[id] = true
 		add_collision_exception_with(f)
 		f.add_collision_exception_with(self)
+
+## 눈빛 노드를 리그 머리에 붙인다(평소엔 안 보이고 암전이 시작되면 켜진다)
+func _attach_eye_glow() -> void:
+	var head: Node = _visual.get_node_or_null("Head") if _visual else null
+	if head == null:
+		return
+	var glow: Node2D = EYE_GLOW.new()
+	glow.name = "EyeGlow"
+	head.add_child(glow)

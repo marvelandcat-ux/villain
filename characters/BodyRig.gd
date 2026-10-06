@@ -670,6 +670,11 @@ var held_item_l_thrown: bool = false
 ## 프레임 사이에 끼워 넣는 잔상 수 — 휘두르기가 몇 프레임밖에 안 돼서, 안 채우면 뚝뚝 끊긴 도장처럼 보인다
 @export var smear_fill: int = 2
 
+## --- 평타 하얀 궤적 (2026-10-06) ---
+## 평타 1·2·3타 때 무기 끝(맨손이면 치는 주먹, 발차기면 발)이 지나간 자리에 하얀 띠(combat/SwingTrail.gd)를 남긴다.
+## ComboMeleeAttack이 휘두를 때 `play_swing_trail()`을 불러야 켜진다 — 스킬·카운터의 스윙엔 안 나온다
+@export var swing_trail: bool = true
+
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
 ## 켜면 그 타에서 손 스윙 대신 앞발이 뻗어나가고, 팔은 균형 잡는 동작만 한다
@@ -1168,6 +1173,17 @@ var _smears: Array[Sprite2D] = []
 var _smear_left: Array[float] = []
 ## 잔상 원본별 직전 프레임 자세(리그 기준 변환) — 프레임 사이를 채울 때 쓴다
 var _smear_prev: Dictionary = {}
+## 평타 하얀 궤적 — 지금 긋는 띠(맵에 붙어 있음), 그 띠를 켠 스윙 번호, 따라가는 조각과 그 조각 안의 끝점
+var _swing_trail_node = null
+## play_attack_swing이 불릴 때마다 1씩 는다 — 다음 타가 나가면 앞 타의 띠를 끊는다
+var _swing_serial: int = 0
+## 띠를 켠 스윙 번호(-1 = 꺼짐)
+var _trail_serial: int = -1
+var _trail_src: Node2D = null
+var _trail_tip := Vector2.ZERO
+## 직전 프레임 조각 자세(리그 기준) — 프레임 사이를 채운다(_smear_prev와 같은 이유)
+var _trail_prev := Transform2D()
+var _trail_has_prev: bool = false
 ## 끊어 치기가 출발하는 손 자세 — 앞 타가 끝나기 전에 다음 타가 나가도 손이 제자리로 툭 튀지 않게
 var _swing_from_off := Vector2.ZERO
 var _swing_from_deg: float = 0.0
@@ -1311,6 +1327,10 @@ var _blocked_flash_span: float = 0.0
 
 ## 기본공격이 잠긴 동안 파츠에 붙였다 떼는 빨간 테두리 셰이더
 const BLOCKED_OUTLINE_SHADER := preload("res://combat/BlockedOutline.gdshader")
+## 평타 하얀 궤적(combat/SwingTrail.gd) — 새 class_name이라 무타입 preload로 쓴다
+const SWING_TRAIL_SCRIPT := preload("res://combat/SwingTrail.gd")
+## 프레임 사이에 끼워 넣는 궤적 점 수 — 많을수록 호가 매끈하다
+const SWING_TRAIL_FILL: int = 4
 ## 지금 빨간 테두리가 걸려 있는 파츠들 (끝날 때 material을 떼어내야 해서 들고 있는다)
 var _blocked_outline_parts: Array = []
 ## 머리 떨림 남은 시간과 전체 시간(초)
@@ -1694,6 +1714,7 @@ func _process(delta: float) -> void:
 	_kid_kick_left = maxf(_kid_kick_left - delta, 0.0)
 	_apply_pose(speed_ratio)
 	_update_smear(delta)
+	_update_swing_trail()
 	_update_fan_ghosts(delta)
 
 func _apply_pose(speed_ratio: float) -> void:
@@ -2250,6 +2271,7 @@ func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = fa
 	_spin_now = spin or (spin_hit_index >= 0 and variant == spin_hit_index)
 	_attack_time = _attack_len
 	_attack_variant = variant
+	_swing_serial += 1
 	if _hand_r and _rest_positions.has(_hand_r):
 		# 대치 자세는 공격 자세 위에 따로 더해지므로 출발 자세에서는 빼 둔다 — 안 빼면 두 번 더해져 손이 튄다
 		_swing_from_off = _hand_r.position - _rest_positions[_hand_r] - stance_hand_r_offset * _stance_blend
@@ -2531,6 +2553,129 @@ func _build_smears() -> void:
 		move_child(g, at + i)
 		_smears.append(g)
 		_smear_left.append(0.0)
+
+## 평타 하얀 궤적을 켠다 — ComboMeleeAttack이 play_attack_swing/play_weapon_slash **바로 다음에** 부른다.
+## 예비동작 동안은 기다렸다가 후려치는 구간에만 긋는다(_update_swing_trail)
+## 캐릭터가 아닌 몸(악플러집 엄마 등)도 휘두를 때 직접 부르면 된다
+func play_swing_trail() -> void:
+	if not swing_trail or _swing_trail_body() == null:
+		return
+	_end_swing_trail()
+	_trail_serial = _swing_serial
+
+## 이 리그를 Visual로 쓰는 몸 — 캐릭터면 그 캐릭터, 아니면(맵 기믹 엄마 등) 리그의 부모
+func _swing_trail_body() -> Node2D:
+	if _fighter != null and is_instance_valid(_fighter):
+		return _fighter
+	return get_parent() as Node2D
+
+## 궤적을 그을 구간인지 — 잔상(_smear_window)과 같은 후려치는 구간. 회전 타는 몸이 돌며 후려치는 동안
+func _swing_trail_window() -> bool:
+	if _attack_time <= 0.0:
+		return false
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	if _spin_now:
+		return progress >= spin_end * 0.45 and progress <= spin_end + 0.06
+	var end: float = ATTACK_STRIKE_END
+	if attack_snap:
+		end = ATTACK_STRIKE_START + (ATTACK_STRIKE_END - ATTACK_STRIKE_START) * snap_strike_reach
+	return progress >= ATTACK_STRIKE_START and progress <= end + 0.06
+
+## 궤적이 따라갈 조각과 그 조각 안의 끝점(조각 로컬 좌표)을 고른다.
+## 발차기·드롭킥 = 오른발 가운데 / 무기를 든 손으로 치면 = 무기 그림에서 손잡이(손)에서 가장 먼 모서리 / 맨손 = 치는 주먹 가운데
+func _pick_swing_trail_source() -> void:
+	_trail_src = null
+	var kick: bool = (attack_kick_hit >= 0 and _attack_variant == attack_kick_hit) or _dk_blend > 0.001
+	if kick and _foot_r:
+		_trail_src = _foot_r
+		_trail_tip = _foot_r.get_rect().get_center()
+		return
+	var hand: Sprite2D = _attack_hand()
+	if hand == _hand_r and _hand_r_hold and _hand_r_hold.visible:
+		# 손에 든 그림 중 가장 큰 것(무기 본체)
+		var item: Sprite2D = null
+		var best: float = 0.0
+		for child in _hand_r_hold.get_children():
+			if child is Sprite2D and child.visible and child.texture:
+				var area: float = child.get_rect().get_area() * absf(child.scale.x * child.scale.y)
+				if area > best:
+					best = area
+					item = child
+		if item:
+			_trail_src = item
+			_trail_tip = _far_corner_from_grip(item)
+			return
+	if hand:
+		_trail_src = hand
+		_trail_tip = hand.get_rect().get_center()
+
+## 무기 그림에서 **보이는 영역**의 네 모서리 중 손잡이(HandRHold 원점)에서 가장 먼 곳 — 무기 끝으로 쓴다(그림 로컬 좌표)
+func _far_corner_from_grip(item: Sprite2D) -> Vector2:
+	var rect: Rect2 = item.get_rect()
+	if not item.region_enabled:
+		var opaque: Rect2 = _opaque_rect_of(item.texture)
+		var tex_size: Vector2 = item.texture.get_size()
+		var x: float = tex_size.x - opaque.end.x if item.flip_h else opaque.position.x
+		var y: float = tex_size.y - opaque.end.y if item.flip_v else opaque.position.y
+		rect = Rect2(rect.position + Vector2(x, y), opaque.size)
+	var grip: Vector2 = item.transform.affine_inverse() * Vector2.ZERO
+	var best := rect.position
+	for c in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
+		if c.distance_squared_to(grip) > best.distance_squared_to(grip):
+			best = c
+	return best
+
+## 매 프레임(자세 계산 뒤): 후려치는 구간이면 끝점 자리를 띠에 더한다. 다음 타가 나가거나 구간이 끝나면 띠를 놓는다
+func _update_swing_trail() -> void:
+	if _trail_serial < 0:
+		return
+	if _trail_serial != _swing_serial or _attack_time <= 0.0:
+		_end_swing_trail()
+		return
+	if not _swing_trail_window():
+		# 예비동작 중이면 기다리고, 이미 긋고 있었으면(구간이 끝났으면) 놓는다
+		if _swing_trail_node != null:
+			_end_swing_trail()
+		return
+	if _swing_trail_node == null:
+		var body: Node2D = _swing_trail_body()
+		var map: Node = body.get_parent() if body != null else null
+		if map == null:
+			_end_swing_trail()
+			return
+		_pick_swing_trail_source()
+		if _trail_src == null:
+			_end_swing_trail()
+			return
+		var trail = SWING_TRAIL_SCRIPT.new()
+		map.add_child(trail)
+		# 캐릭터 뒤, 배경 앞 — z는 캐릭터와 같게, 트리 순서만 캐릭터 바로 앞(대시 잔상과 같은 방식)
+		trail.z_index = body.z_index
+		map.move_child(trail, body.get_index())
+		_swing_trail_node = trail
+		_trail_has_prev = false
+	if not is_instance_valid(_trail_src) or not is_instance_valid(_swing_trail_node):
+		_end_swing_trail()
+		return
+	# 리그 기준 변환으로 저장·보간한다 — 휘두르기가 몇 프레임뿐이라 사이를 안 채우면 띠가 꺾은선이 된다
+	var rig_xf: Transform2D = get_global_transform()
+	var now: Transform2D = rig_xf.affine_inverse() * _trail_src.get_global_transform()
+	if _trail_has_prev:
+		for k in range(1, SWING_TRAIL_FILL + 1):
+			var w: float = float(k) / float(SWING_TRAIL_FILL + 1)
+			_swing_trail_node.add_point(rig_xf * (_trail_prev.interpolate_with(now, w) * _trail_tip))
+	_swing_trail_node.add_point(rig_xf * (now * _trail_tip))
+	_trail_prev = now
+	_trail_has_prev = true
+
+## 지금 띠를 놓는다 — 띠는 남은 꼬리가 사라질 때까지 맵에 남았다가 스스로 지워진다
+func _end_swing_trail() -> void:
+	if _swing_trail_node != null and is_instance_valid(_swing_trail_node):
+		_swing_trail_node.finish()
+	_swing_trail_node = null
+	_trail_serial = -1
+	_trail_src = null
+	_trail_has_prev = false
 
 ## 스윙 타 번호(_attack_variant)에 따른 감기 각도/후리기 각도/손 경로.
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.

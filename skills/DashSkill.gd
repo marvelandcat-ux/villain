@@ -18,8 +18,9 @@ extends Skill
 @export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
 ## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출).
 ## 2026-10-01 사용자 요청으로 껐다가 2026-10-05 하얀 스피드 라인(combat/SpeedLines.gd)으로 다시 켬 —
-## 출발점부터 지나간 자리까지 맵에 고정된 줄이 남는다(출발 바람 takeoff_wind와 같이 나온다)
-@export var wind_lines: bool = true
+## 출발점부터 지나간 자리까지 맵에 고정된 줄이 남는다(출발 바람 takeoff_wind와 같이 나온다).
+## 2026-10-06 사용자 요청으로 다시 끔 — 하얀 줄은 점프에만 남긴다(Fighter._spawn_jump_speed_lines)
+@export var wind_lines: bool = false
 ## 뒷바퀴 자리에 점프할 때와 같은 바람 줄기(combat/JumpWind.gd)를 진행 방향으로 뻗는다 — 출발 순간 + 돌진 내내 takeoff_wind_interval마다(2026-10-01 사용자 요청)
 @export var takeoff_wind: bool = true
 ## 돌진 중 출발 바람을 몇 초마다 다시 뻗을지. 0이면 출발 순간 한 번만
@@ -295,9 +296,10 @@ func _spawn_afterimage(fighter: Fighter) -> void:
 	# 잔상은 복제한 그 순간의 모습으로 고정한다 — 스크립트(BodyRig의 매 프레임 자세 계산)가 돌지 않게 뗀다
 	ghost.set_script(null)
 	parent.add_child(ghost)
-	# 잔상은 본체보다 뒤에 그려져야 한다 — 나중에 add_child되면 기본적으로 앞에 겹치므로 z를 낮춘다.
-	# 잔상 내부 손(z_index=1, 상대값)까지 확실히 뒤로 보내려고 -2로 둔다 (본체는 z 0, 손 z 1)
-	ghost.z_index = -2
+	# 본체 뒤, 배경 앞 — z는 본체와 같게 두고 트리 순서만 본체 바로 앞으로.
+	# 음수 z로 두면 배경이 z 0인 맵(번화가·헬스장·튜토리얼 숲)에선 배경 그림 뒤로 숨었다
+	ghost.z_index = fighter.z_index + visual.z_index
+	parent.move_child(ghost, fighter.get_index())
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
 	ghost.modulate.a = 0.45
