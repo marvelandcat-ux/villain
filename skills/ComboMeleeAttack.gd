@@ -2,9 +2,9 @@ class_name ComboMeleeAttack
 extends MeleeAttack
 
 ## 히트 확인식 3타 기본 콤보.
-## - 누르면 평타가 나간다. 그 스윙의 결과가 나올 때까지 다음 입력은 "예약"만 해둔다.
-## - 맞으면 → 예약된 입력이 있으면 즉시 다음 타로 이어진다(최대 3타). 늦게 눌러도 chain_window 안이면 이어진다.
-## - 어느 타에서든 헛발질(빗맞음) 하면 → 예약 입력은 버려지고, 기본공격 쿨타임(cooldown)이 돌고 콤보가 1타로 리셋된다.
+## - 누르면 평타가 나간다. 그 스윙의 결과가 나올 때까지 들어온 입력은 버린다(선입력 없음).
+## - 맞으면 → chain_window 안에 다시 눌러야 다음 타로 이어진다(최대 3타).
+## - 어느 타에서든 헛발질(빗맞음) 하면 → 기본공격 쿨타임(cooldown)이 돌고 콤보가 1타로 리셋된다.
 ##   (그래서 헛치고 연타해도 2·3타가 나가지 않는다. 3타를 다 맞추려면 날아가는 상대를 따라가는 컨트롤이 필요하다.)
 ## - 3타까지 다 맞추면 마무리 회복 쿨이 붙는다.
 ##
@@ -231,12 +231,10 @@ const DROPKICK_MAX_AIR := 1.5
 
 ## 지금 낼 타 (0=1타, 1=2타, 2=3타)
 var _step: int = 0
-## 지금 스윙이 진행 중인지 (발동~명중/헛발 판정까지). 이 동안 들어온 입력은 예약된다
+## 지금 스윙이 진행 중인지 (발동~명중/헛발 판정까지). 이 동안 들어온 입력은 버린다(선입력 없음)
 var _swinging: bool = false
 ## 이번 스윙의 판정이 끝났는지 (명중/헛발을 두 번 처리하지 않도록)
 var _resolved: bool = false
-## 스윙 중에 다음 타 입력이 들어왔는지 (맞으면 즉시 다음 타로 소모, 헛발이면 버림)
-var _queued: bool = false
 ## 지금 스윙이 몇 번째 타였는지
 var _swing_step: int = 0
 ## 맞은 뒤 다음 입력을 기다리는 여유 시간
@@ -388,8 +386,8 @@ func _on_hitbox_connected(victim: Node) -> void:
 		_hold_in_flurry(victim)
 		return
 	if _swinging and not _resolved:
-		# **_resolve보다 먼저 부른다** — _resolve는 예약 입력이 있으면 그 자리에서 다음 타를 시작하면서
-		# _swing_step을 바꿔버려, 뒤에 부르면 "몇 번째 타였는지"를 잘못 보게 된다
+		# **_resolve보다 먼저 부른다** — (예전엔 _resolve가 다음 타를 바로 시작하며
+		# _swing_step을 바꿨다) 뒤에 부르면 "몇 번째 타였는지"를 잘못 보게 된다
 		_hold_for_next_hit(victim)
 		_launch_finisher(victim)
 		# **넉백을 다 먹인 뒤** 알린다 — 연출이 "날아가는 동안"을 잡으려면 속도가 이미 실려 있어야 한다.
@@ -538,7 +536,7 @@ func _spawn_break_debris() -> void:
 		elif piece is Node2D:
 			piece.global_position = hitbox.global_position
 
-## 스윙 중(예약용)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다.
+## 스윙 중(입력은 use()에서 버림)이거나 이어치기 여유가 있거나 쿨이 없으면 입력을 받아준다.
 ## 그랩 충전이 걸려 있으면 쿨과 상관없이 회전 난무를 받아준다(끌어온 직후 바로 나가야 하므로)
 func can_use() -> bool:
 	# 난무 중에는 쿨과 상관없이 누르는 대로 받는다
@@ -559,9 +557,8 @@ func use(fighter: Fighter) -> void:
 		fighter.custom_data["keyboard_spin_charged"] = false
 		_start_spin_flurry(fighter)
 		return
-	# 스윙 판정이 아직 안 났으면, 지금 입력을 예약만 해둔다 (맞으면 다음 타, 헛발이면 버림)
+	# 스윙 판정이 아직 안 났으면 입력을 버린다 — 선입력 없음, 맞은 뒤 다시 눌러야 다음 타
 	if _swinging:
-		_queued = true
 		return
 	if not can_use():
 		return
@@ -626,7 +623,6 @@ func _process(delta: float) -> void:
 func _begin_swing(fighter: Fighter, step: int) -> void:
 	_swinging = true
 	_resolved = false
-	_queued = false
 	_chain_left = 0.0
 	_swing_step = step
 	_fire(fighter, step)
@@ -652,14 +648,11 @@ func _resolve(hit: bool) -> void:
 		if not _is_final(_swing_step):
 			_step = _swing_step + 1
 			cooldown_left = 0.0
-			if _queued:
-				_begin_swing(_fighter, _step)   # 예약된 입력이 있으면 즉시 다음 타
-			else:
-				_chain_left = chain_window       # 늦게 눌러도 이어지도록 창을 연다
+			_chain_left = chain_window       # 맞은 뒤 다음 입력을 기다리는 창을 연다
 		else:
 			_reset(effective_cooldown())   # 3타까지 다 맞춤 → 마무리 회복 쿨
 	else:
-		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋 (예약 입력은 버림)
+		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋
 		_reset(_effective_miss_cooldown())
 
 ## 헛발질했을 때 실제로 돌 쿨타임.
@@ -703,6 +696,9 @@ func _fire(fighter: Fighter, step: int) -> void:
 			_armed_arc_delay = full * 0.4
 		else:
 			visual.play_attack_swing(step, _final_swing_duration(step, visual))
+		# 평타 1·2·3타의 하얀 휘두르기 궤적(2026-10-06 사용자 요청) — 스윙을 정한 **다음에** 켠다
+		if visual.has_method("play_swing_trail"):
+			visual.play_swing_trail()
 	var is_final: bool = _is_final(step)
 	# 마무리 타가 드롭킥이면 판정보다 먼저 뛰어오른다 — 뛰는 동안 두 발이 뻗고 그 뒤에 판정이 켜진다
 	if dropkick_finisher and is_final:
@@ -833,7 +829,6 @@ func report_external_hit(victim: Node) -> void:
 func _reset(cd: float) -> void:
 	_step = 0
 	_last_pushback = 0.0
-	_queued = false
 	_chain_left = 0.0
 	cooldown_left = cd
 
@@ -887,7 +882,6 @@ func _start_armed_flurry(fighter: Fighter) -> void:
 	# 콤보 상태는 깨끗이 — 난무가 끝날 때 _reset이 1타로 되돌린다
 	_swinging = false
 	_resolved = true
-	_queued = false
 	_active_left = 0.0
 	_chain_left = 0.0
 	cooldown_left = 0.0
@@ -1051,7 +1045,6 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 	# 진행 중이던 콤보 상태를 깨끗이 정리한다
 	_swinging = false
 	_resolved = true
-	_queued = false
 	_active_left = 0.0
 	_chain_left = 0.0
 	_step = 0

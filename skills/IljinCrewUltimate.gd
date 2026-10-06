@@ -16,8 +16,8 @@ extends Skill
 @export var side_offset: float = 95.0
 ## 투명(0) -> 불투명(1)이 되는 데 걸리는 시간(초)
 @export var fade_in: float = 0.55
-## 일진보다 앞에 그릴지 뒤에 그릴지 (-1이면 뒤, 0이면 같은 층)
-@export var crew_z_index: int = -1
+## 패거리를 그리는 층 — 캐릭터와 같은 층(0). 소환물은 전부 캐릭터와 같은 층에 그린다(2026-10-04 확정)
+@export var crew_z_index: int = 0
 
 func _execute(fighter: Fighter) -> void:
 	# **화면 기준으로 친구가 늘 왼쪽, 여자친구가 늘 오른쪽이다** — 일진이 어느 쪽을 보든 자리는 고정이라

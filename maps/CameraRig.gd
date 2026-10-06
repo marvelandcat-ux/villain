@@ -16,6 +16,15 @@ extends Camera2D
 @export var ground_y: float = 280.0
 ## 지면 아래로 화면에 남겨둘 흙 두께(화면 px, lock_ground_to_bottom일 때만 쓴다)
 @export var ground_margin_px: float = 56.0
+## 켜면 화면이 ceiling_y(지붕 윗면) ~ floor_bottom_y(땅 그림 아래) 사이만 보여 준다(악플러의 집).
+## 멀리 물러나서 화면이 그 높이보다 커지면 카메라를 그 사이 한가운데에 두고, 위아래 남는 부분은 **검은 띠**(레터박스)로 가린다.
+## 검은 띠는 지붕 위·땅 아래에 깔아 둔 월드 사각형이라 HUD는 안 덮는다.
+## Camera2D의 limit_top/limit_bottom을 안 쓰는 이유: 위아래 한계가 겹치면 한쪽이 이겨서 가운데 정렬이 깨진다
+@export var use_ceiling: bool = false
+## 지붕 윗면 y (use_ceiling일 때만 쓴다)
+@export var ceiling_y: float = -400.0
+## 화면 아래 끝이 내려갈 수 있는 가장 아래 y = 땅 그림 아래 (use_ceiling일 때만 쓴다)
+@export var floor_bottom_y: float = 354.0
 ## 벽 바깥이 안 보이도록 카메라 이동 범위를 제한할지. 벽이 없는 링아웃형 맵에서는 꺼도 된다
 @export var clamp_to_walls: bool = true
 ## 한계선을 벽 바깥면에서 더 안쪽으로 당기고 싶을 때 쓰는 여유 폭(px)
@@ -74,6 +83,9 @@ var _pan_bottom_px: float = 36.0
 ## 벽 한계선이 없는 맵에서 흐를 때 기준으로 삼는 처음 x
 var _pan_origin_x: float = 0.0
 
+## use_ceiling일 때 지붕 위·땅 아래를 덮는 검은 띠(카메라 자식이지만 top_level이라 월드에 고정)
+var _letterbox: Node2D = null
+
 ## 가장 많이 물러날 수 있는 배율. 이보다 작아지면(= 더 넓게 보면) 벽 밖이 화면에 들어온다.
 ## 벽 사이가 화면보다 넓은 맵(놀이터)에서는 1.0보다 작아지고, 좁은 맵에서는 1.0보다 커진다
 var _min_zoom: float = 1.0
@@ -93,6 +105,8 @@ func _ready() -> void:
 	zoom = Vector2(_authored_zoom, _authored_zoom)
 	_min_zoom = _authored_zoom
 	_max_zoom = _authored_zoom * max_close_zoom
+	if use_ceiling:
+		_build_letterbox()
 	if not clamp_to_walls:
 		return
 	_apply_wall_limits()
@@ -120,7 +134,9 @@ func _process(delta: float) -> void:
 func _follow_aim(a: Vector2, b: Vector2) -> Vector2:
 	var mid: Vector2 = (a + b) / 2.0
 	mid.y -= _arena_look_up
-	mid.y = clampf(mid.y, min_y, _lowest_center_y())
+	# 위쪽 한계는 `_highest_center_y()`다(mtem, 2026-10-06 머지) — 지붕을 보는 맵에서
+	# `min_y`로 자르면 천장 위 빈 곳까지 올라간다. 지붕을 안 쓰는 맵에선 그냥 min_y를 돌려준다
+	mid.y = clampf(mid.y, _highest_center_y(), _lowest_center_y())
 	return mid
 
 ## 따라갈 자리로 **곧바로** 옮긴다 — 캐릭터가 순간이동했을 때(헬스장 층 넘나들기) 화면이 주욱 끌려가지 않게.
@@ -160,7 +176,7 @@ func _update_focus(delta: float) -> bool:
 	w = clampf(w, 0.0, 1.0)
 	w = w * w * (3.0 - 2.0 * w)
 	var aim: Vector2 = _focus_target.global_position
-	aim.y = clampf(aim.y, min_y, _lowest_center_y())
+	aim.y = clampf(aim.y, _highest_center_y(), _lowest_center_y())
 	global_position = global_position.lerp(aim, clampf(follow_speed * 2.0 * delta, 0.0, 1.0))
 	var want: float = lerpf(_focus_base_zoom, _focus_base_zoom * _focus_zoom_mul, w)
 	zoom = Vector2(want, want)
@@ -240,11 +256,56 @@ func _update_pan(delta: float) -> void:
 ## 배율이 작을수록(멀리 볼수록) 화면 반 높이가 월드에서 길어지므로 중심을 그만큼 더 올려야 한다.
 ## max_y는 여전히 넘지 않는다(가까이 당겼을 때 계산값이 max_y보다 아래로 가도 max_y에서 멈춤)
 func _lowest_center_y() -> float:
-	if not lock_ground_to_bottom:
-		return max_y
-	var half_h: float = get_viewport_rect().size.y * 0.5
-	var y: float = ground_y - (half_h - ground_margin_px * view_scale) / maxf(zoom.y, 0.01)
-	return clampf(y, min_y, max_y)
+	var box: float = _letterbox_center_y()
+	if not is_nan(box):
+		return box
+	var y: float = max_y
+	if lock_ground_to_bottom:
+		var half_h: float = get_viewport_rect().size.y * 0.5
+		y = clampf(ground_y - (half_h - ground_margin_px * view_scale) / maxf(zoom.y, 0.01), min_y, max_y)
+	if use_ceiling:
+		# 땅 그림 아래(floor_bottom_y)가 화면 아래로 안 드러나게
+		y = minf(y, floor_bottom_y - get_viewport_rect().size.y * 0.5 / maxf(zoom.y, 0.01))
+	return y
+
+## 카메라 중심이 올라갈 수 있는 가장 위 y — 보통은 min_y.
+## use_ceiling이면 "화면 위쪽 끝이 지붕에 닿는 위치"를 지금 배율로 계산하되, 가장 아래(_lowest_center_y)는 넘지 않는다(땅 우선)
+func _highest_center_y() -> float:
+	if not use_ceiling:
+		return min_y
+	var box: float = _letterbox_center_y()
+	if not is_nan(box):
+		return box
+	var half_h: float = get_viewport_rect().size.y * 0.5 / maxf(zoom.y, 0.01)
+	return minf(maxf(min_y, ceiling_y + half_h), _lowest_center_y())
+
+## 화면이 지붕~땅 높이보다 커서 검은 띠가 필요하면 그 사이 한가운데 y, 아니면 NAN
+func _letterbox_center_y() -> float:
+	if not use_ceiling:
+		return NAN
+	var view_h: float = get_viewport_rect().size.y / maxf(zoom.y, 0.01)
+	if view_h <= floor_bottom_y - ceiling_y:
+		return NAN
+	return (ceiling_y + floor_bottom_y) * 0.5
+
+## 지붕 위·땅 아래에 아주 큰 검은 사각형을 깐다 — 카메라가 그 사이 한가운데를 비추면 위아래로 같은 두께의 띠가 된다.
+## 맨 앞(z 4000)에 그리고, 조명(CanvasModulate·Light2D)을 안 받게 unshaded
+func _build_letterbox() -> void:
+	_letterbox = Node2D.new()
+	_letterbox.name = "Letterbox"
+	_letterbox.top_level = true
+	_letterbox.z_as_relative = false
+	_letterbox.z_index = 4000
+	var mat := CanvasItemMaterial.new()
+	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	const FAR: float = 100000.0
+	for band in [Rect2(-FAR, ceiling_y - FAR, FAR * 2.0, FAR), Rect2(-FAR, floor_bottom_y, FAR * 2.0, FAR)]:
+		var poly := Polygon2D.new()
+		poly.color = Color.BLACK
+		poly.material = mat
+		poly.polygon = PackedVector2Array([band.position, Vector2(band.end.x, band.position.y), band.end, Vector2(band.position.x, band.end.y)])
+		_letterbox.add_child(poly)
+	add_child(_letterbox)
 
 ## 두 캐릭터가 다 들어오는 배율을 구해서 부드럽게 따라간다.
 ## _min_zoom(벽 밖이 안 보이는 한계 배율)보다 더 물러나지는 않는다 — 더 넓게 보면 벽 너머가 드러난다.
@@ -333,7 +394,7 @@ func enter_arena(area: Rect2, look_at: Vector2, close_zoom: float = 0.0, look_up
 	if not _arena_active:
 		_arena_saved = {
 			"limits": [limit_left, limit_top, limit_right, limit_bottom],
-			"min_y": min_y, "max_y": max_y, "lock": lock_ground_to_bottom,
+			"min_y": min_y, "max_y": max_y, "lock": lock_ground_to_bottom, "ceiling": use_ceiling,
 			"min_zoom": _min_zoom, "max_zoom": _max_zoom,
 			"pos": global_position, "zoom": zoom,
 		}
@@ -346,6 +407,9 @@ func enter_arena(area: Rect2, look_at: Vector2, close_zoom: float = 0.0, look_up
 	min_y = area.position.y
 	max_y = area.end.y
 	lock_ground_to_bottom = false
+	use_ceiling = false
+	if _letterbox:
+		_letterbox.visible = false
 	var view: Vector2 = get_viewport_rect().size
 	_min_zoom = maxf(view.x / area.size.x, view.y / area.size.y) * zoom_boost
 	_max_zoom = maxf(_authored_zoom, _min_zoom) * max_close_zoom
@@ -370,11 +434,14 @@ func leave_arena(look_at: Vector2) -> void:
 	min_y = _arena_saved["min_y"]
 	max_y = _arena_saved["max_y"]
 	lock_ground_to_bottom = _arena_saved["lock"]
+	use_ceiling = _arena_saved["ceiling"]
+	if _letterbox:
+		_letterbox.visible = use_ceiling
 	_min_zoom = _arena_saved["min_zoom"]
 	_max_zoom = _arena_saved["max_zoom"]
 	var z: float = clampf(zoom.x, _min_zoom, _max_zoom)
 	zoom = Vector2(z, z)
-	global_position = Vector2(look_at.x, clampf(look_at.y, min_y, _lowest_center_y()))
+	global_position = Vector2(look_at.x, clampf(look_at.y, _highest_center_y(), _lowest_center_y()))
 	reset_smoothing()
 	if clamp_to_walls:
 		_apply_wall_limits()

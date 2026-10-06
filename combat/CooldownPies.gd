@@ -68,10 +68,13 @@ var _pies: Array[Pie] = []
 var _shown: Array[Pie] = []
 ## 지금 놓인 쪽(-1 = 왼쪽, 1 = 오른쪽). 방향을 바꾸면 반대편으로 미끄러져 간다
 var _side: float = -1.0
+## 맵 암전(`Blackout.gd`) 중이면 true — 방어·대시·빨간 X(패링 잠금)를 숨긴다. 금색(궁 쓰는 중)은 그대로
+var _blackout_hidden: bool = false
 
 func _ready() -> void:
 	z_index = 6   # 보호막(5)보다 앞
 	visible = false
+	add_to_group("cooldown_pies")
 	# 맵 조명(CanvasModulate·PointLight2D)에 안 어두워지게 — 어느 맵에서든 같은 색으로 보이는 UI
 	var mat := CanvasItemMaterial.new()
 	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
@@ -121,16 +124,29 @@ func _process(delta: float) -> void:
 			pie.pop_left = maxf(pie.pop_left - delta, 0.0)
 	# 다 끝난 파이를 빼고, 남은 것들은 위로 미끄러져 슬롯을 채운다
 	_shown = _shown.filter(func(p: Pie) -> bool: return p.cooling or p.pop_left > 0.0)
+	var drawn := _drawn_pies()
 	var k: float = 1.0 - exp(-slot_follow_speed * delta)
-	for i in _shown.size():
-		_shown[i].slot_pos = lerpf(_shown[i].slot_pos, float(i), k)
-	visible = not _shown.is_empty()
+	for i in drawn.size():
+		drawn[i].slot_pos = lerpf(drawn[i].slot_pos, float(i), k)
+	visible = not drawn.is_empty()
 	if visible:
 		queue_redraw()
 
 func _draw() -> void:
-	for pie in _shown:
+	for pie in _drawn_pies():
 		_draw_pie(pie)
+
+## 암전이 시작/끝날 때 `Blackout.gd`가 그룹 호출로 부른다
+func set_blackout_hidden(value: bool) -> void:
+	_blackout_hidden = value
+
+## 지금 실제로 그릴 파이들 — 암전 중엔 궁 칸만 남긴다(숨긴 칸이 슬롯을 차지하지 않게 따로 뽑는다)
+func _drawn_pies() -> Array[Pie]:
+	if not _blackout_hidden:
+		return _shown
+	var out: Array[Pie] = []
+	out.assign(_shown.filter(func(p: Pie) -> bool: return p.method == "ultimate_timer_ratio"))
+	return out
 
 func _draw_pie(pie: Pie) -> void:
 	var center := Vector2(offset.x * _side, offset.y + pie.slot_pos * slot_spacing)

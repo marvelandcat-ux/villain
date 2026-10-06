@@ -51,13 +51,13 @@ func _execute(fighter: Fighter) -> void:
 	# 두 손이 아이를 받치고 있는 동안은 나도 평타를 못 쓴다
 	if lock_own_attack:
 		fighter.lock_basic_attack(hug_time + maxf(hug_hold, 0.05))
-	var tree: SceneTree = fighter.get_tree()
-	if tree == null or hug_time <= 0.02:
+	if hug_time <= 0.02:
 		_scream(fighter)
 		return
-	# 품에 안기는 동안 기다렸다가 터뜨린다 — 옆에서 걷다가 소리부터 나면 박자가 안 맞는다
-	tree.create_timer(hug_time).timeout.connect(func(): _scream(fighter))
-	tree.create_timer(hug_time + maxf(hug_hold, 0.05)).timeout.connect(func(): _hug(fighter, false))
+	# 품에 안기는 동안 기다렸다가 터뜨린다 — 옆에서 걷다가 소리부터 나면 박자가 안 맞는다.
+	# 스킬 자식 Timer라 그 사이 라운드가 끝나 캐릭터가 지워져도 콜백이 안 불린다
+	Timers.after(self, hug_time, func(): _scream(fighter))
+	Timers.after(self, hug_time + maxf(hug_hold, 0.05), func(): _hug(fighter, false))
 
 ## **실제로 소리를 지르는 순간** — 우는 얼굴, 빛줄기, 상대 기본공격 잠금, 화면 확대가 여기서 한꺼번에 일어난다
 func _scream(fighter: Fighter) -> void:
@@ -139,8 +139,7 @@ func _cry(fighter: Fighter) -> void:
 	if visual == null or not visual.has_method("set_kid_crying"):
 		return
 	visual.set_kid_crying(true)
-	var timer: SceneTreeTimer = fighter.get_tree().create_timer(maxf(cry_time, 0.05))
-	timer.timeout.connect(func():
+	Timers.after(self, maxf(cry_time, 0.05), func():
 		if is_instance_valid(visual) and visual.has_method("set_kid_crying"):
 			visual.set_kid_crying(false))
 

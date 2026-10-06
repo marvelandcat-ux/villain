@@ -297,7 +297,8 @@ func _unlock_fighters() -> void:
 			continue
 		if f.has_method("end_busy"):
 			f.end_busy()
-		f.grant_invincibility(0.0)
+		# grant_invincibility(0.0)은 0초 타이머 에러가 나므로 깃발을 바로 내린다
+		f.is_invincible = false
 
 ## 깨지는 연출 ~ 다시 나타날 때까지 둘 다 무적·행동 불가(깨지는 화면 뒤에서 맞거나 스킬이 나가지 않게)
 func _lock_fighters(time: float) -> void:

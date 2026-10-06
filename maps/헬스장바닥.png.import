@@ -2,16 +2,26 @@
 
 importer="texture"
 type="CompressedTexture2D"
+<<<<<<<< HEAD:maps/헬스장바닥.png.import
 uid="uid://bplr4e31xxj3u"
 path="res://.godot/imported/헬스장바닥.png-99c02b06e144cdfbcd12c1d3a43a71ce.ctex"
+========
+uid="uid://dtomm4as2rguy"
+path="res://.godot/imported/몸통.png-8c0b191de005fe39f2ae1bb73eef4f69.ctex"
+>>>>>>>> origin/mtemtemtemte:sprite/body/몸통.png.import
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
+<<<<<<<< HEAD:maps/헬스장바닥.png.import
 source_file="res://maps/헬스장바닥.png"
 dest_files=["res://.godot/imported/헬스장바닥.png-99c02b06e144cdfbcd12c1d3a43a71ce.ctex"]
+========
+source_file="res://sprite/body/몸통.png"
+dest_files=["res://.godot/imported/몸통.png-8c0b191de005fe39f2ae1bb73eef4f69.ctex"]
+>>>>>>>> origin/mtemtemtemte:sprite/body/몸통.png.import
 
 [params]
 

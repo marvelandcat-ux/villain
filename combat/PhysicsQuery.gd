@@ -12,8 +12,11 @@ static func raycast_ignoring_fighters(ctx: Node, from: Vector2, to: Vector2) -> 
 	var query := PhysicsRayQueryParameters2D.create(from, to)
 	query.collide_with_areas = false
 	var excludes: Array[RID] = []
-	for f in ctx.get_tree().get_nodes_in_group("fighters"):
-		excludes.append(f.get_rid())
+	# 소환물(고양이·일진 패거리)도 캐릭터와 같은 레이어라 같이 통과시킨다 — 안 빼면 투사체·토 기둥이 고양이 몸에 막힌다
+	for group in ["fighters", "catmom_cats", "iljin_crew"]:
+		for f in ctx.get_tree().get_nodes_in_group(group):
+			if f is PhysicsBody2D:
+				excludes.append(f.get_rid())
 	query.exclude = excludes
 	return ctx.get_world_2d().direct_space_state.intersect_ray(query)
 

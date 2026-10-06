@@ -1068,8 +1068,9 @@ func _want_skill(skill: Skill) -> bool:
 					return level and d < 150.0
 			return true
 		"CatSelectSkill":
-			# 고양이 종류별 능력이 아직 없어 고를 이유가 없다(TODO: 능력이 정해지면 상황별로)
-			return false
+			# 체력이 깎였으면 흰(회복), 멀면 검은(돌진), 가까우면 주황(할퀴기) — 원하는 종류가 될 때까지 누른다
+			var desired: int = 2 if hp < 0.5 else (0 if d > 250.0 else 1)
+			return int(fighter.custom_data.get("cat_kind", 0)) != desired
 		"AoeAttack":
 			var r: float = float(skill.get("radius"))
 			return open and d < r * 0.9 and dy < r

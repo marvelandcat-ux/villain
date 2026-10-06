@@ -18,7 +18,8 @@ var immune_source: Node = null
 ## **주인이 누구냐로 두 갈래가 갈린다:** source_fighter가 있으면 캐릭터의 공격이라 방어로 막히고,
 ## null이면 맵 기믹(지나가는 열차 등)이라 `take_map_damage()`로 보내 방어를 뚫는다.
 ## 주인이 있었는데 해제된 경우는 Hitbox가 먼저 걸러내므로 여기까지 null로 오지 않는다
-func take_hit(damage: int, knockback: Vector2, source_fighter: Fighter, pop_override: float = -1.0) -> bool:
+## attacker는 실제로 때린 몸(`Hitbox.get_attacker()`, 소환물일 수 있음) — 카운터 반격이 이쪽으로 간다
+func take_hit(damage: int, knockback: Vector2, source_fighter: Fighter, pop_override: float = -1.0, attacker: Node = null) -> bool:
 	if source_fighter == fighter:
 		return false
 	if immune_source != null and source_fighter == immune_source:
@@ -27,7 +28,7 @@ func take_hit(damage: int, knockback: Vector2, source_fighter: Fighter, pop_over
 		fighter.take_map_damage(damage, knockback, pop_override)
 	else:
 		# 카운터 자세(CounterSkill)에 걸렸으면 맞지 않은 것으로 친다 — 데미지 숫자·스파크가 안 뜨고 때린 쪽은 헛친 게 된다
-		if fighter.has_method("try_counter") and fighter.try_counter():
+		if fighter.has_method("try_counter") and fighter.try_counter(attacker if attacker != null else source_fighter):
 			return false
 		fighter.take_damage(damage, knockback, pop_override)
 	return true

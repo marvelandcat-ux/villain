@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://s5p768ya8xit"]
 
-[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/금쪽이/축법소년 몸.png" id="2_body"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
-[ext_resource type="Texture2D" uid="uid://c3rrljta7b1s3" path="res://sprite/축법소년/달리는 축법소년 표정.png" id="3_irdh3"]
-[ext_resource type="Texture2D" uid="uid://d3r2vpysgqom8" path="res://sprite/축법소년/총.png" id="4_gun"]
+[ext_resource type="Texture2D" uid="uid://c3rrljta7b1s3" path="res://sprite/금쪽이/달리는 축법소년 표정.png" id="3_irdh3"]
+[ext_resource type="Texture2D" uid="uid://d3r2vpysgqom8" path="res://sprite/금쪽이/총.png" id="4_gun"]
 [ext_resource type="Script" uid="uid://jabroynj53ym" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
 
 [node name="ChokbeopsonyeonVersusPose" type="Node2D" unique_id=2044948383]

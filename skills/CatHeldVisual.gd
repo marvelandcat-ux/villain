@@ -10,8 +10,6 @@ const OUTLINE := Color(0.08, 0.06, 0.06)
 ## 남은 탄 점이 뜨는 자리(이 노드 기준)
 @export var ammo_offset: Vector2 = Vector2(-8.0, -80.0)
 @export var ammo_color: Color = Color(0.45, 0.28, 0.12)
-## 똥꼬 동그라미 자리(이 노드 기준) — 뒤집힌 몸통의 앞 끝
-@export var butt_pos: Vector2 = Vector2(23.0, 1.0)
 
 var shots_left: int = 5:
 	set(value):
@@ -48,10 +46,6 @@ func _place_sprite() -> void:
 	_sprite.position = Vector2(-_recoil * 3.0 + c.x, -c.y)
 
 func _draw() -> void:
-	var back: float = -_recoil * 3.0
-	var p: Vector2 = butt_pos + Vector2(back, 0.0)
-	draw_circle(p, 4.5, Color(0.95, 0.55, 0.62))
-	draw_arc(p, 4.5, 0.0, TAU, 16, OUTLINE, 1.6, true)
 	var gap: float = 8.0
 	var start: float = ammo_offset.x - gap * (max_shots - 1) * 0.5
 	for i in max_shots:

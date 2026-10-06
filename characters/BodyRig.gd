@@ -670,6 +670,11 @@ var held_item_l_thrown: bool = false
 ## 프레임 사이에 끼워 넣는 잔상 수 — 휘두르기가 몇 프레임밖에 안 돼서, 안 채우면 뚝뚝 끊긴 도장처럼 보인다
 @export var smear_fill: int = 2
 
+## --- 평타 하얀 궤적 (2026-10-06) ---
+## 평타 1·2·3타 때 무기 끝(맨손이면 치는 주먹, 발차기면 발)이 지나간 자리에 하얀 띠(combat/SwingTrail.gd)를 남긴다.
+## ComboMeleeAttack이 휘두를 때 `play_swing_trail()`을 불러야 켜진다 — 스킬·카운터의 스윙엔 안 나온다
+@export var swing_trail: bool = true
+
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
 ## 켜면 그 타에서 손 스윙 대신 앞발이 뻗어나가고, 팔은 균형 잡는 동작만 한다
@@ -833,6 +838,20 @@ var held_item_l_thrown: bool = false
 ## 넘겨 꽂는 순간 두 손이 잡은 지점(grab_reach_target)에서 추가로 더 이동하는 거리(px) — 위·뒤로
 ## 뿌리치듯 던지는 손짓
 @export var grab_slam_hand_offset: Vector2 = Vector2(-14, -18)
+
+## --- 머리 잡아 패대기(고양이 아주머니 고양이 옷 3타): 두 손을 앞으로 뻗어 머리를 잡고, 머리 위로 넘겨 등 뒤 바닥에 꽂는다 ---
+## 두 손이 모이는 자리(리그 원점 기준, +x = 앞) — 뻗어 잡는 곳 / 머리 위를 지나는 곳 / 등 뒤 바닥 쪽으로 꽂는 곳
+@export var head_grab_reach: Vector2 = Vector2(44, -30)
+@export var head_throw_top: Vector2 = Vector2(-2, -80)
+@export var head_throw_end: Vector2 = Vector2(-48, 10)
+## 넘기는 동안 몸이 뒤로 젖혀지는 각도(도, 음수 = 뒤로)
+@export var head_throw_lean_deg: float = -22.0
+## 넘기는 동안 **고개만 더** 뒤로 젖히는 각도(도, 음수 = 뒤로) — 브리지하듯 목이 꺾인다. 몸 젖힘에 더해진다
+@export var head_throw_head_deg: float = -40.0
+## 고개를 꺾는 축(목, 리그 원점 기준) — 머리 그림 가운데가 아니라 여기를 중심으로 돈다
+@export var head_throw_neck: Vector2 = Vector2(0, -12)
+## 두 손이 위아래로 벌어지는 간격(px) — 머리를 위아래에서 감싸 쥔다
+@export var head_grab_hand_gap: float = 16.0
 
 ## --- 유선 마우스 던지기 (악플러 스킬1): 마우스를 어깨 뒤로 젖혀 들었다가 앞으로 뿌린다 ---
 ## 젖혀 들었을 때 오른손 위치(리그 원점 기준) — 어깨 높이로 뒤로 당긴 자세.
@@ -1154,6 +1173,17 @@ var _smears: Array[Sprite2D] = []
 var _smear_left: Array[float] = []
 ## 잔상 원본별 직전 프레임 자세(리그 기준 변환) — 프레임 사이를 채울 때 쓴다
 var _smear_prev: Dictionary = {}
+## 평타 하얀 궤적 — 지금 긋는 띠(맵에 붙어 있음), 그 띠를 켠 스윙 번호, 따라가는 조각과 그 조각 안의 끝점
+var _swing_trail_node = null
+## play_attack_swing이 불릴 때마다 1씩 는다 — 다음 타가 나가면 앞 타의 띠를 끊는다
+var _swing_serial: int = 0
+## 띠를 켠 스윙 번호(-1 = 꺼짐)
+var _trail_serial: int = -1
+var _trail_src: Node2D = null
+var _trail_tip := Vector2.ZERO
+## 직전 프레임 조각 자세(리그 기준) — 프레임 사이를 채운다(_smear_prev와 같은 이유)
+var _trail_prev := Transform2D()
+var _trail_has_prev: bool = false
 ## 끊어 치기가 출발하는 손 자세 — 앞 타가 끝나기 전에 다음 타가 나가도 손이 제자리로 툭 튀지 않게
 var _swing_from_off := Vector2.ZERO
 var _swing_from_deg: float = 0.0
@@ -1241,6 +1271,11 @@ var _grab_duration: float = 1.0
 ## 전체 동작 중 "뻗어서 잡기"가 끝나는 지점, "들고 버티기"가 끝나는 지점(그 뒤는 내리꽂기)의 진행도 비율
 var _grab_reach_ratio: float = 0.2
 var _grab_slam_ratio: float = 0.8
+## 잡기 동작 종류 — `_grab_time`을 같이 써서 방향 전환 막기 등 조건이 그대로 따라온다
+enum GrabMode { SUPLEX, HEAD_REACH, HEAD_THROW }
+var _grab_mode: GrabMode = GrabMode.SUPLEX
+## 머리 잡기 중 두 손 가운데(리그 로컬) — 잡힌 상대를 손에 붙여 옮기는 쪽이 읽는다
+var _head_grab_point: Vector2 = Vector2.ZERO
 ## 마우스 던지기 동작에 남은 시간(초). 0보다 크면 젖혔다 뿌리는 중이다
 var _cast_time: float = 0.0
 var _cast_duration: float = 0.34
@@ -1292,6 +1327,10 @@ var _blocked_flash_span: float = 0.0
 
 ## 기본공격이 잠긴 동안 파츠에 붙였다 떼는 빨간 테두리 셰이더
 const BLOCKED_OUTLINE_SHADER := preload("res://combat/BlockedOutline.gdshader")
+## 평타 하얀 궤적(combat/SwingTrail.gd) — 새 class_name이라 무타입 preload로 쓴다
+const SWING_TRAIL_SCRIPT := preload("res://combat/SwingTrail.gd")
+## 프레임 사이에 끼워 넣는 궤적 점 수 — 많을수록 호가 매끈하다
+const SWING_TRAIL_FILL: int = 4
 ## 지금 빨간 테두리가 걸려 있는 파츠들 (끝날 때 material을 떼어내야 해서 들고 있는다)
 var _blocked_outline_parts: Array = []
 ## 머리 떨림 남은 시간과 전체 시간(초)
@@ -1687,6 +1726,7 @@ func _process(delta: float) -> void:
 	# 헬스장 런닝머신 단계 장비(바퀴·로켓 신발) — 발 자세가 다 정해진 뒤에 따라붙는다
 	_update_treadmill_gear(delta)
 	_update_smear(delta)
+	_update_swing_trail()
 	_update_fan_ghosts(delta)
 
 func _apply_pose(speed_ratio: float) -> void:
@@ -2266,6 +2306,7 @@ func play_attack_swing(variant: int = 0, duration: float = -1.0, spin: bool = fa
 	_spin_now = spin or (spin_hit_index >= 0 and variant == spin_hit_index)
 	_attack_time = _attack_len
 	_attack_variant = variant
+	_swing_serial += 1
 	if _hand_r and _rest_positions.has(_hand_r):
 		# 대치 자세는 공격 자세 위에 따로 더해지므로 출발 자세에서는 빼 둔다 — 안 빼면 두 번 더해져 손이 튄다
 		_swing_from_off = _hand_r.position - _rest_positions[_hand_r] - stance_hand_r_offset * _stance_blend
@@ -2547,6 +2588,129 @@ func _build_smears() -> void:
 		move_child(g, at + i)
 		_smears.append(g)
 		_smear_left.append(0.0)
+
+## 평타 하얀 궤적을 켠다 — ComboMeleeAttack이 play_attack_swing/play_weapon_slash **바로 다음에** 부른다.
+## 예비동작 동안은 기다렸다가 후려치는 구간에만 긋는다(_update_swing_trail)
+## 캐릭터가 아닌 몸(악플러집 엄마 등)도 휘두를 때 직접 부르면 된다
+func play_swing_trail() -> void:
+	if not swing_trail or _swing_trail_body() == null:
+		return
+	_end_swing_trail()
+	_trail_serial = _swing_serial
+
+## 이 리그를 Visual로 쓰는 몸 — 캐릭터면 그 캐릭터, 아니면(맵 기믹 엄마 등) 리그의 부모
+func _swing_trail_body() -> Node2D:
+	if _fighter != null and is_instance_valid(_fighter):
+		return _fighter
+	return get_parent() as Node2D
+
+## 궤적을 그을 구간인지 — 잔상(_smear_window)과 같은 후려치는 구간. 회전 타는 몸이 돌며 후려치는 동안
+func _swing_trail_window() -> bool:
+	if _attack_time <= 0.0:
+		return false
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	if _spin_now:
+		return progress >= spin_end * 0.45 and progress <= spin_end + 0.06
+	var end: float = ATTACK_STRIKE_END
+	if attack_snap:
+		end = ATTACK_STRIKE_START + (ATTACK_STRIKE_END - ATTACK_STRIKE_START) * snap_strike_reach
+	return progress >= ATTACK_STRIKE_START and progress <= end + 0.06
+
+## 궤적이 따라갈 조각과 그 조각 안의 끝점(조각 로컬 좌표)을 고른다.
+## 발차기·드롭킥 = 오른발 가운데 / 무기를 든 손으로 치면 = 무기 그림에서 손잡이(손)에서 가장 먼 모서리 / 맨손 = 치는 주먹 가운데
+func _pick_swing_trail_source() -> void:
+	_trail_src = null
+	var kick: bool = (attack_kick_hit >= 0 and _attack_variant == attack_kick_hit) or _dk_blend > 0.001
+	if kick and _foot_r:
+		_trail_src = _foot_r
+		_trail_tip = _foot_r.get_rect().get_center()
+		return
+	var hand: Sprite2D = _attack_hand()
+	if hand == _hand_r and _hand_r_hold and _hand_r_hold.visible:
+		# 손에 든 그림 중 가장 큰 것(무기 본체)
+		var item: Sprite2D = null
+		var best: float = 0.0
+		for child in _hand_r_hold.get_children():
+			if child is Sprite2D and child.visible and child.texture:
+				var area: float = child.get_rect().get_area() * absf(child.scale.x * child.scale.y)
+				if area > best:
+					best = area
+					item = child
+		if item:
+			_trail_src = item
+			_trail_tip = _far_corner_from_grip(item)
+			return
+	if hand:
+		_trail_src = hand
+		_trail_tip = hand.get_rect().get_center()
+
+## 무기 그림에서 **보이는 영역**의 네 모서리 중 손잡이(HandRHold 원점)에서 가장 먼 곳 — 무기 끝으로 쓴다(그림 로컬 좌표)
+func _far_corner_from_grip(item: Sprite2D) -> Vector2:
+	var rect: Rect2 = item.get_rect()
+	if not item.region_enabled:
+		var opaque: Rect2 = _opaque_rect_of(item.texture)
+		var tex_size: Vector2 = item.texture.get_size()
+		var x: float = tex_size.x - opaque.end.x if item.flip_h else opaque.position.x
+		var y: float = tex_size.y - opaque.end.y if item.flip_v else opaque.position.y
+		rect = Rect2(rect.position + Vector2(x, y), opaque.size)
+	var grip: Vector2 = item.transform.affine_inverse() * Vector2.ZERO
+	var best := rect.position
+	for c in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
+		if c.distance_squared_to(grip) > best.distance_squared_to(grip):
+			best = c
+	return best
+
+## 매 프레임(자세 계산 뒤): 후려치는 구간이면 끝점 자리를 띠에 더한다. 다음 타가 나가거나 구간이 끝나면 띠를 놓는다
+func _update_swing_trail() -> void:
+	if _trail_serial < 0:
+		return
+	if _trail_serial != _swing_serial or _attack_time <= 0.0:
+		_end_swing_trail()
+		return
+	if not _swing_trail_window():
+		# 예비동작 중이면 기다리고, 이미 긋고 있었으면(구간이 끝났으면) 놓는다
+		if _swing_trail_node != null:
+			_end_swing_trail()
+		return
+	if _swing_trail_node == null:
+		var body: Node2D = _swing_trail_body()
+		var map: Node = body.get_parent() if body != null else null
+		if map == null:
+			_end_swing_trail()
+			return
+		_pick_swing_trail_source()
+		if _trail_src == null:
+			_end_swing_trail()
+			return
+		var trail = SWING_TRAIL_SCRIPT.new()
+		map.add_child(trail)
+		# 캐릭터 뒤, 배경 앞 — z는 캐릭터와 같게, 트리 순서만 캐릭터 바로 앞(대시 잔상과 같은 방식)
+		trail.z_index = body.z_index
+		map.move_child(trail, body.get_index())
+		_swing_trail_node = trail
+		_trail_has_prev = false
+	if not is_instance_valid(_trail_src) or not is_instance_valid(_swing_trail_node):
+		_end_swing_trail()
+		return
+	# 리그 기준 변환으로 저장·보간한다 — 휘두르기가 몇 프레임뿐이라 사이를 안 채우면 띠가 꺾은선이 된다
+	var rig_xf: Transform2D = get_global_transform()
+	var now: Transform2D = rig_xf.affine_inverse() * _trail_src.get_global_transform()
+	if _trail_has_prev:
+		for k in range(1, SWING_TRAIL_FILL + 1):
+			var w: float = float(k) / float(SWING_TRAIL_FILL + 1)
+			_swing_trail_node.add_point(rig_xf * (_trail_prev.interpolate_with(now, w) * _trail_tip))
+	_swing_trail_node.add_point(rig_xf * (now * _trail_tip))
+	_trail_prev = now
+	_trail_has_prev = true
+
+## 지금 띠를 놓는다 — 띠는 남은 꼬리가 사라질 때까지 맵에 남았다가 스스로 지워진다
+func _end_swing_trail() -> void:
+	if _swing_trail_node != null and is_instance_valid(_swing_trail_node):
+		_swing_trail_node.finish()
+	_swing_trail_node = null
+	_trail_serial = -1
+	_trail_src = null
+	_trail_has_prev = false
 
 ## 스윙 타 번호(_attack_variant)에 따른 감기 각도/후리기 각도/손 경로.
 ## 기본값(variant 0)은 씬의 export 값 그대로라 예전 동작·다른 캐릭터에 영향이 없다.
@@ -3220,11 +3384,87 @@ func play_grab_motion(reach_duration: float, hold_duration: float, slam_duration
 	_grab_reach_ratio = clampf(reach_duration / _grab_duration, 0.01, 0.98)
 	_grab_slam_ratio = clampf((reach_duration + hold_duration) / _grab_duration, _grab_reach_ratio + 0.01, 0.99)
 	_grab_time = _grab_duration
+	_grab_mode = GrabMode.SUPLEX
+
+## 머리 잡기 — 두 손을 앞으로 뻗어(reach) 잡은 채 버티다가(hold) 빈손으로 돌아온다(back).
+## 맞으면 그 자리에서 `play_head_throw`로 이어진다
+func play_head_grab(reach_duration: float, hold_duration: float, back_duration: float) -> void:
+	_grab_duration = maxf(reach_duration + hold_duration + back_duration, 0.05)
+	_grab_reach_ratio = clampf(reach_duration / _grab_duration, 0.01, 0.98)
+	_grab_slam_ratio = clampf((reach_duration + hold_duration) / _grab_duration, _grab_reach_ratio + 0.01, 0.99)
+	_grab_time = _grab_duration
+	_grab_mode = GrabMode.HEAD_REACH
+
+## 머리 잡아 패대기 — 잡은 자리에서 머리 위로 넘겨(throw) 등 뒤 바닥에 꽂고, 제자리로 돌아온다(recover)
+func play_head_throw(throw_duration: float, recover_duration: float) -> void:
+	_grab_duration = maxf(throw_duration + recover_duration, 0.05)
+	_grab_reach_ratio = clampf(throw_duration / _grab_duration, 0.01, 0.99)
+	_grab_time = _grab_duration
+	_grab_mode = GrabMode.HEAD_THROW
+
+## 넘기는 진행도(0~1)에 따른 두 손 가운데 — 뻗은 자리 → 머리 위 → 등 뒤 바닥을 잇는 곡선(2차 베지어)
+func _head_throw_path(t: float) -> Vector2:
+	var a: Vector2 = head_grab_reach.lerp(head_throw_top, t)
+	var b: Vector2 = head_throw_top.lerp(head_throw_end, t)
+	return a.lerp(b, t)
+
+## 지금 두 손이 쥐고 있는 머리 자리(리그 로컬). 머리 잡기 중이 아니면 뻗는 자리를 돌려준다
+func head_grab_point() -> Vector2:
+	return _head_grab_point if _grab_time > 0.0 and _grab_mode != GrabMode.SUPLEX else head_grab_reach
+
+## 머리 잡기·패대기 자세 — 두 손을 한 점(가운데)에 위아래로 모으고, 넘기는 동안 몸을 뒤로 젖힌다
+func _pose_head_grab() -> void:
+	var progress: float = 1.0 - _grab_time / _grab_duration
+	var point: Vector2
+	var lean: float = 0.0
+	var head_bend: float = 0.0
+	if _grab_mode == GrabMode.HEAD_REACH:
+		var mid: Vector2 = (_rest_positions[_hand_r] + _rest_positions[_hand_l]) * 0.5 if (_hand_r and _hand_l) else Vector2.ZERO
+		if progress < _grab_reach_ratio:
+			# ① 앞으로 확 뻗는다(끝으로 갈수록 느려지게)
+			var t: float = progress / _grab_reach_ratio
+			point = mid.lerp(head_grab_reach, 1.0 - (1.0 - t) * (1.0 - t))
+		elif progress < _grab_slam_ratio:
+			# ② 뻗은 채 움켜쥔다
+			point = head_grab_reach
+		else:
+			# ③ 빈손으로 돌아온다
+			var t2: float = (progress - _grab_slam_ratio) / (1.0 - _grab_slam_ratio)
+			point = head_grab_reach.lerp(mid, t2 * t2 * (3.0 - 2.0 * t2))
+	else:
+		if progress < _grab_reach_ratio:
+			# ① 머리 위로 넘겨 등 뒤 바닥에 꽂는다 — 처음엔 무겁게, 끝에서 확 내리꽂게(가속)
+			var t: float = progress / _grab_reach_ratio
+			point = _head_throw_path(t * t)
+			lean = sin(PI * t) * head_throw_lean_deg
+			# 고개는 몸보다 빨리 젖혀져 머리 위를 지날 때 가장 많이 꺾이고, 꽂을 때 돌아온다
+			head_bend = sin(PI * minf(t * 1.3, 1.0)) * head_throw_head_deg
+		else:
+			# ② 꽂은 자리에서 제자리로
+			var t2: float = (progress - _grab_reach_ratio) / (1.0 - _grab_reach_ratio)
+			var mid2: Vector2 = (_rest_positions[_hand_r] + _rest_positions[_hand_l]) * 0.5 if (_hand_r and _hand_l) else Vector2.ZERO
+			point = head_throw_end.lerp(mid2, t2 * t2 * (3.0 - 2.0 * t2))
+	_head_grab_point = point
+	var gap := Vector2(0, head_grab_hand_gap * 0.5)
+	if _hand_r:
+		_hand_r.position = point - gap
+		_hand_r.rotation = 0.0
+	if _hand_l:
+		_hand_l.position = point + gap
+		_hand_l.rotation = 0.0
+	rotation = deg_to_rad(lean)
+	if _head and not is_zero_approx(head_bend):
+		var a: float = deg_to_rad(head_bend)
+		_head.position = head_throw_neck + (_head.position - head_throw_neck).rotated(a)
+		_head.rotation += a
 
 ## 백 서플렉스 진행도에 따라 두 손과 몸 전체 기울기를 잡는다 (걷기·공격보다 우선한다).
 ## 두 손을 옆으로 뻗어 위아래로 겹쳐 잡는다(오른손 위/왼손 아래) — 한 손이 아니라 두 손으로
 ## 붙잡는 그림이라 왼손도 오른손과 같은 목표로 모은다
 func _pose_grab() -> void:
+	if _grab_mode != GrabMode.SUPLEX:
+		_pose_head_grab()
+		return
 	var progress: float = 1.0 - _grab_time / _grab_duration
 	var hand_gap := Vector2(0, grab_hand_gap * 0.5)
 	if progress < _grab_reach_ratio:
@@ -3289,9 +3529,9 @@ func _pose_cast() -> void:
 	if progress < _cast_windup_ratio:
 		# ① 뒤로 당겨 든다 (이 동안 마우스는 아직 손에 쥐어져 있다)
 		var t: float = progress / _cast_windup_ratio
-		var ease: float = t * t * (3.0 - 2.0 * t)
-		pos = rest.lerp(cast_windup_offset, ease)
-		deg = cast_windup_deg * ease
+		var smooth_t: float = t * t * (3.0 - 2.0 * t)
+		pos = rest.lerp(cast_windup_offset, smooth_t)
+		deg = cast_windup_deg * smooth_t
 	else:
 		var t: float = (progress - _cast_windup_ratio) / (1.0 - _cast_windup_ratio)
 		if t < cast_snap_ratio:
@@ -4233,6 +4473,28 @@ func set_body_outfit(outfit: Dictionary) -> void:
 	_body.texture = _body_rest_texture
 	_body.scale = _body_rest_scale
 	_body.position = _rest_positions[_body]
+
+## 지금 쓴 머리(평소 그림·배율·제자리·머리 돌리기 세트) — set_head_outfit()으로 되돌릴 때 쓴다
+func get_head_outfit() -> Dictionary:
+	if _head == null:
+		return {}
+	return {"texture": _head_rest_texture, "scale": _head_rest_scale, "position": _rest_positions.get(_head, _head.position),
+		"turn": head_turn_textures, "anchors": head_turn_anchors, "faces_left": head_turn_faces_left}
+
+## 머리를 통째로 바꿔 쓴다(고양이 아주머니 주황 궁 고양이 옷, 2026-10-05) — 평소 그림·배율·제자리·머리 돌리기 세트를 한 번에 바꾼다.
+## outfit은 get_head_outfit()과 같은 모양. 돌던 중이면 먼저 평소 머리로 되돌린 뒤 바꾼다
+func set_head_outfit(outfit: Dictionary) -> void:
+	if _head == null or outfit.is_empty():
+		return
+	_clear_head_frame()
+	_head_rest_texture = outfit["texture"]
+	_head_rest_scale = outfit["scale"]
+	_rest_positions[_head] = outfit["position"]
+	head_turn_textures = outfit["turn"]
+	head_turn_anchors = outfit["anchors"]
+	head_turn_faces_left = outfit["faces_left"]
+	_head.position = _rest_positions[_head]
+	_apply_base_head()
 
 ## 머리를 그림 한 장(tex, 머리 공 here, 왼쪽을 보는지 faces_left)으로 바꿔 끼운다 — _set_head_frame과 뒤통수가 같이 쓴다
 func _set_head_image(tex: Texture2D, here: Vector3, faces_left: bool, dir: float) -> void:

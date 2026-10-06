@@ -2,10 +2,16 @@
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
 [ext_resource type="Texture2D" uid="uid://g2b2q88ckkhw" path="res://sprite/고양이 아줌마/캣맘머리.png" id="2_head"]
-[ext_resource type="Texture2D" uid="uid://bgjh3mm7rk8ly" path="res://sprite/고양이 아줌마/치마.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://d0aqgl2hi8cd5" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://cb50firgh23gl" path="res://sprite/고양이 아줌마/발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="5_hand"]
 [ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
+[ext_resource type="Texture2D" uid="uid://cac0t7n6e0uru" path="res://sprite/고양이 아줌마/고양이 아줌마 측면1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://e3x33fkwjti3" path="res://sprite/고양이 아줌마/고양이 아줌마 측면 2.png" id="88_turn2"]
+[ext_resource type="Texture2D" uid="uid://bg1w3dxhjgbab" path="res://sprite/고양이 아줌마/고양이 아줌마 측 면3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/고양이 아줌마/고양이아줌마정면.png" id="86_front"]
+[ext_resource type="Texture2D" uid="uid://d3aavhlbcn1ra" path="res://sprite/고양이 아줌마/고양이 아줌마 몸 측면 2.png" id="85_body_turn1"]
+[ext_resource type="Texture2D" uid="uid://bw500lc3iy5yb" path="res://sprite/고양이 아줌마/고양이 아줌마 몸 측면 3.png" id="84_body_turn2"]
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlDownPose.tscn" id="gym_curl_down_pose"]
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlMidPose.tscn" id="gym_curl_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlUpPose.tscn" id="gym_curl_up_pose"]
@@ -17,6 +23,13 @@
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunRightPose.tscn" id="gym_run_right_pose"]
 
 [node name="BodyRig" unique_id=1130472802 instance=ExtResource("1_rig")]
+head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
+head_turn_anchors = Array[Vector3]([Vector3(595, 622, 1094), Vector3(605, 661, 1068), Vector3(615, 676, 1018), Vector3(625, 685, 996), Vector3(624, 682, 959)])
+head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_turn_on_face = true
+body_turn_textures = Array[Texture2D]([ExtResource("85_body_turn1"), ExtResource("84_body_turn2")])
+body_turn_match_height = true
+body_turn_faces_left = Array[bool]([false, false])
 curl_down_pose = ExtResource("gym_curl_down_pose")
 curl_mid_pose = ExtResource("gym_curl_mid_pose")
 curl_up_pose = ExtResource("gym_curl_up_pose")
@@ -34,6 +47,8 @@ texture = ExtResource("4_foot")
 texture = ExtResource("4_foot")
 
 [node name="Body" parent="." index="2" unique_id=1277525598]
+position = Vector2(-0.19, 1.33)
+scale = Vector2(0.024431, 0.029429)
 texture = ExtResource("3_body")
 
 [node name="HandL" parent="." index="3" unique_id=927525538]
@@ -44,8 +59,8 @@ texture = ExtResource("5_hand")
 texture = ExtResource("5_hand")
 
 [node name="Head" parent="." index="6" unique_id=1394957076]
-position = Vector2(-1.52, -32.07)
-scale = Vector2(0.042, 0.042)
+position = Vector2(-1.53, -34.04)
+scale = Vector2(0.0455, 0.0455)
 texture = ExtResource("2_head")
 
 [node name="LensGlint" type="Node2D" parent="Head"]

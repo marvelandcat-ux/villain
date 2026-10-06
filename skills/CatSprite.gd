@@ -62,6 +62,14 @@ var kind: int = 0
 var walk_phase: float = 0.0
 ## 0~1 — 가까운 앞발을 앞 위로 뻗는 정도(흰 고양이 할퀴기)
 var paw_reach: float = 0.0
+## 0~1 — 돌진 준비 웅크림(검은 고양이): 엉덩이를 뒤로 빼고 낮추며 실룩거린다
+var pounce: float = 0.0
+## 남은 시간(초) — 0보다 크면 머리를 까딱까딱(흰 고양이 핥기)
+var nod_left: float = 0.0
+## 눈 감기(피격) — 머리 그림 위에 감은 눈 금을 덮어 그린다
+var eyes_closed: bool = false
+## 감은 눈 금의 자리(머리 가운데 기준, 배율 1) — 머리 그림을 바꾸면 다시 맞출 것
+@export var eye_offset: Vector2 = Vector2(4.5, -2.0)
 
 static var _textures: Dictionary = {}
 static var _cropped: Dictionary = {}
@@ -75,6 +83,8 @@ var _paw_rest: Array[Vector2] = []
 var _age: float = 0.0
 ## 파츠를 담는 그릇 — size_scale만큼 키운다
 var _root: Node2D
+## 감은 눈 금(Line2D) — 머리보다 나중에 만들어 머리 위에 그려진다
+var _eye_lid: Line2D
 
 ## kind(0 검은 / 1 주황 / 2 흰)의 파츠 그림
 static func texture_of(cat_kind: int, part: String) -> Texture2D:
@@ -138,6 +148,16 @@ func _build() -> void:
 	var near_front := _paw(front_paw, false)
 	_head = _sprite("head", head_width)
 	_head.position = head_center
+	_eye_lid = Line2D.new()
+	_eye_lid.width = 1.8
+	_eye_lid.default_color = Color(0.12, 0.09, 0.08)
+	var lid_points := PackedVector2Array()
+	for i in 7:
+		var t: float = i / 6.0
+		lid_points.append(Vector2(lerpf(-3.2, 3.2, t), (1.0 - pow(t * 2.0 - 1.0, 2.0)) * 1.8))
+	_eye_lid.points = lid_points
+	_eye_lid.visible = false
+	_root.add_child(_eye_lid)
 	_paws = [far_front, far_back, near_front, near_back]
 	_paw_rest = [far_front.position, far_back.position, near_front.position, near_back.position]
 	_apply_pose()
@@ -162,6 +182,8 @@ func _paw(pos: Vector2, far: bool) -> Sprite2D:
 
 func _process(delta: float) -> void:
 	_age += minf(delta, 0.05)
+	if nod_left > 0.0:
+		nod_left = maxf(nod_left - delta, 0.0)
 	_apply_pose()
 
 func _apply_pose() -> void:
@@ -185,6 +207,29 @@ func _apply_pose() -> void:
 		_paws[2].rotation = deg_to_rad(-35.0) * r
 	_body.position = body_center + Vector2(0.0, -absf(sin(walk_phase)) * 0.8 if walking else 0.0)
 	_head.position = head_center + Vector2(0.0, -absf(sin(walk_phase)) * 1.2 if walking else 0.0)
+	_head.rotation = 0.0
+	# 가만히 있을 땐 천천히 숨쉬기 — 몸이 미세하게 들썩인다
+	if not walking:
+		var breath: float = sin(_age * 3.0)
+		_body.position.y += breath * 0.7
+		_head.position.y += sin(_age * 3.0 + 0.5) * 0.9
+	# 돌진 준비 웅크림 — 몸·머리를 뒤로 빼고 낮추며, 엉덩이가 실룩거린다
+	if pounce > 0.001:
+		var wiggle: float = sin(_age * 22.0) * 1.1 * pounce
+		_body.position += Vector2(-4.0 * pounce + wiggle * 0.5, 1.6 * pounce)
+		_body.rotation = -0.06 * pounce
+		_head.position += Vector2(-2.5 * pounce, 2.6 * pounce + wiggle * 0.3)
+	else:
+		_body.rotation = 0.0
+	# 핥기 — 머리가 앞으로 나가며 까딱까딱
+	if nod_left > 0.0:
+		var nod: float = sin(nod_left * 28.0)
+		_head.position += Vector2(1.5, nod * 2.0)
+		_head.rotation = nod * 0.14
+	# 감은 눈 — 머리를 따라다닌다
+	if _eye_lid:
+		_eye_lid.visible = eyes_closed
+		_eye_lid.position = _head.position + eye_offset
 
 ## 꼬리 — 뿌리에서 tail_deg 쪽으로 뻗으며 끝으로 갈수록 위로 휘고, 물결이 뿌리에서 끝으로 흐른다.
 ## Line2D는 첫 점이 그림 왼쪽 끝이다 — 그림 왼쪽이 꼬리 끝이라 **끝 → 뿌리** 순서로 점을 넣는다
@@ -199,6 +244,6 @@ func _update_tail() -> void:
 	pts.resize(n)
 	for i in n:
 		var t: float = 1.0 - float(i) / float(n - 1)
-		var bend: float = tail_curl * t * t + sin(_age * tail_wave_speed - t * 3.0) * tail_wave * t
+		var bend: float = tail_curl * t * t * (1.0 + pounce * 1.2) + sin(_age * tail_wave_speed - t * 3.0) * tail_wave * t
 		pts[i] = tail_root + dir * (tail_length * t) + up * bend
 	_tail.points = pts

@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/AkpeulleoMom.gd" id="1_mom"]
+[ext_resource type="PackedScene" path="res://maps/AkpeulleoMomRig.tscn" id="2_rig"]
+[ext_resource type="PackedScene" uid="uid://dkd5b0gex52q0" path="res://maps/SpeechBubble.tscn" id="3_bubble"]
+[ext_resource type="Resource" path="res://stats/CatMomStats.tres" id="4_stats"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
+radius = 20.0
+height = 60.0
+
+[node name="AkpeulleoMom" type="CharacterBody2D"]
+script = ExtResource("1_mom")
+base_stats = ExtResource("4_stats")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Visual" parent="." instance=ExtResource("2_rig")]
+
+[node name="Bubble" parent="." instance=ExtResource("3_bubble")]
+position = Vector2(0, -62)
+bubble_center = Vector2(120, -110)

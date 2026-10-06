@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://boang1lur17gm"]
 
 [ext_resource type="Script" uid="uid://cm1bycukouluh" path="res://ui/cutin/ChokbeopsonyeonCutIn.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://dfypejfblk2yy" path="res://sprite/축법소년/궁극기컷인/1번배경.png" id="2"]
-[ext_resource type="Texture2D" uid="uid://b5lyk6fj1d174" path="res://sprite/축법소년/궁극기컷인/느낌표.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://dojxgkkscjwaj" path="res://sprite/축법소년/총알.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://dfypejfblk2yy" path="res://sprite/금쪽이/궁극기컷인/1번배경.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://b5lyk6fj1d174" path="res://sprite/금쪽이/궁극기컷인/느낌표.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://dojxgkkscjwaj" path="res://sprite/금쪽이/총알.png" id="6"]
 [ext_resource type="PackedScene" uid="uid://b8n8uyugqh0hu" path="res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn" id="7"]
 [ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="8"]
-[ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/축법소년/궁극기컷인/말줄.png" id="9"]
-[ext_resource type="Texture2D" uid="uid://bnbj8mkqu6hme" path="res://sprite/축법소년/밥소리들은잼미니.png" id="10"]
+[ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/금쪽이/궁극기컷인/말줄.png" id="9"]
+[ext_resource type="Texture2D" uid="uid://bnbj8mkqu6hme" path="res://sprite/금쪽이/밥소리들은잼미니.png" id="10"]
 
 [node name="ChokbeopsonyeonCutIn" type="Node2D" unique_id=1610107903]
 script = ExtResource("1")

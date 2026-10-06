@@ -15,7 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://b5vuab6l5gnf6" path="res://sprite/일진/일진의 친구1/일친 친구 몸.png" id="13"]
 [ext_resource type="Texture2D" uid="uid://byjm1q2ckwcbh" path="res://sprite/일진/입벌린일진정면.png" id="14"]
 [ext_resource type="FontFile" uid="uid://bvqe8u6porain" path="res://fonts/Jua-Regular.ttf" id="15"]
-[ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/축법소년/궁극기컷인/말줄.png" id="16"]
+[ext_resource type="Texture2D" uid="uid://bet5lglovlb6y" path="res://sprite/금쪽이/궁극기컷인/말줄.png" id="16"]
 [ext_resource type="Script" uid="uid://bx51fcgm80bb1" path="res://ui/cutin/CutInSpit.gd" id="17"]
 [ext_resource type="Texture2D" uid="uid://cl8h0cp33vlx7" path="res://sprite/일진/일진의 친구1/침을 모은 일진의 친구.png" id="18"]
 [ext_resource type="Texture2D" uid="uid://dtm86dawkkm2g" path="res://sprite/일진/일진의 친구1/일진 친구의 침뱉는.png" id="19"]

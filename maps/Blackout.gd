@@ -4,7 +4,8 @@ extends CanvasModulate
 ## 방 조명이 주기적으로 나갔다 들어오는 "암전" 기믹 (악플러의 방).
 ## CanvasModulate 자신이 곧 방 전체 조명이라 color를 직접 조절한다 — 씬에 이 노드 하나만 두면 된다.
 ## CombatHUD는 별도 CanvasLayer라 영향을 안 받아서, 암전 중에도 체력·타이머는 그대로 보인다.
-## 시야만 가리는 연출이라 판정·데미지는 평소와 똑같이 들어간다
+## 시야만 가리는 연출이라 판정·데미지는 평소와 똑같이 들어간다.
+## 캐릭터 등 뒤 쿨타임 원(`CooldownPies`)은 조명을 안 받으므로, 어두운 동안엔 방어·대시·빨간 X(패링 잠금)를 따로 숨긴다
 
 ## 암전이 다시 오기까지의 주기(초). 불이 완전히 돌아온 시점부터 잰다
 @export var interval: float = 12.0
@@ -12,8 +13,9 @@ extends CanvasModulate
 @export var flicker_count: int = 2
 ## 깜빡임 한 번(꺼짐+켜짐)의 시간(초)
 @export var flicker_interval: float = 0.12
-## 완전히 어두운 상태가 유지되는 시간(초)
-@export var blackout_duration: float = 4.0
+## 완전히 어두운 상태가 유지되는 시간(초) — 암전마다 min~max 사이에서 랜덤으로 뽑는다
+@export var blackout_duration_min: float = 4.0
+@export var blackout_duration_max: float = 6.0
 ## 암전 중 밝기(0=완전 암흑, 1=평소와 같음). 0으로 두면 화면이 꺼진 것처럼 보여 살짝 남겨둔다
 @export var blackout_brightness: float = 0.06
 ## 꺼지고 켜질 때 밝기가 부드럽게 바뀌는 시간(초)
@@ -34,11 +36,15 @@ extends CanvasModulate
 ## 씬에 저장된 평소 조명 색 — 이 밝기를 기준으로 어둡게/밝게 만든다
 var _normal_color: Color = Color.WHITE
 var _timer: float = 0.0
+## 불이 꺼진 동안 true(깜빡임이 끝나고 어두워지기 시작한 순간 ~ 다시 밝아지기 시작한 순간).
+## 암전에 맞춰 반응할 것들(엄마 눈빛 등)은 "blackout" 그룹에서 이 노드를 찾아 읽는다
+var is_dark: bool = false
 
 @onready var _glow: CanvasItem = get_node_or_null(glow_target_path) as CanvasItem
 @onready var _light: Light2D = get_node_or_null(light_target_path) as Light2D
 
 func _ready() -> void:
+	add_to_group("blackout")
 	_normal_color = color
 	_timer = interval
 	if _glow:
@@ -55,9 +61,17 @@ func _process(delta: float) -> void:
 ## 경고(깜빡임) -> 암전(+모니터 빛) -> 유지 -> 복귀 순서로 진행한다
 func _run_sequence() -> void:
 	await _flicker()
+	_set_pies_hidden(true)
+	is_dark = true
 	await _fade_to(blackout_brightness, glow_alpha, light_energy)
-	await _wait(blackout_duration)
+	await _wait(randf_range(blackout_duration_min, maxf(blackout_duration_min, blackout_duration_max)))
+	_set_pies_hidden(false)
+	is_dark = false
 	await _fade_to(1.0, 0.0, 0.0)
+
+## 쿨타임 원 숨기기/보이기 — 라운드가 리로드되면 원도 새로 만들어지므로 따로 되돌릴 필요는 없다
+func _set_pies_hidden(value: bool) -> void:
+	get_tree().call_group("cooldown_pies", "set_blackout_hidden", value)
 
 ## 꺼지기 전 형광등처럼 flicker_count번만 깜빡이고 바로 암전으로 들어간다
 func _flicker() -> void:
@@ -81,6 +95,11 @@ func _fade_to(brightness: float, target_glow_alpha: float, target_light_energy: 
 	await tween.finished
 
 ## 평소 조명색의 RGB만 brightness배로 줄인다 — 알파는 그대로 둔다
+## 지금 방 조명이 평소 대비 몇 배인지(1 = 평소, 암전이면 blackout_brightness, 깜빡일 때 오르내림).
+## 천장 등의 빛(`CeilingLamp`)이 이 값을 따라 같이 꺼지고 깜빡인다
+func light_level() -> float:
+	return clampf(color.v / maxf(_normal_color.v, 0.001), 0.0, 1.0)
+
 func _dim(brightness: float) -> Color:
 	return Color(_normal_color.r * brightness, _normal_color.g * brightness, _normal_color.b * brightness, _normal_color.a)
 

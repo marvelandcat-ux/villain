@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://ovkiv26dd1h6"]
+
+[ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" uid="uid://dgdi01tu0mmfn" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 머리.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://ckaecwrrux0kc" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 몸.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://b42ppb5dmp4oa" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 발.png" id="4_foot"]
+[ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="5_hand"]
+[ext_resource type="Texture2D" uid="uid://blewi50onqnh3" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 측면 1.png" id="6_turn1"]
+[ext_resource type="Texture2D" uid="uid://cpkqdmxna8f7k" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 머리 측면 2.png" id="7_turn2"]
+[ext_resource type="Texture2D" uid="uid://ilrp7k0r3bxn" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 측면 3.png" id="8_turn3"]
+[ext_resource type="Texture2D" uid="uid://s42q4ytkxp25" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 머리 정면.png" id="9_front"]
+[ext_resource type="Texture2D" uid="uid://cy6a7gan6tdgo" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마 몸 측면 2.png" id="10_body_turn1"]
+[ext_resource type="Texture2D" uid="uid://cf5g4ht6182qe" path="res://sprite/맵/악플러집/엄마 스프라이트/엄마  몸 측면 3.png" id="11_body_turn2"]
+
+[node name="BodyRig" unique_id=1707789676 instance=ExtResource("1_rig")]
+head_turn_textures = Array[Texture2D]([ExtResource("6_turn1"), ExtResource("7_turn2"), ExtResource("8_turn3"), ExtResource("9_front")])
+head_turn_anchors = Array[Vector3]([Vector3(621, 618, 1032), Vector3(641, 623, 1049), Vector3(628, 627, 1040), Vector3(632, 634, 1042), Vector3(626, 645, 1037)])
+head_turn_faces_left = Array[bool]([false, false, false, false, false])
+body_turn_textures = Array[Texture2D]([ExtResource("10_body_turn1"), ExtResource("11_body_turn2")])
+body_turn_match_height = true
+body_turn_faces_left = Array[bool]([false, false])
+head_turn_on_face = true
+
+[node name="FootL" parent="." index="0" unique_id=1982953737]
+texture = ExtResource("4_foot")
+
+[node name="FootR" parent="." index="1" unique_id=1509249644]
+texture = ExtResource("4_foot")
+
+[node name="Body" parent="." index="2" unique_id=1277525598]
+position = Vector2(-0.17, 1.81)
+scale = Vector2(0.0387, 0.0387)
+texture = ExtResource("3_body")
+
+[node name="HandL" parent="." index="3" unique_id=927525538]
+position = Vector2(-27, 4)
+texture = ExtResource("5_hand")
+
+[node name="HandR" parent="." index="5" unique_id=1459708461]
+texture = ExtResource("5_hand")
+
+[node name="Head" parent="." index="7" unique_id=1394957076]
+position = Vector2(-3, -33)
+scale = Vector2(0.048961878, 0.048961878)
+texture = ExtResource("2_head")

@@ -1,249 +1,651 @@
 [gd_scene format=3 uid="uid://brnbokbeu0hur"]
 
-[ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
-[ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
-[ext_resource type="Texture2D" uid="uid://d4ckhyb145mfb" path="res://sprite/맵/악플러집/background_dirtyhouse.png" id="4"]
-[ext_resource type="Texture2D" uid="uid://c2r1n4vs6arnf" path="res://sprite/맵/악플러집/platform_dirty house.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://bqjgvk4077hm0" path="res://sprite/맵/악플러집/table.png" id="6"]
-[ext_resource type="Texture2D" uid="uid://6n1docbxaayj" path="res://sprite/맵/악플러집/bed.png" id="7"]
-[ext_resource type="Texture2D" uid="uid://dws8yuyn6ddbm" path="res://sprite/맵/악플러집/bookshelf.png" id="8"]
-[ext_resource type="Texture2D" uid="uid://brbyk05wpssnd" path="res://sprite/맵/악플러집/trashcan.png" id="9"]
-[ext_resource type="Texture2D" uid="uid://btbcm63by0nu1" path="res://sprite/맵/악플러집/trashdummy.png" id="10"]
-[ext_resource type="Script" uid="uid://byluwyf2xt8sl" path="res://maps/Blackout.gd" id="11"]
+[ext_resource type="Texture2D" uid="uid://xdwx0tg1aby7" path="res://sprite/맵/악플러집/악플러 집 계단.png" id="18_ff23i"]
+[ext_resource type="Texture2D" uid="uid://dits1s8wrykuc" path="res://sprite/맵/악플러집/악플러 집 침대.png" id="bed"]
+[ext_resource type="Texture2D" uid="uid://drqouq0lngn0d" path="res://sprite/맵/악플러집/악플러집 배경.png" id="bg"]
+[ext_resource type="Script" uid="uid://byluwyf2xt8sl" path="res://maps/Blackout.gd" id="blackout"]
+[ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="cam"]
+[ext_resource type="Script" uid="uid://4xe20o1gmluv" path="res://maps/CeilingLamp.gd" id="ceiling_lamp"]
+[ext_resource type="Texture2D" uid="uid://6532hhm605ny" path="res://sprite/맵/악플러집/악플러집 문.png" id="door"]
+[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="hud"]
+[ext_resource type="Script" uid="uid://cx14fi17i7bgp" path="res://maps/MomDoorGimmick.gd" id="mom_gimmick"]
+[ext_resource type="PackedScene" path="res://maps/AkpeulleoMom.tscn" id="mom_scene"]
+[ext_resource type="Texture2D" uid="uid://q3d7likaugg6" path="res://sprite/맵/악플러집/악플러 집 컴퓨터.png" id="pc"]
+[ext_resource type="Texture2D" uid="uid://qrautulhwbio" path="res://sprite/맵/악플러집/악플러집 바닥.png" id="plank"]
+[ext_resource type="Texture2D" uid="uid://duxjp5cejcjto" path="res://sprite/맵/악플러집/악플러 보관함.png" id="shelf"]
+[ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="stage"]
+[ext_resource type="Script" path="res://maps/ParallaxFollow.gd" id="parallax"]
+[ext_resource type="Shader" path="res://maps/far_blur.gdshader" id="far_blur"]
+[ext_resource type="Script" uid="uid://ctv4xpcy4ifm3" path="res://maps/SlopeStair.gd" id="stair"]
+[ext_resource type="Texture2D" uid="uid://3vd1efprdaur" path="res://sprite/맵/악플러집/악플러 쓰래기들.png" id="trash"]
+[ext_resource type="Texture2D" uid="uid://iuka46o34jqt" path="res://sprite/맵/악플러집/악플러집 벽.png" id="wall"]
+[ext_resource type="Texture2D" uid="uid://dnfy7l1d0kna8" path="res://sprite/맵/악플러집/악플러 창문.png" id="window"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1248, 40)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]
+size = Vector2(1034.701, 196.1821)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
-size = Vector2(40, 1600)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_qhnhm"]
+size = Vector2(1652.2223, 295.1053)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_leftplat"]
-size = Vector2(484, 16)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_caqj3"]
+size = Vector2(1435.4445, 78.92432)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_rightplat"]
-size = Vector2(380, 16)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_midplat"]
-size = Vector2(133, 16)
-
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow"]
+[sub_resource type="CanvasItemMaterial" id="glow_mat"]
 blend_mode = 1
+light_mode = 1
 
-[sub_resource type="Gradient" id="Gradient_monitorlight"]
+[sub_resource type="Gradient" id="light_grad"]
 offsets = PackedFloat32Array(0, 0.45, 1)
 colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.45, 1, 1, 1, 0)
 
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_monitorlight"]
-gradient = SubResource("Gradient_monitorlight")
+[sub_resource type="GradientTexture2D" id="light_tex"]
+gradient = SubResource("light_grad")
 width = 512
 height = 512
 fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0.5, 0)
 
-[node name="TrashRoom" type="Node2D" unique_id=963860913]
-script = ExtResource("1")
+[sub_resource type="RectangleShape2D" id="Shape_LeftPlatform"]
+size = Vector2(374, 15)
 
-[node name="Blackout" type="CanvasModulate" parent="." unique_id=1611489209]
-script = ExtResource("11")
+[sub_resource type="RectangleShape2D" id="Shape_MiddlePlatform"]
+size = Vector2(389, 15)
+
+[sub_resource type="RectangleShape2D" id="Shape_RightPlatform"]
+size = Vector2(573.5, 15)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_h715i"]
+size = Vector2(84, 11)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_l4llx"]
+size = Vector2(84.953125, 11.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yf5fn"]
+size = Vector2(79.90625, 11.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_jeouc"]
+size = Vector2(78, 11)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ff23i"]
+size = Vector2(78, 11)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_k75mq"]
+size = Vector2(79, 11)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_d82pu"]
+size = Vector2(79, 11)
+
+[sub_resource type="RectangleShape2D" id="Shape_Ground"]
+size = Vector2(2089, 38)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall"]
+size = Vector2(60, 2331)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_57qmd"]
+size = Vector2(26.07143, 11.499992)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ffisd"]
+size = Vector2(23.750002, 9.749981)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g0vbx"]
+size = Vector2(23.482143, 9.749981)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vdpjx"]
+size = Vector2(23.482143, 9.749981)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_l73jx"]
+size = Vector2(25.729162, 9.749981)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b0foi"]
+size = Vector2(23.09895, 9.749981)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ccn8x"]
+size = Vector2(23.80952, 10.874975)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6f3sd"]
+size = Vector2(22.916655, 8.437488)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_70pi0"]
+size = Vector2(24.255947, 8.437488)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_far_bg"]
+shader = ExtResource("far_blur")
+shader_parameter/blur_px = 0.1
+shader_parameter/dim = 0.12
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_far_win"]
+shader = ExtResource("far_blur")
+shader_parameter/blur_px = 0.45
+shader_parameter/dim = 0.05
+
+[node name="TrashRoom" type="Node2D" unique_id=1655989136]
+script = ExtResource("stage")
+
+[node name="Blackout" type="CanvasModulate" parent="." unique_id=1931403820]
+script = ExtResource("blackout")
 glow_target_path = NodePath("../MonitorGlow")
 light_target_path = NodePath("../MonitorLight")
 
-[node name="Background" type="Sprite2D" parent="." unique_id=1544957977]
-position = Vector2(-75.00001, 131)
-scale = Vector2(0.845, 0.845)
-texture = ExtResource("4")
+[node name="DecoBackground" type="CanvasGroup" parent="." unique_id=1676114982]
+z_index = -10
+material = SubResource("ShaderMaterial_far_bg")
+script = ExtResource("parallax")
+factor = Vector2(0.85, 0.85)
+reference = Vector2(290, -128)
 
-[node name="Pillar" type="Sprite2D" parent="." unique_id=665339863]
-position = Vector2(488.8, 60)
-scale = Vector2(0.505911, 0.505911)
-texture = ExtResource("5")
-centered = false
+[node name="Wall" type="Sprite2D" parent="DecoBackground" unique_id=1676114983]
+position = Vector2(288.0159, -212.09499)
+scale = Vector2(1.3, 1.3)
+texture = ExtResource("bg")
+
+[node name="DecoWindows" type="CanvasGroup" parent="." unique_id=430483010]
+z_index = -10
+material = SubResource("ShaderMaterial_far_win")
+script = ExtResource("parallax")
+factor = Vector2(0.93, 0.93)
+reference = Vector2(290, -128)
+
+[node name="DecoWindow" type="Sprite2D" parent="DecoWindows" unique_id=430483009]
+position = Vector2(387, -136)
+scale = Vector2(0.19419642, 0.1941964)
+texture = ExtResource("window")
 region_enabled = true
-region_rect = Rect2(1213, 284, 203, 614)
+region_rect = Rect2(192, 97, 1104, 896)
 
-[node name="Ground" type="StaticBody2D" parent="." unique_id=2115004875]
-position = Vector2(0, 300)
-
-[node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=571407173]
-position = Vector2(-43, 7)
-shape = SubResource("RectangleShape2D_ground")
-
-[node name="GroundVisual" type="Sprite2D" parent="Ground" unique_id=574288299]
-position = Vector2(-656.99994, -13)
-scale = Vector2(1.075862, 1.075862)
-texture = ExtResource("5")
-centered = false
+[node name="DecoWindow3" type="Sprite2D" parent="DecoWindows" unique_id=1916590096]
+position = Vector2(381.00006, -431)
+scale = Vector2(0.20273766, 0.20273761)
+texture = ExtResource("window")
 region_enabled = true
-region_rect = Rect2(31, 819, 1160, 95)
+region_rect = Rect2(192, 97, 1104, 896)
 
-[node name="LeftWall" type="StaticBody2D" parent="." unique_id=900101092]
-position = Vector2(-624, -500)
+[node name="DecoWindow2" type="Sprite2D" parent="DecoWindows" unique_id=1844130941]
+position = Vector2(-288, -149)
+scale = Vector2(0.17845437, 0.17845432)
+texture = ExtResource("window")
+region_enabled = true
+region_rect = Rect2(192, 97, 1104, 896)
 
-[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall" unique_id=778310630]
-position = Vector2(-29, -16)
-shape = SubResource("RectangleShape2D_wall")
+[node name="DecoBookshelf" type="Sprite2D" parent="." unique_id=713773352]
+z_index = -10
+position = Vector2(-532.17, 195.64351)
+scale = Vector2(0.14907253, 0.14907254)
+texture = ExtResource("shelf")
+region_enabled = true
+region_rect = Rect2(67, 54, 1089, 1172)
 
-[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall" unique_id=247894495]
-position = Vector2(-29, -15)
-color = Color(0.15, 0.13, 0.12, 1)
-polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
+[node name="StaticBody2D" type="StaticBody2D" parent="DecoBookshelf" unique_id=1254344806]
 
-[node name="RightWall" type="StaticBody2D" parent="." unique_id=427943010]
-position = Vector2(624, -500)
-
-[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall" unique_id=376557853]
-position = Vector2(-10, -14)
-shape = SubResource("RectangleShape2D_wall")
-
-[node name="RightWallVisual" type="Polygon2D" parent="RightWall" unique_id=1449658360]
-position = Vector2(-12, -11)
-color = Color(0.15, 0.13, 0.12, 1)
-polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
-
-[node name="LeftPlatform" type="StaticBody2D" parent="." unique_id=624981036]
-position = Vector2(-312, 108)
-
-[node name="LeftPlatformCollision" type="CollisionShape2D" parent="LeftPlatform" unique_id=498317186]
-shape = SubResource("RectangleShape2D_leftplat")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DecoBookshelf/StaticBody2D" unique_id=438110639]
+position = Vector2(-5.5677443, -319.59946)
+scale = Vector2(0.99999976, 0.9999999)
+shape = SubResource("RectangleShape2D_g4v7s")
 one_way_collision = true
 
-[node name="LeftPlatformSprite" type="Sprite2D" parent="LeftPlatform" unique_id=1764971143]
-position = Vector2(-247, -8)
-scale = Vector2(0.654305, 0.654305)
-texture = ExtResource("5")
-centered = false
-region_enabled = true
-region_rect = Rect2(39, 361, 755, 152)
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1803626962]
+position = Vector2(42.56163, 242.29)
+scale = Vector2(0.16265385, 0.16265385)
 
-[node name="RightPlatform" type="StaticBody2D" parent="." unique_id=1637669697]
-position = Vector2(364, 108)
-
-[node name="RightPlatformCollision" type="CollisionShape2D" parent="RightPlatform" unique_id=215898516]
-shape = SubResource("RectangleShape2D_rightplat")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=1685357473]
+position = Vector2(-11.876526, 90.4375)
+scale = Vector2(0.99999976, 0.99999994)
+shape = SubResource("RectangleShape2D_qhnhm")
 one_way_collision = true
 
-[node name="RightPlatformSprite" type="Sprite2D" parent="RightPlatform" unique_id=1164814713]
-position = Vector2(-195, -8)
-scale = Vector2(1.114286, 1.114286)
-texture = ExtResource("5")
-centered = false
+[node name="DecoBed" type="Sprite2D" parent="StaticBody2D" unique_id=3929816]
+z_index = -10
+texture = ExtResource("bed")
 region_enabled = true
-region_rect = Rect2(836, 361, 350, 99)
+region_rect = Rect2(27, 247, 1724, 520)
 
-[node name="MiddlePlatform" type="StaticBody2D" parent="." unique_id=1933295787]
-position = Vector2(52, 203)
+[node name="DecoTrashBig" type="Sprite2D" parent="." unique_id=710290403]
+z_index = -10
+position = Vector2(-312, 242)
+scale = Vector2(0.22563967, 0.22474745)
+texture = ExtResource("trash")
+region_enabled = true
+region_rect = Rect2(24, 132, 924, 396)
 
-[node name="MiddlePlatformCollision" type="CollisionShape2D" parent="MiddlePlatform" unique_id=1859937937]
-shape = SubResource("RectangleShape2D_midplat")
+[node name="DecoTrashCorner" type="Sprite2D" parent="." unique_id=854192147]
+z_index = -10
+position = Vector2(474.00003, 249.00002)
+scale = Vector2(0.2073684, 0.2073684)
+texture = ExtResource("trash")
+region_enabled = true
+region_rect = Rect2(956, 152, 472, 380)
+
+[node name="DecoTrashLeftPlatform" type="Sprite2D" parent="." unique_id=962243798]
+z_index = -10
+position = Vector2(-419.27042, -82.25001)
+scale = Vector2(0.2321428, 0.2321428)
+texture = ExtResource("trash")
+region_enabled = true
+region_rect = Rect2(328, 564, 412, 196)
+
+[node name="DecoTrashRightPlatform" type="Sprite2D" parent="." unique_id=1742101900]
+z_index = -10
+position = Vector2(692.7308, -26)
+scale = Vector2(0.2788461, 0.2788461)
+texture = ExtResource("trash")
+region_enabled = true
+region_rect = Rect2(1108, 848, 328, 208)
+
+[node name="DoorLeft" type="Sprite2D" parent="." unique_id=49866644]
+z_index = -10
+position = Vector2(-535, -142)
+scale = Vector2(0.13246751, 0.10788092)
+texture = ExtResource("door")
+region_enabled = true
+region_rect = Rect2(128, 17, 770, 1499)
+
+[node name="DoorRight" type="Sprite2D" parent="." unique_id=658191284]
+z_index = -10
+position = Vector2(992, -88)
+scale = Vector2(0.14357466, 0.10792858)
+texture = ExtResource("door")
+region_enabled = true
+region_rect = Rect2(128, 17, 770, 1499)
+
+[node name="StaticBody2D2" type="StaticBody2D" parent="." unique_id=1972319034]
+position = Vector2(65.83392, -51.501503)
+scale = Vector2(0.18407704, 0.18407704)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D2" unique_id=590992670]
+position = Vector2(-4.530304, 57.049484)
+scale = Vector2(0.99999976, 0.9999999)
+shape = SubResource("RectangleShape2D_caqj3")
 one_way_collision = true
 
-[node name="MiddlePlatformSprite" type="Sprite2D" parent="MiddlePlatform" unique_id=1313936302]
-position = Vector2(-71.5, -8)
-scale = Vector2(0.535581, 0.535581)
-texture = ExtResource("5")
-centered = false
+[node name="Computer" type="Sprite2D" parent="StaticBody2D2" unique_id=447467412]
+z_index = -10
+texture = ExtResource("pc")
 region_enabled = true
-region_rect = Rect2(633, 603, 267, 75)
+region_rect = Rect2(30, 188, 1478, 766)
 
-[node name="PileLeftBig" type="Sprite2D" parent="." unique_id=1671595749]
-position = Vector2(-598, 144.88)
-scale = Vector2(0.393939, 0.393939)
-texture = ExtResource("10")
-centered = false
-region_enabled = true
-region_rect = Rect2(46, 137, 858, 343)
-
-[node name="PileRightBig" type="Sprite2D" parent="." unique_id=374243737]
-position = Vector2(286, 71.76)
-scale = Vector2(0.658986, 0.658986)
-texture = ExtResource("10")
-centered = false
-region_enabled = true
-region_rect = Rect2(970, 161, 434, 316)
-
-[node name="Table" type="Sprite2D" parent="." unique_id=541248081]
-position = Vector2(-517, -115.000015)
-scale = Vector2(0.256963, 0.256963)
-texture = ExtResource("6")
-centered = false
-region_enabled = true
-region_rect = Rect2(97, 53, 1113, 1159)
-
-[node name="MonitorGlow" type="Polygon2D" parent="." unique_id=1274636477]
-material = SubResource("CanvasItemMaterial_glow")
-position = Vector2(-392, 9)
+[node name="MonitorGlow" type="Polygon2D" parent="." unique_id=497861459]
+z_index = -10
+material = SubResource("glow_mat")
+position = Vector2(62.999996, -101)
+scale = Vector2(1.2786298, 1.2941486)
 color = Color(0.35, 0.85, 1, 1)
-polygon = PackedVector2Array(-37, -21, 37, -21, 37, 3, 16, 3, 7, 19, 7, 21, -37, 21)
+polygon = PackedVector2Array(-39.375, -8.889, 21.139, -8.889, 21.139, 10.532, 6.363, 10.532, 0.733, 14.332, 0.03, 23.479, -39.375, 23.479)
 
-[node name="MonitorLight" type="PointLight2D" parent="."]
-position = Vector2(-331.53, -73.71)
+[node name="MonitorLight" type="PointLight2D" parent="." unique_id=1329719856]
+position = Vector2(57.6, -94.5)
 color = Color(0.6, 0.85, 1, 1)
 energy = 0.0
-texture = SubResource("GradientTexture2D_monitorlight")
+texture = SubResource("light_tex")
 texture_scale = 1.6
 
-[node name="Bed" type="Sprite2D" parent="." unique_id=492846095]
-position = Vector2(174.99998, -105)
-scale = Vector2(0.264325, 0.264325)
-texture = ExtResource("7")
+[node name="LeftPlatform" type="StaticBody2D" parent="." unique_id=475679423]
+z_index = -10
+position = Vector2(-424, -66)
+
+[node name="Collision" type="CollisionShape2D" parent="LeftPlatform" unique_id=1410243857]
+position = Vector2(-3, 8.5)
+shape = SubResource("Shape_LeftPlatform")
+one_way_collision = true
+
+[node name="Sprite" type="Sprite2D" parent="LeftPlatform" unique_id=722068393]
+position = Vector2(-190, 0)
+scale = Vector2(0.36101696, 0.36101696)
+texture = ExtResource("plank")
 centered = false
 region_enabled = true
-region_rect = Rect2(128, 53, 1082, 1030)
+region_rect = Rect2(1088, 400, 1055, 118)
 
-[node name="Bookshelf" type="StaticBody2D" parent="." unique_id=1717790621]
-position = Vector2(-585, 64.62)
+[node name="MiddlePlatform" type="StaticBody2D" parent="." unique_id=1852321368]
+z_index = -10
+position = Vector2(74, 12)
 
-[node name="BookshelfSprite" type="Sprite2D" parent="Bookshelf" unique_id=89844303]
-scale = Vector2(0.196332, 0.196332)
-texture = ExtResource("8")
+[node name="Collision" type="CollisionShape2D" parent="MiddlePlatform" unique_id=1695805337]
+position = Vector2(23.099998, 8.5)
+shape = SubResource("Shape_MiddlePlatform")
+one_way_collision = true
+
+[node name="Sprite1" type="Sprite2D" parent="MiddlePlatform" unique_id=1122368748]
+position = Vector2(-200.9, 0)
+scale = Vector2(0.328, 0.328)
+texture = ExtResource("plank")
 centered = false
 region_enabled = true
-region_rect = Rect2(130, 53, 927, 1097)
+region_rect = Rect2(1, 400, 612, 118)
 
-[node name="TrashCan" type="StaticBody2D" parent="." unique_id=1835346561]
-position = Vector2(435.5, 151.39)
-
-[node name="TrashCanSprite" type="Sprite2D" parent="TrashCan" unique_id=1379130997]
-scale = Vector2(0.117234, 0.117234)
-texture = ExtResource("9")
+[node name="Sprite2" type="Sprite2D" parent="MiddlePlatform" unique_id=66008404]
+scale = Vector2(0.328, 0.328)
+texture = ExtResource("plank")
 centered = false
 region_enabled = true
-region_rect = Rect2(210, 53, 998, 1097)
+region_rect = Rect2(1531, 400, 612, 118)
 
-[node name="PileMiddle" type="Sprite2D" parent="." unique_id=987196677]
-position = Vector2(-6.5, 141.12)
-scale = Vector2(0.318801, 0.318801)
-texture = ExtResource("10")
+[node name="RightPlatform" type="StaticBody2D" parent="." unique_id=950879354]
+z_index = -10
+position = Vector2(904, -10)
+
+[node name="Collision" type="CollisionShape2D" parent="RightPlatform" unique_id=1274184239]
+position = Vector2(3.75, 8.5)
+shape = SubResource("Shape_RightPlatform")
+one_way_collision = true
+
+[node name="Sprite" type="Sprite2D" parent="RightPlatform" unique_id=680316999]
+position = Vector2(-290.63, 0)
+scale = Vector2(0.37744, 0.37744)
+texture = ExtResource("plank")
 centered = false
 region_enabled = true
-region_rect = Rect2(395, 535, 367, 169)
+region_rect = Rect2(1, 400, 1540, 118)
 
-[node name="PileDesk" type="Sprite2D" parent="." unique_id=105219455]
-position = Vector2(-201.5, 44.13)
-scale = Vector2(0.334559, 0.334559)
-texture = ExtResource("10")
+[node name="Stair" type="StaticBody2D" parent="." unique_id=1381586042]
+z_index = -10
+position = Vector2(314.21, 12)
+script = ExtResource("stair")
+
+[node name="Sprite" type="Sprite2D" parent="Stair" unique_id=1504404788]
+position = Vector2(170.74002, 132.11)
+scale = Vector2(0.2872, 0.2872)
+texture = ExtResource("18_ff23i")
+flip_h = true
+
+[node name="CollisionShape2D5" type="CollisionShape2D" parent="Stair" unique_id=1488129119]
+position = Vector2(158.79001, 125.5)
+shape = SubResource("RectangleShape2D_h715i")
+one_way_collision = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Stair" unique_id=1470797923]
+position = Vector2(329.31345, 243.25)
+shape = SubResource("RectangleShape2D_l4llx")
+one_way_collision = true
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="Stair" unique_id=883339574]
+position = Vector2(283.69626, 215)
+shape = SubResource("RectangleShape2D_yf5fn")
+one_way_collision = true
+
+[node name="CollisionShape2D3" type="CollisionShape2D" parent="Stair" unique_id=225836684]
+position = Vector2(238.74313, 185)
+shape = SubResource("RectangleShape2D_yf5fn")
+one_way_collision = true
+
+[node name="CollisionShape2D4" type="CollisionShape2D" parent="Stair" unique_id=1303212790]
+position = Vector2(196.79001, 156)
+shape = SubResource("RectangleShape2D_yf5fn")
+one_way_collision = true
+
+[node name="CollisionShape2D6" type="CollisionShape2D" parent="Stair" unique_id=1256319898]
+position = Vector2(115.79001, 96)
+shape = SubResource("RectangleShape2D_jeouc")
+one_way_collision = true
+
+[node name="CollisionShape2D7" type="CollisionShape2D" parent="Stair" unique_id=486544505]
+position = Vector2(77.79001, 66)
+shape = SubResource("RectangleShape2D_ff23i")
+one_way_collision = true
+
+[node name="CollisionShape2D8" type="CollisionShape2D" parent="Stair" unique_id=152565636]
+position = Vector2(39.79001, 35)
+shape = SubResource("RectangleShape2D_k75mq")
+one_way_collision = true
+
+[node name="CollisionShape2D9" type="CollisionShape2D" parent="Stair" unique_id=249949841]
+position = Vector2(0.79000854, 5)
+shape = SubResource("RectangleShape2D_d82pu")
+one_way_collision = true
+
+[node name="Ground" type="StaticBody2D" parent="." unique_id=601422726]
+z_index = -10
+position = Vector2(0, 280)
+
+[node name="Collision" type="CollisionShape2D" parent="Ground" unique_id=1540436113]
+position = Vector2(270.5, 21)
+shape = SubResource("Shape_Ground")
+
+[node name="Fill" type="Polygon2D" parent="Ground" unique_id=32368339]
+color = Color(0.11, 0.13, 0.19, 1)
+polygon = PackedVector2Array(-720, 20, 1320, 20, 1320, 500, -720, 500)
+
+[node name="Sprite" type="Sprite2D" parent="Ground" unique_id=1820651787]
+position = Vector2(-674, 0)
+scale = Vector2(0.9066293, 0.629)
+texture = ExtResource("plank")
 centered = false
 region_enabled = true
-region_rect = Rect2(1132, 833, 272, 167)
+region_rect = Rect2(1, 400, 2142, 118)
 
-[node name="PileBed" type="Sprite2D" parent="." unique_id=523608701]
-position = Vector2(370.5, 69.88)
-scale = Vector2(0.218284, 0.218284)
-texture = ExtResource("10")
-centered = false
+[node name="LeftWall" type="StaticBody2D" parent="." unique_id=75296197]
+z_index = -10
+position = Vector2(-644, -400)
+
+[node name="Collision" type="CollisionShape2D" parent="LeftWall" unique_id=1302765436]
+shape = SubResource("Shape_Wall")
+
+[node name="Sprite" type="Sprite2D" parent="LeftWall" unique_id=1531036471]
+position = Vector2(0, 169.76747)
+scale = Vector2(0.411, 0.7621447)
+texture = ExtResource("wall")
 region_enabled = true
-region_rect = Rect2(868, 593, 536, 138)
+region_rect = Rect2(428, 13, 146, 1541)
 
-[node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=563005659]
-position = Vector2(-390, 260)
+[node name="RightWall" type="StaticBody2D" parent="." unique_id=1159021926]
+z_index = -10
+position = Vector2(1224, -400)
 
-[node name="PlayerSpawn2" type="Marker2D" parent="." unique_id=1400335873]
-position = Vector2(390, 260)
+[node name="Collision" type="CollisionShape2D" parent="RightWall" unique_id=261642066]
+shape = SubResource("Shape_Wall")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=49176195]
+[node name="Sprite" type="Sprite2D" parent="RightWall" unique_id=766584118]
+position = Vector2(0, 174.76746)
+scale = Vector2(0.411, 0.76863396)
+texture = ExtResource("wall")
+flip_h = true
+region_enabled = true
+region_rect = Rect2(428, 13, 146, 1541)
+
+[node name="DecoCeilingLamp1" type="Node2D" parent="." unique_id=2010554448]
+z_index = -10
+position = Vector2(-404, -25)
+script = ExtResource("ceiling_lamp")
+light_color = Color(0.044301324, 0.2914876, 0.3424515, 1)
+glow_energy = null
+glow_color = null
+flicker_seed = 1.3
+
+[node name="DecoCeilingLamp2" type="Node2D" parent="." unique_id=1326349793]
+z_index = -10
+position = Vector2(373, -552)
+script = ExtResource("ceiling_lamp")
+light_color = Color(0.043137256, 0.2901961, 0.34117648, 1)
+glow_energy = null
+glow_color = null
+flicker_seed = 4.7
+
+[node name="DecoCeilingLamp3" type="Node2D" parent="." unique_id=3658112]
+z_index = -10
+position = Vector2(945, 32)
+script = ExtResource("ceiling_lamp")
+light_color = Color(0.043137256, 0.2901961, 0.34117648, 1)
+glow_energy = null
+glow_color = null
+flicker_seed = 8.2
+
+[node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=615495997]
+position = Vector2(-397, 255)
+
+[node name="PlayerSpawn2" type="Marker2D" parent="." unique_id=331890560]
+position = Vector2(1030, 255)
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=396175272]
 position = Vector2(0, 150)
-script = ExtResource("3")
+script = ExtResource("cam")
+min_y = -400.0
+lock_ground_to_bottom = true
+use_ceiling = true
+ceiling_y = -611.0
 
-[node name="CombatHUD" parent="." unique_id=1460722618 instance=ExtResource("2")]
+[node name="CombatHUD" parent="." unique_id=850769578 instance=ExtResource("hud")]
+
+[node name="Wall5" type="StaticBody2D" parent="." unique_id=2010641091]
+z_index = -10
+position = Vector2(178, -1140)
+rotation = 1.5707964
+
+[node name="Collision" type="CollisionShape2D" parent="Wall5" unique_id=233599264]
+position = Vector2(559, -46.50003)
+shape = SubResource("Shape_Wall")
+
+[node name="Sprite" type="Sprite2D" parent="Wall5" unique_id=310062131]
+position = Vector2(560.00305, 534.76746)
+scale = Vector2(0.411, 0.7621447)
+texture = ExtResource("wall")
+region_enabled = true
+region_rect = Rect2(428, 13, 146, 1541)
+
+[node name="Sprite2" type="Sprite2D" parent="Wall5" unique_id=1424665957]
+position = Vector2(560.003, -629.2325)
+scale = Vector2(0.411, 0.7621447)
+texture = ExtResource("wall")
+region_enabled = true
+region_rect = Rect2(428, 13, 146, 1541)
+
+[node name="LeftPlatform4" type="StaticBody2D" parent="." unique_id=1768527830]
+z_index = -10
+position = Vector2(-429, -317)
+
+[node name="Collision" type="CollisionShape2D" parent="LeftPlatform4" unique_id=820967708]
+position = Vector2(-3, 8.5)
+shape = SubResource("Shape_LeftPlatform")
+one_way_collision = true
+
+[node name="Sprite" type="Sprite2D" parent="LeftPlatform4" unique_id=901810500]
+position = Vector2(-190, 0)
+scale = Vector2(0.36101696, 0.36101696)
+texture = ExtResource("plank")
+centered = false
+region_enabled = true
+region_rect = Rect2(1088, 400, 1055, 118)
+
+[node name="RightPlatform2" type="StaticBody2D" parent="." unique_id=43581805]
+z_index = -10
+position = Vector2(904, -10)
+
+[node name="Collision" type="CollisionShape2D" parent="RightPlatform2" unique_id=686929829]
+position = Vector2(3.75, 8.5)
+shape = SubResource("Shape_RightPlatform")
+one_way_collision = true
+
+[node name="Sprite" type="Sprite2D" parent="RightPlatform2" unique_id=1665381393]
+position = Vector2(-290.63, 0)
+scale = Vector2(0.37744, 0.37744)
+texture = ExtResource("plank")
+centered = false
+region_enabled = true
+region_rect = Rect2(1, 400, 1540, 118)
+
+[node name="MiddlePlatform2" type="StaticBody2D" parent="." unique_id=205546180]
+z_index = -10
+position = Vector2(380, -317)
+
+[node name="Collision" type="CollisionShape2D" parent="MiddlePlatform2" unique_id=1510337031]
+position = Vector2(0.5, 8.5)
+shape = SubResource("Shape_MiddlePlatform")
+one_way_collision = true
+
+[node name="Sprite1" type="Sprite2D" parent="MiddlePlatform2" unique_id=490051763]
+position = Vector2(-200.9, 0)
+scale = Vector2(0.328, 0.328)
+texture = ExtResource("plank")
+centered = false
+region_enabled = true
+region_rect = Rect2(1, 400, 612, 118)
+
+[node name="Sprite2" type="Sprite2D" parent="MiddlePlatform2" unique_id=2140835966]
+scale = Vector2(0.328, 0.328)
+texture = ExtResource("plank")
+centered = false
+region_enabled = true
+region_rect = Rect2(1531, 400, 612, 118)
+
+[node name="Stair2" type="StaticBody2D" parent="." unique_id=1004876446]
+z_index = -10
+position = Vector2(-206, -299)
+script = ExtResource("stair")
+
+[node name="Sprite" type="Sprite2D" parent="Stair2" unique_id=161233406]
+position = Vector2(170.74, 132.11)
+scale = Vector2(0.2872, 0.2872)
+texture = ExtResource("18_ff23i")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Stair2" unique_id=614531667]
+position = Vector2(13.199997, 243.25)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_57qmd")
+one_way_collision = true
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="Stair2" unique_id=1652399465]
+position = Vector2(57.100006, 214.125)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_ffisd")
+one_way_collision = true
+
+[node name="CollisionShape2D3" type="CollisionShape2D" parent="Stair2" unique_id=568592524]
+position = Vector2(103.55, 185.00002)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_g0vbx")
+one_way_collision = true
+
+[node name="CollisionShape2D4" type="CollisionShape2D" parent="Stair2" unique_id=509651345]
+position = Vector2(144.00002, 155.00002)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_vdpjx")
+one_way_collision = true
+
+[node name="CollisionShape2D5" type="CollisionShape2D" parent="Stair2" unique_id=1338612900]
+position = Vector2(182.77501, 125.000015)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_l73jx")
+one_way_collision = true
+
+[node name="CollisionShape2D6" type="CollisionShape2D" parent="Stair2" unique_id=755522255]
+position = Vector2(225.19376, 96.000015)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_b0foi")
+one_way_collision = true
+
+[node name="CollisionShape2D7" type="CollisionShape2D" parent="Stair2" unique_id=153313433]
+position = Vector2(264, 65.562515)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_ccn8x")
+one_way_collision = true
+
+[node name="CollisionShape2D8" type="CollisionShape2D" parent="Stair2" unique_id=1392136311]
+position = Vector2(301.5, 34.78125)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_6f3sd")
+one_way_collision = true
+
+[node name="CollisionShape2D9" type="CollisionShape2D" parent="Stair2" unique_id=412015157]
+position = Vector2(340.25, 4)
+scale = Vector2(3.36, 1)
+shape = SubResource("RectangleShape2D_70pi0")
+one_way_collision = true
+
+[node name="DecoBookshelf2" type="Sprite2D" parent="." unique_id=1750163925]
+z_index = -10
+position = Vector2(768.9998, -96.999954)
+scale = Vector2(0.14907253, 0.14907254)
+texture = ExtResource("shelf")
+region_enabled = true
+region_rect = Rect2(67, 54, 1089, 1172)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="DecoBookshelf2" unique_id=1080801108]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DecoBookshelf2/StaticBody2D" unique_id=942539637]
+position = Vector2(-5.5677443, -319.59946)
+scale = Vector2(0.99999976, 0.9999999)
+shape = SubResource("RectangleShape2D_g4v7s")
+one_way_collision = true
+
+[node name="MomDoorGimmick" type="Node2D" parent="." unique_id=309846743]
+script = ExtResource("mom_gimmick")
+mom_scene = ExtResource("mom_scene")
+door_paths = Array[NodePath]([NodePath("../DoorLeft"), NodePath("../DoorRight")])

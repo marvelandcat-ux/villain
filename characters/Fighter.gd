@@ -52,6 +52,13 @@ const DEFAULT_DASH_DURATION: float = 0.04
 const DEFAULT_DASH_COOLDOWN: float = 2.5
 ## 대시 중 잔상을 남기는 간격(초). 대시가 0.04초뿐이라 매 물리 프레임 남긴다(0.04면 시작 잔상 하나만 나왔다)
 const DASH_TRAIL_INTERVAL: float = 0.015
+## 점프할 때 몸 뒤로 남는 하얀 스피드 라인 — 지나간 길을 따라 휘는 혜성 꼬리(combat/DashTrailLines.gd).
+## 2026-10-06 사용자 요청으로 대시에서 점프로 옮김. 이 시간(초) 동안 꼬리가 몸을 따라오고, 그 뒤 몸 쪽으로 줄어들며 사라진다.
+## 기본 점프가 꼭대기까지 약 0.42초(478 / 1150)라 올라가는 동안만 남게 맞췄다 — TODO: 보고 조절
+const JUMP_SPEED_LINE_TIME: float = 0.4
+## 점프 줄은 길에 수직(좌우)으로 이 범위 안에 퍼진다 — 세로로 뛰니 몸 폭 안쪽으로
+const JUMP_SPEED_LINE_SPREAD: Vector2 = Vector2(-18.0, 18.0)
+const DASH_TRAIL_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
 ## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
 const AIR_TRAIL_INTERVAL: float = 0.04
@@ -175,7 +182,7 @@ var movement_override = null
 ## ⚠️ 한 프레임 늦게 가로채면 그 사이에 평소 대시가 이미 한 프레임치(약 47px) 튀어 나간다
 var dash_override = null
 ## 카운터 자세(`CounterSkill`)가 자신을 등록해두는 슬롯. 이게 있는 동안 캐릭터의 공격에 맞으면
-## 피해 대신 `trigger_counter(fighter)`가 불린다(`try_counter()`). 타입은 movement_override와 같은 이유로 비워 둔다
+## 피해 대신 `trigger_counter(fighter, attacker)`가 불린다(`try_counter()`). 타입은 movement_override와 같은 이유로 비워 둔다
 var counter_stance = null
 
 ## 이동속도/점프력/공격력/쿨타임 진행속도 배수 — 버프·디버프 스킬이 일시적으로 바꾼다
@@ -193,9 +200,9 @@ var damage_reduction: float = 0.0
 ## 받는 데미지에 곱하는 배수 — `set_modifier`로 거는 버프용(0.6 = 40% 덜 받음).
 ## `damage_reduction`은 `set_modifier`로 걸면 다 풀릴 때 1.0(완전 무효)이 되므로 버프는 이쪽을 쓸 것
 var damage_taken_multiplier: float = 1.0
-## 방어·대시 쿨타임에 곱하는 배수 — `set_modifier`로 건다(고양이 아주머니 주황 고양이 옷 0.5).
+## 대시 쿨타임에 곱하는 배수 — `set_modifier`로 건다(고양이 아주머니 주황 고양이 옷 0.5).
 ## 쿨 길이는 그대로 두고 **도는 속도**를 1/배수로 바꾼다(쿨 파이 비율이 안 어긋나게)
-var guard_dash_cooldown_multiplier: float = 1.0
+var dash_cooldown_multiplier: float = 1.0
 ## true인 동안은 어떤 데미지도 받지 않는다 (예: 촉법소년 궁극기 사용 중).
 ## **읽을 때는 아래 두 가지를 합쳐서 본다** — 시간제 무적(`grant_invincibility`)과
 ## "이 동작이 끝날 때까지" 무적(`push_invincible`)을 따로 세야 서로를 꺼버리지 않는다.
@@ -952,13 +959,14 @@ func can_be_grabbed() -> bool:
 	return not blocks_debuff() and not has_super_armor() and counter_stance == null
 
 ## 카운터 자세 중이면 반격을 시작하고 true — 이번 피해는 없던 일이 된다. 자세가 아니면 false
-func try_counter() -> bool:
+## attacker = 실제로 때린 몸(캐릭터·소환물). 모르면 null — 반격은 그때 상대 캐릭터에게 간다
+func try_counter(attacker: Node = null) -> bool:
 	if counter_stance == null or not is_instance_valid(counter_stance):
 		counter_stance = null
 		return false
 	var stance = counter_stance
 	counter_stance = null
-	stance.trigger_counter(self)
+	stance.trigger_counter(self, attacker)
 	return true
 
 ## duration초 동안 무적 상태로 만든다
@@ -1109,6 +1117,28 @@ func can_dash() -> bool:
 func is_dashing() -> bool:
 	return _dash_time > 0.0
 
+## 대시가 앞에 있는 상대를 넘어가지 않게 속도를 줄인다 — 몸 충돌이 꺼져 있어서(_ignore_other_fighters)
+## 그냥 두면 대시 속도로 상대를 뚫고, 가운데를 넘는 순간 _separate_from_others가 반대편으로 밀어내 버린다.
+## 상대 몸 앞(BODY_PUSH_WIDTH)에 닿으면 거기서 멈추고 대시를 끝낸다. 뚫고 지나가는 몸(pass_through_fighters)은 예외
+func _dash_stop_before_fighters(vx: float, delta: float) -> float:
+	if pass_through_fighters:
+		return vx
+	var step: float = absf(vx) * delta
+	for other in get_tree().get_nodes_in_group("fighters"):
+		if other == self or not (other is Fighter) or not is_instance_valid(other) or other.pass_through_fighters:
+			continue
+		if absf(global_position.y - other.global_position.y) > BODY_PUSH_HEIGHT:
+			continue
+		var dx: float = other.global_position.x - global_position.x
+		# 등 뒤나 이미 거의 겹친 상대는 안 본다(겹침은 _separate_from_others가 푼다)
+		if signf(dx) != _dash_dir or absf(dx) < 1.0:
+			continue
+		var gap: float = absf(dx) - BODY_PUSH_WIDTH
+		if gap < step:
+			_dash_time = 0.0
+			return _dash_dir * maxf(gap, 0.0) / maxf(delta, 0.0001)
+	return vx
+
 ## 방향키를 두 번 눌렀을 때 그 방향으로 짧게 미끄러진다. 실제로 나갔으면 true.
 ## 스킬이 아니라 기본 조작이라 스킬 클래시·is_busy()와 무관하게 동작한다
 func dash(direction: float) -> bool:
@@ -1116,6 +1146,9 @@ func dash(direction: float) -> bool:
 		return false
 	_dash_dir = signf(direction)
 	facing = _dash_dir
+	# 맞고 날아가던 힘(_launch_momentum)을 끊는다 — 안 끊으면 대시가 끝난 뒤에도 move()가 대시 속도를
+	# "날아가던 힘"으로 보고 착지할 때까지 거의 그대로 유지해서 엄청 멀리 미끄러진다
+	_launch_momentum = false
 	# 쿨은 가로채든 말든 똑같이 돈다(mtem: 짜장면을 먹을수록 늘어나는 개인 추가분까지 포함)
 	_dash_cooldown_left = effective_dash_cooldown()
 	# 가로채는 스킬이 있으면 평소 대시는 아예 시작하지 않는다(그래야 첫 프레임이 안 튄다)
@@ -1130,6 +1163,18 @@ func dash(direction: float) -> bool:
 ## 대시 잔상 — 푸른빛을 입혀서 남긴다
 func _spawn_dash_afterimage() -> void:
 	_spawn_afterimage(Color(0.7, 0.82, 1.0, 0.42), 0.22)
+
+## 점프 스피드 라인 — **맵에 붙인다**(캐릭터 자식이면 좌우 반전에 같이 뒤집힌다). 줄은 지나간 자리를 맵 좌표로 기록해서 긋는다
+func _spawn_jump_speed_lines() -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var lines = DASH_TRAIL_LINES_SCRIPT.new()
+	# 세로로 뛰면 위아래로 띄운 줄이 한 줄로 겹친다 → 길에 수직으로 띄운다(값은 add_child 전에)
+	lines.offset_along_normal = true
+	lines.spread_y = JUMP_SPEED_LINE_SPREAD
+	parent.add_child(lines)
+	lines.setup(self, JUMP_SPEED_LINE_TIME)
 
 ## duration초 동안 날아가는 몸 뒤로 잔상을 남긴다 — 그네에 튕길 때(Swing)·스프링 시소로 높이 튈 때(SpringJumpPad) 맵이 부른다.
 ## 이미 남기는 중이면 남은 시간과 비교해 더 긴 쪽을 쓴다
@@ -1168,7 +1213,10 @@ func _spawn_afterimage(tint: Color, fade: float) -> void:
 		return
 	ghost.set_script(null)
 	parent.add_child(ghost)
-	ghost.z_index = -2   # 본체(0)와 그 손(1)보다 확실히 뒤로
+	# 본체 뒤, 배경 앞 — z는 본체와 같게 두고 트리 순서만 본체 바로 앞으로.
+	# 음수 z로 두면 배경이 z 0인 맵(번화가·헬스장·튜토리얼 숲)에선 배경 그림 뒤로 숨었다
+	ghost.z_index = z_index + visual.z_index
+	parent.move_child(ghost, get_index())
 	ghost.global_position = visual.global_position
 	ghost.scale = visual.scale
 	ghost.modulate = tint
@@ -1223,7 +1271,8 @@ func jump() -> void:
 		velocity.y = air_jump_velocity * jump_multiplier
 	else:
 		return
-	_spawn_jump_wind(air)
+	# 발밑 바람 줄기(_spawn_jump_wind)는 2026-10-06 사용자 요청으로 뺐다 — 하얀 스피드 라인으로 대신한다
+	_spawn_jump_speed_lines()
 	if vault_jump:
 		_play_vault_effect()
 	# 점프하는 순간 몸이 세로로 늘어나는 연출 (그 메서드가 있는 비주얼만)
@@ -1512,7 +1561,7 @@ func apply_physics(delta: float) -> void:
 	if _blocked_attack_left > 0.0:
 		_blocked_attack_left = maxf(_blocked_attack_left - delta, 0.0)
 	if _guard_cooldown_left > 0.0:
-		_guard_cooldown_left = maxf(_guard_cooldown_left - delta / maxf(guard_dash_cooldown_multiplier, 0.05), 0.0)
+		_guard_cooldown_left = maxf(_guard_cooldown_left - delta, 0.0)
 	if _guard_time > 0.0:
 		_guard_time = maxf(_guard_time - delta, 0.0)
 		velocity.x = 0.0
@@ -1528,13 +1577,13 @@ func apply_physics(delta: float) -> void:
 	# 대시 — 짧은 시간 동안 입력보다 우선해서 수평 속도를 덮어쓴다.
 	# 맞으면 그 자리에서 끊긴다(넉백이 대시를 이겨야 콤보가 성립한다)
 	if _dash_cooldown_left > 0.0:
-		_dash_cooldown_left = maxf(_dash_cooldown_left - delta / maxf(guard_dash_cooldown_multiplier, 0.05), 0.0)
+		_dash_cooldown_left = maxf(_dash_cooldown_left - delta / maxf(dash_cooldown_multiplier, 0.05), 0.0)
 	if _dash_time > 0.0:
 		if _hitstun_time > 0.0 or is_grabbed:
 			_dash_time = 0.0
 		else:
 			_dash_time = maxf(_dash_time - delta, 0.0)
-			velocity.x = _dash_dir * dash_speed
+			velocity.x = _dash_stop_before_fighters(_dash_dir * dash_speed, delta)
 			_dash_trail_timer -= delta
 			if _dash_trail_timer <= 0.0:
 				_dash_trail_timer = DASH_TRAIL_INTERVAL

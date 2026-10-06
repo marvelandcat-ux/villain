@@ -16,7 +16,7 @@ height = 60.0
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hurt"]
 radius = 20.0
-height = 87.0
+height = 91.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
@@ -34,7 +34,7 @@ shape = SubResource("CapsuleShape2D_body")
 script = ExtResource("5")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
-position = Vector2(0, -13.5)
+position = Vector2(0, -15.5)
 shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
@@ -75,5 +75,5 @@ description = "집에서 나올 고양이를 검은 고양이, 주황 고양이,
 script = ExtResource("9")
 cooldown = 22.0
 skill_name = "고양이 대작전"
-description = "고른 고양이에 따라 다르다. 검은 고양이: 겨드랑이에 끼고 기본공격으로 똥 유탄 5발(범위 피해). 주황 고양이: 고양이 옷을 입고 10초 동안 스킬1, 2를 못 쓰는 대신 기본공격, 체력, 방어, 쿨타임이 좋아진다. 흰 고양이: 10초 동안 흰 고양이를 들고 기본공격이 빠른 할퀴기가 된다"
+description = "고른 고양이에 따라 다르다. 검은 고양이: 겨드랑이에 끼고 기본공격으로 똥 유탄 5발(범위 피해). 주황 고양이: 라운드 끝까지 고양이 옷을 입고 스킬을 못 쓰는 대신 기본공격이 세지고 빨라지며(3타는 머리를 잡아 등 뒤로 패대기), 대시가 빨리 돌고 받는 피해가 줄어든다. 흰 고양이: 10초 동안 흰 고양이를 들고 기본공격이 빠른 할퀴기가 된다"
 start_on_cooldown = true
