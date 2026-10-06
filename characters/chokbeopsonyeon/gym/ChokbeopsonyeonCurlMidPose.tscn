@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://c2b4tnxgubuxy"]
 
 [ext_resource type="Script" uid="uid://yb1yin5ofp3" path="res://characters/PosePreview.gd" id="1_mjvim"]
-[ext_resource type="Texture2D" uid="uid://ds6act8buxm8g" path="res://sprite/축법소년/축법소년 발.png" id="2_n06fh"]
-[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="3_nt7i5"]
+[ext_resource type="Texture2D" uid="uid://ds6act8buxm8g" path="res://sprite/금쪽이/축법소년 발.png" id="2_n06fh"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/금쪽이/축법소년 몸.png" id="3_nt7i5"]
 [ext_resource type="Texture2D" uid="uid://cyv1kfvn3u8oe" path="res://sprite/맵/헬스장/올라잇.png" id="4_7uk71"]
 [ext_resource type="Script" uid="uid://bo4wa6akten1b" path="res://combat/GymBarbell.gd" id="5_i5212"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_6arfg"]
-[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/축법소년/축법소년 머리.png" id="7_ssc0x"]
+[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/금쪽이/축법소년 머리.png" id="7_ssc0x"]
 
 [node name="GymCurlMidPose" type="Node2D" unique_id=744874838]
 scale = Vector2(8, 8)

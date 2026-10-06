@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dx5hay4ffh1sa"
-path="res://.godot/imported/축법소년 몸P2.png-766123c81c77b32ead206ca88667a031.ctex"
+uid="uid://cbgqk45lphbbq"
+path="res://.godot/imported/지하철에앉아있는지하철빌런_0001_머리.png-bc9e4cc74cfcae5f56d98b06d7d45117.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/금쪽이/축법소년 몸P2.png"
-dest_files=["res://.godot/imported/축법소년 몸P2.png-766123c81c77b32ead206ca88667a031.ctex"]
+source_file="res://sprite/storymode/지하철빌런/지하철에앉아있는지하철빌런_0001_머리.png"
+dest_files=["res://.godot/imported/지하철에앉아있는지하철빌런_0001_머리.png-bc9e4cc74cfcae5f56d98b06d7d45117.ctex"]
 
 [params]
 

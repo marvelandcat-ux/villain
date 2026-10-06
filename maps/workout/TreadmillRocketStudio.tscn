@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_studio"]
 [ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_data"]
-[ext_resource type="Texture2D" uid="uid://4aql1kf8mvf6" path="res://sprite/축법소년/런닝머신10스택.png" id="3_0nupn"]
+[ext_resource type="Texture2D" uid="uid://4aql1kf8mvf6" path="res://sprite/금쪽이/런닝머신10스택.png" id="3_0nupn"]
 [ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="3_flame"]
-[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/축법소년/축법소년 몸.png" id="5_runck"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/금쪽이/축법소년 몸.png" id="5_runck"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_wfbhl"]
-[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/축법소년/축법소년 머리.png" id="7_fdmix"]
+[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/금쪽이/축법소년 머리.png" id="7_fdmix"]
 
 [node name="TreadmillRocketStudio" type="Node2D" unique_id=1505023825]
 position = Vector2(640, 300)

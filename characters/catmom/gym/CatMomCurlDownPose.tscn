@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_nj0tw"]
 [ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/발.png" id="2_0vk3d"]
-[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/치마.png" id="3_y3pqk"]
+[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="3_y3pqk"]
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_p61db"]
 [ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_jdibs"]
 [ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/손.png" id="6_0tg12"]
@@ -26,7 +26,7 @@ texture = ExtResource("2_0vk3d")
 [node name="Body" type="Sprite2D" parent="." unique_id=1053467267]
 position = Vector2(0.96, 2.2)
 rotation = 0.02
-scale = Vector2(0.10488372, 0.114444435)
+scale = Vector2(0.024431, 0.029429)
 texture = ExtResource("3_y3pqk")
 
 [node name="BarbellView" type="Sprite2D" parent="." unique_id=193880983]

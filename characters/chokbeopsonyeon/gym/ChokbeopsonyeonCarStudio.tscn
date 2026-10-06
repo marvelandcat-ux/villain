@@ -3,9 +3,9 @@
 [ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_3xwoa"]
 [ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_8hue4"]
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_l7tsd"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 몸.png" id="4_3hb4a"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 몸.png" id="4_3hb4a"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_7cs80"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 머리.png" id="6_htncr"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 머리.png" id="6_htncr"]
 
 [node name="ChokbeopsonyeonCarStudio" type="Node2D" unique_id=221854591]
 position = Vector2(640, 300)

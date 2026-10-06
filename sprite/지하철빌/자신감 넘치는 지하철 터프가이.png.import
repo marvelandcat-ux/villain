@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dx5hay4ffh1sa"
-path="res://.godot/imported/축법소년 몸P2.png-766123c81c77b32ead206ca88667a031.ctex"
+uid="uid://cqor6juuc7kd8"
+path="res://.godot/imported/자신감 넘치는 지하철 터프가이.png-53f6d3738690f0c7262c9e12d6f647e0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/금쪽이/축법소년 몸P2.png"
-dest_files=["res://.godot/imported/축법소년 몸P2.png-766123c81c77b32ead206ca88667a031.ctex"]
+source_file="res://sprite/지하철빌/자신감 넘치는 지하철 터프가이.png"
+dest_files=["res://.godot/imported/자신감 넘치는 지하철 터프가이.png-53f6d3738690f0c7262c9e12d6f647e0.ctex"]
 
 [params]
 

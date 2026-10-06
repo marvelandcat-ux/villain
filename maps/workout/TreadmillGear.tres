@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://civmv8cp3uyxg" path="res://maps/workout/TreadmillGearData.gd" id="1_data"]
 [ext_resource type="Texture2D" uid="uid://d5j57gv4txsc" path="res://sprite/맵/헬스장/자전거(4~7).png" id="2_bike"]
 [ext_resource type="Texture2D" uid="uid://c3u0e1scb08ek" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_car"]
-[ext_resource type="Texture2D" uid="uid://4aql1kf8mvf6" path="res://sprite/축법소년/런닝머신10스택.png" id="4_kid"]
+[ext_resource type="Texture2D" uid="uid://4aql1kf8mvf6" path="res://sprite/금쪽이/런닝머신10스택.png" id="4_kid"]
 [ext_resource type="Texture2D" uid="uid://bjbq0y6vfix5x" path="res://sprite/악플러/몸/런닝머신10스택.png" id="5_akp"]
 [ext_resource type="Texture2D" uid="uid://cmocpu3pmdkhp" path="res://sprite/주정뱅이/몸/런닝머신10스택.png" id="6_drunk"]
 [ext_resource type="Texture2D" uid="uid://clrdfph8wchic" path="res://sprite/고양이 아줌마/런닝머신10스택.png" id="7_cat"]

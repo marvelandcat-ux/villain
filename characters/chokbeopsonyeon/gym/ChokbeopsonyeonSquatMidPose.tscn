@@ -1,10 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_m1ew1"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 발.png" id="2_r1t3t"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 몸.png" id="3_2sg2t"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 발.png" id="2_r1t3t"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 몸.png" id="3_2sg2t"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_ol2te"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 머리.png" id="5_jq7ow"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 머리.png" id="5_jq7ow"]
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/원판.png" id="6_imvne"]
 [ext_resource type="Script" path="res://combat/SquatPlate.gd" id="7_bgt8r"]
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/바벨정면.png" id="8_cds8g"]

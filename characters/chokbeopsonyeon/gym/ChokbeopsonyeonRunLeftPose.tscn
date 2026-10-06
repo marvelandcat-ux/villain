@@ -1,10 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_48fa0"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 발.png" id="2_xo6eq"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 몸.png" id="3_i26oi"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 발.png" id="2_xo6eq"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 몸.png" id="3_i26oi"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_cdsfj"]
-[ext_resource type="Texture2D" path="res://sprite/축법소년/축법소년 머리.png" id="5_mlldx"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 머리.png" id="5_mlldx"]
 
 [node name="GymRunLeftPose" type="Node2D" unique_id=724953001]
 scale = Vector2(8, 8)

@@ -4,7 +4,7 @@
 [ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_nseuj"]
 [ext_resource type="Texture2D" uid="uid://clrdfph8wchic" path="res://sprite/고양이 아줌마/런닝머신10스택.png" id="3_1704d"]
 [ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_n8fok"]
-[ext_resource type="Texture2D" uid="uid://bgjh3mm7rk8ly" path="res://sprite/고양이 아줌마/치마.png" id="5_ib51u"]
+[ext_resource type="Texture2D" uid="uid://d0aqgl2hi8cd5" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="5_sakqf"]
 [ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="6_kivc7"]
 [ext_resource type="Texture2D" uid="uid://g2b2q88ckkhw" path="res://sprite/고양이 아줌마/캣맘머리.png" id="7_hy5km"]
 
@@ -29,8 +29,8 @@ script = ExtResource("4_n8fok")
 
 [node name="Body" type="Sprite2D" parent="." unique_id=1850118347]
 position = Vector2(0.9600017, 1.4500003)
-scale = Vector2(0.10488372, 0.114444435)
-texture = ExtResource("5_ib51u")
+scale = Vector2(0.024431, 0.029429)
+texture = ExtResource("5_sakqf")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1763705476]
 position = Vector2(-27, 4)
@@ -45,5 +45,5 @@ texture = ExtResource("6_kivc7")
 
 [node name="Head" type="Sprite2D" parent="." unique_id=1531073183]
 position = Vector2(-1.52, -32.07)
-scale = Vector2(0.042, 0.042)
+scale = Vector2(0.0455, 0.0455)
 texture = ExtResource("7_hy5km")

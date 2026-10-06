@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_84fvd"]
 [ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/발.png" id="2_3xld8"]
-[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/치마.png" id="3_ufkh4"]
+[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="3_ufkh4"]
 [ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/손.png" id="4_tjdpa"]
 [ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/캣맘머리.png" id="5_if7ug"]
 
@@ -26,7 +26,7 @@ texture = ExtResource("2_3xld8")
 [node name="Body" type="Sprite2D" parent="." unique_id=490097755]
 position = Vector2(1.5, 0)
 rotation = 0.09
-scale = Vector2(0.10488372, 0.114444435)
+scale = Vector2(0.024431, 0.029429)
 texture = ExtResource("3_ufkh4")
 
 [node name="HandL" type="Sprite2D" parent="." unique_id=1224612799]

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://4aql1kf8mvf6"
-path="res://.godot/imported/런닝머신10스택.png-28e3a164f064593c42de3072f7d8af1b.ctex"
+path="res://.godot/imported/런닝머신10스택.png-3d8670dbc5878d7791ac6ce20c0aa7b2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/축법소년/런닝머신10스택.png"
-dest_files=["res://.godot/imported/런닝머신10스택.png-28e3a164f064593c42de3072f7d8af1b.ctex"]
+source_file="res://sprite/금쪽이/런닝머신10스택.png"
+dest_files=["res://.godot/imported/런닝머신10스택.png-3d8670dbc5878d7791ac6ce20c0aa7b2.ctex"]
 
 [params]
 
