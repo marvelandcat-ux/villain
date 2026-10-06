@@ -50,6 +50,9 @@ static var show_debug_grid: bool = false
 ## 체력·스킬 판(`CombatHUD`의 선수 판 둘)을 **화면 위쪽 좌·우 구석**으로 올릴지.
 ## 놀이터처럼 아래쪽에 발판·모래밭이 있어서 평소 자리(아래)에 두면 바닥 기믹을 가리는 맵에서 켠다
 @export var hud_panels_top: bool = false
+## 아래 자리일 때 두 선수 판을 평소보다 **이만큼 더 내린다**(px). 바닥이 화면 아래쪽에 있어서
+## 평소 자리면 서 있는 캐릭터를 가리는 맵(헬스장 1층)에서 쓴다. 0이면 평소 자리
+@export var hud_panels_drop: float = 0.0
 ## 쓰러질 때 화면 전체 슬로모션 배속 (0.3 = 30% 속도)
 @export var knockout_time_scale: float = 0.3
 ## 슬로모션이 이어지는 시간(초, **실제 시간**) — 끝나면 원래 속도로 돌아온다
@@ -127,6 +130,8 @@ func _ready() -> void:
 	if _combat_hud:
 		if _combat_hud.has_method("set_panels_top"):
 			_combat_hud.set_panels_top(hud_panels_top)
+		if _combat_hud.has_method("set_panels_drop"):
+			_combat_hud.set_panels_drop(hud_panels_drop)
 		_combat_hud.setup(_p1, _p2)
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 
@@ -324,6 +329,10 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 
 ## 라운드 승리 띠를 띄우고 끝날 때까지 기다린다. 띠를 못 찾으면 잠깐 쉬고 넘어간다
 func _play_round_banner(p1_won: bool, is_draw: bool) -> void:
+	# 방 설정에서 **승패 연출을 꺼 뒀으면** 띠 없이 넘어간다(최종 결과 화면은 그대로 뜬다)
+	if not GameState.result_cutscene_enabled:
+		await get_tree().create_timer(0.3).timeout
+		return
 	var scene: PackedScene = round_banner_scene
 	if scene == null and ResourceLoader.exists(DEFAULT_ROUND_BANNER):
 		scene = load(DEFAULT_ROUND_BANNER)
@@ -460,7 +469,15 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	# ⚠️ 체력·공격력 손보기는 **add_child 전에** 해야 한다 — Fighter._ready()가 current_hp를 stats.max_hp로 잡는다
 	if is_ai and GameState.game_mode == "story":
 		_apply_story_handicap(fighter)
+	_apply_hp_multiplier(fighter)
 	add_child(fighter)
+	# **둘이 같은 캐릭터를 골랐을 때만** 2P의 몸 색을 바꾼다(2026-10-05 사용자 지정) —
+	# 서로 다른 캐릭터면 이미 생김새로 구분되므로 평소 색 그대로가 낫다.
+	# add_child 뒤에 불러야 한다(리그가 _ready에서 원래 몸통을 기억한 뒤여야 기준까지 같이 바뀐다)
+	if player_index == 2 and GameState.p1_character_path == GameState.p2_character_path:
+		var visual: Node = fighter.get_node_or_null("Visual")
+		if visual and visual.has_method("set_player_two"):
+			visual.set_player_two(true)
 	var spawn: Marker2D = get_node_or_null(spawn_marker_name)
 	if spawn:
 		fighter.global_position = spawn.global_position
@@ -498,6 +515,15 @@ func _face_each_other(fighter: Fighter, spawn: Marker2D, spawn_marker_name: Stri
 ## 스토리 상대의 체력·공격력을 그 에피소드가 정한 배수로 조정한다.
 ## ⚠️ **`stats`는 씬이 공유하는 Resource라 반드시 복제해서 고친다** — 그냥 고치면 훈련장·대전에서
 ## 같은 캐릭터를 골랐을 때도 체력이 두 배인 채로 나온다(디스크의 .tres까지 더럽혀질 수 있다)
+## 방 설정의 체력 배율을 건다. **스탯 리소스를 복제해서** 바꾼다 —
+## 원본(.tres)은 모든 판이 같이 쓰므로 직접 고치면 다음 판까지 따라간다
+func _apply_hp_multiplier(fighter: Fighter) -> void:
+	var scale: float = GameState.hp_multiplier
+	if fighter.stats == null or is_equal_approx(scale, 1.0):
+		return
+	fighter.stats = fighter.stats.duplicate()
+	fighter.stats.max_hp = maxi(int(round(fighter.stats.max_hp * scale)), 1)
+
 func _apply_story_handicap(fighter: Fighter) -> void:
 	var hp_scale: float = GameState.story_enemy_hp_scale
 	var dmg_scale: float = GameState.story_enemy_damage_scale

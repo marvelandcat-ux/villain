@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_br25a"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="2_djkxl"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_o165g"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_1axom"]
+[ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_aegt1"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_7v03b"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="7_6bc2d"]
+
+[node name="GymCurlMidPose" type="Node2D" unique_id=744874838]
+scale = Vector2(8, 8)
+script = ExtResource("1_br25a")
+alone_opens_scene = "res://characters/floornoise/gym/FloorNoiseCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1848500128]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_djkxl")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1576695887]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_djkxl")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1369385615]
+position = Vector2(0.96, 1)
+scale = Vector2(0.023967315, 0.0315)
+texture = ExtResource("3_o165g")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=343203077]
+position = Vector2(-2, 1.5)
+rotation = -0.031239834
+scale = Vector2(0.04233114, 0.05825867)
+texture = ExtResource("4_1axom")
+script = ExtResource("5_aegt1")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=849627664]
+position = Vector2(-18, 2)
+rotation = -0.12
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("6_7v03b")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=153316295]
+z_index = 3
+position = Vector2(14, 1)
+rotation = -0.12
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("6_7v03b")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=1767772736]
+position = Vector2(-2, -26)
+scale = Vector2(0.045, 0.045)
+texture = ExtResource("7_6bc2d")

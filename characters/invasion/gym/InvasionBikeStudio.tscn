@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_6tgq6"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_oyusu"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_0lulh"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/몸통.png" id="4_b3fsn"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/인베이전손.png" id="5_027ou"]
+[ext_resource type="Texture2D" path="res://sprite/인베이전/인베이전머리측면.png" id="6_rl2pl"]
+
+[node name="InvasionBikeStudio" type="Node2D" unique_id=1059167814]
+position = Vector2(651, 302)
+scale = Vector2(6, 6)
+script = ExtResource("1_6tgq6")
+character = "인베이전"
+data = ExtResource("2_oyusu")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1462793950]
+position = Vector2(3.0240037, 16.324547)
+scale = Vector2(0.022643764, 0.022643764)
+texture = ExtResource("3_0lulh")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1848509384]
+position = Vector2(2, -2)
+scale = Vector2(0.0305, 0.0345)
+texture = ExtResource("4_b3fsn")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
+position = Vector2(-24, -2)
+scale = Vector2(0.089482754, 0.089482754)
+texture = ExtResource("5_027ou")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1436182245]
+position = Vector2(25, 0)
+scale = Vector2(0.08258621, 0.08258621)
+texture = ExtResource("5_027ou")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
+position = Vector2(-1, -30)
+scale = Vector2(0.041, 0.041)
+texture = ExtResource("6_rl2pl")

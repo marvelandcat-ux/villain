@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_studio"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymCurlDownPose.tscn" id="2_down"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymCurlMidPose.tscn" id="3_mid"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymCurlUpPose.tscn" id="4_up"]
+
+[node name="GymCurlStudio" type="Node2D"]
+script = ExtResource("1_studio")
+motion = 0
+pose_a = ExtResource("2_down")
+pose_b = ExtResource("3_mid")
+pose_c = ExtResource("4_up")
+
+[node name="Camera2D" type="Camera2D" parent="."]

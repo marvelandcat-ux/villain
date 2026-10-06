@@ -86,6 +86,12 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 ## 그건 계속 꺼 둔다(S가 P1 방어 키라서, 켜 두면 싸우다 방어할 때마다 전투가 끝나 버린다).
 ## 스토리를 다 만들면 이 기능도 같이 지울 것
 @export var debug_skip_key: bool = true
+## **숫자 8을 누르면 띄워 보는 그림**(2026-10-06). 만들던 컷신을 스토리 안에서 바로 확인하려고 둔 칸이다.
+## 한 번 더 누르면 없어진다. 비워 두면 8이 아무 일도 안 한다.
+## 화면 **맨 위**에 얹힌다 — `Fade`보다 뒤에 붙으므로 검은 전환 위에도 그대로 보인다
+@export_file("*.tscn") var preview_key_scene: String = "res://ui/story/SubwayVillainIdle.tscn"
+## **숫자 9로 띄워 보는 그림**(8번 옆 칸). 다음 컷을 나란히 확인하려고 하나 더 뒀다
+@export_file("*.tscn") var preview_key_scene_9: String = "res://ui/story/SubwayVillainSmirk.tscn"
 ## 에디터에선 보이게 두고(배치 조정용) **게임이 시작될 때 숨길** 노드들 — 대화창 명령(@show, @stamp)으로 나중에 나타난다.
 ## 에디터 눈 아이콘으로 켜고 끈 채 저장해도 게임에선 항상 숨긴 채 시작한다
 @export var hide_on_start: Array[NodePath] = []
@@ -230,7 +236,21 @@ func _setup_battle() -> void:
 	GameState.story_ai_skill = battle_ai_skill
 	GameState.reset_round_wins()
 
+## 숫자 8·9로 띄운 미리보기(없으면 null)와 그 씬 경로
+var _preview: Node = null
+var _preview_path: String = ""
+
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var k: InputEventKey = event
+		if k.pressed and not k.echo and (k.keycode == KEY_8 or k.keycode == KEY_KP_8):
+			get_viewport().set_input_as_handled()
+			_toggle_preview(preview_key_scene)
+			return
+		if k.pressed and not k.echo and (k.keycode == KEY_9 or k.keycode == KEY_KP_9):
+			get_viewport().set_input_as_handled()
+			_toggle_preview(preview_key_scene_9)
+			return
 	if debug_skip_key and event is InputEventKey:
 		var key: InputEventKey = event
 		if key.pressed and not key.echo and (key.keycode == KEY_S or key.physical_keycode == KEY_S):
@@ -248,6 +268,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		# 페이드·대사 타자도 그 자리에서 멈췄다가 "계속하기"에서 이어진다
 		get_viewport().set_input_as_handled()
 		add_child(load("res://ui/PauseMenu.tscn").instantiate())
+
+## 미리보기 그림을 띄우거나 치운다(숫자 8).
+##
+## **그냥 `add_child`로 맨 뒤에 붙인다** — 이 장면의 마지막 자식이 `Fade`(검은 가림막)라서,
+## 그보다 뒤에 붙어야 전환 중에도 가려지지 않고 보인다
+func _toggle_preview(path: String) -> void:
+	# 이미 떠 있으면 치운다. **다른 번호를 눌렀으면 갈아 끼운다** — 둘이 겹쳐 뜨면 뭘 보는지 모른다
+	var same: bool = _preview != null and is_instance_valid(_preview) and _preview_path == path
+	if _preview != null and is_instance_valid(_preview):
+		_preview.queue_free()
+		_preview = null
+		_preview_path = ""
+		if same:
+			return
+	if path == "" or not ResourceLoader.exists(path):
+		return
+	_preview = load(path).instantiate()
+	_preview_path = path
+	add_child(_preview)
 
 ## 오른쪽 아래 "계속 누르세요" 화살표를 붙이고 대화창과 연결한다.
 ##

@@ -542,14 +542,14 @@ func _select(key: String) -> void:
 	for i in range(_tiles.size()):
 		_tiles[i].selected = _focus_area == "tiles" and i < keys.size() and keys[i] == key
 
-## 칸을 누르면 — 아직 안 고른 칸이면 고르기만 하고, 이미 고른 칸을 다시 누르면 상세로 들어간다.
-## **한 번에 상세로 안 넘기는 이유**: 목록을 훑어보는 중에 실수로 눌러도 화면이 안 바뀐다
+## 칸을 누르면 **바로** 상세로 들어간다.
+## 전에는 한 번 고르고 다시 눌러야 열렸는데, 마우스를 올리면 칸이 이미 커져서 뭘 누를지 보이므로
+## 한 번 더 확인받을 이유가 없었다(2026-10-05 사용자 요청).
+## 방향키 조작은 그대로다 — 방향키로 칸을 옮기고 확인키(`ui_accept`)로 연다
 func _on_tile_pressed(key: String) -> void:
 	_focus_area = "tiles"   # 마우스로 눌러도 커서가 칸으로 내려온다
-	if key == _selected_key:
-		_open_detail(key)
-		return
 	_select(key)
+	_open_detail(key)
 
 ## 상세로 들어간다. 목록 쪽(제목·탭·칸·안내문)은 통째로 숨겨서 상세 화면과 안 겹치게 한다.
 ## 배경과 뒤로가기 화살표는 그대로 남는다 — 화살표는 상세에서 "목록으로" 역할을 겸한다

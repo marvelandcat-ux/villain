@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_6nwe8"]
+[ext_resource type="PackedScene" path="res://characters/invasion/InvasionRig.tscn" id="2_qwqej"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionRunLeftPose.tscn" id="3_1q51u"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionRunMidPose.tscn" id="4_vdbkk"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionRunRightPose.tscn" id="5_ntc2b"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="6_4dcxh"]
+
+[node name="InvasionRunStudio" type="Node2D" unique_id=1318454829]
+script = ExtResource("1_6nwe8")
+motion = 2
+rig_scene = ExtResource("2_qwqej")
+pose_a = ExtResource("3_1q51u")
+pose_b = ExtResource("4_vdbkk")
+pose_c = ExtResource("5_ntc2b")
+curl_cycle = 0.52
+curl_blend_time = 0.15
+rig_scale = 4.0
+rig_at = Vector2(0, -20)
+rig_flip = true
+show_machine = true
+machine_texture = ExtResource("6_4dcxh")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=997305356]

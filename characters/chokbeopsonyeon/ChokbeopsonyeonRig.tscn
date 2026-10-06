@@ -18,11 +18,39 @@
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 뒷머리.png" id="94_back"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/금쪽이 몸 측면 2.png" id="92_body_turn1"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/금쪾이 몸 측면3.png" id="91_body_turn2"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 몸P2.png" id="60_p2body"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/올라잇촉법소년.png" id="gym_face_rise"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/힘든 축법소년.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
+curl_bar_in_front = true
+curl_face_rise = ExtResource("gym_face_rise")
+curl_face_fall = ExtResource("gym_face_fall")
+squat_face_move = ExtResource("gym_face_rise")
+squat_face_rest = ExtResource("gym_face_fall")
+run_face = ExtResource("gym_face_fall")
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 action_head_texture = ExtResource("7_dashface")
 action_head_scale = Vector2(0.052, 0.052)
 hurt_head_texture = ExtResource("8_hurtface")
+run_face = ExtResource("8_hurtface")
 ko_head_texture = ExtResource("11_koface")
 attack_raise_deg = -20.0
 attack_swing_deg = 45.0
@@ -42,6 +70,7 @@ head_back_texture = ExtResource("94_back")
 head_back_anchor = Vector3(625, 747, 863)
 body_turn_textures = Array[Texture2D]([ExtResource("92_body_turn1"), ExtResource("91_body_turn2")])
 gun_hides_held_item = true
+p2_body_texture = ExtResource("60_p2body")
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
 visible = false

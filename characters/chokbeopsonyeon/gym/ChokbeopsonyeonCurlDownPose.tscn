@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://b36ayd1mpio65"]
+
+[ext_resource type="Script" uid="uid://yb1yin5ofp3" path="res://characters/PosePreview.gd" id="1_ryr4a"]
+[ext_resource type="Texture2D" uid="uid://ds6act8buxm8g" path="res://sprite/금쪽이/축법소년 발.png" id="2_oadou"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/금쪽이/축법소년 몸.png" id="3_uxe2q"]
+[ext_resource type="Texture2D" uid="uid://cyv1kfvn3u8oe" path="res://sprite/맵/헬스장/올라잇.png" id="4_otg1i"]
+[ext_resource type="Script" uid="uid://bo4wa6akten1b" path="res://combat/GymBarbell.gd" id="5_2tr0g"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_u2v4h"]
+[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/금쪽이/축법소년 머리.png" id="7_qu2b0"]
+
+[node name="GymCurlDownPose" type="Node2D" unique_id=1477300400]
+scale = Vector2(8, 8)
+script = ExtResource("1_ryr4a")
+alone_opens_scene = "res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=730912750]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_oadou")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=2115820643]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_oadou")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=632615169]
+position = Vector2(-1.875, 5.5)
+rotation = 0.02
+scale = Vector2(0.029953307, 0.036259267)
+texture = ExtResource("3_uxe2q")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=1760829318]
+position = Vector2(-1, 18.5)
+rotation = 0.031239834
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("4_otg1i")
+script = ExtResource("5_2tr0g")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=390824856]
+z_index = 1
+position = Vector2(-17, 18)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_u2v4h")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=473680150]
+z_index = 1
+position = Vector2(15, 19)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_u2v4h")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=1870187685]
+position = Vector2(-1.5, -27.624998)
+scale = Vector2(0.055, 0.055)
+texture = ExtResource("7_qu2b0")

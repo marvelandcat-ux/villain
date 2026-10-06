@@ -13,8 +13,34 @@
 [ext_resource type="Texture2D" uid="uid://dgmxlcy63mtee" path="res://sprite/일진/일진 측면 2.png" id="88_turn2"]
 [ext_resource type="Texture2D" uid="uid://ba0ssc6e7lwnh" path="res://sprite/일진/일진 측면 3.png" id="87_turn3"]
 [ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="86_front"]
+[ext_resource type="Texture2D" path="res://sprite/일진/일진 몸 P2.png" id="60_p2body"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="Texture2D" path="res://sprite/일진/올라잇일진.png" id="gym_face_rise"]
+[ext_resource type="Texture2D" path="res://sprite/일진/힘든일진.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=650163351 instance=ExtResource("1_rig")]
+curl_face_rise = ExtResource("gym_face_rise")
+curl_face_fall = ExtResource("gym_face_fall")
+squat_face_move = ExtResource("gym_face_rise")
+squat_face_rest = ExtResource("gym_face_fall")
+run_face = ExtResource("gym_face_fall")
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 attack_two_handed = true
 attack_thrust = true
 weapon_on_final_hit = true
@@ -29,6 +55,7 @@ head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_
 head_turn_anchors = Array[Vector3]([Vector3(630, 636, 993), Vector3(635, 629, 950), Vector3(638, 626, 973), Vector3(629, 621, 988), Vector3(622, 612, 1077)])
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
 head_turn_on_face = true
+p2_body_texture = ExtResource("60_p2body")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("8_foot")

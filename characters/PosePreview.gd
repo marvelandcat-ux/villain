@@ -34,11 +34,30 @@ extends Node2D
 ## 땅 선 색과 가운데 선 색
 @export var ground_color: Color = Color(0.10, 0.22, 0.34, 0.75)
 @export var center_color: Color = Color(0.72, 0.18, 0.30, 0.45)
+## **이 포즈 씬만 따로 띄웠을 때(F6) 대신 열 씬.**
+## 자세를 고치고 **그 자리에서 바로 F6**로 움직이는 걸 보라고 둔 것이다 —
+## 안 그러면 고칠 때마다 조정 씬으로 옮겨 가서 눌러야 한다.
+## 비워 두면(기본) 예전처럼 이 포즈 한 장만 뜬다.
+## 경로를 **글자로** 들고 있는 이유: 조정 씬이 이 포즈 씬을 물고 있어서, 여기서 씬을 마주 물면
+## 서로를 부르는 꼴(순환 참조)이 되어 불러오기가 꼬인다
+@export_file("*.tscn") var alone_opens_scene: String = ""
 
 func _ready() -> void:
 	# 열자마자 보기 좋은 크기로 맞춘다(에디터에서만 — 게임엔 이 씬이 아예 안 올라간다)
 	if Engine.is_editor_hint():
 		scale = Vector2(preview_scale, preview_scale)
+		return
+	# F6로 이 포즈만 띄웠으면 조정 씬을 대신 연다
+	if alone_opens_scene != "" and get_parent() == get_tree().root:
+		_open_alone_scene.call_deferred()
+
+## 조정 씬으로 갈아 끼운다 — 이 포즈 한 장만 덩그러니 뜨는 것보다 움직이는 걸 보는 게 낫다
+func _open_alone_scene() -> void:
+	var scene: PackedScene = load(alone_opens_scene)
+	if scene == null:
+		return
+	get_tree().root.add_child(scene.instantiate())
+	queue_free()
 
 func _process(_delta: float) -> void:
 	if not Engine.is_editor_hint():
@@ -46,7 +65,20 @@ func _process(_delta: float) -> void:
 		return
 	_follow_hand("HandL", "HandLHold")
 	_follow_hand("HandR", "HandRHold")
+	_follow_barbell()
 	queue_redraw()
+
+## **바벨(BarbellView)을 두 손 사이에 놓는다** — 게임에서 `BodyRig._update_curl_bar()`가 하는 일과 똑같다.
+## 그래서 손을 끌면 바벨이 따라오고, 두 손 높이를 다르게 두면 봉이 기울어진다.
+## 노드가 없으면 조용히 넘어간다(바벨을 안 쓰는 포즈 씬)
+func _follow_barbell() -> void:
+	var bar: Node2D = get_node_or_null("BarbellView") as Node2D
+	var hand_l: Node2D = get_node_or_null("HandL") as Node2D
+	var hand_r: Node2D = get_node_or_null("HandR") as Node2D
+	if bar == null or hand_l == null or hand_r == null:
+		return
+	bar.position = (hand_l.position + hand_r.position) * 0.5
+	bar.rotation = (hand_r.position - hand_l.position).angle()
 
 ## 악기걸이를 손에 붙인다 — 둘 중 하나가 없으면 조용히 넘어간다
 func _follow_hand(hand_name: String, hold_name: String) -> void:

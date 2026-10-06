@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_studio"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymRunLeftPose.tscn" id="2_left"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymRunMidPose.tscn" id="3_mid"]
+[ext_resource type="PackedScene" path="res://characters/gym/GymRunRightPose.tscn" id="4_right"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="5_tread"]
+
+[node name="GymRunStudio" type="Node2D"]
+script = ExtResource("1_studio")
+motion = 2
+pose_a = ExtResource("2_left")
+pose_b = ExtResource("3_mid")
+pose_c = ExtResource("4_right")
+curl_cycle = 0.52
+curl_blend_time = 0.15
+rig_scale = 4.0
+rig_at = Vector2(0, -20)
+rig_flip = true
+show_machine = true
+machine_kind = 2
+machine_texture = ExtResource("5_tread")
+machine_size_scale = 0.1474
+machine_scale = Vector2(4, 4)
+machine_at = Vector2(-25, 260)
+machine_belt_rect = Rect2(-74.9, -37, 162.5, 6.2)
+
+[node name="Camera2D" type="Camera2D" parent="."]

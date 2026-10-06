@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_iqowc"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 다리.png" id="2_kut03"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병 몸 옷.png" id="3_6shwb"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황 근충 해병 팔.png" id="4_tts4w"]
+[ext_resource type="Texture2D" path="res://sprite/황근출 해병/황근출 해병.png" id="5_nyhco"]
+
+[node name="GymRunMidPose" type="Node2D" unique_id=1582476234]
+scale = Vector2(8, 8)
+script = ExtResource("1_iqowc")
+alone_opens_scene = "res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1961253380]
+position = Vector2(2, 24)
+rotation = -0.1
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_kut03")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1341451567]
+position = Vector2(3, 26)
+rotation = 0.05
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_kut03")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=452347489]
+position = Vector2(1.2, -1)
+rotation = 0.09
+scale = Vector2(0.02485, 0.03267)
+texture = ExtResource("3_6shwb")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=803890568]
+position = Vector2(-3, 6)
+rotation = -0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_tts4w")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=959144002]
+position = Vector2(4, 5)
+rotation = 0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_tts4w")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1366589648]
+position = Vector2(-1.5, -28)
+rotation = 0.05
+scale = Vector2(0.058, 0.058)
+texture = ExtResource("5_nyhco")

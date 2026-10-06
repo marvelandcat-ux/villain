@@ -96,10 +96,233 @@
 
 ## 코드 스타일
 
-- 클래스·파일 PascalCase(파일명 = class_name), 함수·변수 snake_case, 상수 ALL_CAPS, 시그널 과거형, private `_` 접두사
-- 순서: `class_name`·`extends` → `@export` → 멤버 → 생명주기 → 커스텀. 씬과 스크립트는 같은 폴더
-- 주석은 한국어, public 위 `##` 한 줄 + 복잡한 로직에만
-- 폴더: `characters/`(Fighter·BodyRig·캐릭터별) `skills/` `combat/` `controllers/` `stats/` `maps/` `ui/` `tools/`
+- ⚠️ **빌더 `tools/build_playground.py`는 지금 돌리면 안 된다**(씬을 손으로 고침). 돌린다면 백업 + 손수정 값을 `PLATFORM_OVERRIDES`·`CROWN_POS`로 옮긴 뒤
+- 바닥 y=280, 벽 ±960, 스프링 좌석 y=226, 지붕 y=-82, 중간 구름 y≈-228, 꼭대기 y=-418, 왕관(25, -472). 카메라 `min_y` -300(구름을 올리면 같이). **모든 발판은 원웨이**
+- ⚠️ TODO: 점프력 변경 뒤 재실측 안 됨 — 중간→꼭대기 여유 ~3px
+- 미끄럼틀 `PavilionLeft/Right`: **왼쪽만 판정**, 바디 넷(한 바디에 몰지 말 것)
+- 그네 `Swing.gd`: 튕김 + `apply_hitstun` 필수. 스프링 `SpringJumpPad.gd`: 직전 낙하 속도로 튕김 + `cancel_landing_lag()`
+- 왕관 `Crown.gd`: 닿으면 왕(`Crown.is_king()`), 넉백 피해에 떨어뜨림. **승리 조건은 안 건드림**, `pickup_delay` 0 금지. 그림 `진짜왕관.png`는 맵과 `CrownCutIn.tscn` 두 곳
+- 모래 `SandPit.gd`: 발치 높이에만 둔화. `모래사장.png`(괄호 없음)는 쓰지 말 것
+
+### 지하철 승강장 `maps/SubwayPlatform.tscn`
+
+- 선로 바닥 y=300, 벽 ±560, 의자 발판 y=155(원웨이). **의자 위 = 열차 피난처**(의자 높이·열차 크기는 같이 계산), 의자는 트리에서 열차보다 먼저
+- 열차 `SubwayTrain.gd`: 1~5칸, 그림을 잘라 조립(`SEAM_FRONT`/`SEAM_BACK`/`MIDDLE_DRIFT` — **그림을 바꾸면 재측정**)
+- 조명 `CanvasModulate` + 형광등. 빛나는 물체는 unshaded. **가산 색은 CanvasModulate가 곱해지므로 조명을 바꾸면 다시 잡을 것**
+- 먼 층 `DecoBackground`(CanvasGroup + `far_blur`), 앞 기둥 `ForegroundPillars.gd`. 역 이름판을 옮기면 `SignBand`·`SignBandOutline`도
+
+### 헬스장 `maps/Gym.tscn` — 운동할지 방해할지
+
+- 2층 발판 + 기구 셋(바벨 컬 = 기본공격력 / 스쿼트 랙 = 점프력 / 런닝머신 = 이동속도). 맵 스킬 `WorkoutSkill`: 운동 중 발 묶임, 맞음·때림·멀어짐 등이면 끊김, 스펙은 쌓는 족족 배수(`custom_data["gym_spec"]`)
+- 공격력은 기본공격에만(`compute_basic_damage()`). `GymLayout.gd`는 자식 `_ready()`가 부모보다 먼저라는 것에 기대 스폰을 옮김. `muscle_arm`/`muscle_leg`
+- 땅 y=280, 2층 y=100(이단 점프 한계 180px), 벽 ±604. TODO: 기구 그림·배경
+
+#### 운동 자세는 **캐릭터마다 따로** (2026-10-06)
+
+운동 자세 아홉 장(컬 3 / 스쿼트 3 / 달리기 3)은 원래 `characters/gym/Gym*Pose.tscn` **한 벌을 전 캐릭터가 같이 썼다.**
+`BodyRig._apply_pose_scene()`은 자세 씬에서 **자리와 각도만** 읽으므로(크기는 `rest_pose`만 읽는다),
+같은 자리를 머리 큰 캐릭터에게 먹이면 원판이 얼굴을 덮는다. 그래서 캐릭터마다 한 벌씩 만들었다.
+
+- 자리: `characters/<폴더>/gym/<이름>{Curl,Squat,Run}{칸}Pose.tscn` + 편집 씬 `<이름>{Curl,Squat,Run}Studio.tscn`
+  - 열 명 x (자세 9 + 편집 씬 3) = **120개**. 리그마다 그 아홉 장이 `curl_down_pose`... 로 꽂혀 있다
+  - 고치는 법: **편집 씬을 F6로 열면** 그 캐릭터가 운동한다 → `1/2/3`으로 한 장 크게 띄우고 → 끌어서 맞추고 → `S`로 그 자세 씬에 저장. 자세 씬을 F6로 열어도 짝인 편집 씬이 열린다(`PosePreview.alone_opens_scene`)
+- **만드는 건 `tools/GymPoseGen.tscn`**(F6 또는 헤드리스로 실행). 공용 자세를 베껴 **그림만 그 캐릭터 것으로 갈아 끼운다**(자리·각도는 시작점으로 그대로 둔다)
+  - ⚠️ **이미 있는 파일은 절대 안 덮어쓴다.** 캐릭터를 새로 넣고 다시 돌리면 **없는 것만** 생긴다 — 손으로 맞춰 둔 자세를 날리지 않으려고
+  - ⚠️ 돌린 뒤 **리그 씬에 아홉 줄을 꽂는 건 따로 해야 한다**(`curl_down_pose = ExtResource(...)` ...). 생성기는 자세 파일만 만든다
+  - `GameState.CHARACTER_RIGS`에 없는 리그는 생성기의 `EXTRA_RIGS`에 적는다(지금 주인공/경찰 하나)
+- **실측: 리그들의 제자리는 거의 똑같다**(Body (1,1) / HandL (-27,4) / HandR (27,3) / FootL (-8,26) / FootR (14,27) / Head (-4~2,-32~-34)). 전부 `BodyRig.tscn`을 인스턴스해서 **그림과 배율만** 다르기 때문이다 — 그래서 캐릭터별로 손봐야 하는 건 "자리를 처음부터 다시"가 아니라 **그림 크기 차이만큼의 보정**이다
+#### ⚠️ 장비(로켓·바퀴)를 낀 채 운동하면 **몸이 분리됐다** — 고침 (2026-10-06)
+
+로켓을 신으면 머리·몸·손이 장비 단계 자리로 옮겨지고 거기에 **뜬 높이 16px**(`rocket_hover_height`)까지 더해진다.
+그런데 운동 자세(`Gym*Pose.tscn`)에 적힌 자리는 **땅에 서 있을 때 기준**이라, 그냥 입히면
+**자세에 적힌 조각만 땅으로 내려오고 자세에 없는 조각은 뜬 채로 남는다.**
+컬은 머리를 `HeadView`(보기용)로 두고 `Head`를 안 건드려서 **머리만 16px 위에 떠 있었다**(실측: 머리 y -48 / 몸 y 3).
+
+- 고친 법: `_gear_offset(part)`를 만들어 **자세를 장비 어긋남 위에 얹는다**(`_apply_pose_scene(..., gear_aware = true)`).
+  장비 자리가 적힌 조각(머리·몸·손)은 그 어긋남을, 안 적힌 조각(발)은 **뜬 높이만** 쓴다 — 발까지 떠야 로켓이 따라온다(장비는 왼발 그림의 자식)
+- ⚠️ `gear_aware`는 **컬·스쿼트에서만** 켠다. 방어·돌진 자세까지 켜면 엉뚱한 데서 떠오른다
+- **장비 전용 자세 한 벌**도 둘 수 있다 — 리그의 `curl_*_pose_gear` / `squat_*_pose_gear`.
+  **세 장이 다 채워져 있을 때만** 갈아탄다(한 장만 넣으면 섞여서 더 이상해진다). 비면 평소 자세를 쓴다
+  - 편집 씬: `characters/<폴더>/gym/<이름>Rocket{Curl,Squat}Studio.tscn`. `GymCurlStudio.gd`의 `gear_stage`를
+    `rocket`으로 두면 **로켓을 신고 떠 있는 채로** 자세를 고칠 수 있고, 저장도 `*_pose_gear` 칸으로 간다
+  - **지금은 악플러만 뽑아 뒀다**(2026-10-06 사용자: "악플러로 기준 잡겠다"). 기준이 잡히면
+    `tools/GymPoseGen.gd`의 `gear_characters`에 이름을 더해 다시 돌리면 나머지도 생긴다
+
+#### 운동 얼굴 두 장 (2026-10-06)
+
+운동 중 표정은 **힘줄 때 = 올라잇 / 그 외 = 힘든(입 벌린 것)** 두 장이다. 타이밍은 `BodyRig`가 정하므로
+(`_curl_rising`이 바뀔 때 `_apply_base_head()`), **리그에 그림 두 장만 꽂으면 악플러와 똑같이 돈다.**
+
+| 리그 export | 들어가는 얼굴 |
+|---|---|
+| `curl_face_rise` / `squat_face_move` | 올라잇 |
+| `curl_face_fall` / `squat_face_rest` / `run_face` | 힘든(입 벌린 것) |
+
+- 꽂은 캐릭터: 악플러·금쪽이·주정뱅이·지하철 아저씨·층간소음 빌런·일진
+- **그림이 없어서 못 꽂은 캐릭터: 고양이 아주머니 · 황근출 해병 · 인베이전 · 주인공(경찰).** 그림이 나오면 리그에 두 줄만 더하면 된다
+- 얼굴 그림이 평소 머리와 크기가 다르면 `curl_face_match_size`(기본 켬)가 **살색 높이**를 재서 맞춘다
+- 바벨을 손 앞에 그릴지는 `curl_bar_in_front`(기본 끔 = 손이 봉 위). **금쪽이만 켜 뒀다**(2026-10-06 요청)
+
+#### 변신 단계(핏줄·황금·바퀴·부스터) 편집 — **이미 캐릭터별이다**
+
+`maps/workout/`의 편집 씬들은 처음부터 캐릭터별로 만들어져 있다. 루트의 **`character`** 를 바꾸면 그 캐릭터 몸으로 바뀌고,
+조각을 끌어 놓는 순간 `.tres`에 **그 캐릭터·그 단계 자리로 바로 저장된다**(Ctrl+S 불필요).
+
+| 씬 | 단계 | 저장되는 곳 |
+|---|---|---|
+| `Curl{Vein1,Vein3,Gold}Studio.tscn` | 핏줄 1·3스택 / 황금 손 | `CurlStage.tres` |
+| `Squat{Vein1,Vein3,Gold}Studio.tscn` | 같은 것의 발 | `SquatStage.tres` |
+| `Treadmill{Bike,Car,Rocket}Studio.tscn` | 자전거 바퀴 / 스포츠카 바퀴 / 로켓 신발 | `TreadmillGear.tres` |
+
+- **장비 그림도 편집 씬에서 바꾼다**(2026-10-06): `GearL`에 새 그림을 끌어다 놓으면 `.tres`에 저장된다.
+  예전엔 **로켓만** 저장돼서(`if stage == "rocket"`) 자전거·스포츠카 바퀴는 바꿔도 다시 열면 옛 그림으로 돌아갔다
+  - ⚠️ **자전거·스포츠카 바퀴는 전 캐릭터가 같은 그림 한 장**(`bike_texture`/`car_texture`)이라 한 명한테서 바꾸면 모두 바뀐다.
+    로켓 신발만 캐릭터별(`rocket_shoes` 사전)이다 — 자기 신발에 번개를 그린 그림이라서. 어느 쪽인지 **편집 씬 땅선 아래에 적어 둔다**
+  - 로켓 신발 그림이 없는 캐릭터(층간소음 빌런·황근출 해병·인베이전·주인공)는 **맨발이 그대로 나온다** — 그림이 나오면 GearL에 끌어다 놓으면 된다
+- **캐릭터마다 한 장씩도 뽑아 뒀다**(2026-10-06): `characters/<폴더>/gym/<이름>{Bike,Car,Rocket}Studio.tscn`.
+  `character`가 그 캐릭터로 박혀 있을 뿐 원본과 같은 씬이라, **어느 쪽으로 열든 고친 자리는 같은 `.tres`의 그 캐릭터 칸**에 저장된다
+  - 만드는 건 `tools/GymPoseGen.tscn`이 같이 한다. ⚠️ 뽑을 때 **프레임을 넘기면 안 된다** — 이 씬들은 `_process`에서
+    "조각이 움직였나" 보고 `.tres`에 바로 저장하므로, 한 프레임이라도 돌면 기본값을 덮어써 버린다
+  - 핏줄·황금 쪽(`Curl/Squat{Vein1,Vein3,Gold}Studio`)은 아직 원본 한 장뿐이다 — 필요하면 생성기의 `SOURCE_STAGES`에 줄만 더하면 된다
+- `character`는 **고르는 목록**이다(`_validate_property`가 힌트를 넣어 준다). 목록은
+  `RigReader.names()` = `GameState.CHARACTER_RIGS` + `RigReader.EXTRA_RIGS`(주인공/경찰) **한 곳**에서만 온다
+  — 주인공(경찰)은 2026-10-06에 `EXTRA_RIGS`로 더했다(그 전엔 목록에서 빠져 있었다)
+
+- ⚠️ 편집 씬에서 `S`로 저장할 때 `alone_opens_scene`을 **그 편집 씬 자신(`scene_file_path`)**으로 적는다. 예전엔 공용 `GymCurlStudio.tscn`으로 박혀 있어서, 캐릭터별 자세를 저장하면 F6가 엉뚱한 캐릭터로 끌려갔다
+
+### 공사현장 `maps/CollapsingApartment.tscn`
+
+- 부서지는 발판 4층(간격 170 = 이단 점프로만), 맵 스킬 `GroundPoundSkill`. **점프력이 바뀌면 다시 계산**
+
+## 화면 흐름 / UI
+
+- `ui/Disclaimer.tscn` → `TitleScreen` → `MainMenu`(스토리/대전/훈련장/가이드/설정). 대전: `RoomSettings` → `CharacterSelect` → `MapSelect` → 맵
+- `GameState.gd`(오토로드)가 화면 사이 값을 들고 다님. ESC = 한 단계 뒤로, 대전·스토리 중엔 `PauseMenu`(`process_mode = ALWAYS`)
+- `Fade`(검정 ColorRect)는 씬의 **맨 마지막 자식**
+- 폰트 주아체 `fonts/Jua-Regular.ttf` — ⚠️ **기호 글리프가 거의 없다**(`◀ ▶ ● ○ · × ↑ ↓` 두부 → 코드로 그릴 것). 대화창은 나눔고딕
+- **타이틀 구경 모드**(`game_mode == "attract"`): 랜덤 맵·AI 둘, HUD·컷인 등 없음. 떠날 때 `game_mode` "pvp" + 배율 복구. 로고는 `tools/make_title_logo.py`(**로고를 바꾸면 다시 돌릴 것**)
+- 메인 메뉴: `<이름>Item`(판정 고정) > `Slide`(보이는 것만 이동). `Illust*`와 `Background*`는 index로 짝. 일러스트 파츠는 원본 캔버스 그대로 + `centered = false`, **큰 동작은 자세 그림 교체**
+- 설정 > 조작 `ui/KeyboardMap.gd`(키 끌어 놓기 배정): ⚠️ `_input`에서 `get_local_mouse_position()` 금지 → `_local_of(event)`. ⚠️ **`refresh()`는 마지막에 `queue_redraw()`**. 저장 `GameState.rebind_action()` → `user://settings.cfg`. 마우스 확인은 사용자가
+- 해상도: 기준 1280x720 + `canvas_items`(배치 숫자는 이 기준)
+- 확인 창 `ConfirmPopup`: `_ask(문구, Callable)`, 두 갈래 `open_choice()`
+- 방 설정 `RoomSettings`: 라운드·시간·쿨 배율·클래시/가드/대시 토글·상대(`vs_ai`). 버튼 연결은 `_ready()` 코드로
+- 도감 `CharacterDex`(⚠️ TODO: 놀이터 설명이 옛 기믹). `FanTile.gd`(@tool) 네 점 모양 버튼
+- 초상화: 크기·위치는 `ui/PortraitFrames.tscn`, 전부 `GameState.frame_portrait()` 경유. 스킬 로고 `Skill.icon`(투명 여백 잘라 넣기)
+
+### 대전 진행
+
+- `Stage._process()`가 양쪽 HP를 **한 번에** 판정(동시 KO = 무승부), 시간 초과는 HP 높은 쪽. 링아웃 `ring_out_y`
+- 선수 판 위치: 기본 아래, `Stage.hud_panels_top`이면 위(놀이터). ⚠️ `panels_top_margin.x`를 76보다 작게 하면 일시정지 버튼에 깔림
+- 지상/공중 조건은 스킬이 스스로 판단
+- 카운트다운 중엔 컨트롤러 `is_active` false + `move(0)`(`set_physics_process(false)`는 미끄러짐)
+- KO 연출 `Stage._play_knockout`(전 모드): 날려 보내지 않고 마지막 넉백대로 물리로 밀려남(`apply_hitstun`으로 멈춘 컨트롤러의 `move(0)`를 막음) + 화면 0.3배 슬로 2초(실제 시간) + 눈 X, 땅에 멈추면 `_lay_down_when_settled()`가 Visual만 발바닥 축으로 90도 눕힘. 화면 흔들림 없음. 디버그 격자: 대전 중 **G + '**(`maps/DebugGrid.gd`)
+
+### 궁극기 컷인 `ui/UltimateCutIn.tscn`
+
+- 기획 확정: 1.5초(장면 `cutin_duration` 우선), **연출 중 시간 정지**, 스킵 없음, 확정타 아님. `use_ultimate()` → 연출 → `fire_ultimate_now()`
+- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철. **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
+- 지하철 컷인: ⚠️ `Metro!.png` 무늬가 기울어 칸마다 `rotation = -0.0158` + `skew = 0.0158`(그림 바꾸면 재측정), 이동은 x만. 칸 수·틈을 바꾸면 `train_from_x`/`train_to_x`도. 선글라스 반짝은 `LensGlint.always_show`
+- 금쪽이 컷인: 원래 머리 복원 → `set_action_face(true)` 순서. 경찰: 얼굴 두 장 크기·위치 같아야 함
+
+### 스토리 모드
+
+- 난이도는 에피소드마다 `StoryFadeScene`의 `battle_enemy_hp_scale`/`battle_enemy_damage_scale`/`battle_ai_skill` → `Stage._apply_story_handicap()`(⚠️ `stats`는 공유 Resource라 **`duplicate()` 후, `add_child` 전에**) / `_tune_story_ai()`
+- 에피소드 `GameState.STORY_EPISODES`, 클리어 기록은 `clears_story` 켠 장면의 `_ready()`
+- 장면 `ui/story/StoryScene1~11.tscn`, 전부 `StoryFadeScene.gd`. `Fade`는 맨 마지막 자식·알파 0, 장면 루트·대화창 `mouse_filter = 2`. 전환 BLACK/CROSSFADE
+  - **스토리→대전:** `battle_*` → `_setup_battle()`(**GameState에 담는 코드는 여기에** — S 건너뛰기가 `_open_next()`를 우회). (임시) `S` 건너뛰기는 방어키와 겹침 → 방어 테스트 땐 `debug_story_skip_key` 끔
+- 대화창 `ui/story/DialogueBox.tscn`: `이름|대사`, 명령 줄 `@show/@hide/@enter/@exit/@close/@waitkey/@pause/@stamp`
+- **3번·11번 장면은 도장만 다른 같은 구조 — 새 사건은 복사해 문구·도장만 교체**. PSD를 고치면 PNG로도. 게임 글자는 "비비탄"으로 통일
+
+### 살아 있는 컷신 `ui/story/SubwayVillainIdle.tscn` (2026-10-06)
+
+지하철에 앉아 있는 지하철 아저씨 — **포토샵에서 쪼갠 여섯 장을 겹쳐 놓고 조각마다 따로 움직인다.**
+여섯 장 모두 `1140x1380` **같은 캔버스**라 전부 같은 자리에 겹치면 원본이 된다(조각마다 자리를 잡을 필요가 없다).
+
+| 조각 | 움직임 |
+|---|---|
+| 몸통 | 숨쉬기(허리를 축으로 세로만) |
+| 단소 든 팔 | 위아래로 쾅 쾅 — 천천히 들었다 빠르게 내리꽂고 튄다. 친 순간 화면도 흔들린다 |
+| 머리 + 턱 괸 팔 | 좌우로 **같은 박자**(턱을 괴고 있어 따로 놀면 안 된다) |
+| 머리카락 | 머리를 `hair_lag`만큼 늦게 따라 흔들림(한쪽만) |
+
+- ⚠️ **돌릴 축은 `offset = -축` + `position = 축`으로 잡는다.** Sprite2D는 centered를 끄면 왼쪽 위를
+  중심으로 도는데, 머리카락을 그렇게 돌리면 화면 바깥을 축으로 빙 돈다
+- 화면 채우기는 `Frame` 노드 하나의 배율·자리로만 한다(`fill_screen`/`focus_x`/`focus_y`/`zoom`).
+  세로로 긴 그림이라 채우면 위아래가 잘리므로 **어디를 보여줄지는 `focus_y`가 정한다**(기본 430 = 머리~단소)
+- 흔들림은 **`Frame`을 통째로** 흔든다 — 조각을 따로 흔들면 서로 어긋난다
+- **스토리 장면에서 숫자 8을 누르면 뜨고, 다시 누르면 사라진다**(`StoryFadeScene.preview_key_scene`, 만들던 컷신 확인용). **숫자 9는 다음 컷**(`preview_key_scene_9`)이고, 다른 번호를 누르면 갈아 끼워진다.
+  ⚠️ `Fade`(검은 가림막)가 장면의 마지막 자식이라, 미리보기는 **그보다 뒤에 붙여야** 전환 중에도 보인다
+
+### 얼굴 클로즈업 컷 `ui/story/SubwayVillainSmirk.tscn` (2026-10-06)
+
+얼굴로 다가가다가 **"쉬익" 하는 순간 배경이 한 프레임에 사라지고 얼굴만 남는다.** 그 뒤 이빨이 **삐싱** 반짝인다.
+
+- ⚠️⚠️ **`_0005_Background.png`은 배경이 아니라 원본 통짜 그림이다** — 사람이 통째로 들어 있다.
+  그 위에 씨익 웃는 얼굴을 얹으면 **얼굴이 두 개로 보인다**(2026-10-06 실측). 이 컷은 그래서 **배경 그림을 안 쓴다**.
+  배경이 필요하면 `background_texture`에 **사람이 없는** 그림을 따로 넣을 것
+  - 앉아 있는 컷(`SubwayVillainIdle`)은 그 위에 조각들을 덮어 가리므로 괜찮다. 다만 **조각을 크게 움직이면 밑의 원본이 비친다**
+- ⚠️ **씨익 웃는 그림은 앉아 있는 컷의 머리와 안 맞는다**(실측 bbox: 씨익 (473,79)-(749,375) vs 머리 (419,109)-(639,323)) —
+  더 크고 오른쪽으로 치우쳐 그려져 있어 몸에 얹으면 목이 어긋난다. 그래서 **따로 찍는 컷**이다
+- 실측: 얼굴 `276x296px`, 화면 1280x720 → **`zoom` 2.17이면 얼굴이 세로로 딱 맞는다**. 지금은 2.55 → 3.15로 다가간다
+- **쉬익**: `whoosh_at`(0.75초)에 배경색이 한 프레임에 바뀌고, 흰 번쩍임(`flash_strength` 0.75)과 속도선이 터진다.
+  **서서히 바꾸면 "쉬익"이 아니라 "스르륵"이 된다** — 색은 한 프레임에 갈아 끼울 것
+- **이빨 삐싱**은 `LensGlint`를 그대로 쓴다(선글라스 번쩍임과 같은 부품). 이빨 자리는 흰 픽셀 밀도를 재서 찾았다 — **원본 (600, 254)**
+  - ⚠️ 얼굴 스프라이트의 **자식**으로 달아야 얼굴이 커질 때 같이 간다. `offset` 때문에 자식 좌표는 `이빨자리 - 축`이다
+  - 스스로 도는 타이머는 꺼 두고(`interval_min/max` 9999) 이쪽에서 `blink_now()`로 터뜨린다
+- **카메라 좌우 훑기는 뺐다**(2026-10-06 사용자 요청). 다가가기(push-in)만 남았다
+
+### ⚠️ 그림을 갈아 끼울 땐 **uid도 같이** 바꾼다 (2026-10-06)
+
+`.tscn`/`.tres`의 참조는 이렇게 생겼다:
+
+```
+[ext_resource type="Texture2D" uid="uid://cf5dlqlyj3jys" path="res://.../런닝머신(8~9).png" id="3_car"]
+```
+
+**Godot은 `uid`를 먼저 본다.** 경로만 새 그림으로 바꾸고 uid를 그대로 두면 **옛 그림이 그대로 나온다**(조용히).
+새 uid는 그 그림의 `.png.import` 첫머리 `uid=` 줄에 있다. uid가 아예 없는 줄(생성기가 만든 씬 등)은 경로만 바꾸면 된다.
+
+- 바퀴(스포츠카 단계)를 `런닝머신(8~9).png`(민 휠) -> `헬스장바퀴.png`(타이어 있는 버전)로 갈아 끼운 예:
+  12개 파일(캐릭터별 `*CarStudio.tscn` 10 + 원본 스튜디오 + `TreadmillGear.tres`)에서 **경로와 uid를 같이** 바꿨다
+- 캔버스 크기가 같으면(둘 다 1254x1254) 맞춰 둔 자리·배율이 안 흔들린다. **다른 크기 그림으로 바꾸면 단계 자리를 다시 봐야 한다**
+
+### ⚠️ 헤드리스 검사가 **스크립트 오류를 놓친다**(2026-10-06에 실제로 겪음)
+
+`load(path) == null`로만 보는 검사는 **파싱 오류를 못 잡는다** — 중복 함수처럼 컴파일이 깨져도
+`load()`가 null이 아닌 걸 돌려줘서 "실패 0"으로 통과한다. 검사 출력에서 **`SCRIPT ERROR` / `Parse Error`를
+같이 grep**할 것.
+
+```
+godot --headless --path . res://_chk.tscn 2>&1 | grep -iE ">>> |씬 [0-9]+ \||SCRIPT ERROR|Parse Error"
+```
+
+파일 하나만 빠르게 볼 땐 `godot --headless --check-only --script <경로>`(종료코드 0 = 정상).
+⚠️ 단 이 방법은 **오토로드를 안 올린다** — `GameState`를 쓰는 스크립트는 "Identifier not found: GameState"가
+뜨지만 **가짜 경보**다.
+
+⚠️ **남이 만든 파일에 함수를 더할 땐 같은 이름이 이미 있는지 먼저 본다.** `_validate_property`를
+`_get_property_list`만 찾아보고 없다고 단정했다가 중복으로 넣어 씬이 안 열렸다
+
+## GDScript 코드 스타일
+
+| 대상 | 규칙 | 예시 |
+| --- | --- | --- |
+| 클래스명 / 파일명 | PascalCase, 파일명 = class_name | `CharacterStats` |
+| 함수 / 변수 | snake_case | `move_speed`, `take_damage()` |
+| 상수 / enum 값 | ALL_CAPS_SNAKE_CASE | `MAX_HP` |
+| 시그널 | 과거형 snake_case | `health_changed` |
+| private 관례 | 언더스코어 접두사 | `_internal_cooldown` |
+
+- `class_name`·`extends` → `@export` → 멤버 변수 → 생명주기 → 커스텀 함수. 씬과 스크립트는 같은 폴더에
+- 주석은 한국어: public 함수/변수 위 `##` 한 줄, 복잡한 로직에만. 자명한 코드엔 주석 금지
+
+```
+res://
+  GameState.gd  Timers.gd
+  characters/   # Fighter.gd + BodyRig.gd + 캐릭터별(chokbeopsonyeon, akpeulleo, jujeongbaengi, catmom,
+                #   subwayvillain, floornoise, gymbro, iljin, hwanggeunchul / 로스터 밖: police, dummy)
+  skills/  combat/  controllers/  stats/  maps/  ui/(story/, cutin/)  tools/
+```
 
 ## 참고
 

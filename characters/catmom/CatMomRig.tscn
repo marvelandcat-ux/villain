@@ -12,6 +12,15 @@
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/고양이 아줌마/고양이아줌마정면.png" id="86_front"]
 [ext_resource type="Texture2D" uid="uid://d3aavhlbcn1ra" path="res://sprite/고양이 아줌마/고양이 아줌마 몸 측면 2.png" id="85_body_turn1"]
 [ext_resource type="Texture2D" uid="uid://bw500lc3iy5yb" path="res://sprite/고양이 아줌마/고양이 아줌마 몸 측면 3.png" id="84_body_turn2"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunRightPose.tscn" id="gym_run_right_pose"]
 
 [node name="BodyRig" unique_id=1130472802 instance=ExtResource("1_rig")]
 head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
@@ -21,6 +30,15 @@ head_turn_on_face = true
 body_turn_textures = Array[Texture2D]([ExtResource("85_body_turn1"), ExtResource("84_body_turn2")])
 body_turn_match_height = true
 body_turn_faces_left = Array[bool]([false, false])
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

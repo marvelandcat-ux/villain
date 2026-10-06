@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_5otea"]
+[ext_resource type="PackedScene" path="res://characters/iljin/IljinRig.tscn" id="2_6ncui"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinRunLeftPose.tscn" id="3_ygrjx"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinRunMidPose.tscn" id="4_uqio7"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinRunRightPose.tscn" id="5_fc8yl"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="6_q8apb"]
+
+[node name="IljinRunStudio" type="Node2D" unique_id=558481602]
+script = ExtResource("1_5otea")
+motion = 2
+rig_scene = ExtResource("2_6ncui")
+pose_a = ExtResource("3_ygrjx")
+pose_b = ExtResource("4_uqio7")
+pose_c = ExtResource("5_fc8yl")
+curl_cycle = 0.52
+curl_blend_time = 0.15
+rig_scale = 4.0
+rig_at = Vector2(0, -20)
+rig_flip = true
+show_machine = true
+machine_texture = ExtResource("6_q8apb")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2107060122]

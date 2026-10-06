@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://dtw1gc0lmbf47"]
+
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_wnq78"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_w4p3t"]
+[ext_resource type="Texture2D" uid="uid://b0fudlypqfqiv" path="res://sprite/storymode/경찰서/경찰발.png" id="3_byyae"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_x8yqr"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="5_krb1e"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_n02kq"]
+[ext_resource type="Texture2D" uid="uid://clr6pqihia4xb" path="res://sprite/storymode/경찰서/경찰머리.png" id="7_ljfse"]
+
+[node name="PoliceRocketStudio" type="Node2D" unique_id=1505023825]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_wnq78")
+stage = "rocket"
+character = "주인공"
+data = ExtResource("2_w4p3t")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
+position = Vector2(2.9090044, 19.990547)
+rotation = -0.11170107
+scale = Vector2(0.25224742, 0.21539523)
+texture = ExtResource("3_byyae")
+
+[node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]
+show_behind_parent = true
+z_index = -1
+position = Vector2(-65.020004, 11.099998)
+script = ExtResource("4_x8yqr")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1850118347]
+position = Vector2(2.0256002, 3.053)
+scale = Vector2(0.0268, 0.030507652)
+texture = ExtResource("5_krb1e")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1763705476]
+position = Vector2(-27, 7)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_n02kq")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=273377424]
+position = Vector2(30, 5)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_n02kq")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1531073183]
+position = Vector2(0, -27.000002)
+scale = Vector2(0.045834586, 0.045551606)
+texture = ExtResource("7_ljfse")

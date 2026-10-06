@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_cue2r"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn" id="2_e23ua"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlDownPose.tscn" id="3_a4fki"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlMidPose.tscn" id="4_magu0"]
+[ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlUpPose.tscn" id="5_sa5l6"]
+
+[node name="ChokbeopsonyeonCurlStudio" type="Node2D" unique_id=646796705]
+script = ExtResource("1_cue2r")
+rig_scene = ExtResource("2_e23ua")
+pose_a = ExtResource("3_a4fki")
+pose_b = ExtResource("4_magu0")
+pose_c = ExtResource("5_sa5l6")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=132410790]

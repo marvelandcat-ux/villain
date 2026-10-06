@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_yo6gs"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이발.png" id="2_qyv0y"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이몸.png" id="3_y7xfs"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_e0wkd"]
+[ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_2w03c"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_vfypn"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 머리 (1).png" id="7_h67wh"]
+
+[node name="GymCurlUpPose" type="Node2D" unique_id=1879034459]
+scale = Vector2(8, 8)
+script = ExtResource("1_yo6gs")
+alone_opens_scene = "res://characters/jujeongbaengi/gym/JujeongbaengiCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=954154816]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_qyv0y")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=417063863]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_qyv0y")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=886463328]
+position = Vector2(0.96, 0.4)
+rotation = -0.025
+scale = Vector2(0.10488372, 0.114444435)
+texture = ExtResource("3_y7xfs")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=2096431563]
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("4_e0wkd")
+script = ExtResource("5_2w03c")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=197835211]
+position = Vector2(-15, -7)
+rotation = -0.3
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_vfypn")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1073636026]
+position = Vector2(13, -8)
+rotation = -0.3
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_vfypn")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=327276429]
+position = Vector2(-2, -26)
+scale = Vector2(0.045, 0.0507)
+texture = ExtResource("7_h67wh")

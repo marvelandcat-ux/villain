@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_84fvd"]
+[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/발.png" id="2_3xld8"]
+[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="3_ufkh4"]
+[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/손.png" id="4_tjdpa"]
+[ext_resource type="Texture2D" path="res://sprite/고양이 아줌마/캣맘머리.png" id="5_if7ug"]
+
+[node name="GymRunLeftPose" type="Node2D" unique_id=724953001]
+scale = Vector2(8, 8)
+script = ExtResource("1_84fvd")
+alone_opens_scene = "res://characters/catmom/gym/CatMomRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=2023463120]
+position = Vector2(25.125, 20.625)
+rotation = -0.83077675
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_3xld8")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1633647319]
+position = Vector2(-18.999998, 26.5)
+rotation = 2.2444935
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_3xld8")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=490097755]
+position = Vector2(1.5, 0)
+rotation = 0.09
+scale = Vector2(0.024431, 0.029429)
+texture = ExtResource("3_ufkh4")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1224612799]
+position = Vector2(28.375, -4.5)
+rotation = -0.4
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_tjdpa")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=943634196]
+position = Vector2(-27.25, 9.625001)
+rotation = 0.35
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_tjdpa")
+
+[node name="HandR2" type="Sprite2D" parent="." unique_id=1007583970]
+position = Vector2(-26.625, 8.875001)
+rotation = 0.45
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_tjdpa")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=303717517]
+position = Vector2(-1, -27)
+rotation = 0.05
+scale = Vector2(0.042, 0.042)
+texture = ExtResource("5_if7ug")

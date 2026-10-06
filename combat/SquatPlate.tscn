@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://combat/SquatPlate.gd" id="1_plate"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/원판.png" id="2_plate"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/바벨정면.png" id="3_hub"]
+
+[node name="SquatPlate" type="Sprite2D"]
+texture = ExtResource("2_plate")
+script = ExtResource("1_plate")
+
+[node name="Hub" type="Sprite2D" parent="."]
+scale = Vector2(0.28, 0.28)
+texture = ExtResource("3_hub")

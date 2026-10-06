@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://b3k1kj227hdvb"]
+
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_64hmu"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_c1shi"]
+[ext_resource type="Texture2D" uid="uid://d5j57gv4txsc" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_4es3i"]
+[ext_resource type="Texture2D" uid="uid://daj7hrn5nnjrj" path="res://sprite/악플러/몸/악플러몸통.png" id="4_tsorg"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="5_tjrr8"]
+[ext_resource type="Texture2D" uid="uid://voqs82xn4euo" path="res://sprite/악플러/몸/악플러대가리.png" id="6_xvw0y"]
+
+[node name="AkpeulleoBikeStudio" type="Node2D" unique_id=1059167814]
+position = Vector2(651, 302)
+scale = Vector2(6, 6)
+script = ExtResource("1_64hmu")
+character = "악플러"
+data = ExtResource("2_c1shi")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1462793950]
+position = Vector2(3.1726491, 18.733402)
+scale = Vector2(0.022643764, 0.022643764)
+texture = ExtResource("3_4es3i")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1848509384]
+position = Vector2(5.5, -10.500002)
+scale = Vector2(0.10488372, 0.114444435)
+texture = ExtResource("4_tsorg")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1262659570]
+z_index = 2
+position = Vector2(-22.833332, -5.166667)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_tjrr8")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1436182245]
+position = Vector2(32.333332, -5.5)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_tjrr8")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1860361476]
+position = Vector2(1.0000027, -43.333332)
+scale = Vector2(0.04945996, 0.05222196)
+texture = ExtResource("6_xvw0y")

@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_rua0t"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="2_wv7m7"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_8k8cu"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_46rda"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="5_lw0b3"]
+
+[node name="GymRunMidPose" type="Node2D" unique_id=534442363]
+scale = Vector2(8, 8)
+script = ExtResource("1_rua0t")
+alone_opens_scene = "res://characters/floornoise/gym/FloorNoiseRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1199669511]
+position = Vector2(2, 24)
+rotation = -0.1
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_wv7m7")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1755817535]
+position = Vector2(3, 26)
+rotation = 0.05
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_wv7m7")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=971282685]
+position = Vector2(1.2, -1)
+rotation = 0.09
+scale = Vector2(0.023967315, 0.0315)
+texture = ExtResource("3_8k8cu")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=2018495168]
+position = Vector2(-3, 6)
+rotation = -0.1
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("4_46rda")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=246567134]
+z_index = 3
+position = Vector2(4, 5)
+rotation = 0.1
+scale = Vector2(0.09206897, 0.09206896)
+texture = ExtResource("4_46rda")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=245105294]
+position = Vector2(-1.5, -28)
+rotation = 0.05
+scale = Vector2(0.045, 0.045)
+texture = ExtResource("5_lw0b3")

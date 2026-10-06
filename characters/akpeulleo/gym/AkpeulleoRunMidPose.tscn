@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_q86w1"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러발.png" id="2_vxtt5"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러몸통.png" id="3_lrxc4"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_h3a8d"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러대가리.png" id="5_2bwrk"]
+
+[node name="GymRunMidPose" type="Node2D" unique_id=364437609]
+scale = Vector2(8, 8)
+script = ExtResource("1_q86w1")
+alone_opens_scene = "res://characters/akpeulleo/gym/AkpeulleoRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=330316818]
+position = Vector2(2, 24)
+rotation = -0.1
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_vxtt5")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1087028622]
+position = Vector2(3, 26)
+rotation = 0.05
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_vxtt5")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=585358423]
+position = Vector2(1.2, -1)
+rotation = 0.09
+scale = Vector2(0.10488372, 0.114444435)
+texture = ExtResource("3_lrxc4")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1289941343]
+z_index = 2
+position = Vector2(-3, 6)
+rotation = -0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_h3a8d")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1471701267]
+position = Vector2(4, 5)
+rotation = 0.1
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_h3a8d")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=2081388363]
+position = Vector2(-1.5, -28)
+rotation = 0.05
+scale = Vector2(0.04945996, 0.05222196)
+texture = ExtResource("5_2bwrk")

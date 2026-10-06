@@ -163,7 +163,7 @@ func _physics_process(delta: float) -> void:
 		_update_stuck(delta)
 		# 구경 모드에선 스킬 쓰러 다가갈 때만 상대 발판까지 길을 찾는다(평소엔 거리를 벌린다)
 		var nav_ok: bool = not showcase or _show_engage
-		if not _try_dodge_hazard() and not _run_detour(delta) and not _try_take_crown(delta) and not (nav_ok and _navigate_to_target(delta)):
+		if not _try_dodge_hazard() and not _run_detour(delta) and not _try_take_crown(delta) and not (nav_ok and (_walk_to_other_level() or _navigate_to_target(delta))):
 			if showcase:
 				_showcase_movement(delta)
 			else:
@@ -621,6 +621,22 @@ func _navigate_to_target(delta: float) -> bool:
 	if goal == null:
 		return false
 	return _navigate(goal, target.global_position.x, delta)
+
+## 층 넘나들기 맵(헬스장, `GymWrap`): 상대가 다른 층이면 맵 끝까지 걸어가 넘어간다.
+## 두 층 사이는 점프로 못 가서 발판 길찾기로는 길이 안 나온다. 걸어갔으면 true
+func _walk_to_other_level() -> bool:
+	var wrap: Node = get_tree().get_first_node_in_group("level_wrap")
+	if wrap == null:
+		return false
+	var exit_x: float = wrap.call("exit_x_toward", fighter.global_position, target.global_position)
+	if is_nan(exit_x):
+		return false
+	_nav_next = null
+	var dx: float = exit_x - fighter.global_position.x
+	fighter.move(signf(dx))
+	if absf(dx) > 260.0 and fighter.is_on_floor():
+		fighter.dash(signf(dx))
+	return true
 
 ## goal 발판(goal_x 근처)으로 한 걸음. 이미 같은 발판이면 false(평소 판단에 맡긴다)
 func _navigate(goal: Dictionary, goal_x: float, delta: float) -> bool:

@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/TreadmillGearStudio.gd" id="1_3xwoa"]
+[ext_resource type="Resource" path="res://maps/workout/TreadmillGear.tres" id="2_8hue4"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_l7tsd"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 몸.png" id="4_3hb4a"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="5_7cs80"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 머리.png" id="6_htncr"]
+
+[node name="ChokbeopsonyeonCarStudio" type="Node2D" unique_id=221854591]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_3xwoa")
+stage = "car"
+data = ExtResource("2_8hue4")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1748233894]
+position = Vector2(3.1666665, 18.166668)
+scale = Vector2(0.019837752, 0.019837752)
+texture = ExtResource("3_l7tsd")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1697612583]
+position = Vector2(2.6666677, -10.833333)
+scale = Vector2(0.0266, 0.0322)
+texture = ExtResource("4_3hb4a")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1546205166]
+z_index = 1
+position = Vector2(-25.5, -9)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_7cs80")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1873908622]
+z_index = 1
+position = Vector2(31.166668, -13.333334)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("5_7cs80")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=467851654]
+position = Vector2(1.5, -46.000004)
+scale = Vector2(0.055, 0.055)
+texture = ExtResource("6_htncr")

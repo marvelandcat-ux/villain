@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/workout/LimbStageStudio.gd" id="1_studio"]
+[ext_resource type="Resource" path="res://maps/workout/CurlStage.tres" id="2_data"]
+
+[node name="CurlVein3Studio" type="Node2D"]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_studio")
+stage = "vein3"
+data = ExtResource("2_data")
+
+[node name="FootL" type="Sprite2D" parent="."]
+
+[node name="FootR" type="Sprite2D" parent="."]
+
+[node name="Body" type="Sprite2D" parent="."]
+
+[node name="HandL" type="Sprite2D" parent="."]
+
+[node name="HandR" type="Sprite2D" parent="."]
+
+[node name="Head" type="Sprite2D" parent="."]

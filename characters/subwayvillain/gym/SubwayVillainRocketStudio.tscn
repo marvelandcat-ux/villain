@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://ctd1ntemn0uvx"]
+
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_ph36m"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_qypjh"]
+[ext_resource type="Texture2D" uid="uid://b764mhntg2br4" path="res://sprite/지하철빌/런닝머신10스택.png" id="3_n7cb1"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="4_poami"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="5_ahvmn"]
+[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="6_ejr3p"]
+[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌/지하철빌런머리.png" id="7_7251j"]
+
+[node name="SubwayVillainRocketStudio" type="Node2D" unique_id=1505023825]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_ph36m")
+stage = "rocket"
+character = "지하철 아저씨"
+data = ExtResource("2_qypjh")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
+position = Vector2(1.070312, 19.333336)
+scale = Vector2(0.22640236, 0.20140818)
+texture = ExtResource("3_n7cb1")
+
+[node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]
+show_behind_parent = true
+z_index = -1
+position = Vector2(-64.7, 11.099998)
+script = ExtResource("4_poami")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1850118347]
+position = Vector2(0.73, 0.7)
+scale = Vector2(0.0252, 0.0279)
+texture = ExtResource("5_ahvmn")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1763705476]
+position = Vector2(-27, 4)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_ejr3p")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=273377424]
+position = Vector2(27, 3)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_ejr3p")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1531073183]
+position = Vector2(-1.48, -33.63)
+scale = Vector2(0.0456, 0.0485)
+texture = ExtResource("7_7251j")

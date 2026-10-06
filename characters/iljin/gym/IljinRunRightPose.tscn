@@ -1,0 +1,56 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_ljllf"]
+[ext_resource type="Texture2D" path="res://sprite/일진/일진발.png" id="2_vxx46"]
+[ext_resource type="Texture2D" path="res://sprite/일진/일진 몸.png" id="3_tqqgt"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_dtqeh"]
+[ext_resource type="Texture2D" path="res://sprite/일진/일진머리.png" id="5_2ebyx"]
+
+[node name="GymRunRightPose" type="Node2D" unique_id=396818913]
+scale = Vector2(8, 8)
+script = ExtResource("1_ljllf")
+alone_opens_scene = "res://characters/iljin/gym/IljinRunStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=790099980]
+position = Vector2(-16.5, 24.374998)
+rotation = 2.2444935
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_vxx46")
+
+[node name="FootL2" type="Sprite2D" parent="." unique_id=422585583]
+position = Vector2(-20.750002, 26.249998)
+rotation = 2.2444935
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_vxx46")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=1981404889]
+position = Vector2(23.125, 19.749998)
+rotation = -0.715585
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_vxx46")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1490024529]
+position = Vector2(1.5, 0)
+rotation = 0.09
+scale = Vector2(0.035, 0.03968)
+texture = ExtResource("3_tqqgt")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=469566669]
+z_index = 1
+position = Vector2(-31.125, 9.000001)
+rotation = 0.35
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_dtqeh")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=60075354]
+position = Vector2(25.75, -2.2499995)
+rotation = -0.4
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("4_dtqeh")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=402253086]
+position = Vector2(-1, -27)
+rotation = 0.05
+scale = Vector2(0.0481, 0.0481)
+texture = ExtResource("5_2ebyx")

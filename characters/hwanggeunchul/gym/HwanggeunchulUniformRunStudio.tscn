@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_4tubf"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn" id="2_4k8qo"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunLeftPose.tscn" id="3_sk1x2"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunMidPose.tscn" id="4_mon8p"]
+[ext_resource type="PackedScene" path="res://characters/hwanggeunchul/gym/HwanggeunchulUniformRunRightPose.tscn" id="5_qutip"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/언닝머신.png" id="6_n4jse"]
+
+[node name="HwanggeunchulUniformRunStudio" type="Node2D" unique_id=1202560349]
+script = ExtResource("1_4tubf")
+motion = 2
+rig_scene = ExtResource("2_4k8qo")
+pose_a = ExtResource("3_sk1x2")
+pose_b = ExtResource("4_mon8p")
+pose_c = ExtResource("5_qutip")
+curl_cycle = 0.52
+curl_blend_time = 0.15
+rig_scale = 4.0
+rig_at = Vector2(0, -20)
+rig_flip = true
+show_machine = true
+machine_texture = ExtResource("6_n4jse")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=28364950]

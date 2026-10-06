@@ -18,6 +18,10 @@
 [ext_resource type="Texture2D" path="res://sprite/지하철빌/개찰구.png" id="40_logo1"]
 [ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아재반격스킬로고.png" id="41_logo2"]
 [ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아저씨궁극기로고.png" id="42_logoult"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/단소작렬.ogv" id="50_vid_combo"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/개찰구소환.ogv" id="51_vid_gate"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/단소반격.ogv" id="52_vid_counter"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/지하철의수호자.ogv" id="53_vid_ult"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(30, 30)
@@ -68,6 +72,9 @@ dual_combo_windup = Array[float]([0.0, 0.24, 0.0])
 cooldown = 0.3
 miss_cooldown = 1.0
 finisher_windup = 0.223
+skill_name = "단소 작렬"
+demo_video = ExtResource("50_vid_combo")
+description = "단소로 3연타. 마지막 타는 X자로 베어 멀리 날린다. 궁극기 중에는 1타에 리코더를 던진다."
 
 [node name="RecorderThrow" type="Node" parent="BasicAttack"]
 script = ExtResource("30_throw")
@@ -91,13 +98,17 @@ script = ExtResource("4")
 icon = ExtResource("40_logo1")
 cooldown = 8.0
 turnstile_scene = ExtResource("5")
+skill_name = "개찰구 소환"
+demo_video = ExtResource("51_vid_gate")
+description = "앞쪽에 개찰구 두 짝을 세운다. 점프로만 넘을 수 있고, 시간이 지나면 사라진다."
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("6")
 icon = ExtResource("41_logo2")
 cooldown = 9.0
-skill_name = "단소 카운터"
-description = "단소를 겨누고 잠깐 기다린다. 그 사이 공격을 받으면 피해 없이 상대 등 뒤로 순간이동해 벤다. 아무것도 안 오면 헛방이라 빈틈이 생긴다."
+skill_name = "단소 반격"
+demo_video = ExtResource("52_vid_counter")
+description = "자세를 잡는 동안 공격을 받으면 피해 없이 상대 등 뒤로 넘어가 베어 날린다. 헛방이면 잠시 굳는다."
 
 [node name="Hitbox" type="Area2D" parent="Skill2"]
 monitoring = false
@@ -113,6 +124,9 @@ icon = ExtResource("42_logoult")
 cooldown = 24.0
 start_on_cooldown = true
 slash_mark_scene = ExtResource("34_mark")
+skill_name = "지하철의 수호자"
+demo_video = ExtResource("53_vid_ult")
+description = "양손에 악기를 들어 평타가 4타로 강해지고, 방어가 0.5초 길어지며, 대시가 베기 공격이 된다. 벤 자국은 돌진 끝에 터진다."
 
 [node name="Hitbox" type="Area2D" parent="SkillUltimate"]
 monitoring = false

@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_wqu0i"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseRig.tscn" id="2_vujeo"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseCurlDownPose.tscn" id="3_sv1xb"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseCurlMidPose.tscn" id="4_1r531"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseCurlUpPose.tscn" id="5_4kirh"]
+
+[node name="FloorNoiseCurlStudio" type="Node2D" unique_id=1696332652]
+script = ExtResource("1_wqu0i")
+rig_scene = ExtResource("2_vujeo")
+pose_a = ExtResource("3_sv1xb")
+pose_b = ExtResource("4_1r531")
+pose_c = ExtResource("5_4kirh")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1756416037]

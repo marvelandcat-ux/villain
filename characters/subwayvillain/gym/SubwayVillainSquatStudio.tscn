@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_ky3l7"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/SubwayVillainRig.tscn" id="2_l58ho"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainSquatUpPose.tscn" id="3_6j8n4"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainSquatMidPose.tscn" id="4_xmbwu"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainSquatDownPose.tscn" id="5_abenl"]
+
+[node name="SubwayVillainSquatStudio" type="Node2D" unique_id=217284013]
+script = ExtResource("1_ky3l7")
+motion = 1
+rig_scene = ExtResource("2_l58ho")
+pose_a = ExtResource("3_6j8n4")
+pose_b = ExtResource("4_xmbwu")
+pose_c = ExtResource("5_abenl")
+curl_cycle = 1.8
+curl_rise_ratio = 0.45
+curl_blend_time = 0.2
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=347068412]

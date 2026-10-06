@@ -22,15 +22,22 @@ const MODIFIER_PREFIX := "gym_"
 ## 기구가 모여 있는 그룹 이름(`GymMachine`이 스스로 들어간다)
 const MACHINE_GROUP := "gym_machine"
 
+## 스택이 1 오를 때마다 그 부위에서 터지는 폭죽, 꽉 채울 때 터지는 빵빠레
+const LEVEL_UP_BURST := preload("res://combat/LevelUpBurst.gd")
+const FANFARE := preload("res://combat/FanfareBurst.gd")
+
 ## 운동을 시작·중단할 때의 쿨타임(초). 너무 짧으면 키 한 번에 켜졌다 꺼진다
 @export var toggle_cooldown: float = 0.25
-## 몸이 제일 많이 부풀 때의 배율(1.0이면 안 변한다). 기획서 "강화된 부위가 변해 한눈에 보임"
-@export var muscle_gain: float = 0.45
-## 몸이 꽉 부푸는 기준 스펙 — 기구의 `spec_max`와 맞춰 두면 다 채웠을 때 최대가 된다
-@export var muscle_full_spec: float = 6.0
 ## 운동하는 동안 몸이 위아래로 들썩이는 폭(px)과 빠르기 — 가만히 서 있으면 운동으로 안 보인다
 @export var bob_amount: float = 5.0
 @export var bob_speed: float = 7.0
+## **런닝머신 단계 장비 자리표**(`maps/workout/TreadmillGear.tres`) — 스택이 4·7·10이 되면 발이 바뀐다
+@export var treadmill_gear: Resource
+## **바벨 컬·스쿼트 단계 자리표**(`maps/workout/CurlStage.tres`·`SquatStage.tres`) — 스택이 4·7·10이 되면 손·발이 바뀐다
+@export var curl_stage: Resource
+@export var squat_stage: Resource
+## 레벨업 폭죽 크기 배율
+@export var burst_scale: float = 1.0
 
 @export_group("AI")
 ## 상대가 이만큼 떨어져 있을 때만 AI가 운동한다 — 코앞에서 운동하면 그냥 맞는다
@@ -56,13 +63,25 @@ func _process(delta: float) -> void:
 	if not _fighter.is_on_floor() or _fighter.is_in_hitstun() or not _machine.in_range(_fighter.global_position):
 		_stop()
 		return
+	# **아무 키나 누르면 그 자리에서 끊긴다**(2026-10-05 사용자 규칙).
+	# ⚠️ `move_input`을 보면 안 된다 — 운동 중엔 `movement_override` 때문에 컨트롤러가
+	# 이동·점프 입력을 **아예 안 읽어서** 그 값이 그대로 멈춰 있다. 그래서 키를 직접 본다
+	if _wants_break():
+		_stop()
+		return
 	var key: String = _machine.spec_key()
-	var spec: float = minf(_get_spec(key) + _machine.spec_per_second * delta, _machine.spec_max)
+	var before: float = _get_spec(key)
+	var spec: float = minf(before + _machine.spec_per_second * delta, _machine.spec_max)
 	_set_spec(key, spec)
 	_apply_spec(_machine, spec)
+	# **스택(정수)이 하나 오를 때마다** — 장비가 바뀔 단계면 바꾸고, 그 부위에서 폭죽이 터진다
+	if floori(spec) > floori(before):
+		_on_level_up(_machine, floori(spec))
 	_machine.set_gauge(spec / maxf(_machine.spec_max, 0.001))
-	_bob += delta * bob_speed
-	_apply_bob(sin(_bob) * bob_amount)
+	# 바벨 컬은 자세가 직접 움직이므로 들썩임을 겹치면 두 번 흔들린다
+	if not _is_curl() and not _is_squat() and not _is_run():
+		_bob += delta * bob_speed
+		_apply_bob(sin(_bob) * bob_amount)
 	# 다 채웠으면 알아서 손을 턴다 — 더 해도 안 오르는데 발만 묶여 있으면 손해다
 	if spec >= _machine.spec_max:
 		_stop()
@@ -83,10 +102,14 @@ func _execute(fighter: Fighter) -> void:
 	_fighter = fighter
 	_machine = machine
 	_bob = 0.0
-	# 기구를 보고 선다(등지고 운동하면 이상하다). 정확히 겹쳐 있으면 보던 쪽 그대로
-	var dx: float = machine.global_position.x - fighter.global_position.x
-	if absf(dx) > 4.0:
-		fighter.facing = signf(dx)
+	# 기구를 보고 선다(등지고 운동하면 이상하다). 정확히 겹쳐 있으면 보던 쪽 그대로.
+	# **기구가 방향을 정해 뒀으면 그쪽이 이긴다** — 런닝머신은 조작판을 보고 달려야 한다
+	if not is_zero_approx(machine.face_dir):
+		fighter.facing = signf(machine.face_dir)
+	else:
+		var dx: float = machine.global_position.x - fighter.global_position.x
+		if absf(dx) > 4.0:
+			fighter.facing = signf(dx)
 	# **발을 묶는다** — 이게 이 맵의 판돈이다
 	fighter.movement_override = self
 	var visual: Node2D = fighter.get_node_or_null("Visual")
@@ -98,12 +121,20 @@ func _execute(fighter: Fighter) -> void:
 	if not fighter.basic_attack_used.is_connected(_on_attacked):
 		fighter.basic_attack_used.connect(_on_attacked)
 	machine.set_gauge(_get_spec(machine.spec_key()) / maxf(machine.spec_max, 0.001))
+	_set_curl_pose(true)
+	_set_squat_pose(true)
+	_set_run_pose(true)
+	_set_workout_flag(true)
 
 func effective_cooldown() -> float:
 	return toggle_cooldown
 
 ## 운동을 끝낸다(스스로 그만두든, 맞아서 끊기든 거쳐 가는 한 곳)
 func _stop() -> void:
+	_set_curl_pose(false)
+	_set_squat_pose(false)
+	_set_run_pose(false)
+	_set_workout_flag(false)
 	if _machine != null and is_instance_valid(_machine):
 		_machine.set_gauge(-1.0)
 	_machine = null
@@ -122,6 +153,81 @@ func _on_interrupted(_amount: int, _knockback: Vector2) -> void:
 
 func _on_attacked() -> void:
 	_stop()
+
+## **운동 중이라고 리그에 알려 준다** — 기구 종류와 상관없이 켠다.
+## 리그는 이걸 보고 idle 몸짓(뒤돌아보기·머리 긁기)을 쉰다
+func _set_workout_flag(on: bool) -> void:
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_workout"):
+		visual.set_workout(on)
+
+## 지금 쓰는 기구가 **런닝머신**인지
+func _is_run() -> bool:
+	return _machine != null and is_instance_valid(_machine) and _machine.kind == GymMachine.Kind.TREADMILL
+
+## 달리기 자세를 켜고 끈다. 리그에 그 손잡이가 없으면 조용히 넘어간다
+func _set_run_pose(on: bool) -> void:
+	if on and not _is_run():
+		return
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_run"):
+		visual.set_run(on)
+
+## 지금 쓰는 기구가 **스쿼트 랙**인지
+func _is_squat() -> bool:
+	return _machine != null and is_instance_valid(_machine) and _machine.kind == GymMachine.Kind.SQUAT
+
+## 스쿼트 자세를 켜고 끈다. 리그에 그 손잡이가 없으면 조용히 넘어간다
+func _set_squat_pose(on: bool) -> void:
+	if on and not _is_squat():
+		return
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_squat"):
+		visual.set_squat(on)
+
+## 지금 쓰는 기구가 **바벨 컬**인지 — 컬만 전용 자세가 있다
+func _is_curl() -> bool:
+	return _machine != null and is_instance_valid(_machine) and _machine.kind == GymMachine.Kind.CURL
+
+## 바벨 컬 자세를 켜고 끈다. 리그에 그 손잡이가 없으면 조용히 넘어간다(다른 캐릭터 리그에 안전하게)
+func _set_curl_pose(on: bool) -> void:
+	if on and not _is_curl():
+		return
+	if not is_instance_valid(_fighter):
+		return
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("set_curl"):
+		visual.set_curl(on)
+
+## 이 중 하나라도 눌려 있으면 운동을 그만둔다 — 맵 전용 키는 빼 둔다(그건 _execute가 토글로 받는다)
+const BREAK_ACTIONS: Array[String] = ["left", "right", "jump", "down",
+	"basic_attack", "skill_1", "skill_2", "ultimate"]
+
+## 이 캐릭터를 조작하는 사람이 몇 번인지(1/2). 컴퓨터가 잡고 있으면 0
+func _player_index() -> int:
+	if not is_instance_valid(_fighter):
+		return 0
+	for child in _fighter.get_children():
+		if "player_index" in child:
+			return int(child.player_index)
+	return 0
+
+## 지금 조작 키가 눌려 있는지 — 컴퓨터가 쓰는 중이면 늘 false다
+func _wants_break() -> bool:
+	var index: int = _player_index()
+	if index <= 0:
+		return false
+	for name in BREAK_ACTIONS:
+		var action: String = "p%d_%s" % [index, name]
+		if InputMap.has_action(action) and Input.is_action_pressed(action):
+			return true
+	return false
 
 ## 지금 운동 중인지 — 다른 연출이 물어볼 수 있게 열어 둔다
 func is_working_out() -> bool:
@@ -160,20 +266,62 @@ func _set_spec(key: String, value: float) -> void:
 func _apply_spec(machine: GymMachine, spec: float) -> void:
 	_fighter.set_modifier(machine.stat_property(), MODIFIER_PREFIX + machine.spec_key(),
 		1.0 + spec * machine.gain_per_spec)
-	_apply_muscle()
+	# 겉모습은 **스택이 오를 때 단계별로** 바뀐다(_on_level_up) — 1~3스택은 그대로다(2026-10-06 사용자 지정)
 
-## 쌓인 스펙만큼 몸을 부풀린다 — 팔은 바벨 컬, 다리는 스쿼트·런닝머신이 키운다.
-## 리그에 그 손잡이가 없으면 조용히 넘어간다(다른 캐릭터 리그에도 안전하게)
-func _apply_muscle() -> void:
+## 스택이 하나 올랐다 — 런닝머신이면 발 장비 단계를 맞추고, 그 부위(컬 = 두 손, 스쿼트·런닝머신 = 두 발 가운데)에서 폭죽을 터뜨린다
+func _on_level_up(machine: GymMachine, stack: int) -> void:
+	match machine.kind:
+		GymMachine.Kind.TREADMILL:
+			_apply_treadmill_gear(stack)
+		GymMachine.Kind.CURL:
+			_apply_limb_stage(curl_stage, "hands", stack)
+		GymMachine.Kind.SQUAT:
+			_apply_limb_stage(squat_stage, "feet", stack)
 	var visual: Node = _fighter.get_node_or_null("Visual")
-	if visual == null:
+	var map: Node = _fighter.get_parent()
+	if visual == null or map == null or not visual.has_method("burst_anchors"):
 		return
-	var full: float = maxf(muscle_full_spec, 0.001)
-	if "muscle_arm" in visual:
-		visual.muscle_arm = 1.0 + clampf(_get_spec("curl") / full, 0.0, 1.0) * muscle_gain
-	if "muscle_leg" in visual:
-		var leg: float = (_get_spec("squat") + _get_spec("treadmill")) / (full * 2.0)
-		visual.muscle_leg = 1.0 + clampf(leg, 0.0, 1.0) * muscle_gain
+	# 폭죽은 **두 손(발) 가운데에 하나만**(2026-10-06 사용자). 꽉 채운 순간엔 빵빠레까지
+	var anchors: Array = visual.burst_anchors("hands" if machine.kind == GymMachine.Kind.CURL else "feet")
+	LEVEL_UP_BURST.spawn(map, anchors, burst_scale)
+	if stack >= int(machine.spec_max):
+		FANFARE.spawn(map, anchors)
+
+## 바벨 컬(손)·스쿼트(발) 스택에 맞는 단계를 입힌다(이미 그 단계면 그대로 둔다).
+## 그 캐릭터 자리가 적혀 있지 않으면 리그 제자리로 기본 자리를 잡는다
+func _apply_limb_stage(data: Resource, limb: String, stack: int) -> void:
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if data == null or visual == null or not visual.has_method("set_limb_stage"):
+		return
+	var stage: String = data.stage_of(stack)
+	if stage == visual.limb_stage(limb):
+		return
+	var who: String = _fighter.stats.character_name if _fighter.stats else ""
+	var rest: Dictionary = visual.stage_rest_info()
+	var entry: Dictionary = data.entry(who, stage)
+	if entry.is_empty() and stage != "":
+		entry = data.default_entry(rest, stage)
+	var texture: Texture2D = data.stage_texture(stage)
+	visual.set_limb_stage(limb, stage, entry, float(entry.get("size", data.default_size(stage))),
+		texture, data.texture_fit(rest, texture), data.uses_gold_shader(stage))
+
+## 런닝머신 스택에 맞는 발 장비를 끼운다(이미 그 단계면 그대로 둔다).
+## 그 캐릭터 자리가 적혀 있지 않으면 리그 제자리로 기본 자리를 잡는다
+func _apply_treadmill_gear(stack: int) -> void:
+	var data: Resource = treadmill_gear
+	var visual: Node = _fighter.get_node_or_null("Visual")
+	if data == null or visual == null or not visual.has_method("set_treadmill_gear"):
+		return
+	var stage: String = data.stage_of(stack)
+	if stage == visual.treadmill_gear_stage():
+		return
+	var who: String = _fighter.stats.character_name if _fighter.stats else ""
+	var texture: Texture2D = data.gear_texture(who, stage)
+	var entry: Dictionary = data.entry(who, stage)
+	if entry.is_empty() and stage != "":
+		entry = data.default_entry(visual.stage_rest_info(), texture, stage)
+	var hover: Array = data.hover_of(stage)
+	visual.set_treadmill_gear(stage, entry, texture, data.rolls(stage), hover[0], hover[1], hover[2])
 
 ## 운동하는 들썩임 — 몸 그림만 위아래로 흔든다(판정은 그대로다)
 func _apply_bob(offset: float) -> void:

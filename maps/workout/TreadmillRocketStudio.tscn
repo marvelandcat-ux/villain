@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://bkx6jtlysdupc"]
+
+[ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_studio"]
+[ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_data"]
+[ext_resource type="Texture2D" uid="uid://4aql1kf8mvf6" path="res://sprite/금쪽이/런닝머신10스택.png" id="3_0nupn"]
+[ext_resource type="Script" uid="uid://d1admy2ui78of" path="res://combat/JetFlame.gd" id="3_flame"]
+[ext_resource type="Texture2D" uid="uid://nmr4i6puifa" path="res://sprite/금쪽이/축법소년 몸.png" id="5_runck"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="6_wfbhl"]
+[ext_resource type="Texture2D" uid="uid://d0g5r74htljr8" path="res://sprite/금쪽이/축법소년 머리.png" id="7_fdmix"]
+
+[node name="TreadmillRocketStudio" type="Node2D" unique_id=1505023825]
+position = Vector2(640, 300)
+scale = Vector2(6, 6)
+script = ExtResource("1_studio")
+stage = "rocket"
+data = ExtResource("2_data")
+
+[node name="GearL" type="Sprite2D" parent="." unique_id=1836177286]
+position = Vector2(2.0000038, 19.833338)
+scale = Vector2(0.20518363, 0.2051836)
+texture = ExtResource("3_0nupn")
+
+[node name="Flame" type="Node2D" parent="GearL" unique_id=1231269054]
+show_behind_parent = true
+z_index = -1
+position = Vector2(-65.020004, 13.5)
+script = ExtResource("3_flame")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1850118347]
+position = Vector2(2.5000021, 0.99999785)
+scale = Vector2(0.030603025, 0.03704577)
+texture = ExtResource("5_runck")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1763705476]
+z_index = 1
+position = Vector2(-23.666666, 3.1666665)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_wfbhl")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=273377424]
+z_index = 1
+position = Vector2(29.5, 0)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_wfbhl")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1531073183]
+position = Vector2(1.5, -32.6)
+scale = Vector2(0.055, 0.055)
+texture = ExtResource("7_fdmix")

@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_2n24j"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseRig.tscn" id="2_8fjcl"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseSquatUpPose.tscn" id="3_8yx8u"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseSquatMidPose.tscn" id="4_o3dps"]
+[ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseSquatDownPose.tscn" id="5_okeqd"]
+
+[node name="FloorNoiseSquatStudio" type="Node2D" unique_id=953447576]
+script = ExtResource("1_2n24j")
+motion = 1
+rig_scene = ExtResource("2_8fjcl")
+pose_a = ExtResource("3_8yx8u")
+pose_b = ExtResource("4_o3dps")
+pose_c = ExtResource("5_okeqd")
+curl_cycle = 1.8
+curl_rise_ratio = 0.45
+curl_blend_time = 0.2
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2094204678]

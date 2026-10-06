@@ -19,8 +19,14 @@ extends CanvasLayer
 ## 위로 올렸을 때 화면 구석에서 띄우는 간격(px, x = 좌우 / y = 위).
 ## ⚠️ x를 76보다 작게 주면 **왼쪽 위 일시정지 버튼**(자리 22, 크기 54)에 P1 판이 깔린다
 @export var panels_top_margin: Vector2 = Vector2(90, 12)
+## 아래 자리일 때 씬에 저장된 자리보다 **이만큼 더 내린다**(px). 맵이 정한다 — `Stage.hud_panels_drop`
+@export var panels_drop: float = 0.0
+
+## 씬에 저장된 아래 자리의 (offset_top, offset_bottom) — 내리기를 여러 번 불러도 겹쳐 내려가지 않게 기억해 둔다
+var _bottom_offsets: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
+	_bottom_offsets = Vector2(_p1_panel.offset_top, _p1_panel.offset_bottom)
 	_apply_panel_layout()
 
 ## 맵이 부른다 — 판을 위 구석으로 올리거나 씬에 저장된 아래 자리로 둔다
@@ -28,10 +34,20 @@ func set_panels_top(on: bool) -> void:
 	panels_top = on
 	_apply_panel_layout()
 
-## 판을 위 구석으로 옮긴다. **끄면 아무것도 안 한다** — 씬에 저장된 아래쪽 자리가 그대로 기본이라,
-## 다른 맵은 이 기능이 생기기 전과 완전히 같다
+## 맵이 부른다 — 아래 자리에서 판을 더 내린다
+func set_panels_drop(px: float) -> void:
+	panels_drop = px
+	_apply_panel_layout()
+
+## 판을 위 구석으로 옮기거나, 아래 자리에서 panels_drop만큼 내린다.
+## 둘 다 안 쓰면(위 끔·내림 0) 씬에 저장된 아래쪽 자리 그대로라 다른 맵은 이 기능이 생기기 전과 같다
 func _apply_panel_layout() -> void:
-	if not panels_top or _p1_panel == null or _p2_panel == null:
+	if _p1_panel == null or _p2_panel == null:
+		return
+	if not panels_top:
+		for panel in [_p1_panel, _p2_panel]:
+			panel.offset_top = _bottom_offsets.x + panels_drop
+			panel.offset_bottom = _bottom_offsets.y + panels_drop
 		return
 	# 판 크기는 씬에 잡아 둔 값을 그대로 쓴다(앵커가 좌/우로 달라도 오른쪽-왼쪽이 곧 너비다)
 	var w: float = _p1_panel.offset_right - _p1_panel.offset_left

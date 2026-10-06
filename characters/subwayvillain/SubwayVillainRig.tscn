@@ -37,8 +37,34 @@
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3ReadyPose.tscn" id="33r"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3MidPose.tscn" id="33m"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3EndPose.tscn" id="33e"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸P2.png" id="60_p2body"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/올라잇지하철빌런.png" id="gym_face_rise"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌/입벌린지하철.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
+curl_face_rise = ExtResource("gym_face_rise")
+curl_face_fall = ExtResource("gym_face_fall")
+squat_face_move = ExtResource("gym_face_rise")
+squat_face_rest = ExtResource("gym_face_fall")
+run_face = ExtResource("gym_face_fall")
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 attack_raise_deg = -40.0
 attack_swing_deg = 46.0
 attack_raise_offset = Vector2(-12, 2)
@@ -84,6 +110,7 @@ dual_hit2_end_pose = ExtResource("32e")
 dual_hit3_ready_pose = ExtResource("33r")
 dual_hit3_mid_pose = ExtResource("33m")
 dual_hit3_end_pose = ExtResource("33e")
+p2_body_texture = ExtResource("60_p2body")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

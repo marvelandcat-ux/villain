@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_j6asx"]
+[ext_resource type="PackedScene" path="res://characters/iljin/IljinRig.tscn" id="2_kbk5m"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinSquatUpPose.tscn" id="3_x6lug"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinSquatMidPose.tscn" id="4_4adq4"]
+[ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinSquatDownPose.tscn" id="5_wis2g"]
+
+[node name="IljinSquatStudio" type="Node2D" unique_id=678608863]
+script = ExtResource("1_j6asx")
+motion = 1
+rig_scene = ExtResource("2_kbk5m")
+pose_a = ExtResource("3_x6lug")
+pose_b = ExtResource("4_4adq4")
+pose_c = ExtResource("5_wis2g")
+curl_cycle = 1.8
+curl_rise_ratio = 0.45
+curl_blend_time = 0.2
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=361891634]

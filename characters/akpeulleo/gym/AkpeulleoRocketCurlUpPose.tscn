@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_anm3p"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러발.png" id="2_5fd7e"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러몸통.png" id="3_3nt4j"]
+[ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_04lgs"]
+[ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_gflhl"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_dhqkd"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러대가리.png" id="7_hq3ee"]
+
+[node name="GymCurlUpPose" type="Node2D" unique_id=890928524]
+scale = Vector2(8, 8)
+script = ExtResource("1_anm3p")
+alone_opens_scene = "res://characters/akpeulleo/gym/AkpeulleoRocketCurlStudio.tscn"
+
+[node name="FootL" type="Sprite2D" parent="." unique_id=1333021063]
+position = Vector2(-11, 26.33)
+scale = Vector2(0.12151323, 0.1342445)
+texture = ExtResource("2_5fd7e")
+
+[node name="FootR" type="Sprite2D" parent="." unique_id=2111213989]
+position = Vector2(11, 27)
+scale = Vector2(0.12, 0.12)
+texture = ExtResource("2_5fd7e")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=692403320]
+position = Vector2(0.96, 0.4)
+rotation = -0.025
+scale = Vector2(0.10488372, 0.114444435)
+texture = ExtResource("3_3nt4j")
+
+[node name="BarbellView" type="Sprite2D" parent="." unique_id=1233130498]
+scale = Vector2(0.032, 0.032)
+texture = ExtResource("4_04lgs")
+script = ExtResource("5_gflhl")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=2101445962]
+z_index = 2
+position = Vector2(-15, -7)
+rotation = -0.3
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_dhqkd")
+flip_h = true
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1433197065]
+position = Vector2(13, -8)
+rotation = -0.3
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("6_dhqkd")
+
+[node name="HeadView" type="Sprite2D" parent="." unique_id=76196972]
+position = Vector2(-2, -26)
+scale = Vector2(0.04945996, 0.05222196)
+texture = ExtResource("7_hq3ee")

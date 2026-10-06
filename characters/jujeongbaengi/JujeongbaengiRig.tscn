@@ -15,8 +15,34 @@
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="86_front"]
 [ext_resource type="Texture2D" uid="uid://cdxbp4f2yppij" path="res://sprite/주정뱅이/몸/주정뱅이 몸 측면 2.png" id="85_body_turn1"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 몸 측면 3.png" id="84_body_turn2"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이몸P2.png" id="60_p2body"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiCurlDownPose.tscn" id="gym_curl_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiCurlMidPose.tscn" id="gym_curl_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiCurlUpPose.tscn" id="gym_curl_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiSquatUpPose.tscn" id="gym_squat_up_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiSquatMidPose.tscn" id="gym_squat_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiSquatDownPose.tscn" id="gym_squat_down_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiRunLeftPose.tscn" id="gym_run_left_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiRunMidPose.tscn" id="gym_run_mid_pose"]
+[ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/올라잇주정뱅이.png" id="gym_face_rise"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 힘듬.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
+curl_face_rise = ExtResource("gym_face_rise")
+curl_face_fall = ExtResource("gym_face_fall")
+squat_face_move = ExtResource("gym_face_rise")
+squat_face_rest = ExtResource("gym_face_fall")
+run_face = ExtResource("gym_face_fall")
+curl_down_pose = ExtResource("gym_curl_down_pose")
+curl_mid_pose = ExtResource("gym_curl_mid_pose")
+curl_up_pose = ExtResource("gym_curl_up_pose")
+squat_up_pose = ExtResource("gym_squat_up_pose")
+squat_mid_pose = ExtResource("gym_squat_mid_pose")
+squat_down_pose = ExtResource("gym_squat_down_pose")
+run_left_pose = ExtResource("gym_run_left_pose")
+run_mid_pose = ExtResource("gym_run_mid_pose")
+run_right_pose = ExtResource("gym_run_right_pose")
 head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
 head_turn_anchors = Array[Vector3]([Vector3(717, 559, 908), Vector3(745, 590, 962), Vector3(750, 601, 995), Vector3(749, 599, 969), Vector3(626, 642, 989)])
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
@@ -31,6 +57,7 @@ hurt_head_texture = ExtResource("8_hurtface")
 drunk_head_texture = ExtResource("7_drunk")
 drunk_head_scale = Vector2(0.0513, 0.0578)
 idle_special = 2
+p2_body_texture = ExtResource("60_p2body")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

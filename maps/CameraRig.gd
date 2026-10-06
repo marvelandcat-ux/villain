@@ -126,12 +126,27 @@ func _process(delta: float) -> void:
 	if fighters.size() >= 2:
 		var a: Vector2 = fighters[0].global_position
 		var b: Vector2 = fighters[1].global_position
-		var mid: Vector2 = (a + b) / 2.0
-		mid.y -= _arena_look_up
-		mid.y = clampf(mid.y, _highest_center_y(), _lowest_center_y())
-		global_position = global_position.lerp(mid, follow_speed * delta)
+		global_position = global_position.lerp(_follow_aim(a, b), follow_speed * delta)
 		_update_zoom(a, b, delta)
 	_apply_shake(delta)
+
+## 두 캐릭터를 따라갈 때 카메라가 향하는 자리 — 가운데에서 위로 올려 보는 만큼 빼고 높이 한계 안으로
+func _follow_aim(a: Vector2, b: Vector2) -> Vector2:
+	var mid: Vector2 = (a + b) / 2.0
+	mid.y -= _arena_look_up
+	# 위쪽 한계는 `_highest_center_y()`다(mtem, 2026-10-06 머지) — 지붕을 보는 맵에서
+	# `min_y`로 자르면 천장 위 빈 곳까지 올라간다. 지붕을 안 쓰는 맵에선 그냥 min_y를 돌려준다
+	mid.y = clampf(mid.y, _highest_center_y(), _lowest_center_y())
+	return mid
+
+## 따라갈 자리로 **곧바로** 옮긴다 — 캐릭터가 순간이동했을 때(헬스장 층 넘나들기) 화면이 주욱 끌려가지 않게.
+## 고정 카메라(follow_speed 0)는 원래 안 움직이니 건드리지 않는다
+func snap_to_fighters() -> void:
+	if follow_speed <= 0.0:
+		return
+	var fighters := get_tree().get_nodes_in_group("fighters")
+	if fighters.size() >= 2:
+		global_position = _follow_aim(fighters[0].global_position, fighters[1].global_position)
 
 ## **잠깐 한 대상에게 바짝 다가간다.** 궁 마무리처럼 한 순간을 크게 보여줄 때 쓴다.
 ## `duration`은 **실제 시간**이다 — 같이 쓰는 슬로우모션(Engine.time_scale)에 끌려 늘어나면

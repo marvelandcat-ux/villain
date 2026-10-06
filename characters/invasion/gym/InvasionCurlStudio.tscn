@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://maps/GymCurlStudio.gd" id="1_osps8"]
+[ext_resource type="PackedScene" path="res://characters/invasion/InvasionRig.tscn" id="2_sokbw"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionCurlDownPose.tscn" id="3_1ginx"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionCurlMidPose.tscn" id="4_plb4e"]
+[ext_resource type="PackedScene" path="res://characters/invasion/gym/InvasionCurlUpPose.tscn" id="5_6bvxg"]
+
+[node name="InvasionCurlStudio" type="Node2D" unique_id=1269827712]
+script = ExtResource("1_osps8")
+rig_scene = ExtResource("2_sokbw")
+pose_a = ExtResource("3_1ginx")
+pose_b = ExtResource("4_plb4e")
+pose_c = ExtResource("5_6bvxg")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1840997054]
