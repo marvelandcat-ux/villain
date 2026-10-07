@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://skills/TrashBagThrowSkill.gd" id="1"]
+
+[node name="TrashBagThrowSkill" type="Node"]
+script = ExtResource("1")
+cooldown = 1.0
+skill_name = "쓰레기 봉투 던지기"
+description = "주운 쓰레기를 전부 봉투에 담아 던진다. 많이 모을수록 크고 아프다."

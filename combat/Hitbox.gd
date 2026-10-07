@@ -35,6 +35,10 @@ signal connected(victim: Node)
 ## 맞은 상대를 위로 띄우는 힘(px/s). 음수(기본)면 데미지 비례 기본 팝업, 0이면 안 띄운다(지상 유지).
 ## 콤보 앞 타격이 상대를 공중에 날려버려 다음 타가 헛치는 걸 막을 때 0으로 둔다
 @export var pop_override: float = -1.0
+## 명중했을 때 울릴 소리(비면 무음). **방어에 막혔을 땐 안 난다.**
+## 기본공격은 `ComboMeleeAttack.punch_sound`가 비어 있는 판정에 채워 넣는다
+@export var hit_sound: AudioStream
+@export var hit_sound_volume_db: float = 0.0
 
 ## --- 히트스톱(타격 정지) ---
 ## 명중하는 순간 **화면 전체가** 멈추는 시간(초) = 이 값 + 데미지 x `hitstop_per_damage`(최대 `hitstop_max`).
@@ -51,6 +55,8 @@ signal connected(victim: Node)
 const HITSTOP_SCALE: float = 0.0001
 ## 히트 스파크 세기 1이 되는 데미지 — 기본공격 한 방(약 7)이 "보통" 크기로 튀게 잡은 값
 const SPARK_POWER_DAMAGE: float = 7.0
+## 효과음 헬퍼(새 class_name이라 이름 대신 preload로 부른다)
+const _SFX := preload("res://combat/Sfx.gd")
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -71,6 +77,8 @@ var debris_enabled: bool = true
 ## 씬에 저장되지 않는 런타임 값이라 다른 판정에는 영향이 없다(기본 1)
 var hitstop_multiplier: float = 1.0
 var shake_multiplier: float = 1.0
+## 이번 판정의 소리 음높이 — 콤보가 타마다 넣어준다(마무리 타는 낮게 = 묵직하게)
+var hit_sound_pitch: float = 1.0
 ## 실제로 때린 몸 — 소환물이 쏜 투사체처럼 판정이 맵에 붙어 있어 부모로 못 찾을 때 쏜 쪽이 넣어 준다.
 ## 비워 두면 `get_attacker()`가 부모를 거슬러 올라가 찾는다. 카운터 반격이 누구에게 갈지 정하는 데 쓴다
 var attacker_body: Node = null
@@ -143,6 +151,7 @@ func _try_hit(area: Area2D) -> bool:
 		if victim and victim.has_method("get_combo_count"):
 			combo = victim.get_combo_count()
 		_spawn_damage_number(area.global_position, damage, combo)
+		_play_hit_sound()
 	connected.emit(victim)
 	return true
 
@@ -181,6 +190,12 @@ func _notify_blocked_by_guard() -> void:
 	if _source_fighter.basic_attack == null or get_parent() != _source_fighter.basic_attack:
 		return
 	_source_fighter.play_weapon_blocked()
+
+## 명중 소리. 타이틀 뒤 구경 모드에선 배경음악을 덮지 않게 안 낸다
+func _play_hit_sound() -> void:
+	if hit_sound == null or GameState.game_mode == "attract":
+		return
+	_SFX.play(self, hit_sound, hit_sound_volume_db, hit_sound_pitch)
 
 ## 막은 지점에 "BLOCK" 팝업을 띄운다 (데미지 숫자와 같은 장면을 다른 모드로 쓴다)
 func _spawn_block_popup(pos: Vector2) -> void:

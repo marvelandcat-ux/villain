@@ -1,111 +1,383 @@
 [gd_scene format=3 uid="uid://fvx8mp04yfvy"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
-[ext_resource type="Texture2D" uid="uid://bj1c1bbsqrry" path="res://sprite/맵/번화가/배경.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://bq3exgv88l0h1" path="res://sprite/맵/번화가/폴랫폼.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://c6qysjlnyv7ld" path="res://sprite/맵/번화가/건물3 .png" id="b0"]
-[ext_resource type="Texture2D" uid="uid://i1h6v3waqrbo" path="res://sprite/맵/번화가/gs25.png" id="b1"]
-[ext_resource type="Texture2D" uid="uid://bntvkq033dqva" path="res://sprite/맵/번화가/건물.png" id="b2"]
-[ext_resource type="Texture2D" uid="uid://dcggyas7ut0m" path="res://sprite/맵/번화가/떡볶이 집.png" id="b3"]
-[ext_resource type="Texture2D" uid="uid://d027iebwkf6un" path="res://sprite/맵/번화가/건물2.png" id="b4"]
+[ext_resource type="Texture2D" uid="uid://do3agikg35tt5" path="res://sprite/맵/번화가/쓰래기 통 쓰래기 없는 버전.png" id="15_flaia"]
+[ext_resource type="Texture2D" uid="uid://dapbatj7tba04" path="res://sprite/맵/번화가/배경레이어/배경_먼.png" id="bg1"]
+[ext_resource type="Texture2D" uid="uid://c1se6lwquttb6" path="res://sprite/맵/번화가/배경레이어/배경_중간.png" id="bg2"]
+[ext_resource type="Texture2D" uid="uid://brc1c4gvc4t4c" path="res://sprite/맵/번화가/배경레이어/배경_가까운.png" id="bg3"]
+[ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="bgblur"]
+[ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="bgpar"]
+[ext_resource type="Texture2D" uid="uid://buw3v7vcwl4m6" path="res://sprite/맵/번화가/건물 가루.png" id="d2"]
+[ext_resource type="Texture2D" uid="uid://r3wxqb3gn4wx" path="res://sprite/맵/번화가/건물 세로.png" id="d3"]
+[ext_resource type="Texture2D" uid="uid://bi7j3vhhfag8k" path="res://sprite/맵/번화가/전봇데.png" id="d5"]
+[ext_resource type="Script" uid="uid://c87rwo3t8jn7m" path="res://maps/PowerLine.gd" id="d6"]
+[ext_resource type="Texture2D" uid="uid://c8y0ikextdrci" path="res://sprite/맵/번화가/할인 마트.png" id="e1"]
+[ext_resource type="Texture2D" uid="uid://df2dkixfhkiha" path="res://sprite/맵/번화가/편의점.png" id="e2"]
+[ext_resource type="Script" uid="uid://d0563n72i44ba" path="res://maps/ForegroundFade.gd" id="fgfade"]
+[ext_resource type="PackedScene" path="res://skills/TrashBagThrowSkill.tscn" id="ms_trash"]
+[ext_resource type="Texture2D" uid="uid://dq4j5b0jtfguo" path="res://sprite/맵/번화가/시멘트 도로.png" id="road"]
+[ext_resource type="Script" uid="uid://cgv1s2vxn5sh1" path="res://maps/DowntownTaxi.gd" id="taxi"]
+[ext_resource type="Texture2D" uid="uid://djdhfpyxadh58" path="res://sprite/맵/번화가/쓰래기1.png" id="tr_1"]
+[ext_resource type="Texture2D" uid="uid://bh72dr7t8fq2n" path="res://sprite/맵/번화가/쓰래기2.png" id="tr_2"]
+[ext_resource type="Texture2D" uid="uid://dynvrbhgwu3x7" path="res://sprite/맵/번화가/쓰래기3.png" id="tr_3"]
+[ext_resource type="Script" uid="uid://cp0vcpdyk76eb" path="res://maps/DowntownTrashCan.gd" id="tr_can"]
+[ext_resource type="Texture2D" uid="uid://bcdbbkp0e462v" path="res://sprite/맵/번화가/쓰래기 통 뚜껑.png" id="tr_lid"]
+[ext_resource type="Script" uid="uid://bmygbgloywnhg" path="res://maps/DowntownTrashSpawner.gd" id="tr_spawner"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_far"]
+shader = ExtResource("bgblur")
+shader_parameter/blur_px = 1.2
+shader_parameter/dim = 0.1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_mid"]
+shader = ExtResource("bgblur")
+shader_parameter/blur_px = 0.7
+shader_parameter/dim = 0.05
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_near"]
+shader = ExtResource("bgblur")
+shader_parameter/blur_px = 0.35
+shader_parameter/dim = 0.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeL1"]
+size = Vector2(505, 9.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeL3"]
+size = Vector2(391, 10)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeR2"]
+size = Vector2(384, 10)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_q1gne"]
+size = Vector2(462, 12)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_flaia"]
+size = Vector2(489, 14)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_StepL2"]
+size = Vector2(474, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1248, 40)
+size = Vector2(1872, 34)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
-size = Vector2(40, 1600)
+size = Vector2(40, 2400)
 
 [node name="Downtown" type="Node2D" unique_id=1457522344]
 script = ExtResource("1")
+map_skill_scene = ExtResource("ms_trash")
 
 [node name="DecoBackdropSky" type="Polygon2D" parent="." unique_id=1075318281]
-z_index = -11
-position = Vector2(-1290, -514)
+z_index = -30
 color = Color(0.4588, 0.7647, 0.9882, 1)
 polygon = PackedVector2Array(-3000, -2400, 3000, -2400, 3000, 280, -3000, 280)
 
 [node name="DecoBackdropFloor" type="Polygon2D" parent="." unique_id=513848309]
-z_index = -11
+z_index = -30
 color = Color(0.2941, 0.2941, 0.3294, 1)
 polygon = PackedVector2Array(-3000, 280, 3000, 280, 3000, 2400, -3000, 2400)
 
-[node name="Background" type="Sprite2D" parent="." unique_id=1665188642]
-visible = false
-z_index = -10
-position = Vector2(-315, -222)
-scale = Vector2(0.95, 0.95)
-texture = ExtResource("4")
+[node name="DecoBgFar" type="CanvasGroup" parent="." unique_id=1129880055]
+z_index = -29
+material = SubResource("ShaderMaterial_bg_far")
+script = ExtResource("bgpar")
+reference = Vector2(0, -240)
 
-[node name="BuildingPipe" type="Sprite2D" parent="." unique_id=1177460861]
-z_index = -10
-position = Vector2(-492.67502, 57)
-scale = Vector2(0.34311527, 0.3366211)
-texture = ExtResource("b0")
+[node name="Art" type="Sprite2D" parent="DecoBgFar" unique_id=1858043771]
+position = Vector2(0, -537.5)
+scale = Vector2(1.8, 1.8)
+texture = ExtResource("bg1")
 
-[node name="BuildingGS25" type="Sprite2D" parent="." unique_id=721119226]
-z_index = -10
-position = Vector2(-342.8, 186.1)
-scale = Vector2(0.2, 0.2)
-texture = ExtResource("b1")
+[node name="DecoBgMid" type="CanvasGroup" parent="." unique_id=682534476]
+z_index = -29
+material = SubResource("ShaderMaterial_bg_mid")
+script = ExtResource("bgpar")
+factor = Vector2(0.88, 0.88)
+reference = Vector2(0, -240)
 
-[node name="BuildingWall" type="Sprite2D" parent="." unique_id=1777862990]
-z_index = -10
-position = Vector2(-68.7, 198.8)
-scale = Vector2(0.2, 0.2)
-texture = ExtResource("b2")
+[node name="Art" type="Sprite2D" parent="DecoBgMid" unique_id=2043945110]
+position = Vector2(0, -537.5)
+scale = Vector2(1.8, 1.8)
+texture = ExtResource("bg2")
 
-[node name="BuildingMart" type="Sprite2D" parent="." unique_id=1556353859]
-z_index = -10
-position = Vector2(213.6, 190.6)
-scale = Vector2(0.2, 0.2)
-texture = ExtResource("b3")
+[node name="DecoBgNear" type="CanvasGroup" parent="." unique_id=1656084820]
+z_index = -29
+material = SubResource("ShaderMaterial_bg_near")
+script = ExtResource("bgpar")
+factor = Vector2(0.92, 0.92)
+reference = Vector2(0, -240)
 
-[node name="BuildingPub" type="Sprite2D" parent="." unique_id=429174890]
+[node name="Art" type="Sprite2D" parent="DecoBgNear" unique_id=1257211075]
+position = Vector2(0, -537.5)
+scale = Vector2(1.8, 1.8)
+texture = ExtResource("bg3")
+
+[node name="BuildingRightTall" type="Sprite2D" parent="." unique_id=1655906943]
+z_index = -20
+position = Vector2(726, -263.6)
+scale = Vector2(0.4878, 0.4878)
+texture = ExtResource("d3")
+
+[node name="BuildingLeftTower" type="Sprite2D" parent="." unique_id=1494426346]
+z_index = -20
+position = Vector2(-749.2, -481.8)
+scale = Vector2(0.4248, 0.4248)
+texture = ExtResource("d3")
+
+[node name="BuildingMart" type="Sprite2D" parent="." unique_id=538896015]
+z_index = -20
+position = Vector2(-659, 148)
+scale = Vector2(0.3302, 0.3133)
+texture = ExtResource("e1")
+
+[node name="BuildingLeftUpper" type="Sprite2D" parent="." unique_id=332497988]
+z_index = -20
+position = Vector2(-648, -85)
+scale = Vector2(0.3373, 0.3373)
+texture = ExtResource("d2")
+
+[node name="BuildingConvenience" type="Sprite2D" parent="." unique_id=1600676233]
+z_index = -20
+position = Vector2(666, 122.00001)
+scale = Vector2(0.3625, 0.3625)
+texture = ExtResource("e2")
+
+[node name="LedgeL1" type="StaticBody2D" parent="." unique_id=1069861690]
 z_index = -10
-position = Vector2(481, 190)
-scale = Vector2(0.2, 0.2)
-texture = ExtResource("b4")
+position = Vector2(-658.5, -204.5)
+
+[node name="Art" type="Sprite2D" parent="LedgeL1" unique_id=698529615]
+position = Vector2(0, 22.8)
+scale = Vector2(0.2473, 0.2473)
+texture = ExtResource("5")
+
+[node name="Collision" type="CollisionShape2D" parent="LedgeL1" unique_id=1449203130]
+position = Vector2(0, 5.25)
+shape = SubResource("RectangleShape2D_LedgeL1")
+one_way_collision = true
+
+[node name="LedgeL3" type="StaticBody2D" parent="." unique_id=1773360515]
+z_index = -10
+position = Vector2(-715.5, -759.5)
+
+[node name="Art" type="Sprite2D" parent="LedgeL3" unique_id=1836709913]
+position = Vector2(0, 17.9)
+scale = Vector2(0.1936, 0.1936)
+texture = ExtResource("5")
+
+[node name="Collision" type="CollisionShape2D" parent="LedgeL3" unique_id=702664176]
+position = Vector2(0, 5)
+shape = SubResource("RectangleShape2D_LedgeL3")
+one_way_collision = true
+
+[node name="LedgeR1" type="StaticBody2D" parent="." unique_id=1139353548]
+z_index = -10
+position = Vector2(663, -41.2)
+
+[node name="LedgeR2" type="StaticBody2D" parent="." unique_id=1196376060]
+z_index = -10
+position = Vector2(719.2, -584)
+
+[node name="Art" type="Sprite2D" parent="LedgeR2" unique_id=1382315269]
+position = Vector2(0, 17.5)
+scale = Vector2(0.1902, 0.1902)
+texture = ExtResource("5")
+
+[node name="Collision" type="CollisionShape2D" parent="LedgeR2" unique_id=1814600638]
+position = Vector2(0, 5)
+shape = SubResource("RectangleShape2D_LedgeR2")
+one_way_collision = true
+
+[node name="StepL2" type="StaticBody2D" parent="." unique_id=1977464999]
+z_index = -10
+position = Vector2(-213, -49)
+
+[node name="Art" type="Sprite2D" parent="StepL2" unique_id=230819736]
+position = Vector2(-233, 40)
+scale = Vector2(0.1206, 0.1206)
+
+[node name="Collision2" type="CollisionShape2D" parent="StepL2" unique_id=1151285334]
+position = Vector2(-449, 150)
+shape = SubResource("RectangleShape2D_q1gne")
+one_way_collision = true
+
+[node name="Collision3" type="CollisionShape2D" parent="StepL2" unique_id=1130249891]
+position = Vector2(-434.5, 70)
+shape = SubResource("RectangleShape2D_flaia")
+one_way_collision = true
+
+[node name="Collision4" type="CollisionShape2D" parent="StepL2" unique_id=1387461291]
+position = Vector2(875, 27)
+shape = SubResource("RectangleShape2D_StepL2")
+one_way_collision = true
+
+[node name="PoleLeft" type="Sprite2D" parent="." unique_id=449673795]
+z_index = 10
+position = Vector2(-833, -214)
+scale = Vector2(0.299, 0.299)
+texture = ExtResource("d5")
+script = ExtResource("fgfade")
+
+[node name="PoleRightLow" type="Sprite2D" parent="." unique_id=1116286863]
+z_index = 10
+position = Vector2(814, -261.00003)
+scale = Vector2(0.2986, 0.2986)
+texture = ExtResource("d5")
+script = ExtResource("fgfade")
+
+[node name="PoleRightTop" type="Sprite2D" parent="." unique_id=1394880428]
+z_index = 10
+position = Vector2(852, -808)
+scale = Vector2(0.299, 0.299)
+texture = ExtResource("d5")
+script = ExtResource("fgfade")
+
+[node name="WireLow" type="StaticBody2D" parent="." unique_id=626360225]
+z_index = -10
+script = ExtResource("d6")
+points = PackedVector2Array(-752, -420.3, -600, -305, -150, -192, 375, -200, 759.4, -467)
+bounce_enabled = null
+spring_stiffness = null
+spring_damping = null
+rider_sag = null
+land_impulse = null
+max_sag = null
+launch_min_speed = null
+launch_boost = null
+
+[node name="WireDiagonal" type="StaticBody2D" parent="." unique_id=1319511308]
+z_index = -10
+script = ExtResource("d6")
+points = PackedVector2Array(-791.6, -420.3, 0, -515, 600, -680, 893.4, -1014.3)
+bounce_enabled = null
+spring_stiffness = null
+spring_damping = null
+rider_sag = null
+land_impulse = null
+max_sag = null
+launch_min_speed = null
+launch_boost = null
+
+[node name="WireTop" type="StaticBody2D" parent="." unique_id=1843448174]
+z_index = -10
+script = ExtResource("d6")
+points = PackedVector2Array(-510, -760, 112, -740, 797.3, -1014.3)
+bounce_enabled = null
+spring_stiffness = null
+spring_damping = null
+rider_sag = null
+land_impulse = null
+max_sag = null
+launch_min_speed = null
+launch_boost = null
 
 [node name="GroundArtLeft" type="Sprite2D" parent="." unique_id=1853256138]
 z_index = -10
-position = Vector2(-318, 307.6)
-scale = Vector2(0.3, 0.3)
-texture = ExtResource("5")
+position = Vector2(-613.5, 298.7)
+scale = Vector2(0.2971, 0.2971)
+texture = ExtResource("road")
+
+[node name="GroundArtMid" type="Sprite2D" parent="." unique_id=1856247655]
+z_index = -10
+position = Vector2(0, 298.7)
+scale = Vector2(0.2971, 0.2971)
+texture = ExtResource("road")
 
 [node name="GroundArtRight" type="Sprite2D" parent="." unique_id=172586919]
 z_index = -10
-position = Vector2(318, 307.6)
-scale = Vector2(0.3, 0.3)
-texture = ExtResource("5")
+position = Vector2(613.5, 298.7)
+scale = Vector2(0.2971, 0.2971)
+texture = ExtResource("road")
+
+[node name="TrashCans" type="Node2D" parent="." unique_id=979316807]
+z_index = -10
+script = ExtResource("tr_spawner")
+
+[node name="Can1" type="Node2D" parent="TrashCans" unique_id=1198031911]
+position = Vector2(9, 209.00002)
+script = ExtResource("tr_can")
+trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3")])
+
+[node name="Can" type="Sprite2D" parent="TrashCans/Can1" unique_id=1151412869]
+scale = Vector2(0.123941556, 0.123941556)
+texture = ExtResource("15_flaia")
+
+[node name="Lid" type="Sprite2D" parent="TrashCans/Can1" unique_id=1255164005]
+position = Vector2(0, -11.6)
+rotation = 0.075
+scale = Vector2(0.068, 0.068)
+texture = ExtResource("tr_lid")
+
+[node name="Can2" type="Node2D" parent="TrashCans" unique_id=250355003]
+position = Vector2(608, -102.999985)
+script = ExtResource("tr_can")
+trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3")])
+
+[node name="Can" type="Sprite2D" parent="TrashCans/Can2" unique_id=1917029759]
+scale = Vector2(0.123941556, 0.123941556)
+texture = ExtResource("15_flaia")
+
+[node name="Lid" type="Sprite2D" parent="TrashCans/Can2" unique_id=559315353]
+position = Vector2(0, -11.6)
+rotation = 0.075
+scale = Vector2(0.068, 0.068)
+texture = ExtResource("tr_lid")
+
+[node name="Can3" type="Node2D" parent="TrashCans" unique_id=1585887093]
+position = Vector2(-783.00006, -272.00003)
+script = ExtResource("tr_can")
+trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3")])
+
+[node name="Can" type="Sprite2D" parent="TrashCans/Can3" unique_id=1640286690]
+scale = Vector2(0.123941556, 0.123941556)
+texture = ExtResource("15_flaia")
+
+[node name="Lid" type="Sprite2D" parent="TrashCans/Can3" unique_id=1235956322]
+position = Vector2(0, -11.6)
+rotation = 0.075
+scale = Vector2(0.068, 0.068)
+texture = ExtResource("tr_lid")
+
+[node name="Taxi" type="Node2D" parent="." unique_id=1931967276]
+z_index = -10
+position = Vector2(0, 286)
+script = ExtResource("taxi")
 
 [node name="Ground" type="StaticBody2D" parent="." unique_id=1016150723]
 position = Vector2(0, 300)
 
 [node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=1743862431]
+position = Vector2(0, 3)
 shape = SubResource("RectangleShape2D_ground")
 
 [node name="LeftWall" type="StaticBody2D" parent="." unique_id=597951601]
-position = Vector2(-624, -500)
+position = Vector2(-926, -800)
 
 [node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall" unique_id=1062446350]
+position = Vector2(-12, -28)
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="RightWall" type="StaticBody2D" parent="." unique_id=1202488811]
-position = Vector2(624, -500)
+position = Vector2(926, -800)
 
 [node name="RightWallCollision" type="CollisionShape2D" parent="RightWall" unique_id=1513628419]
+position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=1327020734]
-position = Vector2(-390, 240)
+position = Vector2(-585, 240)
 
 [node name="PlayerSpawn2" type="Marker2D" parent="." unique_id=1071244593]
-position = Vector2(390, 240)
+position = Vector2(585, 240)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=447796120]
 position = Vector2(0, 150)
 script = ExtResource("3")
+min_y = -500.0
+max_y = 20.0
+lock_ground_to_bottom = true
 
 [node name="CombatHUD" parent="." unique_id=1993743570 instance=ExtResource("2")]

@@ -567,8 +567,9 @@ func _collect(node: Node, pads: Array) -> void:
 			continue
 		if child is SpringJumpPad:
 			pads.append(child)
-		# 나는 통과하는 몸(자기 고양이 집 등)은 발판으로 안 친다
-		if child is StaticBody2D and not (child.get("_broken") == true) and not fighter.get_collision_exceptions().has(child):
+		# 나는 통과하는 몸(자기 고양이 집 등)은 발판으로 안 친다 — 예외는 양쪽에 걸리므로 **발판 쪽 목록**을 본다.
+		# 캐릭터 쪽 목록엔 사라진 소환물 몸이 남아 있을 수 있고, 그걸 읽으면 "body is null" 오류가 매 프레임 난다
+		if child is StaticBody2D and not (child.get("_broken") == true) and not child.get_collision_exceptions().has(fighter):
 			for cs in child.get_children():
 				_add_platform(cs)
 		_collect(child, pads)

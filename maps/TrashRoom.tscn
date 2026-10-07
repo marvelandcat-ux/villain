@@ -8,7 +8,7 @@
 [ext_resource type="Script" uid="uid://4xe20o1gmluv" path="res://maps/CeilingLamp.gd" id="ceiling_lamp"]
 [ext_resource type="Texture2D" uid="uid://6532hhm605ny" path="res://sprite/맵/악플러집/악플러집 문.png" id="door"]
 [ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="far_blur"]
-[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="hud"]
+[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="hud"]
 [ext_resource type="Script" uid="uid://cx14fi17i7bgp" path="res://maps/MomDoorGimmick.gd" id="mom_gimmick"]
 [ext_resource type="PackedScene" path="res://maps/AkpeulleoMom.tscn" id="mom_scene"]
 [ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="parallax"]
@@ -59,8 +59,8 @@ fill_to = Vector2(0.5, 0)
 [sub_resource type="RectangleShape2D" id="Shape_LeftPlatform"]
 size = Vector2(374, 15)
 
-[sub_resource type="RectangleShape2D" id="Shape_MiddlePlatform"]
-size = Vector2(464, 36)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pe53t"]
+size = Vector2(450.1, 25.5)
 
 [sub_resource type="RectangleShape2D" id="Shape_RightPlatform"]
 size = Vector2(573.5, 15)
@@ -91,6 +91,9 @@ size = Vector2(2089, 38)
 
 [sub_resource type="RectangleShape2D" id="Shape_Wall"]
 size = Vector2(60, 2331)
+
+[sub_resource type="RectangleShape2D" id="Shape_MiddlePlatform"]
+size = Vector2(464, 36)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_57qmd"]
 size = Vector2(26.07143, 11.499992)
@@ -147,7 +150,7 @@ factor = Vector2(0.93, 0.93)
 reference = Vector2(290, -128)
 
 [node name="DecoWindow" type="Sprite2D" parent="DecoWindows" unique_id=430483009]
-position = Vector2(387, -136)
+position = Vector2(419, -136)
 scale = Vector2(0.19419642, 0.1941964)
 texture = ExtResource("window")
 region_enabled = true
@@ -156,6 +159,20 @@ region_rect = Rect2(192, 97, 1104, 896)
 [node name="DecoWindow2" type="Sprite2D" parent="DecoWindows" unique_id=1844130941]
 position = Vector2(-288, -149)
 scale = Vector2(0.17845437, 0.17845432)
+texture = ExtResource("window")
+region_enabled = true
+region_rect = Rect2(192, 97, 1104, 896)
+
+[node name="DecoWindow3" type="Sprite2D" parent="DecoWindows" unique_id=286771477]
+position = Vector2(410, -404)
+scale = Vector2(0.19419642, 0.1941964)
+texture = ExtResource("window")
+region_enabled = true
+region_rect = Rect2(192, 97, 1104, 896)
+
+[node name="DecoWindow4" type="Sprite2D" parent="DecoWindows" unique_id=1493899225]
+position = Vector2(-297, -397)
+scale = Vector2(0.19419642, 0.1941964)
 texture = ExtResource("window")
 region_enabled = true
 region_rect = Rect2(192, 97, 1104, 896)
@@ -293,8 +310,8 @@ z_index = -10
 position = Vector2(74, 12)
 
 [node name="Collision" type="CollisionShape2D" parent="MiddlePlatform" unique_id=1695805337]
-position = Vector2(23.099998, 8.5)
-shape = SubResource("Shape_MiddlePlatform")
+position = Vector2(30.049995, 13.75)
+shape = SubResource("RectangleShape2D_pe53t")
 one_way_collision = true
 
 [node name="Sprite1" type="Sprite2D" parent="MiddlePlatform" unique_id=1122368748]
@@ -637,3 +654,19 @@ one_way_collision = true
 script = ExtResource("mom_gimmick")
 mom_scene = ExtResource("mom_scene")
 door_paths = Array[NodePath]([NodePath("../DoorLeft"), NodePath("../DoorRight")])
+
+[node name="DecoBookshelf3" type="Sprite2D" parent="." unique_id=571154346]
+z_index = -10
+position = Vector2(-512, -402.00003)
+scale = Vector2(0.14907253, 0.14907254)
+texture = ExtResource("shelf")
+region_enabled = true
+region_rect = Rect2(67, 54, 1089, 1172)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="DecoBookshelf3" unique_id=425361120]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DecoBookshelf3/StaticBody2D" unique_id=1229510982]
+position = Vector2(-5.5677443, -319.59946)
+scale = Vector2(0.99999976, 0.9999999)
+shape = SubResource("RectangleShape2D_g4v7s")
+one_way_collision = true

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dcggyas7ut0m"
-path="res://.godot/imported/떡볶이 집.png-d28506a8ea9df6c337654918062f4f82.ctex"
+uid="uid://dapbatj7tba04"
+path="res://.godot/imported/배경_먼.png-8bd0a1db3d2fa1badbbb2de415f9b1d8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/번화가/떡볶이 집.png"
-dest_files=["res://.godot/imported/떡볶이 집.png-d28506a8ea9df6c337654918062f4f82.ctex"]
+source_file="res://sprite/맵/번화가/배경레이어/배경_먼.png"
+dest_files=["res://.godot/imported/배경_먼.png-8bd0a1db3d2fa1badbbb2de415f9b1d8.ctex"]
 
 [params]
 

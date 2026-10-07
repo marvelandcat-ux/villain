@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://skills/ThrownTrashBag.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://pmkeek15gj7h" path="res://sprite/맵/번화가/쓰래기 봉투.png" id="2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bag"]
+radius = 15.0
+
+[node name="ThrownTrashBag" type="Area2D"]
+script = ExtResource("1")
+blunt_impact = true
+spin_speed = 7.0
+stop_dash = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_bag")
+
+[node name="Visual" type="Sprite2D" parent="."]
+scale = Vector2(0.03, 0.03)
+texture = ExtResource("2")
