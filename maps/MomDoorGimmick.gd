@@ -9,6 +9,8 @@ extends Node2D
 @export var mom_scene: PackedScene
 ## 엄마가 드나드는 문들(2개 이상). 나올 문은 랜덤, 들어갈 문은 그 다음 문
 @export var door_paths: Array[NodePath] = []
+## **스토리 모드에선 엄마가 안 나온다**(2026-10-07 사용자 — 에피소드 2는 경찰과 악플러 둘만의 싸움)
+@export var skip_in_story: bool = true
 ## 라운드 시작(카운트다운 끝)부터 첫 등장까지 / 엄마가 들어간 뒤 다음 등장까지(초). TODO: 기획 미정 — 임시값
 @export var first_delay: float = 15.0
 @export var interval: float = 20.0
@@ -28,6 +30,9 @@ var _mom: Node = null
 var _exit_door: Sprite2D = null
 
 func _ready() -> void:
+	if skip_in_story and GameState.game_mode == "story":
+		set_process(false)
+		return
 	_timer = first_delay
 	# 부모(맵)가 아직 자식을 세팅하는 중이라 형제(문틈)를 바로 못 붙인다 — 한 박자 미룬다
 	_setup_doors.call_deferred()

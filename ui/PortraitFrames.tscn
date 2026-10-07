@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/고양이 아줌마/고양이아줌마정면.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://boxf7maey23ac" path="res://sprite/storymode/경찰서/경찰정면_입다문.png" id="8"]
 
 [sub_resource type="AtlasTexture" id="a1"]
 atlas = ExtResource("1")
@@ -36,10 +37,14 @@ region = Rect2(75, 15, 1235, 1125)
 atlas = ExtResource("7")
 region = Rect2(59, 85, 1136, 1078)
 
+[sub_resource type="AtlasTexture" id="a8"]
+atlas = ExtResource("8")
+region = Rect2(76, 19, 610, 536)
+
 [node name="PortraitFrames" type="Control" unique_id=1388920640]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 1320.0
+offset_right = 1760.0
 offset_bottom = 200.0
 
 [node name="금쪽이" type="Panel" parent="." unique_id=2051123541]
@@ -171,5 +176,24 @@ offset_right = 187.75
 offset_bottom = 166.0
 pivot_offset = Vector2(100, 90)
 texture = SubResource("a7")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="주인공" type="Panel" parent="."]
+clip_contents = true
+layout_mode = 0
+offset_left = 1550.0
+offset_top = 10.0
+offset_right = 1750.0
+offset_bottom = 190.0
+
+[node name="Portrait" type="TextureRect" parent="주인공"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 10.0
+offset_right = 192.0
+offset_bottom = 172.0
+pivot_offset = Vector2(100, 90)
+texture = SubResource("a8")
 expand_mode = 1
 stretch_mode = 5

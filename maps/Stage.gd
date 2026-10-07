@@ -14,8 +14,10 @@ extends Node2D
 ## 자동으로 붙는다(Fighter.map_skill) — 캐릭터 씬 쪽은 전혀 안 건드려도 된다. Skill을 상속한
 ## 스크립트가 루트인 씬이어야 하고, 비워두면 그냥 일반 맵(맵 전용 스킬 없음)
 @export var map_skill_scene: PackedScene
-## 스토리 전투에서 이겼을 때 결과창을 보여주고 있는 시간(초). 지나면 이어지는 이야기 장면으로 넘어간다
-@export var story_win_delay: float = 1.8
+## **스토리 모드 라운드 띠에 쓰는 말** — 대전 모드처럼 "P1 승리!"가 아니라 주인공 쪽에서 본 말만 쓴다(2026-10-07 사용자).
+## 스토리 전투를 이기면 결과창 대신 이 띠가 지나가고 바로 이야기로 넘어간다(승패 모션은 아직 없음)
+@export var story_win_text: String = "승리!"
+@export var story_lose_text: String = "패배"
 ## (임시) 테스트용 — **스토리 전투 중 `S`를 누르면 이긴 것으로 치고 바로 다음 이야기로 넘어간다.**
 ## 스토리 장면의 건너뛰기(`StoryFadeScene.debug_skip_key`)와 같은 키다. 스토리를 다 만들면 같이 지울 것.
 ##
@@ -316,6 +318,12 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win or GameState.p2_round_wins >= GameState.rounds_to_win
 	if match_decided:
+		# 스토리 전투를 이겼으면 결과창 대신 라운드와 같은 "승리!" 띠를 띄우고 이야기로 넘어간다
+		if p1_won and not is_draw and GameState.game_mode == "story" and GameState.story_next_scene != "":
+			await _play_round_banner(true, false)
+			if is_inside_tree():
+				_go_story_next()
+			return
 		var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
 		add_child(result_screen)
 		_show_final_result(result_screen, p1_won, is_draw)
@@ -347,6 +355,8 @@ func _play_round_banner(p1_won: bool, is_draw: bool) -> void:
 			banner.queue_free()
 		await get_tree().create_timer(1.2).timeout
 		return
+	if GameState.game_mode == "story" and "win_text" in band:
+		band.win_text = story_win_text if p1_won else story_lose_text
 	band.play(p1_won, is_draw)
 	await band.finished
 	banner.queue_free()
@@ -357,18 +367,15 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 		return
 	var winner_name: String = _p1.stats.character_name if p1_won else _p2.stats.character_name
 	result_screen.show_result(p1_won, winner_name)
-	# 스토리 전투를 이겼으면 결과창을 잠깐 보여준 뒤 이야기를 이어간다 (졌으면 예전처럼 재시도/메뉴)
-	if p1_won and GameState.game_mode == "story" and GameState.story_next_scene != "":
-		result_screen.hide_buttons()
-		await get_tree().create_timer(story_win_delay).timeout
-		if not is_inside_tree():
-			return   # 기다리는 동안 맵이 사라졌으면(재시도·메뉴 등) 아무 것도 하지 않는다
-		var next_scene: String = GameState.story_next_scene
-		GameState.story_next_scene = ""
-		if ResourceLoader.exists(next_scene):
-			get_tree().change_scene_to_file(next_scene)
-		else:
-			push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
+
+## 스토리 전투를 이긴 뒤 다음 장면으로 넘어간다(`battle_win_scene`). 졌을 땐 안 부른다 — 결과창에서 재시도/메뉴
+func _go_story_next() -> void:
+	var next_scene: String = GameState.story_next_scene
+	GameState.story_next_scene = ""
+	if ResourceLoader.exists(next_scene):
+		get_tree().change_scene_to_file(next_scene)
+	else:
+		push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
 
 ## ESC(ui_cancel)를 누르면 일시정지 메뉴를 띄운다. 이 함수 자체가 get_tree().paused일 때는
 ## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
@@ -469,6 +476,8 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	# ⚠️ 체력·공격력 손보기는 **add_child 전에** 해야 한다 — Fighter._ready()가 current_hp를 stats.max_hp로 잡는다
 	if is_ai and GameState.game_mode == "story":
 		_apply_story_handicap(fighter)
+	if not is_ai and GameState.game_mode == "story":
+		_swap_story_skill2(fighter)
 	_apply_hp_multiplier(fighter)
 	add_child(fighter)
 	# **둘이 같은 캐릭터를 골랐을 때만** 2P의 몸 색을 바꾼다(2026-10-05 사용자 지정) —
@@ -523,6 +532,22 @@ func _apply_hp_multiplier(fighter: Fighter) -> void:
 		return
 	fighter.stats = fighter.stats.duplicate()
 	fighter.stats.max_hp = maxi(int(round(fighter.stats.max_hp * scale)), 1)
+
+## 스토리 전투마다 **주인공 2번 스킬을 그 에피소드 것으로** 갈아 끼운다(`GameState.story_p1_skill2`).
+## **add_child 전에** 한다 — `Fighter._ready()`가 자식 `Skill2`를 찾아 슬롯에 꽂으므로 이름만 같으면 된다
+func _swap_story_skill2(fighter: Fighter) -> void:
+	var path: String = GameState.story_p1_skill2
+	if path == "" or not ResourceLoader.exists(path):
+		return
+	var skill: Node = (load(path) as PackedScene).instantiate()
+	if skill == null:
+		return
+	var old: Node = fighter.get_node_or_null("Skill2")
+	if old:
+		fighter.remove_child(old)
+		old.free()
+	skill.name = "Skill2"
+	fighter.add_child(skill)
 
 func _apply_story_handicap(fighter: Fighter) -> void:
 	var hp_scale: float = GameState.story_enemy_hp_scale

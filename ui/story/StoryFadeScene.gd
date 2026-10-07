@@ -53,6 +53,9 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 ## 상대 AI 솜씨. **1 = 평소 대전 AI 그대로, 0 = 아주 둔함**(반응이 느리고 거의 안 막고 스킬도 잘 안 쓴다).
 ## 스토리는 "처음 해보는 사람이 이기는 판"이라 대전용 AI를 그대로 쓰면 너무 잘한다
 @export_range(0.0, 1.0, 0.05) var battle_ai_skill: float = 1.0
+## **이 전투에서 주인공 2번 스킬(H)을 갈아 끼울 스킬 씬.** 비우면 캐릭터 씬에 꽂힌 그대로(돌 던지기).
+## 2번 스킬은 에피소드마다 달라진다(사용자 결정 — 1화 돌 던지기, 2화 후레쉬)
+@export_file("*.tscn") var battle_p1_skill2: String = ""
 ## 대화창(DialogueBox)이나 장소 카드(LocationCard)를 지정하면 그게 끝나야 나간다(hold_time도 지나야 함). 비우면 시간만 본다
 @export var dialogue: NodePath
 ## 다음 장면으로 넘길 때 전환 방식
@@ -234,6 +237,7 @@ func _setup_battle() -> void:
 	GameState.story_enemy_hp_scale = battle_enemy_hp_scale
 	GameState.story_enemy_damage_scale = battle_enemy_damage_scale
 	GameState.story_ai_skill = battle_ai_skill
+	GameState.story_p1_skill2 = battle_p1_skill2
 	GameState.reset_round_wins()
 
 ## 숫자 8·9로 띄운 미리보기(없으면 null)와 그 씬 경로

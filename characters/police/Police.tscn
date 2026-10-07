@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/Fighter.gd" id="1"]
 [ext_resource type="Resource" path="res://stats/PoliceStats.tres" id="2"]
@@ -11,6 +11,21 @@
 [ext_resource type="Script" path="res://skills/BatonModeUltimate.gd" id="11_baton"]
 [ext_resource type="PackedScene" path="res://skills/TaserBolt.tscn" id="10_bolt"]
 [ext_resource type="Script" path="res://skills/StoneThrowSkill.gd" id="9_stone"]
+[ext_resource type="Texture2D" uid="uid://c5curqetb0ax4" path="res://sprite/storymode/경찰서/테이져건.png" id="12_logo_taser"]
+[ext_resource type="Texture2D" uid="uid://cgtpa788i235d" path="res://sprite/storymode/경찰서/던지는돌1-Photoroom.png" id="13_logo_stone"]
+[ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="14_logo_baton"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_logo_taser"]
+atlas = ExtResource("12_logo_taser")
+region = Rect2(16, 62, 1588, 870)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_logo_stone"]
+atlas = ExtResource("13_logo_stone")
+region = Rect2(146, 266, 1088, 702)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_logo_baton"]
+atlas = ExtResource("14_logo_baton")
+region = Rect2(80, 92, 1120, 1100)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -68,6 +83,7 @@ shape = SubResource("RectangleShape2D_hitbox")
 script = ExtResource("8_taser")
 cooldown = 20.0
 skill_name = "테이저건"
+icon = SubResource("AtlasTexture_logo_taser")
 description = "전기 침을 한 발 쏜다. 맞은 상대는 2초 동안 감전되어 아무것도 못 한다. 쿨타임이 길어서 한 발을 언제 쓰느냐가 전부다."
 projectile_scene = ExtResource("10_bolt")
 damage = 10
@@ -77,6 +93,7 @@ stun_time = 2.0
 script = ExtResource("9_stone")
 cooldown = 8.0
 skill_name = "돌 던지기"
+icon = SubResource("AtlasTexture_logo_stone")
 description = "발밑의 돌을 주워 앞으로 던진다. 자전거로 돌진해 오는 상대에게 맞으면 그 자리에서 자전거가 멈춘다. 돌진 중이 아니어도 맞으면 피해를 입는다."
 damage = 6
 
@@ -85,6 +102,7 @@ script = ExtResource("11_baton")
 cooldown = 20.0
 start_on_cooldown = true
 skill_name = "경관봉"
+icon = SubResource("AtlasTexture_logo_baton")
 description = "허리에서 경관봉을 뽑아 든다. 15초 동안 기본공격이 주먹 대신 경봉 타격이 되고 데미지가 두 배로 오른다. 시간이 끝나면 도로 집어넣는다."
 duration = 15.0
 damage_multiplier = 2.0

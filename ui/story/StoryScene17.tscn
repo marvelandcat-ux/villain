@@ -27,6 +27,7 @@ battle_p2 = "res://characters/akpeulleo/Akpeulleo.tscn"
 battle_rounds = 2
 battle_time_limit = 120
 battle_ai_skill = 0.6
+battle_p1_skill2 = "res://skills/FlashlightSkill.tscn"
 battle_win_scene = "res://ui/story/StoryScene18.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
@@ -53,12 +54,12 @@ texture = ExtResource("3")
 
 [node name="Ak" type="Sprite2D" parent="Hall"]
 position = Vector2(640, 430)
-scale = Vector2(0.475, 0.475)
+scale = Vector2(0.42, 0.42)
 texture = ExtResource("5")
 
 [node name="AkWorried" type="Sprite2D" parent="Hall"]
 position = Vector2(640, 430)
-scale = Vector2(0.475, 0.475)
+scale = Vector2(0.42, 0.42)
 texture = ExtResource("6")
 
 [node name="DialogueBox" parent="." instance=ExtResource("4")]

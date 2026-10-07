@@ -33,6 +33,7 @@ const EXTRA_RIGS := {
 const VERSUS_POSES := {
 	"주인공": "res://ui/versus/PoliceVersusPose.tscn",
 	"금쪽이": "res://ui/versus/ChokbeopsonyeonVersusPose.tscn",
+	"악플러": "res://ui/versus/AkpeulleoVersusPose.tscn",
 }
 ## 포즈 씬을 그린 기준 화면 높이(px). 화면이 이보다 크면 그 비율만큼 통째로 커진다
 const POSE_REFERENCE_HEIGHT := 720.0

@@ -156,9 +156,10 @@
 - 빛 그림은 **코드로 만든다**(`GradientTexture2D` FILL_RADIAL) — 반지름·번짐을 인스펙터에서 바로 만지려고
 - 바라보는 쪽 앞으로 `light_offset`만큼 내밀고, 몸을 돌리면 따라 돈다
 - 5초 유지 / 쿨 5초(사용자 "모의"). **시야만 밝힌다 — 판정은 안 바뀐다**
-- ⚠️ **아직 아무도 안 쓴다.** 경찰 2스킬은 `돌 던지기` 그대로다.
-  **2스킬은 에피소드마다 달라진다**(사용자 결정, 2026-10-07) — 1화는 돌 던지기(잼민이 자전거를 멈추는 수단),
-  2화는 후레쉬. 에피소드별로 스킬을 갈아 끼우는 장치는 **아직 안 만들었다**
+- **2스킬(H)은 에피소드마다 달라진다**(사용자 결정, 2026-10-07) — 1화 돌 던지기, 2화 후레쉬.
+  전투로 넘기는 장면의 `battle_p1_skill2`(스킬 **씬** 경로) → `GameState.story_p1_skill2` → `Stage._swap_story_skill2()`가
+  **add_child 전에** `Skill2` 노드를 갈아 끼운다. 비우면 `Police.tscn`에 꽂힌 돌 던지기 그대로
+- 후레쉬 씬 `skills/FlashlightSkill.tscn`(쿨 5초). `clashable()` false — 상대가 2번 스킬을 같이 써도 연타 대결 안 탐(실측으로 걸렸었다). **로고 그림은 아직 없다**
 
 
 #### 댓글창 `ui/story/CommentScreen.gd`
@@ -214,10 +215,14 @@
 
 ### 아직 안 한 것
 
-- **에피소드마다 2스킬 갈아 끼우기** — `StoryFadeScene`의 `battle_*`처럼 "이 전투에선 이 스킬" 식으로 넣으면 될 듯
 - **악플러 AI가 체력 30% 이하에서 때리고 도망** — `AIController`에 없다
 - **부스럭 소리 + 뒤 쓰레기가 움직이는 힌트 연출** — 소리와 흔들리는 노드가 필요하다
-- 없는 그림: **악플러 사건 파일**, **악플러 스토리 일러**(지금은 인게임 리그로 대신), 동영상 플랫폼 화면 시안
+- 없는 그림: 동영상 플랫폼 화면 시안, **후레쉬 스킬 로고**
+- **사건 파일은 그림이 아니라 씬이다** — `ui/story/casefile/AkpeulleoCaseFile.tscn`(양식 그림 + 세피아 사진 + 라벨). 글자는 그 씬에서 바로 고친다.
+  `CaseFileSheet.gd`가 화면 비율에 맞춰 가운데 놓고, 도장은 종이 좌표(`CaseFile/Paper/Sheet/Stamp`)라 21:9에서도 안 밀린다
+- **스토리 전투 승리 = 라운드 띠 "승리!"**(결과창 없음, 2026-10-07) → 바로 `battle_win_scene`. 진 라운드 띠는 "패배"(`Stage.story_win_text`/`story_lose_text`)
+- 악플러의 집(`TrashRoom`)은 **스토리 모드에서 처음부터 끝까지 어둡고**(`Blackout.always_dark_in_story`) **엄마가 안 나온다**(`MomDoorGimmick.skip_in_story`). HUD는 이 맵에서 늘 위(`hud_panels_top`)
+- VS 화면 악플러 = 포즈 씬 `ui/versus/AkpeulleoVersusPose.tscn`(끌어서 맞추는 출발점만 잡아 둠)
 
 ## 영역 싸움 `combat/DomainClash.gd` (2026-10-07)
 
