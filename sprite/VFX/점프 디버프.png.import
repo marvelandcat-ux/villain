@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cywlmyj0bur0r"
-path="res://.godot/imported/슬로우 훠오리.png-1b92503c5c55fd5e679b5f02441aead3.ctex"
+uid="uid://dv17y7de2v4sp"
+path="res://.godot/imported/점프 디버프.png-53b9f5d9a92cea7442bee4fbb110e376.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/VFX/슬로우 훠오리.png"
-dest_files=["res://.godot/imported/슬로우 훠오리.png-1b92503c5c55fd5e679b5f02441aead3.ctex"]
+source_file="res://sprite/VFX/점프 디버프.png"
+dest_files=["res://.godot/imported/점프 디버프.png-53b9f5d9a92cea7442bee4fbb110e376.ctex"]
 
 [params]
 

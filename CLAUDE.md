@@ -9,7 +9,7 @@
 
 - **캐릭터 전용 `.gd` 금지** — 모든 캐릭터 루트는 `characters/Fighter.gd`, 차이는 스탯 `.tres` + 스킬 노드(`BasicAttack`/`Skill1`/`Skill2`/`SkillUltimate`). 빈 `skills/Skill.gd` = 의도된 미구현
 - **버프·디버프 직접 대입 금지** → `set_modifier`/`clear_modifier`(id별 곱), 임시 `apply_temp_multiplier`. 색조도 `set_tint`/`clear_tint`. `damage_reduction`은 `set_modifier`로 쓰지 말 것(`damage_taken_multiplier` 사용)
-- **VFX는 길목에 붙어 있다 — 스킬에서 따로 띄우지 말 것**: 회복은 `heal()`(→ `combat/HealBurst.gd`, 리셋용 채우기는 `heal(n, false)`), 슬로우는 `apply_temp_multiplier("move_speed_multiplier", <1)`(→ 물방울). `current_hp` 직접 대입이나 `set_modifier`로 건 슬로우(맵 기믹·자기 패널티)엔 안 나옴. **흘러가는 아이콘(버프·디버프 표시)은 `Fighter.show_status_vfx(종류, 시간)`/`hide_status_vfx(종류)`**(→ `combat/StatusIconVfx.gd`, 종류·그림·방향은 그 파일 `KINDS`, 그림 바꾸면 `rect` 재측정). 공격력 버프(`&"attack_up"`)는 길목이 없어 **켠 스킬이 끌 때 hide 짝 필수**(열등감·경봉·쌍악기·주황 고양이)
+- **VFX는 길목에 붙어 있다 — 스킬에서 따로 띄우지 말 것**: 회복은 `heal()`(→ `combat/HealBurst.gd`, 리셋용 채우기는 `heal(n, false)`), 슬로우·점프력 감소는 `apply_temp_multiplier("move_speed_multiplier"/"jump_multiplier", <1)`(→ 달팽이 / 발). `current_hp` 직접 대입이나 `set_modifier`로 건 슬로우(맵 기믹·자기 패널티)엔 안 나옴. **흘러가는 아이콘(버프·디버프 표시)은 `Fighter.show_status_vfx(종류, 시간)`/`hide_status_vfx(종류)`**(→ `combat/StatusIconVfx.gd`, 종류·그림·방향은 그 파일 `KINDS`, 그림 바꾸면 `rect` 재측정). 공격력 버프(`&"attack_up"`)는 길목이 없어 **켠 스킬이 끌 때 hide 짝 필수**(열등감·경봉·쌍악기·주황 고양이)
 - **공용 헬퍼 — 다시 짜지 말 것:** `PhysicsQuery.raycast_ignoring_fighters`/`ground_y_below`, `Timers.after`(`real_time`)/`self_destruct`, `Fighter.find_fighter_in_box`, `CrashBurst.spawn`(설정은 add_child 전)
 - 스킬: `Skill` 상속 후 `_execute(fighter)`만. `_ready()` 오버라이드 시 `super()`. **쿨은 전부 `effective_cooldown()` 경유**. 스킬2 교체 `swap_skill_2()`, 궁 봉인 `seal_ultimate(id)`. 궁 쿨은 컷인 뒤 `fire_ultimate_now()`부터
 - 라운드마다 `reload_current_scene()`(승수만 `GameState`)
@@ -22,6 +22,7 @@
 - 잡기: `can_be_grabbed()` → **`cancel_finisher_flight()` 먼저** → `is_grabbed`로 위치 직접 이동
 - **슈퍼아머는 개수로 셈 — add/remove 짝 필수**. `blocks_debuff()`에 섞지 말 것
 - 캐릭터끼리 몸 충돌 없음(양방향 `add_collision_exception_with`, 레이어는 안 건드림). **소환물·설치물도 z 0 + 같은 방식**(음수 z면 맵 그림 뒤로 숨음)
+- **맞는 소환물은 두 분류 중 하나의 그룹에 넣을 것**(2026-10-07): `summon_building`(고양이 집) = 평타가 **몇 타였든 다음도 1타**, 1타 x 3번이면 마무리 쿨, 중간에 적을 치면 그 타부터 다시 1타 / `summon_creature`(고양이·일진 패거리) = 캐릭터와 똑같이 1→2→3타, `is_grabbed`를 갖춰 고양이 옷 3타에 잡혀 내던져진다(잡힌 동안 스스로 안 움직임). 규칙은 `ComboMeleeAttack`(`_resolve_building_hit`)·`CatSuitCombo`
 
 ### 함정 (실제로 겪음)
 

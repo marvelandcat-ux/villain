@@ -31,7 +31,8 @@ extends Node
 @export var zoom_blend: float = 0.12
 
 var _fighter: Fighter = null
-var _victim: Fighter = null
+## 잡은 쪽 — 캐릭터(Fighter) 또는 생물체 소환물(`summon_creature` 그룹: 고양이·일진 패거리)
+var _victim: Node2D = null
 var _has_victim: bool = false
 var _throw_left: float = 0.0
 var _dir: float = 1.0
@@ -81,14 +82,20 @@ func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:
 	var combo: Node = get_parent()
 	if not combo.has_method("_is_final") or not combo._is_final(step) or _has_victim:
 		return
-	if not (victim is Fighter) or not is_instance_valid(victim):
+	if not is_instance_valid(victim):
 		return
 	var hitbox: Hitbox = _combo_hitbox()
-	# 판정이 sense_only라 피해가 안 들어갔다 — 잡지 못하는 경우는 여기서 바로 준다
+	# 생물체 소환물(고양이·일진 패거리)은 캐릭터처럼 머리를 잡아 넘긴다(2026-10-07 사용자 요청)
+	if victim.is_in_group(&"summon_creature") and "is_grabbed" in victim:
+		if not victim.is_grabbed:
+			_grab(fighter, victim)
+		return
+	# 판정이 sense_only라 피해가 안 들어갔다 — 잡지 못하는 것(고양이 집 같은 건물 등)은 그 자리에서 바로 맞는다.
+	# **예전엔 이 검사 앞에서 Fighter가 아니면 그냥 돌아가 버려서, 건물을 3타로 치면 모션만 나오고 피해가 0이었다**
 	if not (victim is Fighter):
-		# 상대 고양이 집 같은 HP 오브젝트는 잡지 않고 그 자리에서 맞는다
-		if is_instance_valid(victim) and victim.has_method("take_damage") and hitbox:
+		if victim.has_method("take_damage") and hitbox:
 			victim.take_damage(_pending_damage, hitbox.knockback)
+			hitbox._spawn_damage_number(victim.global_position, _pending_damage, 0)
 		return
 	var target: Fighter = victim
 	if target.is_invincible:
@@ -107,6 +114,10 @@ func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:
 		return
 	# **날아가기를 먼저 끊는다** — 부모가 방금 마무리 타로 날려 보냈다
 	target.cancel_finisher_flight()
+	_grab(fighter, target)
+
+## 잡아서 머리 위로 넘기기 시작한다 — 캐릭터든 생물체 소환물이든 같다(둘 다 `is_grabbed`면 스스로 안 움직인다)
+func _grab(fighter: Fighter, target: Node2D) -> void:
 	target.is_grabbed = true
 	target.velocity = Vector2.ZERO
 	_fighter = fighter
@@ -159,9 +170,13 @@ func _hold_victim_at(t: float) -> void:
 
 ## 등 뒤 바닥에 내리꽂고 놓는다 — 피해는 이때 들어간다
 func _slam() -> void:
-	var target: Fighter = _victim
+	var target: Node2D = _victim
 	_release()
 	if not is_instance_valid(target):
+		return
+	var combo: Node = get_parent()
+	if not (target is Fighter):
+		_slam_creature(target, combo)
 		return
 	# 넉백을 줘야 피격 반응·콤보 수가 들어간다. 속도는 아래 launch_finisher가 덮어쓴다
 	target.take_damage(_pending_damage, Vector2(-_dir, -1.0))
@@ -169,7 +184,6 @@ func _slam() -> void:
 	if hitbox:
 		hitbox._spawn_damage_number(target.global_position, _pending_damage, target.get_combo_count())
 	# 바닥에 꽂힌 반동으로 **등 뒤 쪽으로 튕겨 날아가며 기절** — 보통 3타 날아가기와 같은 값(배수만 곱함)
-	var combo: Node = get_parent()
 	target.launch_finisher(-_dir,
 		_combo_value(combo, "finisher_launch_speed", 535.0) * slam_launch_speed_mult,
 		_combo_value(combo, "finisher_launch_pop", 220.0),
@@ -178,6 +192,19 @@ func _slam() -> void:
 		_combo_value(combo, "finisher_max_scale", 2.0))
 	if combo and combo.has_method("_spawn_launch_smoke") and bool(_combo_value(combo, "launch_smoke", 1.0)):
 		combo._spawn_launch_smoke(target, maxf(_combo_value(combo, "finisher_launch_stun", 0.4), 0.45))
+	var cam: Node = get_tree().get_first_node_in_group("game_camera")
+	if cam and cam.has_method("add_trauma"):
+		cam.add_trauma(slam_shake)
+
+## 생물체 소환물을 꽂는다 — `launch_finisher`가 없으니 같은 세기의 넉백(등 뒤 쪽)으로 날린다
+func _slam_creature(target: Node2D, combo: Node) -> void:
+	if target.has_method("take_damage"):
+		target.take_damage(_pending_damage, Vector2(
+			-_dir * _combo_value(combo, "finisher_launch_speed", 535.0) * slam_launch_speed_mult,
+			-_combo_value(combo, "finisher_launch_pop", 220.0)))
+	var hitbox: Hitbox = _combo_hitbox()
+	if hitbox and is_instance_valid(target):
+		hitbox._spawn_damage_number(target.global_position, _pending_damage, 0)
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("add_trauma"):
 		cam.add_trauma(slam_shake)

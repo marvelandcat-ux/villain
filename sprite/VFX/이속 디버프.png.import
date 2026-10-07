@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chcpi004kij5r"
-path="res://.godot/imported/슬로우.png-4d8f2ea9a761619c12d12a01542fa6dc.ctex"
+uid="uid://cmfc3104ay5ht"
+path="res://.godot/imported/이속 디버프.png-101255c1632bada22f3383c0d93b119d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/VFX/슬로우.png"
-dest_files=["res://.godot/imported/슬로우.png-4d8f2ea9a761619c12d12a01542fa6dc.ctex"]
+source_file="res://sprite/VFX/이속 디버프.png"
+dest_files=["res://.godot/imported/이속 디버프.png-101255c1632bada22f3383c0d93b119d.ctex"]
 
 [params]
 

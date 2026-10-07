@@ -100,6 +100,8 @@ var is_guarding: bool = false
 
 ## 이미 쓰러지는 중인지 (사라지는 동안 또 맞아도 두 번 처리되지 않게)
 var _dying: bool = false
+## 잡혀 있는 동안(고양이 옷 3타) — 잡은 쪽이 자리를 직접 옮기므로 스스로는 움직이지도 뱉지도 차지도 않는다
+var is_grabbed: bool = false
 ## 몸 충돌을 이미 꺼 둔 캐릭터들 {instance_id: true} — 같은 상대에게 두 번 걸지 않으려고 적어 둔다
 var _ignored: Dictionary = {}
 
@@ -132,6 +134,8 @@ func _ready() -> void:
 	current_hp = max_hp
 	# 자기가 뱉은 침이 앞에 선 동료 몸에 막히지 않게 — `Spit`이 이 그룹을 보고 통과시킨다
 	add_to_group("iljin_crew")
+	# 소환물 분류: 생물체 — 평타가 캐릭터와 똑같이 들어가고, 고양이 옷 3타에 잡혀 내던져진다(`ComboMeleeAttack.SUMMON_CREATURE_GROUP`)
+	add_to_group(&"summon_creature")
 	_spit_left = spit_first_delay
 	_ignore_fighter_bodies()
 
@@ -177,7 +181,7 @@ func _on_owner_died() -> void:
 	_fall()
 
 func _process(delta: float) -> void:
-	if _dying:
+	if _dying or is_grabbed:
 		return
 	# 부른 사람이 시그널도 없이 사라졌으면(훈련장에서 캐릭터 교체 등) 남아 있을 이유가 없다
 	if _had_owner and not is_instance_valid(_owner_fighter):
@@ -394,6 +398,9 @@ func _clear_face() -> void:
 ## 쓰러지는 중에는 건드리지 않는다(판정·충돌을 이미 껐으므로 그대로 두면 바닥을 뚫고 내려간다)
 func _physics_process(delta: float) -> void:
 	if _dying:
+		return
+	if is_grabbed:
+		velocity = Vector2.ZERO
 		return
 	if not is_on_floor():
 		velocity.y += Fighter.gravity * delta

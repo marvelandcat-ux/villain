@@ -106,7 +106,7 @@ const JUMP_WIND_SCRIPT := preload("res://combat/JumpWind.gd")
 const HEAL_BURST_SCRIPT := preload("res://combat/HealBurst.gd")
 ## 이 회복량(HP)이면 회복 이펙트가 가장 크게 터진다 — 그보다 작으면 비례해서 작아진다
 const HEAL_BURST_FULL_AMOUNT: float = 30.0
-## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 흘러가는 이펙트(슬로우 물방울·공격력 칼 등)
+## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 흘러가는 이펙트(슬로우 달팽이·점프력 감소 발·공격력 칼 등)
 const STATUS_VFX_SCRIPT := preload("res://combat/StatusIconVfx.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
@@ -1569,9 +1569,11 @@ func apply_temp_multiplier(property: String, value: float, duration: float, from
 	_next_modifier_id += 1
 	set_modifier(property, id, value)
 	_after(duration, func(): clear_modifier(property, id))
-	# 스킬이 거는 슬로우는 전부 여기를 지나므로, 어느 캐릭터의 슬로우든 물방울 이펙트가 자동으로 붙는다
+	# 스킬이 거는 슬로우·점프력 감소는 전부 여기를 지나므로, 어느 캐릭터의 것이든 아이콘 이펙트가 자동으로 붙는다
 	if property == "move_speed_multiplier" and value < 1.0:
 		show_status_vfx(&"slow", duration)
+	elif property == "jump_multiplier" and value < 1.0:
+		show_status_vfx(&"jump_down", duration)
 
 ## 종류별로 하나씩 들고 있는 상태 이펙트 {종류: StatusIconVfx}
 var _status_vfx: Dictionary = {}

@@ -123,6 +123,8 @@ var is_guarding: bool = false
 var _stun_left: float = 0.0
 var _flash_left: float = 0.0
 var _dead: bool = false
+## 잡혀 있는 동안(고양이 옷 3타) — 잡은 쪽이 자리를 직접 옮기므로 스스로는 움직이지도 공격하지도 않는다
+var is_grabbed: bool = false
 ## Hurtbox 판정 모양들과 그 바라보는 쪽(+x) 기준 자리 — 방향이 바뀌면 x만 뒤집는다
 var _hurt_shapes: Array[CollisionShape2D] = []
 var _hurt_rest: Array[Vector2] = []
@@ -137,6 +139,8 @@ func _ready() -> void:
 				add_collision_exception_with(body)
 				body.add_collision_exception_with(self)
 	add_to_group("catmom_cats")
+	# 소환물 분류: 생물체 — 평타가 캐릭터와 똑같이 들어가고, 고양이 옷 3타에 잡혀 내던져진다(`ComboMeleeAttack.SUMMON_CREATURE_GROUP`)
+	add_to_group(&"summon_creature")
 	# 캐릭터와 같은 층(z 0) — 소환물은 전부 캐릭터와 같은 층에 그린다(2026-10-04 확정)
 	_sprite = CAT_SPRITE.new()
 	_sprite.name = "Visual"
@@ -257,6 +261,14 @@ func _die() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age +=minf(delta, 0.05)
+	if is_grabbed:
+		# 돌진·할퀴기 도중에 잡혔으면 끊는다 — 매달린 채 판정이 남아 있으면 안 된다
+		velocity = Vector2.ZERO
+		_dash_left = 0.0
+		_windup_left = 0.0
+		_swipe_left = 0.0
+		_set_hitbox_active(false)
+		return
 	if not is_on_floor():
 		# 플레이어와 같은 중력 — 떨어질 때만 fall_gravity_multiplier가 붙는다
 		var g: float = Fighter.gravity
