@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://khlfrcuo8ikf"]
+[gd_scene format=3 uid="uid://fvx8mp04yfvy"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
 [ext_resource type="Texture2D" uid="uid://bj1c1bbsqrry" path="res://sprite/맵/번화가/배경.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://bq3exgv88l0h1" path="res://sprite/맵/번화가/폴랫폼.png" id="5"]
@@ -32,15 +32,16 @@ color = Color(0.2941, 0.2941, 0.3294, 1)
 polygon = PackedVector2Array(-3000, 280, 3000, 280, 3000, 2400, -3000, 2400)
 
 [node name="Background" type="Sprite2D" parent="." unique_id=1665188642]
+visible = false
 z_index = -10
-position = Vector2(0, -101.4)
+position = Vector2(-315, -222)
 scale = Vector2(0.95, 0.95)
 texture = ExtResource("4")
 
 [node name="BuildingPipe" type="Sprite2D" parent="." unique_id=1177460861]
 z_index = -10
-position = Vector2(-542, 148.6)
-scale = Vector2(0.2, 0.2)
+position = Vector2(-492.67502, 57)
+scale = Vector2(0.34311527, 0.3366211)
 texture = ExtResource("b0")
 
 [node name="BuildingGS25" type="Sprite2D" parent="." unique_id=721119226]
@@ -63,7 +64,7 @@ texture = ExtResource("b3")
 
 [node name="BuildingPub" type="Sprite2D" parent="." unique_id=429174890]
 z_index = -10
-position = Vector2(481.5, 180.4)
+position = Vector2(481, 190)
 scale = Vector2(0.2, 0.2)
 texture = ExtResource("b4")
 

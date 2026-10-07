@@ -67,6 +67,8 @@ func _execute(fighter: Fighter) -> void:
 func _fire_one() -> void:
 	if projectile_scene == null or _fighter_ref == null:
 		return
+	# 쏘는 도중 돌아서면 돌아선 쪽으로 나간다 — 첫 발 방향에 고정하지 않고 매 발 지금 바라보는 쪽을 다시 읽는다
+	_direction = _fighter_ref.facing
 	var projectile: Projectile = projectile_scene.instantiate()
 	_fighter_ref.get_parent().add_child(projectile)
 	projectile.acceleration = projectile_accel

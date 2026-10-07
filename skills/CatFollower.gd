@@ -51,19 +51,17 @@ const OUTLINE_COLOR := Color(0.1, 0.08, 0.08)
 @export_group("흰 고양이 (핥기 회복)")
 @export var white_speed: float = 140.0
 @export var white_heal: int = 5
-@export var white_lick_cooldown: float = 3.0
+@export var white_lick_cooldown: float = 10.0
 ## 주인이 이 가로·세로(px) 안이면 핥는다 (발끼리 비교)
 @export var white_lick_range: Vector2 = Vector2(50.0, 50.0)
 @export_group("공통")
 ## 벽에 막혔을 때 뛰어넘으려는 점프 속도(px/초)
 @export var hop_speed: float = 360.0
 ## 상대 발이 이만큼(px) 넘게 위에 있고 가로로 jump_reach_x 안이면 뛰어오른다 — 발판 위로 따라간다.
-## 점프 힘·중력은 **플레이어와 똑같다**(`Fighter.jump_velocity`/`air_jump_velocity`/`gravity`/`fall_gravity_multiplier`).
-## 꼭대기에서도 아직 목표 발판보다 아래면 공중에서 한 번 더 뛴다(플레이어 2단 점프와 같은 횟수 `Fighter.max_air_jumps`)
+## 점프 힘·중력은 **플레이어와 똑같다**(`Fighter.jump_velocity`/`gravity`/`fall_gravity_multiplier`).
+## **점프는 땅을 떠날 때마다 한 번뿐** — 2단 점프 없음, 벽 폴짝 넘기도 그 한 번에 포함
 @export var jump_trigger_height: float = 40.0
 @export var jump_reach_x: float = 170.0
-## 공중 점프를 쓰는 시점 — 올라가는 속도가 이 값(px/초)보다 느려지면(꼭대기 근처) 판단한다
-@export var air_jump_apex_speed: float = 60.0
 ## 착지 순간 몸이 납작해지는 정도 — 플레이어(1.33, 0.75)보다 약하게. 원점이 발바닥이라 발은 바닥에 붙은 채 눌린다
 @export var land_squash: Vector2 = Vector2(1.15, 0.87)
 ## 찌그러짐이 원래 크기로 돌아오는 속도 (플레이어와 같은 값)
@@ -114,8 +112,8 @@ var _sprite = null
 var _jump_cd: float = 0.0
 ## 땅에 계속 붙어 있은 시간(초) — 떠 있으면 0
 var _ground_time: float = 0.0
-## 공중에서 몇 번 더 뛸 수 있는지 — 땅에 닿으면 Fighter.max_air_jumps로 채운다
-var _air_jumps_left: int = 0
+## 이번에 땅을 떠난 뒤 이미 뛰었는지 — 땅에 닿으면 풀린다. 벽에 닿을 때마다 폴짝 뛰어 벽을 타고 끝없이 올라가던 것을 막는다
+var _jumped: bool = false
 ## 지난 프레임에 땅에 있었는지(착지 순간 감지) / 지금 찌그러진 정도(1,1 = 원래)
 var _was_on_floor: bool = true
 var _squash: Vector2 = Vector2.ONE
@@ -139,19 +137,12 @@ func _ready() -> void:
 				add_collision_exception_with(body)
 				body.add_collision_exception_with(self)
 	add_to_group("catmom_cats")
-	# 몸 충돌은 캐릭터와 똑같은 캡슐(반지름 20, 높이 60) — 다르게 하면 벽·틈에서 캐릭터와 다르게 끼거나 샌다
-	var shape := CollisionShape2D.new()
-	var capsule := CapsuleShape2D.new()
-	capsule.radius = 20.0
-	capsule.height = 60.0
-	shape.shape = capsule
-	shape.position = Vector2(0.0, -30.0)
-	add_child(shape)
 	# 캐릭터와 같은 층(z 0) — 소환물은 전부 캐릭터와 같은 층에 그린다(2026-10-04 확정)
 	_sprite = CAT_SPRITE.new()
 	_sprite.name = "Visual"
 	_sprite.kind = kind
 	add_child(_sprite)
+	_build_body_collision()
 	current_hp = max_hp
 	_speed = [black_speed, orange_speed, white_speed][kind]
 	_patrol_dir = 1.0 if randf() < 0.5 else -1.0
@@ -183,6 +174,19 @@ func _set_hitbox_active(on: bool) -> void:
 		# 맞는 중(충돌 신호 안)에도 불리므로 set_deferred로 바꾼다
 		_hitbox.set_deferred("monitoring", on)
 		_hitbox.set_deferred("monitorable", on)
+
+## 몸 충돌 = 몸통 그림 크기(가로는 몸통 폭, 세로는 몸통 꼭대기부터 발바닥까지). 몸통이 가운데라 방향이 바뀌어도 그대로
+func _build_body_collision() -> void:
+	var k: float = _sprite.size_scale
+	var body_box: Rect2 = CAT_SPRITE.bbox_of(kind, "body")
+	var body_h: float = _sprite.body_width * body_box.size.y / body_box.size.x
+	var top: float = (_sprite.body_center.y - body_h * 0.5) * k
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(_sprite.body_width * k, -top)
+	var shape := CollisionShape2D.new()
+	shape.shape = rect
+	shape.position = Vector2(_sprite.body_center.x * k, top * 0.5)
+	add_child(shape)
 
 ## 꼬리를 뺀 머리·몸통·발에 맞는 판정 — CatSprite의 배치 값(배율 1 기준)에 size_scale을 곱해 만든다
 func _build_hurtbox() -> void:
@@ -260,8 +264,7 @@ func _physics_process(delta: float) -> void:
 			g *= Fighter.fall_gravity_multiplier
 		velocity.y += g * delta
 	else:
-		# 공중 점프는 따라가려고 뛰어오른 점프에서만 쓴다 — 걸어서 떨어지거나 장애물을 넘을 땐 안 쓴다
-		_air_jumps_left = 0
+		_jumped = false
 	_update_squash(delta)
 	if _flash_left > 0.0:
 		_flash_left = maxf(_flash_left - delta, 0.0)
@@ -295,10 +298,10 @@ func _physics_process(delta: float) -> void:
 		if vertical and _dash_left <= 0.0:
 			_follow_vertically(vertical)
 	elif not is_on_floor() and _dash_left <= 0.0:
-		_try_air_jump(_vertical_target())
-		# 낮은 장애물만 폴짝 넘는다 — 맵 벽처럼 높은 벽 앞에서 콩콩대며 넘어가려 들지 않게
-		if kind != Kind.ORANGE and want_x != 0.0 and is_on_wall() and velocity.y >= 0.0 and _can_hop_over():
+		# 낮은 장애물만 폴짝 넘는다 — 맵 벽처럼 높은 벽 앞에서 콩콩대며 넘어가려 들지 않게. 이미 뛰었으면 안 뛴다
+		if not _jumped and kind != Kind.ORANGE and want_x != 0.0 and is_on_wall() and velocity.y >= 0.0 and _can_hop_over():
 			velocity.y = -hop_speed
+			_jumped = true
 	move_and_slide()
 	_ground_time = _ground_time + delta if is_on_floor() and velocity.y >= 0.0 else 0.0
 	# 공중에선 다리를 멈춘 채로 둔다. 다리 박자는 실제 속도에 비례 — 천천히 돌아설 땐 다리도 천천히
@@ -466,7 +469,7 @@ func _follow_vertically(target: Fighter) -> void:
 	var dy: float = target.global_position.y + 30.0 - global_position.y
 	if dy < -jump_trigger_height and absf(dx) < jump_reach_x:
 		velocity.y = Fighter.jump_velocity
-		_air_jumps_left = Fighter.max_air_jumps
+		_jumped = true
 		_jump_cd = jump_cooldown
 	elif dy > drop_trigger_height:
 		var platform: Node = _one_way_floor()
@@ -476,15 +479,6 @@ func _follow_vertically(target: Fighter) -> void:
 				if is_instance_valid(platform):
 					remove_collision_exception_with(platform))
 			_jump_cd = jump_cooldown
-
-## 땅에서 뛰어오른 뒤 꼭대기 근처인데 발이 아직 목표 발판보다 아래면 공중에서 한 번 더 뛴다(플레이어 2단 점프와 같은 힘)
-func _try_air_jump(target: Fighter) -> void:
-	if target == null or _air_jumps_left <= 0 or velocity.y < -air_jump_apex_speed:
-		return
-	var dy: float = target.global_position.y + 30.0 - global_position.y
-	if dy < -10.0:
-		_air_jumps_left -= 1
-		velocity.y = Fighter.air_jump_velocity
 
 ## 착지 순간 몸을 살짝 납작하게 눌렀다가 천천히 편다(플레이어 BodyRig와 같은 방식, 세기만 약하게)
 func _update_squash(delta: float) -> void:

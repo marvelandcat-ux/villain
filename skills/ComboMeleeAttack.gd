@@ -222,6 +222,9 @@ const SLASH_ARC := preload("res://combat/SlashArc.gd")
 ## 마무리 타만 쓰는 예비동작(초). -1이면 windup을 그대로 쓴다. 드롭킥이 아니어도 쓴다(촉법소년 뒤돌려차기 0.25 = 리그 kick_duration 0.55 x kick_spin_end 0.62 x kick_spin_hit 0.72).
 ## **두 발이 다 뻗은 뒤에 판정이 켜져야 한다** — 뛰어오르는 도중에 켜지면 몸통으로 때리는 꼴이 된다
 @export var finisher_windup: float = -1.0
+## 1·2타(마무리 아닌 타) 모션 길이(초). 0 이하면 리그 기본 길이(attack_duration).
+## 리그 attack_duration은 반격 스킬 등 다른 데서도 쓰므로 평타 속도만 바꿀 땐 이걸 쓴다(금쪽이 기준 0.24, windup = x0.4)
+@export var swing_duration: float = -1.0
 
 ## 뛰어오른 직후 이만큼(초)은 바닥 판정을 보지 않는다 — 그 프레임엔 아직 발이 땅에 붙어 있어서
 ## 바로 검사하면 뛰자마자 착지한 것으로 친다
@@ -667,8 +670,11 @@ func _effective_miss_cooldown() -> float:
 ## (3타 준비시간 0.223초 통일, 2026-09-30 사용자 결정). 아니면 -1(리그 기본 길이).
 ## 회전 타·발차기 타는 리그가 자기 길이(spin_duration/kick_duration)를 따로 들고 있어 건드리지 않는다 —
 ## 그런 캐릭터는 finisher_windup을 그 길이에 맞춰 적는다(지하철 0.5 x 0.62 x 0.72)
+## 마무리가 아닌 타는 swing_duration(정해 뒀으면)을 돌려준다
 func _final_swing_duration(step: int, visual: Node) -> float:
-	if not _is_final(step) or finisher_windup < 0.0 or not visual.has_method("strike_time"):
+	if not _is_final(step):
+		return swing_duration if swing_duration > 0.0 else -1.0
+	if finisher_windup < 0.0 or not visual.has_method("strike_time"):
 		return -1.0
 	if int(visual.get("spin_hit_index")) == step or int(visual.get("attack_kick_hit")) == step:
 		return -1.0

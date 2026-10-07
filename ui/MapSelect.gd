@@ -4,7 +4,7 @@ extends Control
 ## 맵 선택 — 우주에 떠 있는 대한민국 지구본(임시 그림), 지도 위 핀(`MapPin`)을 눌러 맵을 고른다.
 ## 땅·바다가 같이 천천히 돈다. 핀에 마우스를 올리면 멈추고, 지구본을 좌클릭으로 끌면 좌우로 돌릴 수 있다(놓으면 살짝 미끄러짐).
 ## 고르면 그 핀 쪽으로 돌아 → 평평한 지도로 펼쳐지고 → 핀 쪽으로 확대된 뒤 → 그 맵으로 들어간다.
-## 지구본 그림은 `KoreaGlobe.gdshader`(그림 좌표 계산은 아래 `_uv_at()`과 짝), 표면 그림은 `tools/make_korea_globe.py`가 만든다.
+## 지구본 그림은 `KoreaGlobe.gdshader`(그림 좌표 계산은 아래 `_screen_of()`와 짝), 표면 그림은 `tools/make_korea_globe.py`가 만든다.
 ## 배경 양옆에는 CharacterSelect에서 확정한 P1/P2 캐릭터가 인게임 몸(BodyRig)으로 서 있다
 
 ## 서 있는 캐릭터 배율 — 1.0이면 실제 대전 화면에서 보이는 것과 똑같은 크기(인게임 크기)로 서 있다
@@ -51,6 +51,7 @@ const THUMB_GAP := 34.0
 @onready var _globe: ColorRect = $Globe
 @onready var _pins: Control = $Pins
 @onready var _random_button: Button = $RandomButton
+@onready var _status_label: Label = $StatusLabel
 @onready var _p1_standee: Node2D = $P1Standee
 @onready var _p2_standee: Node2D = $P2Standee
 
@@ -205,40 +206,25 @@ func _pin_uv(map_name: String) -> Vector2:
 		0.5 + (lon_lat.x - CENTER_LON) * PX_PER_DEG / TEX_SIZE.x,
 		0.5 - (lon_lat.y - CENTER_LAT) * PX_PER_DEG / TEX_SIZE.y)
 
-## 지구본 중심 기준 화면 점 p(px)가 보여 주는 그림 좌표 — ⚠️ KoreaGlobe.gdshader와 똑같은 계산
-func _uv_at(p: Vector2) -> Vector2:
-	var q: Vector2 = p.rotated(-GLOBE_TILT * (1.0 - _flatten)) / GLOBE_RADIUS
-	var z: float = sqrt(maxf(1.0 - q.length_squared(), 0.0))
-	var lat: float = asin(clampf(-q.y, -1.0, 1.0))
-	var lon: float = atan2(q.x, z)
-	var sphere := Vector2(0.5 + lon / TAU, 0.5 - lat / PI)
-	var du: float = FLAT_SPAN_U / (2.0 * FLAT_HALF.x)
-	var flat := Vector2(0.5 + p.x * du, 0.5 + p.y * du * 2.0)
-	flat = _zoom_uv + (flat - _zoom_uv) / _zoom
-	return sphere.lerp(flat, _flatten)
-
-## 돌리기 전 그림 좌표 uv(= 핀 uv - spin)가 화면 어디에 보이는지 {pos, visible}. 둥글 땐 바로 계산하고, 펼치는 중이면 거기서 뉴턴법으로 맞춘다
+## 돌리기 전 그림 좌표 uv(= 핀 uv - spin)가 화면 어디에 보이는지 {pos, visible}
+## ⚠️ KoreaGlobe.gdshader의 surface_uv()를 거꾸로 한 계산 — 한쪽을 고치면 같이 고칠 것
 func _screen_of(uv: Vector2) -> Dictionary:
 	var target := Vector2(0.5 + wrapf(uv.x - 0.5, -0.5, 0.5), uv.y)
-	var lon: float = (target.x - 0.5) * TAU
-	var lat: float = (0.5 - target.y) * PI
-	var z: float = cos(lat) * cos(lon)
-	var q := Vector2(cos(lat) * sin(lon), -sin(lat)) * GLOBE_RADIUS
-	var p: Vector2 = q.rotated(GLOBE_TILT * (1.0 - _flatten))
-	if _flatten > 0.0 or not is_equal_approx(_zoom, 1.0):
-		for i in 8:
-			var err: Vector2 = _uv_at(p) - target
-			if err.length() < 0.00001:
-				break
-			var h: float = 0.5
-			var jx: Vector2 = (_uv_at(p + Vector2(h, 0)) - _uv_at(p)) / h
-			var jy: Vector2 = (_uv_at(p + Vector2(0, h)) - _uv_at(p)) / h
-			var det: float = jx.x * jy.y - jy.x * jx.y
-			if absf(det) < 1e-12:
-				break
-			p -= Vector2(jy.y * err.x - jy.x * err.y, -jx.y * err.x + jx.x * err.y) / det
-	var on_front: bool = z > 0.15 or _flatten > 0.5
-	return {"pos": GLOBE_CENTER + p, "visible": on_front}
+	# 확대는 그림 좌표를 zoom_uv 쪽으로 당긴 것이라 거꾸로 편다
+	var s: Vector2 = _zoom_uv + (target - _zoom_uv) * _zoom
+	# 공의 휘는 정도(1 = 지구본, 0 = 평평)와 가운데 배율(1라디안이 몇 px)
+	var c: float = 1.0 - _flatten
+	var k: float = lerpf(GLOBE_RADIUS, FLAT_HALF.x / (PI * FLAT_SPAN_U), _flatten)
+	var q: Vector2
+	var on_front: bool = true
+	if c < 0.001:
+		q = Vector2((s.x - 0.5) * TAU * k, (s.y - 0.5) * PI * k)
+	else:
+		var lon: float = (s.x - 0.5) * TAU * c
+		var lat: float = (0.5 - s.y) * PI * c
+		q = Vector2(cos(lat) * sin(lon), -sin(lat)) * k / c
+		on_front = cos(lat) * cos(lon) > 0.15
+	return {"pos": GLOBE_CENTER + q.rotated(GLOBE_TILT * c), "visible": on_front}
 
 # ---------------------------------------------------------------- 고르기
 
@@ -251,6 +237,8 @@ func _on_map_picked(map_name: String) -> void:
 	_fling = 0.0
 	_picked = map_name
 	_set_buttons_disabled(true)
+	# 펼친 지도 윗변이 안내 글자 자리까지 올라오므로, 펼치기 전에 글자를 걷는다
+	create_tween().tween_property(_status_label, "modulate:a", 0.0, TURN_TIME)
 	var pin_uv: Vector2 = _pin_uv(map_name)
 	# 핀의 u가 정면(0.5)에 오는 spin 중 지금과 가장 가까운 값
 	var goal: float = _spin + wrapf(pin_uv.x - 0.5 - _spin, -0.5, 0.5)
@@ -302,4 +290,5 @@ func _on_back_pressed() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and not _busy:
+		get_viewport().set_input_as_handled()
 		_on_back_pressed()

@@ -63,6 +63,8 @@ extends Node2D
 @export var ride_enter_offset: Vector2 = Vector2(-70, 0)
 ## 자전거가 들어오고/빠져나가는 빠르기 (클수록 빨리)
 @export var ride_blend_speed: float = 12.0
+## 자전거 탈 때 리그 전체(사람+자전거)를 이만큼(px) 올린다 — 바퀴가 몸 콜라이더 바닥(발끝 +30) 아래로 파묻히지 않게
+@export var ride_lift: float = 0.0
 ## 페달 밟을 때 두 발이 도는 중심(크랭크 위치, 리그 원점 기준)
 @export var pedal_center: Vector2 = Vector2(1, 23)
 ## 페달 원의 반지름(px)
@@ -2128,6 +2130,7 @@ func _apply_pose(speed_ratio: float) -> void:
 	# 발바닥(squash_pivot_y)이 제자리에 남게 리그를 위아래로 보정한다 — 위치를 통째로 덮지 않고
 	# 지난번에 더한 만큼 빼고 새로 더한다(수플렉스처럼 리그 위치를 잠깐 쓰는 스킬과 안 싸우게)
 	var lift: float = squash_pivot_y * (1.0 - scale.y) if _squashing else 0.0
+	lift -= ride_lift * _ride_blend
 	if not is_equal_approx(lift, _squash_lift):
 		position.y += lift - _squash_lift
 		_squash_lift = lift
@@ -4479,7 +4482,8 @@ func get_head_outfit() -> Dictionary:
 	if _head == null:
 		return {}
 	return {"texture": _head_rest_texture, "scale": _head_rest_scale, "position": _rest_positions.get(_head, _head.position),
-		"turn": head_turn_textures, "anchors": head_turn_anchors, "faces_left": head_turn_faces_left}
+		"turn": head_turn_textures, "anchors": head_turn_anchors, "faces_left": head_turn_faces_left,
+		"hurt": hurt_head_texture, "hurt_scale": hurt_head_scale, "hurt_offset": hurt_head_offset}
 
 ## 머리를 통째로 바꿔 쓴다(고양이 아주머니 주황 궁 고양이 옷, 2026-10-05) — 평소 그림·배율·제자리·머리 돌리기 세트를 한 번에 바꾼다.
 ## outfit은 get_head_outfit()과 같은 모양. 돌던 중이면 먼저 평소 머리로 되돌린 뒤 바꾼다
@@ -4493,6 +4497,11 @@ func set_head_outfit(outfit: Dictionary) -> void:
 	head_turn_textures = outfit["turn"]
 	head_turn_anchors = outfit["anchors"]
 	head_turn_faces_left = outfit["faces_left"]
+	# 피격 얼굴도 옷마다 따로(없으면 원래 것을 그대로 둔다)
+	if outfit.has("hurt"):
+		hurt_head_texture = outfit["hurt"]
+		hurt_head_scale = outfit.get("hurt_scale", Vector2.ZERO)
+		hurt_head_offset = outfit.get("hurt_offset", Vector2.ZERO)
 	_head.position = _rest_positions[_head]
 	_apply_base_head()
 

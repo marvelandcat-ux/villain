@@ -44,6 +44,11 @@ extends Node2D
 		preview_closed = v
 		queue_redraw()
 
+## true인 동안 눈을 감고 그대로 있는다(close_time만큼 감기고, false가 되면 open_time만큼 뜬다) — 고양이 피격
+var held_closed: bool = false
+## false면 리그(BodyRig) 머리가 아니어도 동작한다 — 코드로 조립한 고양이 머리 등
+var needs_rig: bool = true
+
 var _base_texture: Texture2D
 var _wait: float = 0.0
 var _t: float = -1.0
@@ -85,13 +90,20 @@ func _process(delta: float) -> void:
 	var head := get_parent() as Sprite2D
 	# 대시 잔상처럼 리그를 복제해 스크립트를 떼어낸 사본에서는 깜빡이지 않는다
 	var rig := head.get_parent() if head else null
-	var alive: bool = rig != null and rig.has_method("play_attack_swing")
+	var alive: bool = rig != null and (rig.has_method("play_attack_swing") or not needs_rig)
 	if not alive or head.texture != _base_texture:
 		# 표정이 바뀌면 그 자리에서 눈을 뜬 상태로 돌려놓고, 다음 깜빡임은 처음부터 다시 기다린다
 		if _amount > 0.0:
 			_amount = 0.0
 			_t = -1.0
 			queue_redraw()
+		return
+	if held_closed or (_t < 0.0 and _amount > 0.0):
+		# 감은 채 유지 — 풀리면 그 자리에서 천천히 뜬다
+		var speed: float = 1.0 / maxf(close_time if held_closed else open_time, 0.001)
+		_amount = move_toward(_amount, 1.0 if held_closed else 0.0, speed * delta)
+		_t = -1.0
+		queue_redraw()
 		return
 	if _t < 0.0:
 		_wait -= delta

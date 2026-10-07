@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://cb50firgh23gl" path="res://sprite/고양이 아줌마/발.png" id="4_foot"]
 [ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="5_hand"]
 [ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
+[ext_resource type="Texture2D" uid="uid://cghgxgxcojjp6" path="res://sprite/고양이 아줌마/고양이 아줌마 피격.png" id="83_hurt"]
 [ext_resource type="Texture2D" uid="uid://cac0t7n6e0uru" path="res://sprite/고양이 아줌마/고양이 아줌마 측면1.png" id="89_turn1"]
 [ext_resource type="Texture2D" uid="uid://e3x33fkwjti3" path="res://sprite/고양이 아줌마/고양이 아줌마 측면 2.png" id="88_turn2"]
 [ext_resource type="Texture2D" uid="uid://bg1w3dxhjgbab" path="res://sprite/고양이 아줌마/고양이 아줌마 측 면3.png" id="87_turn3"]
@@ -27,6 +28,9 @@ head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_
 head_turn_anchors = Array[Vector3]([Vector3(595, 622, 1094), Vector3(605, 661, 1068), Vector3(615, 676, 1018), Vector3(625, 685, 996), Vector3(624, 682, 959)])
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
 head_turn_on_face = true
+hurt_head_texture = ExtResource("83_hurt")
+hurt_head_scale = Vector2(0.04683, 0.04683)
+hurt_head_offset = Vector2(0.1, -0.47)
 body_turn_textures = Array[Texture2D]([ExtResource("85_body_turn1"), ExtResource("84_body_turn2")])
 body_turn_match_height = true
 body_turn_faces_left = Array[bool]([false, false])

@@ -14,3 +14,4 @@ paths:
 - `MouseGrab.gd`: 한 장 그림을 `region_rect`로 유선/물체 잘라 그림(**그림을 다시 그리면 영역·중심선 상수 재측정**). **실효 사거리는 중력이 정함 — 속도를 바꾸면 중력은 배수의 제곱으로**. 크기 값은 `new()` 후 `setup()` 전에. `cast_windup_offset.y`는 -6보다 위로 금지
 - 키보드 z_index 1(2 이상이면 대시 잔상 키보드가 본체 앞에). 두 손 잡기: 총 회전각 120도 이하, `attack_grip_speed` 9 이상
 - 그랩 후 회전 난무(`spin_flurry_*`): 판정은 바라보는 쪽 반원, `spin_wind` 바람은 "엄청 얇게"(사용자 요청)
+- 궁 슬로우 이펙트 `combat/SlowDebuffVfx.gd`(달팽이·회오리·물방울, `sprite/VFX/슬로우*.png`): 맵에 붙고 상대를 따라감. **그림을 바꾸면 `*_RECT`(보이는 영역) 재측정**

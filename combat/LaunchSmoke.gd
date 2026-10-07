@@ -23,6 +23,12 @@ extends Node2D
 @export var rise_speed: float = 34.0
 ## 연기 색
 @export var smoke_color: Color = Color(0.78, 0.77, 0.74, 0.72)
+## 켜면 시간(life)과 상관없이 **따라가는 사람이 3타로 날아가는 동안만**(`is_finisher_flying()`) 흘린다
+@export var while_flying: bool = false
+## 0보다 크면 **빠를수록 많이** 흘린다 — 따라가는 사람 속도가 이 값(px/초)일 때 trail_interval 그대로,
+## 두 배 빠르면 두 배 촘촘하게(최대 speed_max_mult배). 느려지면 그만큼 드문드문 나오다 멈춘다
+@export var speed_ref: float = 0.0
+@export var speed_max_mult: float = 4.0
 
 ## 연기 덩어리 하나
 class Puff:
@@ -55,13 +61,19 @@ func _burst() -> void:
 		_puffs.append(_make_puff(_last, Vector2(cos(ang), sin(ang)) * speed, randf_range(0.9, 1.5)))
 
 func _process(delta: float) -> void:
+	var prev: Vector2 = _last
 	if is_instance_valid(_target):
 		_last = to_local(_target.global_position)
+		if while_flying and _target.has_method("is_finisher_flying") and not _target.call("is_finisher_flying"):
+			_left = 0.0
 	else:
 		_left = 0.0   # 날아가던 사람이 사라졌으면 더 흘리지 않고 남은 연기만 마저 그린다
 	if _left > 0.0 and trail_interval > 0.0:
 		_left = maxf(_left - delta, 0.0)
-		_spawn_left -= delta
+		var rate: float = 1.0
+		if speed_ref > 0.0 and delta > 0.0:
+			rate = clampf(prev.distance_to(_last) / delta / speed_ref, 0.0, speed_max_mult)
+		_spawn_left -= delta * rate
 		while _spawn_left <= 0.0:
 			_spawn_left += trail_interval
 			var drift := Vector2(randf_range(-20.0, 20.0), -rise_speed * randf_range(0.4, 1.1))

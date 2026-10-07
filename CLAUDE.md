@@ -9,6 +9,7 @@
 
 - **캐릭터 전용 `.gd` 금지** — 모든 캐릭터 루트는 `characters/Fighter.gd`, 차이는 스탯 `.tres` + 스킬 노드(`BasicAttack`/`Skill1`/`Skill2`/`SkillUltimate`). 빈 `skills/Skill.gd` = 의도된 미구현
 - **버프·디버프 직접 대입 금지** → `set_modifier`/`clear_modifier`(id별 곱), 임시 `apply_temp_multiplier`. 색조도 `set_tint`/`clear_tint`. `damage_reduction`은 `set_modifier`로 쓰지 말 것(`damage_taken_multiplier` 사용)
+- **VFX는 길목에 붙어 있다 — 스킬에서 따로 띄우지 말 것**: 회복은 `heal()`(→ `combat/HealBurst.gd`, 리셋용 채우기는 `heal(n, false)`), 슬로우는 `apply_temp_multiplier("move_speed_multiplier", <1)`(→ `combat/SlowDebuffVfx.gd`). `current_hp` 직접 대입이나 `set_modifier`로 건 슬로우(맵 기믹·자기 패널티)엔 안 나옴. 새 버프·디버프 VFX도 같은 길목에
 - **공용 헬퍼 — 다시 짜지 말 것:** `PhysicsQuery.raycast_ignoring_fighters`/`ground_y_below`, `Timers.after`(`real_time`)/`self_destruct`, `Fighter.find_fighter_in_box`, `CrashBurst.spawn`(설정은 add_child 전)
 - 스킬: `Skill` 상속 후 `_execute(fighter)`만. `_ready()` 오버라이드 시 `super()`. **쿨은 전부 `effective_cooldown()` 경유**. 스킬2 교체 `swap_skill_2()`, 궁 봉인 `seal_ultimate(id)`. 궁 쿨은 컷인 뒤 `fire_ultimate_now()`부터
 - 라운드마다 `reload_current_scene()`(승수만 `GameState`)

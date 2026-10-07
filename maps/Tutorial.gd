@@ -591,7 +591,7 @@ func _start_fight() -> void:
 	ai.dash_approach_distance = lerpf(520.0, ai.dash_approach_distance, FIGHT_AI_SKILL)
 	_enemy.add_child(ai)
 	_spawn_dust(Vector2(x, ground_top_y), 2.0)
-	_fighter.heal(_fighter.stats.max_hp)
+	_fighter.heal(_fighter.stats.max_hp, false)
 	_set_instructor_bystander(true)
 	_build_fight_hud()
 
@@ -609,7 +609,7 @@ func _update_fight() -> void:
 func _restart_fight() -> void:
 	for f in [_fighter, _enemy]:
 		f.cancel_finisher_flight()
-		f.heal(f.stats.max_hp)
+		f.heal(f.stats.max_hp, false)
 		f.velocity = Vector2.ZERO
 	_fighter.global_position.x = _player_start_x
 	_enemy.global_position.x = _enemy_start_x
@@ -623,7 +623,7 @@ func _win_fight() -> void:
 		if child is AIController:
 			child.queue_free()
 	_enemy.move(0.0)
-	_fighter.heal(_fighter.stats.max_hp)
+	_fighter.heal(_fighter.stats.max_hp, false)
 	var enemy := _enemy
 	var tw := create_tween()
 	tw.tween_interval(FIGHT_WIN_WAIT * 0.5)
