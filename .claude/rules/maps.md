@@ -38,9 +38,9 @@ paths:
 - 카메라: 지붕 `Wall5`(90도 돌린 벽, 윗면 y -611) ~ 땅 그림 아래 354만 보임 — `use_ceiling`/`ceiling_y`/`floor_bottom_y`. 멀리 물러나 화면이 그보다 높아지면 **가운데 정렬 + 위아래 검은 띠**(`CameraRig._build_letterbox`, 월드 z 4000 사각형이라 HUD 안 덮음). **지붕을 옮기면 `ceiling_y`도**
 - 이 맵 카메라엔 `limit_top`/`limit_bottom`을 쓰지 말 것 — 위아래 한계가 겹치면 한쪽이 이겨서 가운데 정렬이 깨진다
 - 스폰 -397 / 1030(벽 사이 비율 0.12 / 0.91)
-- 암전 `Blackout.gd`: 어두운 동안 `cooldown_pies` 그룹 호출로 방어·대시·빨간 X(패링) 숨김, 금색(궁 사용 중)은 유지. `MonitorLight`는 사용자가 꺼 둠(visible=false)
+- 암전 `Blackout.gd`: 어두운 동안 `cooldown_pies` 그룹 호출로 방어·대시·빨간 X(패링)·금색(궁 지속시간)까지 전부 숨김(2026-10-07). `MonitorLight`는 사용자가 꺼 둠(visible=false)
 - 엄마 기믹 `MomDoorGimmick`(문 `DoorLeft`/`DoorRight`): 주기마다 랜덤 문을 열고(경첩 쪽 고정 + 가로로 좁힘, 뒤에 어두운 문틈 Polygon2D) `AkpeulleoMom`("악플러집 엄마")을 **자기 자식으로** 내보냄. 카운트다운·라운드 끝엔 안 셈. 등장 주기 `first_delay`/`interval`은 TODO 임시값
-- `AkpeulleoMom`: **Fighter 아님**(IljinCrewMember와 같은 이유), Hurtbox 없음 = 안 맞음, 그림은 `maps/AkpeulleoMomRig.tscn`(`sprite/맵/악플러집/엄마 스프라이트/` — 원본이 흰 배경 RGB라 테두리 flood fill로 투명화함, 머리 공·배율은 캣맘 리그 크기에 맞춰 역산, 손은 캣맘 것, 발은 `엄마 발.png`. 눈빛 `MomEyeGlow.gd`(Head 자식, 노란 십자, unshaded+가산 + 주변을 비추는 노란 PointLight2D `light_*`): `Blackout.is_dark`("blackout" 그룹)가 켜지는 순간 나타남, 옆모습 그림일 때만 — 머리 그림 바꾸면 `eye_pixel` 재측정. `엄마  몸 측면 3`은 띄어쓰기 두 칸 그대로). "안 자고 뭐하니!" → 가까운 플레이어 추격(**쫓는 플레이어 스탯 move_speed와 같은 속도**, `speed_ratio` 1.0, **1단 점프만** — 발판 길찾기는 AIController 방식을 1단 기준으로 옮김) → 사거리면 말풍선 "등짝 스매쉬!"(`smash_line`) + 3타처럼(0.223초 뒤) `take_map_damage(20)` + `launch_finisher`(평타 3타 기본값) → 16초 뒤 **다른 문**으로. 1단으로 못 닿는 문 발판이면 문 아래서 포물선 한 번에 뛰어오름(`_leap_to`), 10초 안에 못 가면 그 자리에서 사라짐
+- `AkpeulleoMom`: **Fighter 아님**(IljinCrewMember와 같은 이유), Hurtbox 없음 = 안 맞음, 그림은 `maps/AkpeulleoMomRig.tscn`(`sprite/맵/악플러집/엄마 스프라이트/` — 원본이 흰 배경 RGB라 테두리 flood fill로 투명화함, 머리 공·배율은 캣맘 리그 크기에 맞춰 역산, 손은 캣맘 것, 발은 `엄마 발.png`. 눈빛 `MomEyeGlow.gd`(Head 자식, 노란 십자, unshaded+가산 + 주변을 비추는 노란 PointLight2D `light_*`): `Blackout.is_dark`("blackout" 그룹)가 켜지는 순간 나타남, 옆모습 그림일 때만 — 머리 그림 바꾸면 `eye_pixel` 재측정. `엄마  몸 측면 3`은 띄어쓰기 두 칸 그대로). "안 자고 뭐하니!" → 가까운 플레이어 추격(**쫓는 플레이어 스탯 move_speed와 같은 속도**, `speed_ratio` 1.0, **1단 점프만** — 발판 길찾기는 AIController 방식을 1단 기준으로 옮김) → 사거리면 말풍선 "등짝 스매쉬!"(`smash_line`) + 3타처럼(0.223초 뒤) `take_map_damage(20)` + `launch_finisher`(평타 3타 기본값) → 16초 뒤 **다른 문**으로. 1단으로 못 닿는 문 발판이면 문 아래서 포물선 한 번에 뛰어오름(`_leap_to`), 20초(`exit_timeout`) 안에 못 가면 그 자리에서 사라짐. 발판 판정(`_support_under`)은 내 발판을 찾을 때 **몸 반지름(`BODY_RADIUS`)만큼 끝 걸침을 봐줌** — 4px만 보면 끝에 걸친 순간 훨씬 아래 계단으로 잘못 잡혀 맨 위 발판 오른쪽 끝에서 왔다 갔다 떨었다(2026-10-07). 오른쪽 문은 1단 점프로 **맨 위 가운데 발판 → 오른쪽으로 떨어지기**가 유일한 길이라, 땅에서 출발하면 도착까지 ~11~13초 걸림
 - 천장 조명 `DecoCeilingLamp1~3`(`CeilingLamp.gd`, 원점 = 천장 아랫면 y -551, x -330/290/900 대략 배치): 형광등 그림 `조명.png`(천장에 붙음, 보이는 영역 `LAMP_OPAQUE` — 그림 바꾸면 재측정), 빛은 내부 자식 ColorRect + `CeilingLight.gdshader`(가산, 원뿔·전등 밑 번짐·약한 지글거림·먼지). **방 전체 밝기 = `Blackout` 색(0.56, 0.56, 0.64 — 은은하게 어두움, `blackout_brightness` 0.1로 암전 절대 밝기는 예전과 같음)**, 등마다 원뿔 모양 PointLight2D(`glow_*`, 코드로 만든 텍스처)가 아래 맵·캐릭터를 실제로 밝힘 — `Blackout.light_level()`을 따라 깜빡이고 암전 때 꺼짐(등 그림도 unshaded + 밝기 직접). **지붕을 옮기면 전등 y도**
 - 장식은 전부 `Deco*`(미리보기 크기 기준 제외)
 - 입체감(2026-10-06, 지하철 방식): 가장 먼 층 `DecoBackground`(CanvasGroup + `far_blur` 1.0/0.12 + `ParallaxFollow` 0.85, 벽 그림 `Wall` 배율 1.3 — 시차로 밀려도 가장자리 안 보이게 키움) → 창문 층 `DecoWindows`(창문 셋, `far_blur` 0.45/0.05, 0.93) → 싸우는 층. 기준 카메라 중심 `reference` (290, -128) = 방 가운데 — 카메라가 여기 있을 때 에디터 배치 그대로. **창문은 `DecoWindows` 안에 넣을 것**
@@ -59,10 +59,14 @@ paths:
 ## 튜토리얼 `maps/Tutorial.tscn`(뼈대)
 
 - 배경 `sprite/맵/튜토리얼/`(구름 `RandomCloudSpawner.gd`, 국기 `FlagFlutter.gdshader`). 땅 ⚠️ `texture_repeat`는 위아래로도 반복 → `region_rect`를 투명한 윗부분 아래부터. 바닥 y=280, 벽 ±1200
-- 훈련 더미를 P1이 조작. **교관 = 황근출(옷 입은 리그만, Fighter 아님)** `Instructor`(scale.x -1)
-- **처음 켠 사람만** 타이틀 → 튜토리얼(`GameState.tutorial_seen`)
-- 말풍선 `maps/SpeechBubble.gd`(@tool, 전부 `_draw()`): **원점 = 꼬리 끝 = 가리키는 곳**. 교관 자식이면 글자가 뒤집혀 맵 직속. `say(text, hint)`(BBCode), `finish_typing()`, `close()`. 폰트 강한육군 Bold — **모든 `*_font_size` 슬롯 지정**(빼면 `[b]`가 16px). ⚠️ "썌"는 글리프 없음 → "쌔"
-- 대사 `Tutorial.gd`: 교관 500px 안에 들면 시작, **스페이스로 한 줄씩**, 강조 `_em()`. 대사 중엔 카메라를 교관 ±450px로 clamp. TODO: 이동·점프 다음 조작 설명
+- P1 = 경찰(3타 콤보 필요). **교관 = 진짜 황근출 Fighter**(HP 10만, `immovable`, 컨트롤러 없이 `_drive_instructor`가 굴림). 실습 구간에만 `_set_instructor_hittable(true)`. 3타로 날아가면 제자리로 걸어 돌아옴 → `_on_instructor_home()`이 실습을 끝냄
+- **처음 켠 사람만** 타이틀 → 튜토리얼(`GameState.tutorial_seen`). 메뉴 훈련장 버튼에서도 갈 수 있음
+- 말풍선 `maps/SpeechBubble.gd`(@tool, 전부 `_draw()`): **원점 = 꼬리 끝 = 가리키는 곳**. 교관 자식이면 글자가 뒤집혀 맵 직속. `say(text, hint, press_hint_delay)`(BBCode), `icon("guard"/"dash"/"parry")`, `finish_typing()`, `close()`. 폰트 강한육군 Bold — **모든 `*_font_size` 슬롯 지정**(빼면 `[b]`가 16px). ⚠️ "썌"는 글리프 없음 → "쌔"
+- 대사 `Tutorial.gd` (2026-10-07 개편): 교관 500px 안에 들면 시작. **대사는 `_build_lines()`의 순서가 곧 진행 순서**(번호 상수 없음) — 한 줄 = `_line(text, {gate|phase, goal})`
+  - `gate`(move/jump/parkour/guard/dash) = 그 행동을 해야 넘어감(`_update_gates`), `phase`(hit/parry/skill1/skill2/ult/fight) = 스페이스에 말풍선 닫히고 실습 시작, 끝나면 다음 줄. 둘 다 없으면 스페이스
+  - `goal` = 화면 아래 흰 알약(`_show_goal`). 키 이름은 설정에서 읽음(`_key("down")` → "S") — **대사에 키를 글자로 박지 말 것**
+  - 스킬 실습: 쿨을 0으로 비우고 헛쏘면 `SKILL_RETRY_COOLDOWN`(1.5초)으로 깎음. 성공 = 스킬을 쏜 뒤 `SKILL_HIT_WINDOW` 안에 교관 `damaged`. 궁은 쓰기만 하면 통과(컷인 노드가 없어 바로 나감)
+  - 카메라는 항상 플레이어 고정. 플레이어 HP는 패링 시범 중 35% 밑이면 채움, 싸움에서 지면 둘 다 채우고 재시작
 
 ## 훈련장 `maps/TrainingGround.tscn`
 

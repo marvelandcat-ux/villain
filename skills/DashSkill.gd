@@ -8,8 +8,8 @@ extends Skill
 @export var self_damage_on_wall: int = 10  ## 오픈 이슈 임시값
 ## 벽에 부딪혔을 때 튕겨 나오는 넉백 (돌진 방향의 반대 + 살짝 위로)
 @export var wall_bounce: Vector2 = Vector2(150, -80)
-## 잔상을 몇 초마다 남길지
-@export var trail_interval: float = 0.04
+## 잔상을 몇 초마다 남길지 (2026-10-07 사용자 요청 "분신 조금 줄여줘"로 0.04 -> 0.07)
+@export var trail_interval: float = 0.07
 ## 뒷바퀴 스키드 먼지를 몇 초마다 튈지
 @export var skid_interval: float = 0.05
 ## 바닥 색을 못 찾았을 때 쓸 기본 먼지색 (바닥과 대비되게 어두운 흙색)
@@ -18,11 +18,13 @@ extends Skill
 @export var rear_wheel_offset: Vector2 = Vector2(-16, 26)
 ## 돌진하는 동안 몸 주위로 바람 줄이 흐른다 (일진 어깨 들이박기와 같은 연출).
 ## 2026-10-01 사용자 요청으로 껐다가 2026-10-05 하얀 스피드 라인(combat/SpeedLines.gd)으로 다시 켬 —
-## 출발점부터 지나간 자리까지 맵에 고정된 줄이 남는다(출발 바람 takeoff_wind와 같이 나온다).
+## 줄은 몸을 따라간다(2026-10-07부터 — 그 전엔 출발점에 고정돼 남았다).
 ## 2026-10-06 사용자 요청으로 다시 끔 — 하얀 줄은 점프에만 남긴다(Fighter._spawn_jump_speed_lines)
-@export var wind_lines: bool = false
+## 2026-10-07 사용자 요청으로 다시 켬 — "스피드 라인은 남아야 해"(바람 줄기 takeoff_wind만 끔)
+@export var wind_lines: bool = true
 ## 뒷바퀴 자리에 점프할 때와 같은 바람 줄기(combat/JumpWind.gd)를 진행 방향으로 뻗는다 — 출발 순간 + 돌진 내내 takeoff_wind_interval마다(2026-10-01 사용자 요청)
-@export var takeoff_wind: bool = true
+## 2026-10-07 사용자 요청으로 끔 — 자전거 뒤에 남던 삐죽한 하얀 줄기가 이것
+@export var takeoff_wind: bool = false
 ## 돌진 중 출발 바람을 몇 초마다 다시 뻗을지. 0이면 출발 순간 한 번만
 @export var takeoff_wind_interval: float = 0.12
 ## 출발 바람 줄기의 높이(캐릭터 원점 기준). 발바닥(+30)에 두면 가로 줄기 아래 절반이 땅에 묻혀 보여서 조금 올린다

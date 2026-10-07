@@ -28,6 +28,13 @@ const PARTS: Array = [
 		"tail": ["하양 고양이 꼬리.png", Rect2(240, 210, 1683, 305)],
 	},
 ]
+## 종류별 눈(머리 그림 픽셀, 테두리 포함 + 여유) [가운데, 크기, 털색] — 머리 그림을 바꾸면 다시 잴 것
+const EYES: Array = [
+	[Vector2(913, 620), Vector2(225, 160), Color8(42, 40, 40)],
+	[Vector2(857, 654), Vector2(265, 170), Color8(249, 156, 60)],
+	[Vector2(876, 719), Vector2(235, 190), Color8(252, 252, 252)],
+]
+const EYE_BLINK_SCRIPT := preload("res://characters/EyeBlink.gd")
 
 ## 고양이 전체 크기 배율 — 아래 px 값은 전부 배율 1 기준이다
 @export var size_scale: float = 1.5
@@ -66,10 +73,8 @@ var paw_reach: float = 0.0
 var pounce: float = 0.0
 ## 남은 시간(초) — 0보다 크면 머리를 까딱까딱(흰 고양이 핥기)
 var nod_left: float = 0.0
-## 눈 감기(피격) — 머리 그림 위에 감은 눈 금을 덮어 그린다
+## 눈 감기(피격) — 머리 그림의 눈을 털색 눈꺼풀(EyeBlink)로 덮으며 감는다
 var eyes_closed: bool = false
-## 감은 눈 금의 자리(머리 가운데 기준, 배율 1) — 머리 그림을 바꾸면 다시 맞출 것
-@export var eye_offset: Vector2 = Vector2(4.5, -2.0)
 
 static var _textures: Dictionary = {}
 static var _cropped: Dictionary = {}
@@ -83,8 +88,8 @@ var _paw_rest: Array[Vector2] = []
 var _age: float = 0.0
 ## 파츠를 담는 그릇 — size_scale만큼 키운다
 var _root: Node2D
-## 감은 눈 금(Line2D) — 머리보다 나중에 만들어 머리 위에 그려진다
-var _eye_lid: Line2D
+## 눈꺼풀(EyeBlink) — 머리 스프라이트의 자식이라 머리를 따라다닌다
+var _eye_lid: Node2D
 
 ## kind(0 검은 / 1 주황 / 2 흰)의 파츠 그림
 static func texture_of(cat_kind: int, part: String) -> Texture2D:
@@ -148,16 +153,19 @@ func _build() -> void:
 	var near_front := _paw(front_paw, false)
 	_head = _sprite("head", head_width)
 	_head.position = head_center
-	_eye_lid = Line2D.new()
-	_eye_lid.width = 1.8
-	_eye_lid.default_color = Color(0.12, 0.09, 0.08)
-	var lid_points := PackedVector2Array()
-	for i in 7:
-		var t: float = i / 6.0
-		lid_points.append(Vector2(lerpf(-3.2, 3.2, t), (1.0 - pow(t * 2.0 - 1.0, 2.0)) * 1.8))
-	_eye_lid.points = lid_points
-	_eye_lid.visible = false
-	_root.add_child(_eye_lid)
+	# 저절로 깜빡이진 않고(간격 9999) 맞았을 때만 감는다. 좌표는 머리 그림 픽셀, region 가운데가 원점
+	var eye: Array = EYES[kind]
+	_eye_lid = EYE_BLINK_SCRIPT.new()
+	_eye_lid.needs_rig = false
+	_eye_lid.position = eye[0] - bbox_of(kind, "head").get_center()
+	_eye_lid.eye_size = eye[1]
+	_eye_lid.skin_color = eye[2]
+	_eye_lid.line_width = 45.0
+	_eye_lid.close_time = 0.06
+	_eye_lid.open_time = 0.12
+	_eye_lid.interval_min = 9999.0
+	_eye_lid.interval_max = 9999.0
+	_head.add_child(_eye_lid)
 	_paws = [far_front, far_back, near_front, near_back]
 	_paw_rest = [far_front.position, far_back.position, near_front.position, near_back.position]
 	_apply_pose()
@@ -226,10 +234,8 @@ func _apply_pose() -> void:
 		var nod: float = sin(nod_left * 28.0)
 		_head.position += Vector2(1.5, nod * 2.0)
 		_head.rotation = nod * 0.14
-	# 감은 눈 — 머리를 따라다닌다
 	if _eye_lid:
-		_eye_lid.visible = eyes_closed
-		_eye_lid.position = _head.position + eye_offset
+		_eye_lid.held_closed = eyes_closed
 
 ## 꼬리 — 뿌리에서 tail_deg 쪽으로 뻗으며 끝으로 갈수록 위로 휘고, 물결이 뿌리에서 끝으로 흐른다.
 ## Line2D는 첫 점이 그림 왼쪽 끝이다 — 그림 왼쪽이 꼬리 끝이라 **끝 → 뿌리** 순서로 점을 넣는다

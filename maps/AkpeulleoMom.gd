@@ -17,6 +17,8 @@ signal vanished
 const DISPLAY_NAME := "악플러집 엄마"
 ## 몸 캡슐(r20 h60) 원점에서 발바닥까지
 const FEET_OFFSET := 30.0
+## 몸 캡슐 반지름 — 발판 끝에 반쯤 걸쳐 서 있을 수 있는 폭
+const BODY_RADIUS := 20.0
 ## 점프 스피드 라인 — 캐릭터 점프(`Fighter._spawn_jump_speed_lines`)와 같은 것
 const SPEED_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
 const JUMP_SPEED_LINE_TIME := 0.4
@@ -60,7 +62,7 @@ const EYE_GLOW := preload("res://maps/MomEyeGlow.gd")
 @export var smash_line_linger: float = 0.4
 
 ## 다른 문까지 이 시간(초) 안에 못 가면 그 자리에서 사라진다(길이 막혔을 때 영원히 남지 않게)
-@export var exit_timeout: float = 10.0
+@export var exit_timeout: float = 20.0
 ## 1단 점프로 못 올라가는 문 발판이면 문 아래 이 거리(px) 안까지 걸어간 뒤 한 번에 뛰어오른다
 @export var exit_leap_distance: float = 180.0
 ## 나타나고 사라지는 시간(초)
@@ -307,7 +309,9 @@ func _go_to(goal_x: float, goal_feet_y: float, delta: float) -> bool:
 			land_x = clampf(goal_x, _nav_next.left + 24.0, _nav_next.right - 24.0)
 		_walk(signf(land_x - x) if absf(land_x - x) > 8.0 else 0.0)
 		return true
-	var mine = _support_under(x, global_position.y + FEET_OFFSET)
+	# 발판 끝에 몸이 걸쳐 서 있어도(가운데가 끝을 넘어도) 그 발판으로 쳐야 한다 — 아니면 훨씬 아래 발판으로 잘못 잡혀
+	# "아래 계단으로 가라 / 다시 오른쪽으로 가라"를 번갈아 하며 끝에서 떤다(맨 위 발판 오른쪽 끝에서 실제로 겪음)
+	var mine = _support_under(x, global_position.y + FEET_OFFSET, BODY_RADIUS)
 	var goal = _support_under(goal_x, goal_feet_y)
 	if mine == null or goal == null or mine.id == goal.id:
 		_nav_next = null
@@ -426,10 +430,10 @@ func _add_platform(cs: Node) -> void:
 	})
 
 ## (x, feet_y) 바로 아래(또는 그 높이)에 있는 가장 높은 발판
-func _support_under(x: float, feet_y: float):
+func _support_under(x: float, feet_y: float, margin: float = 4.0):
 	var best = null
 	for p in _platforms:
-		if x < p.left - 4.0 or x > p.right + 4.0 or p.top < feet_y - 8.0:
+		if x < p.left - margin or x > p.right + margin or p.top < feet_y - 8.0:
 			continue
 		if best == null or p.top < best.top:
 			best = p

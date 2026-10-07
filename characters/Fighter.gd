@@ -59,6 +59,8 @@ const JUMP_SPEED_LINE_TIME: float = 0.4
 ## 점프 줄은 길에 수직(좌우)으로 이 범위 안에 퍼진다 — 세로로 뛰니 몸 폭 안쪽으로
 const JUMP_SPEED_LINE_SPREAD: Vector2 = Vector2(-18.0, 18.0)
 const DASH_TRAIL_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
+## 3타로 날아가는 동안 흘리는 옅은 연기(combat/LaunchSmoke.gd)
+const LAUNCH_SMOKE_SCRIPT := preload("res://combat/LaunchSmoke.gd")
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
 ## 촉법소년 자전거(DashSkill) 잔상과 같은 값이라 같은 느낌이 난다
 const AIR_TRAIL_INTERVAL: float = 0.04
@@ -100,6 +102,12 @@ static var landing_lag_time: float = 0.3
 const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
 ## 점프할 때 발밑에 남는 바람 줄기 (그림 없이 _draw()로 그린다)
 const JUMP_WIND_SCRIPT := preload("res://combat/JumpWind.gd")
+## 회복할 때 몸 주위에 터지는 연두색 십자가 이펙트
+const HEAL_BURST_SCRIPT := preload("res://combat/HealBurst.gd")
+## 이 회복량(HP)이면 회복 이펙트가 가장 크게 터진다 — 그보다 작으면 비례해서 작아진다
+const HEAL_BURST_FULL_AMOUNT: float = 30.0
+## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 흘러가는 이펙트(슬로우 물방울·공격력 칼 등)
+const STATUS_VFX_SCRIPT := preload("res://combat/StatusIconVfx.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
@@ -680,12 +688,47 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	_hitstun_time = time
 	play_launch_tumble(turns * launch_scale, time, d)
 	_finisher_stars = StunStars.spawn(self, time)
+	# 처음 날아갈 때만 — 추가타로 다시 날리는 건(이미 날아가는 중) 붙어 있는 걸 그대로 쓴다
+	if not _finisher_flying:
+		_spawn_finisher_flight_fx()
 	_finisher_flying = true
 	_finisher_fly_time = 0.0
 	_finisher_dir = d
 	# 날아가며 기절해 있는 동안 계속 추가 피격을 받을 수 있다(감지 시간 = 남은 기절 시간)
 	_finisher_window = time
 	_finisher_params = {"speed": speed, "pop": pop, "stun": stun, "turns": turns, "max_scale": max_scale, "shape": shape}
+
+## 3타로 날아가는 동안 몸 뒤로 **옅은** 연기와 스피드 라인을 흘린다(2026-10-06 사용자 요청 "미묘하게").
+## 둘 다 **맵에 붙이고** 날아가기가 끝나면(is_finisher_flying false) 알아서 멈춰 사라진다.
+## z는 몸과 같게 + 트리 순서만 몸 바로 앞 — 음수 z면 배경이 z 0인 맵에서 배경 뒤로 숨는다
+func _spawn_finisher_flight_fx() -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var smoke = LAUNCH_SMOKE_SCRIPT.new()
+	smoke.while_flying = true
+	smoke.burst_count = 0
+	smoke.trail_interval = 0.035
+	# 빠를수록 많이 — 300px/초일 때 0.035초마다 하나, 처음 확 날아갈 때(700~900)는 2~3배 촘촘하게
+	smoke.speed_ref = 300.0
+	smoke.speed_max_mult = 4.0
+	smoke.puff_life = 0.5
+	smoke.puff_radius_start = 4.0
+	smoke.puff_radius_end = 15.0
+	smoke.smoke_color = Color(0.85, 0.84, 0.82, 0.6)
+	parent.add_child(smoke)
+	smoke.setup(self, FINISHER_MAX_FLY_TIME)
+	smoke.z_index = z_index
+	parent.move_child(smoke, get_index())
+	var lines = DASH_TRAIL_LINES_SCRIPT.new()
+	lines.while_flying = true
+	lines.offset_along_normal = true
+	lines.line_count = 3
+	lines.spread_y = Vector2(-22.0, 22.0)
+	lines.line_color = Color(1.0, 1.0, 1.0, 0.35)
+	lines.trail_time = 0.18
+	parent.add_child(lines)
+	lines.setup(self, FINISHER_MAX_FLY_TIME)
 
 ## 3타에 맞고 날아가는 중(_finisher_window)에 벽에 부딪혔으면 반대쪽으로 튕겨 낸다 — apply_physics가 move_and_slide 직후 부른다.
 ## pre_vx는 **move_and_slide가 0으로 지우기 전의** 가로 속도. 튕긴 뒤엔 벽에서 멀어지므로 같은 벽에 또 걸리지 않는다
@@ -889,10 +932,21 @@ func _flash_hit() -> void:
 	tween.tween_property(visual, "modulate", _top_tint_color(), 0.15)
 	tween.tween_callback(_apply_top_tint)
 
-## HP를 회복시킨다 (최대 HP를 넘지 않음)
-func heal(amount: int) -> void:
+## HP를 회복시킨다 (최대 HP를 넘지 않음). show_vfx를 끄면 회복 이펙트 없이 조용히 채운다(라운드 리셋 등)
+func heal(amount: int, show_vfx: bool = true) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
+	if show_vfx and amount > 0:
+		_spawn_heal_burst(float(amount) / HEAL_BURST_FULL_AMOUNT)
+
+## 회복 이펙트를 띄운다. 착지 먼지와 같은 이유로 **맵에 붙이고**, 이펙트가 스스로 캐릭터를 따라온다
+func _spawn_heal_burst(power: float) -> void:
+	var map: Node = get_parent()
+	if map == null:
+		return
+	var burst := HEAL_BURST_SCRIPT.new()
+	map.add_child(burst)
+	burst.setup(self, power)
 
 ## 여러 상태이상 색조가 겹쳐도 서로 안 지우도록 관리하는 저장소. {id: Color} — 화면에는 가장 최근 것이 보이고,
 ## 그게 풀리면 그 전에 걸려있던 것으로 되돌아간다 (전부 사라지면 원래 색)
@@ -1515,6 +1569,35 @@ func apply_temp_multiplier(property: String, value: float, duration: float, from
 	_next_modifier_id += 1
 	set_modifier(property, id, value)
 	_after(duration, func(): clear_modifier(property, id))
+	# 스킬이 거는 슬로우는 전부 여기를 지나므로, 어느 캐릭터의 슬로우든 물방울 이펙트가 자동으로 붙는다
+	if property == "move_speed_multiplier" and value < 1.0:
+		show_status_vfx(&"slow", duration)
+
+## 종류별로 하나씩 들고 있는 상태 이펙트 {종류: StatusIconVfx}
+var _status_vfx: Dictionary = {}
+
+## 버프·디버프 아이콘 이펙트를 켠다(종류는 `StatusIconVfx.KINDS`). duration초 뒤 저절로 꺼지고, 0이면 hide_status_vfx까지 계속.
+## 이미 켜져 있으면 새로 만들지 않고 남은 시간만 늘린다. 착지 먼지와 같은 이유로 **맵에 붙인다**
+func show_status_vfx(kind: StringName, duration: float = 0.0) -> void:
+	var vfx = _status_vfx.get(kind)
+	if vfx != null and is_instance_valid(vfx) and not vfx.is_stopping():
+		vfx.extend(duration)
+		return
+	var map: Node = get_parent()
+	if map == null:
+		return
+	vfx = STATUS_VFX_SCRIPT.new()
+	vfx.kind = kind
+	map.add_child(vfx)
+	vfx.setup(self, duration)
+	_status_vfx[kind] = vfx
+
+## 버프·디버프 아이콘 이펙트를 끈다(떠 있던 아이콘은 마저 흘러가며 사라진다)
+func hide_status_vfx(kind: StringName) -> void:
+	var vfx = _status_vfx.get(kind)
+	_status_vfx.erase(kind)
+	if vfx != null and is_instance_valid(vfx):
+		vfx.stop()
 
 ## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지).
 ## 방어 중에 걸면 아예 안 붙는다 — 걸어두기만 하고 방어가 풀린 뒤 터지면 막은 의미가 없다

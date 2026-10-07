@@ -46,6 +46,14 @@ extends Node
 ## 이 거리(px) 안에 주울 수 있는 왕관이 있으면 싸움을 미루고 주우러 간다(놀이터 전용, 높이 상관없이 발판을 타고 올라간다)
 @export var crown_interest_range: float = 900.0
 
+@export_group("고양이·고양이 집")
+## 상대 고양이가 이 거리(px) 안에 있고 상대보다 가까우면 고양이부터 때린다
+@export var cat_attack_range: float = 140.0
+## 상대 고양이 집이 이 거리(px) 안에 있으면 부수러 간다(다른 층이면 발판을 타고 간다)
+@export var house_attack_range: float = 700.0
+## 상대가 이 거리(px) 안에 붙어 있으면 집보다 상대와 싸운다(집이 상대보다 가까우면 그래도 집)
+@export var house_ignore_target_distance: float = 260.0
+
 @export_group("구경 모드(타이틀)")
 ## 켜면 보여주기 위주로 싸운다(타이틀 전용, 2026-09-28 사용자 요청) — 붙어서 계속 치고받지 않고
 ## 잠깐 거리를 벌린 채 이단 점프·대시로 돌아다니다가 다가가서 스킬을 쓰거나 평타 3타 콤보를 한 번 치고 다시 빠진다.
@@ -94,6 +102,8 @@ var _nav_next = null
 var _nav_from_id: int = -1
 ## 뛰어오른 발판의 높이 — 공중에서 "더 올라가야 하는지" 판단용
 var _nav_takeoff_top: float = 0.0
+## 뚫고 못 내려가는 발판(고양이 집 지붕 등)에서 걸어 내려가는 중이면 그 발판 — 착지할 자리를 그 밖으로 민다(없으면 빈 사전)
+var _nav_step_off: Dictionary = {}
 ## 끼임 탈출 — 가려는데 제자리(비스듬한 미끄럼틀 밑처럼 벽이 아닌 천장에 막힘)면 반대로 물러났다가 뛰어오른다
 var _stuck_time: float = 0.0
 var _detour_left: float = 0.0
@@ -119,6 +129,8 @@ var _show_cross: float = 0.0
 var _show_combo: bool = false
 ## 슬롯별(스킬1·스킬2·궁) 준비된 채 못 쓰고 기다린 시간
 var _show_skill_wait: Array = [0.0, 0.0, 0.0]
+## 지금 때리러 가는 상대 고양이·고양이 집(없으면 null) — 그 집은 뛰어넘지 않는다
+var _side_target: Node2D = null
 
 @onready var fighter: Fighter = get_parent()
 
@@ -163,7 +175,7 @@ func _physics_process(delta: float) -> void:
 		_update_stuck(delta)
 		# 구경 모드에선 스킬 쓰러 다가갈 때만 상대 발판까지 길을 찾는다(평소엔 거리를 벌린다)
 		var nav_ok: bool = not showcase or _show_engage
-		if not _try_dodge_hazard() and not _run_detour(delta) and not _try_take_crown(delta) and not (nav_ok and (_walk_to_other_level() or _navigate_to_target(delta))):
+		if not _try_dodge_hazard() and not _run_detour(delta) and not _try_take_crown(delta) and not (not showcase and _try_hit_side_target(delta)) and not (nav_ok and (_walk_to_other_level() or _navigate_to_target(delta))):
 			if showcase:
 				_showcase_movement(delta)
 			else:
@@ -336,7 +348,9 @@ func _jump_obstacles() -> void:
 		return
 	var feet: float = _feet_y(fighter)
 	for node in get_tree().get_nodes_in_group("ai_jump_over"):
-		if not node.has_method("ai_obstacle_position"):
+		if not node.has_method("ai_obstacle_position") or node == _side_target:
+			continue
+		if node.has_method("ai_blocks") and not node.ai_blocks(fighter):
 			continue
 		var p: Vector2 = node.ai_obstacle_position()
 		var ahead: float = (p.x - fighter.global_position.x) * dir
@@ -464,6 +478,69 @@ func _try_take_crown(delta: float) -> bool:
 		fighter.jump()
 	return true
 
+# ---------------------------------------------------------------- 상대 고양이·고양이 집
+
+## 가까운 상대 고양이는 먼저 때리고, 상대가 멀면(또는 집이 더 가까우면) 상대 고양이 집을 부수러 간다.
+## 상대와 콤보를 잇는 중이면 끊지 않는다. 그쪽으로 움직였으면 true
+func _try_hit_side_target(delta: float) -> bool:
+	_side_target = null
+	var target_dist: float = _target_distance()
+	if _in_combo() and target_dist < _melee_reach + 30.0:
+		return false
+	var feet: float = _feet_y(fighter)
+	var cat: Node2D = null
+	var cat_dx: float = INF
+	for node in get_tree().get_nodes_in_group("catmom_cats"):
+		var c := node as Node2D
+		if c == null or c.is_queued_for_deletion() or c.get("owner_fighter") == fighter:
+			continue
+		var dx: float = absf(c.global_position.x - fighter.global_position.x)
+		if dx < cat_dx and dx < cat_attack_range and dx < target_dist and absf(c.global_position.y - feet) < 50.0:
+			cat = c
+			cat_dx = dx
+	if cat:
+		_side_target = cat
+		return _hit_side_target(cat, 24.0)
+	var house: Node2D = null
+	var house_dx: float = INF
+	for node in get_tree().get_nodes_in_group("cat_houses"):
+		# CatHouse 함수(is_built/ai_blocks)를 부르므로 타입 없이 받는다
+		var h = node
+		if not (h is Node2D) or h.is_queued_for_deletion() or not h.is_built() or not h.ai_blocks(fighter):
+			continue
+		var dx: float = absf(h.global_position.x - fighter.global_position.x)
+		if dx < house_dx and dx < house_attack_range and (target_dist > house_ignore_target_distance or dx < target_dist):
+			house = h
+			house_dx = dx
+	if house == null:
+		return false
+	_side_target = house
+	# 다른 층이면 집이 놓인 발판까지 길을 찾아간다(집 지붕도 발판으로 잡히므로 바닥 높이 바로 아래를 찾는다)
+	if absf(house.global_position.y - feet) > 40.0:
+		var goal = _support_under(house.global_position.x, house.global_position.y - 2.0)
+		if goal != null and _navigate(goal, house.global_position.x, delta):
+			return true
+		if not fighter.is_on_floor():
+			return false
+	return _hit_side_target(house, 32.0)
+
+## obj(바닥 가운데가 원점, 반폭 half)에 평타가 닿는 자리까지 가서 때린다
+func _hit_side_target(obj: Node2D, half: float) -> bool:
+	var dx: float = obj.global_position.x - fighter.global_position.x
+	var reach: float = (float(fighter.basic_attack.get("range")) if fighter.basic_attack and fighter.basic_attack.get("range") != null else 40.0) + half
+	if absf(dx) > reach:
+		fighter.move(signf(dx))
+		if absf(dx) > dash_approach_distance and fighter.is_on_floor():
+			fighter.dash(signf(dx))
+		return true
+	fighter.move(0.0)
+	if not is_zero_approx(dx):
+		fighter.facing = signf(dx)
+	var ba: Skill = fighter.basic_attack
+	if ba and ba.can_use() and not fighter.is_basic_attack_locked() and not fighter.is_busy():
+		fighter.use_basic_attack()
+	return true
+
 # ---------------------------------------------------------------- 발판 길찾기
 
 ## 맵의 발판·바닥(StaticBody2D의 직사각형 충돌)을 1초마다 다시 모은다 — 부서지는 발판(공사현장)이 사라지고 돌아오므로
@@ -490,7 +567,8 @@ func _collect(node: Node, pads: Array) -> void:
 			continue
 		if child is SpringJumpPad:
 			pads.append(child)
-		if child is StaticBody2D and not (child.get("_broken") == true):
+		# 나는 통과하는 몸(자기 고양이 집 등)은 발판으로 안 친다
+		if child is StaticBody2D and not (child.get("_broken") == true) and not fighter.get_collision_exceptions().has(child):
 			for cs in child.get_children():
 				_add_platform(cs)
 		_collect(child, pads)
@@ -646,6 +724,8 @@ func _navigate(goal: Dictionary, goal_x: float, delta: float) -> bool:
 		_nav_air_control(goal_x)
 		return true
 	var mine = _current_support()
+	if mine == null or not _nav_step_off.has("id") or _nav_step_off.id != mine.id:
+		_nav_step_off = {}
 	if mine == null or mine.id == goal.id:
 		_nav_next = null
 		return false
@@ -681,11 +761,30 @@ func _nav_ground_step(cur: Dictionary, nxt: Dictionary, goal_x: float) -> void:
 	if cur.one_way and _no_drop_left <= 0.0 and nxt.top > cur.top + 4.0 and x > nxt.left + 10.0 and x < nxt.right - 10.0:
 		if fighter.drop_through_platform():
 			return
+	# 뚫고 못 내려가는 발판(고양이 집 지붕) — 내릴 자리가 발판 위면 가장자리 밖으로 걸어 나간다.
+	# 안 그러면 목표(집 한가운데)에 서서 내려가지도 못하고 멈춘다
+	if not cur.one_way and nxt.top > cur.top + 4.0:
+		var out: float = _outside_of(cur, land_x, x)
+		# 그쪽이 아래 발판 밖(벽에 붙여 지은 집)이면 반대쪽으로
+		if out < nxt.left + 20.0 or out > nxt.right - 20.0:
+			out = cur.right + 28.0 if out < cur.left else cur.left - 28.0
+		_nav_step_off = {"id": cur.id, "left": cur.left, "right": cur.right, "x": out}
+		land_x = clampf(out, nxt.left + 20.0, nxt.right - 20.0)
 	fighter.move(signf(land_x - x) if absf(land_x - x) > 6.0 else 0.0)
 	# 옆 발판이 거의 같은 높이인데 사이가 비었으면 가장자리에서 뛰어 건넌다
 	var near_edge: bool = x > cur.right - 18.0 or x < cur.left + 18.0
 	if fighter.is_on_wall() or (near_edge and nxt.top < cur.top + 40.0 and (nxt.left > cur.right or nxt.right < cur.left)):
 		fighter.jump()
+
+## want_x가 발판 p 위(몸 반폭 포함)면 p 바깥 가장자리 쪽으로 민다 — want_x에 가까운 쪽, 같으면 지금 x에 가까운 쪽
+func _outside_of(p: Dictionary, want_x: float, x: float) -> float:
+	var left: float = p.left - 28.0
+	var right: float = p.right + 28.0
+	if want_x <= left or want_x >= right:
+		return want_x
+	var mid: float = (p.left + p.right) * 0.5
+	var pick: float = want_x if not is_equal_approx(want_x, mid) else x
+	return left if pick < mid else right
 
 ## cur 위 어디서 뛰어야 nxt에 닿는지
 func _takeoff_x(cur: Dictionary, nxt: Dictionary, x: float) -> float:
@@ -713,6 +812,8 @@ func _nav_air_control(goal_x: float) -> void:
 	var x: float = fighter.global_position.x
 	var feet: float = _feet_y(fighter)
 	var land_x: float = clampf(goal_x, p.left + 24.0, p.right - 24.0)
+	if _nav_step_off.has("id") and land_x > _nav_step_off.left - 28.0 and land_x < _nav_step_off.right + 28.0:
+		land_x = _nav_step_off.x
 	var going_up: bool = p.top < _nav_takeoff_top - 4.0
 	if not going_up or p.one_way or feet < p.top - 2.0:
 		fighter.move(signf(land_x - x) if absf(land_x - x) > 8.0 else 0.0)
@@ -1060,12 +1161,12 @@ func _want_skill(skill: Skill) -> bool:
 			# 짓는 2초 동안 서 있으므로 상대가 떨어져 있을 때만
 			return fighter.is_on_floor() and d > 220.0
 		"CatUltimate":
-			# 검은 고양이(똥 유탄)는 사거리 안에서, 흰 고양이(할퀴기)는 붙었을 때, 주황 고양이 옷은 언제든
+			# 검은 고양이(똥 유탄)는 사거리 안에서, 흰 고양이(회복 30%)는 체력이 60% 아래일 때, 주황 고양이 옷은 언제든
 			match int(fighter.custom_data.get("cat_kind", 0)):
 				0:
 					return level and d > 80.0 and d < float(skill.get("poop_range"))
 				2:
-					return level and d < 150.0
+					return hp < 0.6
 			return true
 		"CatSelectSkill":
 			# 체력이 깎였으면 흰(회복), 멀면 검은(돌진), 가까우면 주황(할퀴기) — 원하는 종류가 될 때까지 누른다

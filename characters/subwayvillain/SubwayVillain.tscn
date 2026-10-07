@@ -59,6 +59,9 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("20_combo")
+windup = 0.096
+swing_duration = 0.24
+finisher_windup = 0.223
 range = 40.0
 active_duration = 0.1
 pushback_base = 6.0
@@ -67,11 +70,9 @@ lunge_follows_pushback = true
 combo_lunge = Array[float]([0.0, 60.0, 120.0])
 combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
 combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
-windup = 0.16
 dual_combo_windup = Array[float]([0.0, 0.24, 0.0])
 cooldown = 0.3
 miss_cooldown = 1.0
-finisher_windup = 0.223
 skill_name = "단소 작렬"
 demo_video = ExtResource("50_vid_combo")
 description = "단소로 3연타. 마지막 타는 X자로 베어 멀리 날린다. 궁극기 중에는 1타에 리코더를 던진다."

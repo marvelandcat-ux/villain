@@ -355,6 +355,8 @@ func _execute(fighter: Fighter) -> void:
 	_armed_fighter = fighter
 	_left = duration
 	fighter.set_modifier("attack_debuff_multiplier", MODIFIER_ID, damage_multiplier)
+	# 공격력이 오른 동안 빨간 칼 아이콘이 몸 근처에서 떠오른다(끄는 건 _disarm)
+	fighter.show_status_vfx(&"attack_up")
 	# 궁 중에는 방어가 더 오래 버틴다 (1.0 → 1.5초)
 	fighter.guard_duration_bonus = guard_duration_bonus
 	# 궁 중에는 평타가 한 타 더 나간다 (3타 → 4타)
@@ -382,6 +384,7 @@ func _disarm() -> void:
 		_armed_fighter = null
 		return
 	_armed_fighter.clear_modifier("attack_debuff_multiplier", MODIFIER_ID)
+	_armed_fighter.hide_status_vfx(&"attack_up")
 	_armed_fighter.guard_duration_bonus = 0.0
 	_armed_fighter.pass_through_fighters = false
 	_set_bonus_hits(_armed_fighter, 0)

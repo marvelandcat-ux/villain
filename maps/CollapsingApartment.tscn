@@ -1,8 +1,8 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://c40oru3rpq72f"]
 
-[ext_resource type="Script" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
-[ext_resource type="Script" path="res://maps/CameraRig.gd" id="3"]
+[ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="2"]
+[ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
 [ext_resource type="PackedScene" path="res://maps/BreakablePlatform.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://skills/GroundPoundSkill.tscn" id="5"]
 
@@ -12,75 +12,75 @@ size = Vector2(1200, 40)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 1600)
 
-[node name="CollapsingApartment" type="Node2D"]
+[node name="CollapsingApartment" type="Node2D" unique_id=225962209]
 script = ExtResource("1")
 stage_width = 1200.0
 map_skill_scene = ExtResource("5")
 
-[node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(0, 0)
+[node name="Ground" type="StaticBody2D" parent="." unique_id=606963466]
 
-[node name="GroundCollision" type="CollisionShape2D" parent="Ground"]
+[node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=1955947739]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+[node name="GroundVisual" type="Polygon2D" parent="Ground" unique_id=2120833086]
 color = Color(0.42, 0.38, 0.36, 1)
 polygon = PackedVector2Array(-600, -20, 600, -20, 600, 20, -600, 20)
 
-[node name="LeftWall" type="StaticBody2D" parent="."]
+[node name="LeftWall" type="StaticBody2D" parent="." unique_id=158929229]
 position = Vector2(-600, -800)
 
-[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
+[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall" unique_id=1771255818]
 shape = SubResource("RectangleShape2D_wall")
 
-[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall"]
+[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall" unique_id=354363525]
 position = Vector2(0, 420)
 color = Color(0.58, 0.53, 0.48, 1)
 polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
 
-[node name="RightWall" type="StaticBody2D" parent="."]
+[node name="RightWall" type="StaticBody2D" parent="." unique_id=398786206]
 position = Vector2(600, -800)
 
-[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
+[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall" unique_id=149214293]
 shape = SubResource("RectangleShape2D_wall")
 
-[node name="RightWallVisual" type="Polygon2D" parent="RightWall"]
+[node name="RightWallVisual" type="Polygon2D" parent="RightWall" unique_id=801201503]
 position = Vector2(0, 420)
 color = Color(0.58, 0.53, 0.48, 1)
 polygon = PackedVector2Array(-20, -420, 20, -420, 20, 420, -20, 420)
 
-[node name="Floor1" parent="." instance=ExtResource("4")]
+[node name="Floor1" parent="." unique_id=808194654 instance=ExtResource("4")]
 position = Vector2(-250, -180)
 
-[node name="Floor2" parent="." instance=ExtResource("4")]
+[node name="Floor2" parent="." unique_id=2065563203 instance=ExtResource("4")]
 position = Vector2(250, -350)
 
-[node name="Floor3" parent="." instance=ExtResource("4")]
+[node name="Floor3" parent="." unique_id=1697665724 instance=ExtResource("4")]
 position = Vector2(-250, -520)
 
-[node name="Floor4" parent="." instance=ExtResource("4")]
+[node name="Floor4" parent="." unique_id=696112717 instance=ExtResource("4")]
 position = Vector2(250, -690)
 
-[node name="PlayerSpawn1" type="Marker2D" parent="."]
+[node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=183487021]
 position = Vector2(-300, -40)
 
-[node name="PlayerSpawn2" type="Marker2D" parent="."]
+[node name="PlayerSpawn2" type="Marker2D" parent="." unique_id=1447385515]
 position = Vector2(300, -40)
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2019960152]
 position = Vector2(0, -40)
 script = ExtResource("3")
 min_y = -700.0
 max_y = 0.0
 
-[node name="CombatHUD" parent="." instance=ExtResource("2")]
+[node name="CombatHUD" parent="." unique_id=1746508109 instance=ExtResource("2")]
 
-[node name="HintLayer" type="CanvasLayer" parent="."]
+[node name="HintLayer" type="CanvasLayer" parent="." unique_id=1543680179]
 
-[node name="HintLabel" type="Label" parent="HintLayer"]
+[node name="HintLabel" type="Label" parent="HintLayer" unique_id=1781916080]
+anchors_preset = 7
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -260.0
 offset_top = -48.0
@@ -90,5 +90,5 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 18
-horizontal_alignment = 1
 text = "공중에서 아래 방향키(P1: S / P2: ↓)로 내리찍기 — 발판을 부수고 떨어진다"
+horizontal_alignment = 1

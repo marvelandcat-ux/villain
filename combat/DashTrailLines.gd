@@ -22,6 +22,8 @@ class Line:
 @export var spread_y: Vector2 = Vector2(-40.0, 24.0)
 ## true면 spread_y만큼 위아래가 아니라 **지나간 길에 수직으로** 띄운다(점프처럼 세로로 움직일 때)
 @export var offset_along_normal: bool = false
+## 켜면 life와 상관없이 **시전자가 3타로 날아가는 동안만**(`is_finisher_flying()`) 기록한다
+@export var while_flying: bool = false
 ## 꼬리에 남기는 시간(초) — 이보다 오래된 자리는 지워진다. 길수록 꼬리가 길다
 @export var trail_time: float = 0.25
 ## 앞쪽 끝이 투명해지는 길이(px) — 줄이 짧으면 줄 길이의 30%까지만
@@ -68,7 +70,8 @@ func _process(delta: float) -> void:
 	_time += delta
 	if _end_time < 0.0:
 		_left -= delta
-		if _left > 0.0 and is_instance_valid(_caster):
+		var flying: bool = not while_flying or (is_instance_valid(_caster) and _caster.has_method("is_finisher_flying") and _caster.call("is_finisher_flying"))
+		if _left > 0.0 and flying and is_instance_valid(_caster):
 			_record()
 		else:
 			_end_time = _time

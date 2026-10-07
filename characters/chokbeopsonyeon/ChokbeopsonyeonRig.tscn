@@ -71,6 +71,7 @@ head_back_anchor = Vector3(625, 747, 863)
 body_turn_textures = Array[Texture2D]([ExtResource("92_body_turn1"), ExtResource("91_body_turn2")])
 gun_hides_held_item = true
 p2_body_texture = ExtResource("60_p2body")
+ride_lift = 7.0
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]
 visible = false

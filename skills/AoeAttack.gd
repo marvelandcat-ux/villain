@@ -27,5 +27,9 @@ func _execute(fighter: Fighter) -> void:
 		hitbox.area_entered.disconnect(_on_hit_apply_slow)
 
 func _on_hit_apply_slow(area: Area2D) -> void:
-	if area is Hurtbox and area.fighter != hitbox.source_fighter:
-		area.fighter.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, slow_duration)
+	if not (area is Hurtbox) or area.fighter == hitbox.source_fighter:
+		return
+	# 고양이 집 같은 HP 오브젝트는 슬로우를 받을 수 없다
+	var target := area.fighter as Fighter
+	if target:
+		target.apply_temp_multiplier("move_speed_multiplier", slow_multiplier, slow_duration)

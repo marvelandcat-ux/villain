@@ -55,6 +55,9 @@ var _solid: StaticBody2D = null
 
 func _ready() -> void:
 	current_hp = max_hp
+	# AI가 부수러 오는 목표(cat_houses), 길을 막으면 뛰어넘는 방해물(ai_jump_over)
+	add_to_group("cat_houses")
+	add_to_group("ai_jump_over")
 
 ## 짓는 정도(0~1)를 정한다 — 아래부터 차오른다
 func set_progress(t: float) -> void:
@@ -114,6 +117,18 @@ func _add_solid() -> void:
 		if cat is PhysicsBody2D and is_instance_valid(cat):
 			cat.add_collision_exception_with(_solid)
 			_solid.add_collision_exception_with(cat)
+
+## 다 지어서 맞을 수 있는(부술 수 있는) 상태인지 — AI가 본다
+func is_built() -> bool:
+	return _built and current_hp > 0
+
+## AI가 뛰어넘을 자리(바닥 가운데 조금 위) — 다 짓기 전엔 안 막으니 ai_blocks가 false
+func ai_obstacle_position() -> Vector2:
+	return global_position + Vector2(0.0, -10.0)
+
+## 이 집이 f를 막는지 — 다 지은 집만, 지은 사람은 통과한다
+func ai_blocks(f: Node) -> bool:
+	return _built and not (_has_owner and f == owner_fighter)
 
 func take_damage(amount: int, _knockback: Vector2 = Vector2.ZERO, _pop_override: float = -1.0, _ignore_guard: bool = false) -> void:
 	if not _built or current_hp <= 0:

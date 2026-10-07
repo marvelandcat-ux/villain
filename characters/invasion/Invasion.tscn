@@ -36,8 +36,10 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
+windup = 0.096
+swing_duration = 0.24
+finisher_windup = 0.223
 range = 40.0
-windup = 0.17
 cooldown = 0.3
 miss_cooldown = 1.0
 pushback_base = 6.0
@@ -46,7 +48,6 @@ lunge_follows_pushback = true
 combo_lunge = Array[float]([0.0, 60.0, 120.0])
 combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
 combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
-finisher_windup = 0.223
 skill_name = "평타"
 description = "아직 임시 평타다. 주먹을 번갈아 내지르고 마지막에 크게 휘두른다."
 

@@ -44,6 +44,9 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
+windup = 0.096
+swing_duration = 0.24
+finisher_windup = 0.223
 range = 40.0
 active_duration = 0.1
 pushback_base = 6.0
@@ -52,10 +55,8 @@ lunge_follows_pushback = true
 combo_lunge = Array[float]([0.0, 60.0, 120.0])
 combo_lunge_time = Array[float]([0.0, 0.24, 0.34])
 combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
-windup = 0.16
 cooldown = 0.3
 miss_cooldown = 1.0
-finisher_windup = 0.223
 skill_name = "원투 박치기"
 description = "주먹을 번갈아 두 번 찌르고 마지막에 머리로 내리박는다. 맞아야 다음 타가 나가고, 헛치면 처음부터 다시다."
 
