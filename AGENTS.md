@@ -84,7 +84,7 @@
 
 ## 조작 / AI
 
-- P1: A/D·W 점프·S 방어·F 평타·G/H 스킬·R 궁·E 맵 스킬 / P2: ←→·↑·↓·L·;·'·]·[. 대시 = 이동키 두 번, 발판 내려가기 = 아래+점프. ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION` 올릴 것**
+- P1: A/D·W 점프·S 아래·F 평타·G/H 스킬·R 궁·E 맵 스킬 / P2: ←→·↑·↓·L·;·'·]·[. 대시 = 이동키 두 번, 발판 내려가기 = 아래키 두 번(원웨이 발판 위에서만), **방어 = 평타+스킬1 동시**(`GUARD_CHORD_WINDOW` 0.06초 동안 짝을 기다려서 혼자 누른 평타·스킬1은 그만큼 늦게 나감). ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION` 올릴 것**
 - ⚠️ `move()`/`dash()`가 `facing`도 바꿈 → 후퇴 직후 되돌릴 것
 - AI 발판 길찾기 그룹: `"ai_jump_over"`, `"ai_danger_zone"` → `"ai_safe_spot"`. 기믹 위험 판정은 `can_process()`인 것만
 

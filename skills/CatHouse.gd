@@ -120,6 +120,15 @@ func _add_solid() -> void:
 			cat.add_collision_exception_with(_solid)
 			_solid.add_collision_exception_with(cat)
 
+## 집이 사라지면 벽(_solid)도 같이 사라진다 — 걸어 둔 예외를 상대 쪽에서 지운다(안 지우면 AI 발판 찾기가 오류를 낸다)
+func _exit_tree() -> void:
+	if _solid == null or not is_instance_valid(_solid):
+		return
+	for group in ["fighters", "catmom_cats", "iljin_crew"]:
+		for body in get_tree().get_nodes_in_group(group):
+			if body is PhysicsBody2D and is_instance_valid(body):
+				body.remove_collision_exception_with(_solid)
+
 ## 다 지어서 맞을 수 있는(부술 수 있는) 상태인지 — AI가 본다
 func is_built() -> bool:
 	return _built and current_hp > 0

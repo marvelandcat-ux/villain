@@ -84,6 +84,11 @@ var _external_hit: bool = false
 ## 히트박스의 debris_scene(주정뱅이 술방울)을 **마무리 3타에서만** 뿌릴지.
 ## 매 타 뿌리면 한 병으로 세 번 깨지는 꼴이라 어색하고 바닥에 계속 쌓인다
 @export var debris_final_hit_only: bool = true
+## 평타가 맞았을 때 나는 소리. 비면 공용 펀치 소리(`DEFAULT_PUNCH_SOUND`)를 쓴다 —
+## 무기 든 캐릭터는 여기에 자기 소리를 넣으면 된다. 판정에 `hit_sound`가 이미 있으면 그쪽이 먼저다
+@export var punch_sound: AudioStream
+## 마무리 타 소리 음높이(1보다 낮을수록 묵직하다). 1·2타는 1
+@export var finisher_sound_pitch: float = 0.78
 ## 이만큼 맞히면 손에 든 무기가 부서진 그림으로 바뀐다(주정뱅이 소주병 -> 깨진 소주병). 0이면 안 부서진다.
 ## 맞힌 횟수만 세고 헛친 건 안 센다. 라운드가 바뀌면 씬이 새로 만들어지면서 0부터 다시 센다
 @export var break_after_hits: int = 0
@@ -207,6 +212,8 @@ const LAUNCH_SMOKE := preload("res://combat/LaunchSmoke.gd")
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 const JUMP_WIND := preload("res://combat/JumpWind.gd")
 const SLASH_ARC := preload("res://combat/SlashArc.gd")
+## 평타 공용 펀치 소리(`punch_sound`가 비었을 때)
+const DEFAULT_PUNCH_SOUND := "res://Sound/펀치피격.wav"
 
 ## --- 드롭킥 마무리 (촉법소년 3타) ---
 ## 켜면 마무리 타가 "뛰어올라 두 발로 차고 넘어졌다 일어나는" 드롭킥이 된다.
@@ -387,6 +394,8 @@ func _windup_for(step: int, fighter: Fighter) -> float:
 
 func _ready() -> void:
 	_base_hitstop = hitbox.hitstop_time if hitbox else 0.0
+	if hitbox and hitbox.hit_sound == null:
+		hitbox.hit_sound = punch_sound if punch_sound != null else load(DEFAULT_PUNCH_SOUND)
 	super()   # start_on_cooldown 처리 (기본공격은 꺼져 있지만 규칙을 깨지 않는다)
 	# 명중하는 순간(스윙 진행 중이면) 곧바로 "맞음"으로 판정한다
 	hitbox.connected.connect(_on_hitbox_connected)
@@ -787,6 +796,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		return
 	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
 	var push_scale: float = finisher_distance_scale if is_final else 1.0
+	hitbox.hit_sound_pitch = finisher_sound_pitch if is_final else 1.0
 	if d != null:
 		hitbox.damage = fighter.compute_basic_damage(d.damage + bonus_damage)
 		hitbox.knockback = Vector2(d.knockback.x * fighter.facing * push_scale, d.knockback.y)

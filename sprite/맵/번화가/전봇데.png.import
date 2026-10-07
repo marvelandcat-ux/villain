@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://i1h6v3waqrbo"
-path="res://.godot/imported/gs25.png-5c98b5cb5f3acf5d635870240ced7280.ctex"
+uid="uid://bi7j3vhhfag8k"
+path="res://.godot/imported/전봇데.png-c5ea8131bd1f398b494b45a87e64b3dc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/번화가/gs25.png"
-dest_files=["res://.godot/imported/gs25.png-5c98b5cb5f3acf5d635870240ced7280.ctex"]
+source_file="res://sprite/맵/번화가/전봇데.png"
+dest_files=["res://.godot/imported/전봇데.png-c5ea8131bd1f398b494b45a87e64b3dc.ctex"]
 
 [params]
 

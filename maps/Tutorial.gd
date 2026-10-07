@@ -167,6 +167,10 @@ func _key(action: String) -> String:
 func _k(action: String) -> String:
 	return _em(_key(action))
 
+## 방어 키 이름 — 기본공격 + 스킬1을 같이 누른다(PlayerController.GUARD_CHORD_WINDOW)
+func _guard_key() -> String:
+	return "%s+%s" % [_key("basic_attack"), _key("skill_1")]
+
 ## 대사 한 줄. gate = 이 행동을 해야 넘어감 / phase = 스페이스 뒤 시작할 실습 / goal = 알약 문구
 func _line(text: String, extra: Dictionary = {}) -> Dictionary:
 	var d := {"text": text}
@@ -213,15 +217,15 @@ func _build_lines() -> Array[Dictionary]:
 		_line("기본 공격 수준을 보아하니 평소에 %s 했겠군 %s" % [_em("게임만"), _em("신병")]),
 		# --- 방어 / 패링 ---
 		_line("이제 %s와 %s을 알려주지" % [_em("방어"), _em("패링")]),
-		_line("방어는 %s키다. 누른 순간부터 %s 동안 %s이 켜지고, 맵에서 나오는 %s 말고는 %s를 막는다" % [_k("down"), _em(guard_sec), _em("보호막"), _em("기믹 피해"), _em("모든 피해")]),
+		_line("방어는 %s 동시에 누르기다. 누른 순간부터 %s 동안 %s이 켜지고, 맵에서 나오는 %s 말고는 %s를 막는다" % [_em(_guard_key()), _em(guard_sec), _em("보호막"), _em("기믹 피해"), _em("모든 피해")]),
 		_line("방어 중엔 %s. 그리고 %s %s가 있다 — 방어 %s 로 네 %s에 표시된다" % [_em("움직이지도 때리지도 못한다"), _em("쿨타임"), _em(guard_cd), _bubble.icon("guard"), _em("뒤쪽")]),
 		_line("한번 %s 봐라!" % _em("눌러"),
-			{"gate": "guard", "goal": "%s 키를 눌러 방어하세요" % _key("down")}),
+			{"gate": "guard", "goal": "%s 키를 같이 눌러 방어하세요" % _guard_key()}),
 		_line("좋다. 이제 %s이다" % _em("패링")),
 		_line("방어 중에 상대의 기본 공격을 %s 피해를 받지 않고, 때린 상대는 %s 동안 %s" % [_em("막아내면"), _em(lock_sec), _em("기본 공격을 못 쓰게 된다")]),
 		_line("막힌 쪽 %s에는 빨간 %s 가 뜬다. X가 사라질 때까지 그놈은 주먹을 못 쓴다" % [_em("뒤쪽"), _bubble.icon("parry")]),
-		_line("내가 %s을 할 테니 때리는 %s에 맞춰 %s! 너의 %s을 보여줘라 알겠나!?" % [_em("기본 공격"), _em("순간"), _k("down"), _em("패링")],
-			{"phase": "parry", "goal": "교관이 때리는 순간에 맞춰 %s 키로 막으세요" % _key("down")}),
+		_line("내가 %s을 할 테니 때리는 %s에 맞춰 %s! 너의 %s을 보여줘라 알겠나!?" % [_em("기본 공격"), _em("순간"), _em(_guard_key()), _em("패링")],
+			{"phase": "parry", "goal": "교관이 때리는 순간에 맞춰 %s 키로 막으세요" % _guard_key()}),
 		_line("좋다 %s" % _em("신병")),
 		# --- 대시 ---
 		_line("이제 %s다. %s 또는 %s를 %s 눌러라" % [_em("대시"), _k("left"), _k("right"), _em("빠르게 2번 연속")],

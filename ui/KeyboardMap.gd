@@ -34,12 +34,12 @@ const KEYCAP_FACE := 0.424
 const ACTIONS := ["left", "right", "jump", "down", "basic_attack", "skill_1", "skill_2", "ultimate", "map_skill"]
 
 ## 키 위에 적을 이름. 좌우는 한 쌍이라 둘 다 "좌우이동"이다.
-## 아래 키는 방어 전용이 됐고(2026-09-30), 맵 전용 스킬은 자기 키가 따로 생겼다
+## 아래 키는 발판 내려가기(두 번) 전용이다 — 방어는 기본공격+스킬1 동시 누르기(2026-10-08). 맵 전용 스킬은 자기 키가 따로 있다
 const ACTION_LABELS := {
 	"left": "좌우이동",
 	"right": "좌우이동",
 	"jump": "점프",
-	"down": "가드",
+	"down": "내려가기",
 	"basic_attack": "기본공격",
 	"skill_1": "스킬1",
 	"skill_2": "스킬2",
