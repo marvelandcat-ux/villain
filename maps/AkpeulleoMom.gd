@@ -115,6 +115,14 @@ func _ready() -> void:
 		_bubble.bubble_center = Vector2(absf(_bubble.bubble_center.x) * _facing, _bubble.bubble_center.y)
 		_say(line, line_time)
 
+## 사라질 때 걸어 둔 몸 충돌 예외를 상대 쪽에서도 지운다 — 안 지우면 상대 목록에 사라진 몸이 남아
+## `get_collision_exceptions()`(AI 발판 찾기)를 부를 때마다 "body is null" 오류가 난다
+func _exit_tree() -> void:
+	for group in ["fighters", "catmom_cats", "iljin_crew", "cat_house_solids"]:
+		for body in get_tree().get_nodes_in_group(group):
+			if body != self and body is PhysicsBody2D and is_instance_valid(body):
+				body.remove_collision_exception_with(self)
+
 func _physics_process(delta: float) -> void:
 	delta = minf(delta, 0.05)
 	_state_time += delta

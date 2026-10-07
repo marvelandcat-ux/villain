@@ -392,6 +392,14 @@ func _clear_face() -> void:
 
 ## 중력·마찰·이동. **캐릭터와 같은 중력(`Fighter.gravity`)을 쓴다** — 훈련장에서 중력을 바꾸면 같이 따라간다.
 ## 쓰러지는 중에는 건드리지 않는다(판정·충돌을 이미 껐으므로 그대로 두면 바닥을 뚫고 내려간다)
+## 사라질 때 걸어 둔 몸 충돌 예외를 상대 쪽에서도 지운다 — 안 지우면 상대 목록에 사라진 몸이 남아
+## `get_collision_exceptions()`(AI 발판 찾기)를 부를 때마다 "body is null" 오류가 난다
+func _exit_tree() -> void:
+	for group in ["fighters", "catmom_cats", "iljin_crew", "cat_house_solids"]:
+		for body in get_tree().get_nodes_in_group(group):
+			if body != self and body is PhysicsBody2D and is_instance_valid(body):
+				body.remove_collision_exception_with(self)
+
 func _physics_process(delta: float) -> void:
 	if _dying:
 		return

@@ -115,6 +115,10 @@ func stop() -> void:
 	if _stopping:
 		return
 	_stopping = true
+	# 라운드가 끝나 씬이 내려가는 중(트리 밖)이면 타이머를 못 돌린다 — 그냥 바로 지운다
+	if not is_inside_tree():
+		queue_free()
+		return
 	Timers.self_destruct(self, float(_cfg.get("life", 1.0)) + 0.1)
 
 func is_stopping() -> bool:
