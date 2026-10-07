@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/로고바꾼경찰서.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
+
 [node name="StoryScene14" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -12,9 +15,9 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.9
-hold_time = 0.4
 dialogue = NodePath("DialogueBox")
 reveal = Array[NodePath]([NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("Room/Police")])
 next_scene = "res://ui/story/StoryScene15.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
@@ -27,10 +30,22 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
+[node name="Room" type="Node2D" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="Room"]
+scale = Vector2(0.883978, 0.883978)
+texture = ExtResource("2")
+centered = false
+
+[node name="Police" type="Sprite2D" parent="Room"]
+position = Vector2(640, 430)
+scale = Vector2(0.46, 0.46)
+texture = ExtResource("3")
+
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
 speaker = "나레이션"
-lines = PackedStringArray("악플러가 자주 목격되었다는 동영상 플랫폼으로 출동한 경찰", "주인공|아 여기 말투가 비슷한 댓글이 있군.")
+lines = PackedStringArray("악플러가 자주 목격되었다는 동영상 플랫폼으로 출동한 경찰", "@enter Room/Police 0.35", "주인공|아 여기 말투가 비슷한 댓글이 있군.")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

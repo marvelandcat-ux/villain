@@ -30,7 +30,7 @@ color = Color(0, 0, 0, 1)
 
 [node name="LocationCard" parent="." instance=ExtResource("2")]
 layout_mode = 1
-subtitle = "장소 변경"
+subtitle = "사건현장"
 title = "악플러의 집 앞"
 
 [node name="Fade" type="ColorRect" parent="."]

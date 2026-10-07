@@ -15,7 +15,7 @@ mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.8
 dialogue = NodePath("DialogueBox")
-reveal = Array[NodePath]([NodePath("Screen"), NodePath("DialogueBox")])
+reveal = Array[NodePath]([NodePath("Screen")])
 fade_out_time = 1.2
 next_scene = "res://ui/story/StoryScene16.tscn"
 
@@ -41,11 +41,11 @@ script = ExtResource("5")
 root_comment = "ㅇㅇ|진짜 못생겼네 ㅋㅋㅋ 그냥 성형수술 해라 ㅋㅋ"
 replies = PackedStringArray("민폐퇴치부|말씀이 너무 거치신 거 같습니다.", "ㅇㅇ|어쩌라고 ㅋㅋ 내가 쓰겠다는데 뭔 상관이야", "ㅇㅇ|니가 뭘 할 수 있는데", "민폐퇴치부|집으로 방문할 수 있습니다.", "ㅇㅇ|아 그래? 우리 집 뭐뭐동 뭐뭐 빌라 301호 인데 와보던가 ㅋㅋ", "민폐퇴치부|네 알겠습니다.")
 villain_names = PackedStringArray("ㅇㅇ")
+reply_indent = 56.0
 
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
-speaker = "악플러"
-lines = PackedStringArray("진짜 못생겼네 ㅋㅋㅋ 그냥 성형수술 해라 ㅋㅋ", "@show Screen/Column/Thread/Reply0 0.3", "주인공|말씀이 너무 거치신 거 같습니다.", "@show Screen/Column/Thread/Reply1 0.3", "악플러|어쩌라고 ㅋㅋ 내가 쓰겠다는데 뭔 상관이야", "@show Screen/Column/Thread/Reply2 0.3", "니가 뭘 할 수 있는데", "@show Screen/Column/Thread/Reply3 0.3", "주인공|집으로 방문할 수 있습니다.", "@show Screen/Column/Thread/Reply4 0.3", "악플러|아 그래? 우리 집 뭐뭐동 뭐뭐 빌라 301호 인데 와보던가 ㅋㅋ", "@show Screen/Column/Thread/Reply5 0.3", "주인공|네 알겠습니다.")
+lines = PackedStringArray("@close", "@pause 2.2", "@show Screen/Column/Thread/Reply0 0.3", "@pause 1.2", "@show Screen/Column/Thread/Reply1 0.3", "@pause 1.2", "@show Screen/Column/Thread/Reply2 0.3", "@pause 1.0", "@show Screen/Column/Thread/Reply3 0.3", "@pause 1.2", "@show Screen/Column/Thread/Reply4 0.3", "@pause 1.4", "@show Screen/Column/Thread/Reply5 0.3", "@pause 1.2")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

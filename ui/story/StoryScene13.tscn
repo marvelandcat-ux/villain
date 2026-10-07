@@ -41,10 +41,9 @@ texture = ExtResource("2")
 centered = false
 
 [node name="Police" type="Sprite2D" parent="Room"]
-position = Vector2(354.4, 33)
-scale = Vector2(0.613, 0.613)
+position = Vector2(640, 430)
+scale = Vector2(0.46, 0.46)
 texture = ExtResource("3")
-centered = false
 
 [node name="CaseFile" type="Control" parent="."]
 layout_mode = 1
@@ -86,7 +85,7 @@ texture = ExtResource("6")
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
 speaker = "주인공"
-lines = PackedStringArray("아 새로운 사건이 들어왔군", "이번에도 잡기 쉽지 않겠군...", "@show CaseFile 0.4", "인터넷에 악플을 받았다는 사례가... 한둘이 아니군", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
+lines = PackedStringArray("아 새로운 사건이 들어왔군", "@show CaseFile 0.4", "이번에도 잡기 쉽지 않겠군...", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
