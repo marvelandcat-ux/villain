@@ -69,6 +69,9 @@ extends Control
 ## (임시) **S를 누르면 다음 일러스트로 바로 넘긴다.** 새로 넣은 일러스트를 확인할 때 쓰는 것이라
 ## 정식 출시 전에는 꺼야 한다
 @export var debug_illust_key: bool = true
+## **(임시) 숫자 1·2로 그 에피소드 바로 시작.** 위와 같은 종류의 디버그 열쇠다 —
+## 에피소드 고르는 화면이 생기면 이 값과 쓰는 자리를 같이 지운다
+@export var debug_episode_keys: bool = true
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
@@ -444,6 +447,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	# 여기 있는 검사는 혹시 놓쳤을 때를 대비한 이중 방어다
 	if _confirm.visible or _settings_popup != null:
 		return
+	# **(임시) 숫자 1·2를 누르면 그 에피소드로 바로 들어간다** — 스토리 손볼 때마다
+	# 메뉴 -> 확인창 -> 1화 처음부터 보는 게 번거로워서 넣었다(2026-10-07 사용자 요청).
+	# 정식 기능이 아니므로 에피소드 고르는 화면이 생기면 지울 것
+	if debug_episode_keys and event is InputEventKey:
+		var jump: InputEventKey = event
+		if jump.pressed and not jump.echo:
+			for pair in [[KEY_1, "ep1"], [KEY_2, "ep2"]]:
+				if jump.keycode == pair[0] or jump.physical_keycode == pair[0]:
+					# ⚠️ **먼저 입력을 먹었다고 표시한다** — `start_story()`가 씬을 갈아 치우면
+					# 이 메뉴가 사라져서 `get_viewport()`가 null이 된다
+					get_viewport().set_input_as_handled()
+					if not GameState.start_story(pair[1]):
+						push_warning("MainMenu: %s 스토리 장면을 못 찾았다" % pair[1])
+					return
 	# (임시) S를 누르면 다음 캐릭터 일러스트로 바로 넘어간다 — 새 일러스트를 확인하려고 10초씩
 	# 기다리지 않으려고 넣은 것이다. 정식 기능이 아니므로 나중에 지우거나 debug 플래그로 묶을 것
 	if debug_illust_key and event is InputEventKey:
