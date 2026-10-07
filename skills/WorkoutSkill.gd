@@ -81,7 +81,11 @@ func _process(delta: float) -> void:
 	# 바벨 컬은 자세가 직접 움직이므로 들썩임을 겹치면 두 번 흔들린다
 	if not _is_curl() and not _is_squat() and not _is_run():
 		_bob += delta * bob_speed
-		_apply_bob(sin(_bob) * bob_amount)
+		_apply_bob(sin(_bob) * bob_amount - _machine.stand_lift)
+	elif not is_zero_approx(_machine.stand_lift):
+		# **기구 위에 올라선 것처럼 몸 그림을 들어 올린다**(판정은 그대로). 매 프레임 다시 잡아
+		# 자세 씬이 제자리를 건드려도 높이가 유지되게 한다
+		_apply_bob(-_machine.stand_lift)
 	# 다 채웠으면 알아서 손을 턴다 — 더 해도 안 오르는데 발만 묶여 있으면 손해다
 	if spec >= _machine.spec_max:
 		_stop()

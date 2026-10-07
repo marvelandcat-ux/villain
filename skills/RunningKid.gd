@@ -24,6 +24,9 @@ extends Hitbox
 @export var catch_radius: float = 30.0
 ## 아무 일이 없어도 이 시간이 지나면 무조건 돌아선다(초) — 벽에 끼는 걸 막는 안전장치
 @export var out_timeout: float = 2.0
+## 돌아오는 길에도 이 시간이 지나면 무조건 엄마 품으로 들어간다(초) —
+## 엄마가 떠 있거나 멀어져서 **영영 못 닿는 경우**를 막는 안전장치
+@export var back_timeout: float = 3.0
 
 @export_group("자세 씬")
 ## **달릴 때 자세를 씬 파일로 잡는다.** 세 장이다 —
@@ -164,7 +167,12 @@ func _physics_process(delta: float) -> void:
 				_finish()
 				return
 			var to: Vector2 = _home_world() - global_position
-			if to.length() <= catch_radius:
+			# ⚠️ **가로 거리만 본다.** 아이는 폴짝 뛰느라 y가 늘 들쭉날쭉이라, 2D 길이로 재면
+			# 엄마 코앞에 와도 `catch_radius` 안에 안 들어온다 — 그러면 `signf(to.x)`가 매 프레임
+			# 뒤집히면서 **제자리에서 미친 듯이 뛴다**(2026-10-07 사용자 지적).
+			# 한 프레임에 가는 거리보다 가까우면 어차피 지나치므로 그때도 끝낸다
+			var step: float = return_speed * delta
+			if absf(to.x) <= maxf(catch_radius, step) or _time >= back_timeout:
 				_finish()
 				return
 			_walk(delta, signf(to.x), return_speed)
