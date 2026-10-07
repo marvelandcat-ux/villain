@@ -120,6 +120,8 @@ func _place_from_table(items: Array[GymMachine]) -> void:
 	if level_y.size() > 1:
 		split = (level_y[0] + level_y[1]) * 0.5
 	for machine in items:
+		# ⚠️ **표에 적힌 자리를 그대로 쓴다.** 사용자가 눈으로 보고 하나하나 맞춘 값이라
+		# 코드가 다시 계산해서 덮으면 안 된다(2026-10-07 그렇게 했다가 전부 날렸다)
 		machine.position = placements.spot(machine.kind, pick, machine.position)
 		machine.flip = placements.flipped(machine.kind, pick)
 		if machine.position.y >= split:
@@ -176,7 +178,7 @@ func _scatter(items: Array[GymMachine]) -> void:
 		for row in list:
 			var machine: GymMachine = row[1]
 			# 기구마다 바닥보다 더 내려놓을 수 있다(런닝머신은 벨트가 바닥 높이에 와야 한다)
-			machine.position = Vector2(row[0], y + machine.ground_sink)
+			machine.position = Vector2(row[0], y + machine.sink())
 			if random_flip:
 				machine.flip = rng.randf() < 0.5
 			if level == 0:

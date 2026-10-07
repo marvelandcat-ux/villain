@@ -1,0 +1,99 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/로고바꾼경찰서.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/잼민이사건파일_끝장판.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/수사착수도장.png" id="6"]
+
+[node name="StoryScene13" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 1.4
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("Room/Police"), NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("CaseFile"), NodePath("CaseFile/Paper/Stamp")])
+fade_out_time = 1.0
+next_scene = "res://ui/story/StoryScene14.tscn"
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Room" type="Node2D" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="Room"]
+scale = Vector2(0.883978, 0.883978)
+texture = ExtResource("2")
+centered = false
+
+[node name="Police" type="Sprite2D" parent="Room"]
+position = Vector2(354.4, 33)
+scale = Vector2(0.613, 0.613)
+texture = ExtResource("3")
+centered = false
+
+[node name="CaseFile" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="CaseFile"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Paper" type="TextureRect" parent="CaseFile"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Stamp" type="Sprite2D" parent="CaseFile/Paper"]
+position = Vector2(1059, 498)
+rotation = -0.314159
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("6")
+
+[node name="DialogueBox" parent="." instance=ExtResource("4")]
+layout_mode = 1
+speaker = "주인공"
+lines = PackedStringArray("아 새로운 사건이 들어왔군", "이번에도 잡기 쉽지 않겠군...", "@show CaseFile 0.4", "인터넷에 악플을 받았다는 사례가... 한둘이 아니군", "@close", "@waitkey", "@stamp CaseFile/Paper/Stamp", "@pause 0.8")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

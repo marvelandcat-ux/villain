@@ -102,6 +102,8 @@ func _execute(fighter: Fighter) -> void:
 	_fighter = fighter
 	_machine = machine
 	_bob = 0.0
+	# **기구가 정해 둔 자리로 올라선다** — 런닝머신은 벨트 위에 서야 달리는 것처럼 보인다
+	fighter.global_position = machine.stand_spot(fighter.global_position)
 	# 기구를 보고 선다(등지고 운동하면 이상하다). 정확히 겹쳐 있으면 보던 쪽 그대로.
 	# **기구가 방향을 정해 뒀으면 그쪽이 이긴다** — 런닝머신은 조작판을 보고 달려야 한다
 	if not is_zero_approx(machine.face_dir):

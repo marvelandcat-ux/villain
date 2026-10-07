@@ -170,11 +170,41 @@ func active_ratio() -> float:
 func _execute(fighter: Fighter) -> void:
 	if _running or not is_instance_valid(fighter) or background == null:
 		return
+	var host: Node = DomainClash.running_enemy(get_tree(), fighter)
+	if host != null:
+		_fight_for_domain(host, fighter)
+		return
+	_begin(fighter)
+
+## **남의 영역 안에서 궁을 눌렀다** — 영역을 걸고 한 판 붙는다(`DomainClash`).
+## 이기면 그 영역을 깨고 내 영역이 전개되고, 지면 내 궁만 날아간다(쿨타임은 이미 `Skill.use`가 먹였다)
+func _fight_for_domain(host: Node, fighter: Fighter) -> void:
+	var won: bool = await DomainClash.fight(host, fighter)
+	if not won:
+		return
+	if is_instance_valid(host):
+		host.break_domain()
+	if is_instance_valid(fighter):
+		_begin(fighter)
+
+## 영역 주인
+func domain_owner() -> Fighter:
+	return _caster
+
+## **영역 싸움에서 져서 영역이 깨진다** — 나오는 연출(화면 깨짐) 없이 바로 걷어낸다.
+## 곧바로 이긴 쪽의 궁 연출이 이어지기 때문이다
+func break_domain() -> void:
+	if _running:
+		_leave(false)
+
+## 실제로 영역을 펴는 곳 — 영역 싸움을 거치든 안 거치든 여기로 모인다
+func _begin(fighter: Fighter) -> void:
 	var map: Node = fighter.get_parent()
 	if map == null:
 		return
 	_running = true
 	_caster = fighter
+	add_to_group(DomainClash.GROUP)
 	# 연출이 도는 동안 둘 다 굳어 있는다 — 뒤에서 치고받으면 연출이 무색해진다
 	_lock_fighters(maxf(intro_lock, 0.5))
 	# 쓰는 사람에게 카메라가 확 당겨지면서 어두워진다 → 다 어두워지면 현관문 앞이 뜬다
@@ -312,6 +342,7 @@ func _leave(reveal: bool = false) -> void:
 	if not _running:
 		return
 	_running = false
+	remove_from_group(DomainClash.GROUP)
 	_left = 0.0
 	for f in _return_pos:
 		if is_instance_valid(f):

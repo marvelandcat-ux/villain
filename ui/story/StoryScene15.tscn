@@ -1,0 +1,57 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+[ext_resource type="Script" path="res://ui/story/CommentScreen.gd" id="5"]
+
+[node name="StoryScene15" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.8
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("Screen"), NodePath("DialogueBox")])
+fade_out_time = 1.2
+next_scene = "res://ui/story/StoryScene16.tscn"
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Screen" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5")
+villain_index = 2
+comments = PackedStringArray("구독자1|오늘 영상도 잘 봤어요~", "지나가던행인|편집 깔끔하네요 ㅎㅎ", "ㅇㅇ|진짜 못생겼네 ㅋㅋㅋ 그냥 성형수술 해라 ㅋㅋ")
+
+[node name="DialogueBox" parent="." instance=ExtResource("4")]
+layout_mode = 1
+speaker = "악플러"
+lines = PackedStringArray("진짜 못생겼네 ㅋㅋㅋ 그냥 성형수술 해라 ㅋㅋ", "주인공|말씀이 너무 거치신 거 같습니다.", "악플러|어쩌라고 ㅋㅋ 내가 쓰겠다는데 뭔 상관이야  니가 뭘 할 수 있는데", "주인공|집으로 방문할 수 있습니다.", "악플러|아 그래? 우리 집 뭐뭐동 뭐뭐 빌라 301호 인데 와보던가 ㅋㅋ", "주인공|네 알겠습니다.")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

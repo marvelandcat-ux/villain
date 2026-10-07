@@ -35,6 +35,9 @@ enum Kind {
 @export var flip: bool = false:
 	set(value):
 		flip = value
+		# ⚠️ **그림도 같이 뒤집는다.** 예전엔 `_draw()`로 그리던 시절의 값이라 `flip`이 도형에만 먹었고,
+		# 그림을 꽂은 뒤로는 배치표에 뒤집기가 적혀 있어도 **아무 일도 안 일어났다**(2026-10-07 발견)
+		flip_h = value
 		queue_redraw()
 ## 전체 크기 배율
 @export var size_scale: float = 1.0:
@@ -57,6 +60,12 @@ enum Kind {
 ## 벨트 윗면이 바닥 높이에 오도록 기구를 그만큼 묻는다(2026-10-05 사용자 지정).
 ## `GymLayout`이 자리를 잡을 때 이 값을 더한다
 @export var ground_sink: float = 0.0
+## **벨트 윗면이 바닥 높이에 오게 깊이를 자동으로 구한다**(런닝머신 전용).
+## 켜 두면 기구 크기를 바꿔도 따라온다 — 끄면 위의 `ground_sink`를 그대로 쓴다.
+## ⚠️ 크기를 키웠는데 이걸 안 켜 두면 **벨트가 바닥 위로 떠올라** 사람이 허공을 달린다(2026-10-07 겪음)
+@export var sink_to_belt: bool = false
+## 구한 깊이에 **더 묻는 양**(px). 양수면 더 아래로 내려간다 — 눈대중으로 맞추는 값이다
+@export var sink_extra: float = 0.0
 ## **운동할 때 바라볼 방향**(-1 왼쪽 / +1 오른쪽). 0이면 예전처럼 기구 쪽을 본다.
 ## 런닝머신은 조작판이 왼쪽 끝에 있어서 **-1**이어야 조작판을 보고 달리는 모양이 된다
 @export var face_dir: float = 0.0
@@ -64,6 +73,30 @@ enum Kind {
 ## 위아래를 좁게 둬야 **2층 기구를 1층에서 쓰는** 일이 안 생긴다
 @export var use_range_x: float = 80.0
 @export var use_range_y: float = 70.0
+## **범위를 기구 폭에서 자동으로 구한다**(2026-10-07). 크기를 바꿔도 따라오니 손으로 다시 맞출 일이 없다.
+## 끄면 위의 `use_range_x`를 그대로 쓴다
+@export var range_from_width: bool = true
+## 기구 양옆으로 더 주는 여유(px). 기구에 바짝 붙지 않아도 운동이 되게.
+## **줄이면 범위가 좁아진다 — 음수도 된다**(기구 폭보다 좁게)
+@export var range_margin: float = 25.0
+## 범위의 **한가운데를 기구 원점에서 옮긴다**(월드 px, 세로는 바닥 기준).
+## 그림이 한쪽으로 치우친 기구(런닝머신은 조작판이 왼쪽)에서 쓴다. 조절 씬 `Tab`으로 맞춘다
+@export var range_offset: Vector2 = Vector2.ZERO
+## **운동할 수 있는 자리를 바닥에 그린다.** 안 그리면 어디까지 가야 운동이 되는지 알 수가 없다
+## (2026-10-07 사용자: "지금 어디부터 운동범위인지 모르겠거든?")
+@export var show_range: bool = true
+## 아무도 없을 때의 진하기 / 범위 안에 사람이 있을 때의 진하기
+@export_range(0.0, 1.0, 0.05) var range_idle_alpha: float = 0.85
+@export_range(0.0, 1.0, 0.05) var range_near_alpha: float = 1.0
+## 바닥 선 굵기와 양 끝 턱 높이(월드 px)
+@export var range_line_width: float = 4.0
+@export var range_tick: float = 13.0
+## **운동을 시작하면 기구 자리로 끌어온다.** 런닝머신은 벨트 위에 올라서야 달리는 것처럼 보인다.
+## 끄면 서 있던 자리 그대로 운동한다
+@export var snap_on_use: bool = false
+## 끌어올 자리 — 기구 **원점에서** 월드 px. 0이면 **기구 한가운데**
+## (2026-10-07 사용자: "런닝머신 타는 거면 위치는 항상 가운데로 고정")
+@export var stand_offset: float = 0.0
 
 @export_group("레일")
 ## **런닝머신 벨트 윗면**(기구 원점 기준 사각형). 여기에 줄무늬를 깔아 흐르게 한다.
@@ -92,16 +125,20 @@ enum Kind {
 @export var line_width: float = 3.0
 ## 쇠붙이(봉·화면)에 쓰는 밝은 색
 @export var metal_color: Color = Color(0.62, 0.65, 0.72, 1.0)
-## 기구마다 다른 상징색 — 게이지와 포인트에 쓴다(한눈에 구분되라고)
-@export var accent_curl: Color = Color(1.0, 0.45, 0.35, 1.0)
-@export var accent_squat: Color = Color(0.45, 0.85, 1.0, 1.0)
-@export var accent_treadmill: Color = Color(0.55, 1.0, 0.55, 1.0)
+## 기구마다 다른 상징색 — 바닥 범위 선과 게이지에 쓴다(한눈에 구분되라고).
+## **밝은 바닥 위에 긋는 선이라 진해야 보인다** — 파스텔로 뒀더니 묻혔다(2026-10-07 사용자)
+@export var accent_curl: Color = Color(0.92, 0.16, 0.1, 1.0)
+@export var accent_squat: Color = Color(0.1, 0.42, 0.95, 1.0)
+@export var accent_treadmill: Color = Color(0.06, 0.68, 0.18, 1.0)
 ## 발밑 그림자 진하기(0이면 안 그린다)
 @export var shadow_alpha: float = 0.22
 
 ## 지금 누가 이 기구에서 운동하는 중이면 채운 비율(0~1), 아니면 -1.
 ## `WorkoutSkill`이 매 프레임 넣어 준다 — 기구는 받아서 게이지만 그린다
 var _gauge: float = -1.0
+
+## 운동 자리 표시의 지금 진하기(-1이면 아직 한 번도 안 그렸다)
+var _range_glow: float = -1.0
 
 ## 레일이 흘러간 거리 — 간격 하나만큼 가면 처음으로 되돌려 끝없이 돈다
 var _belt_offset: float = 0.0
@@ -126,12 +163,27 @@ func _ready() -> void:
 
 ## 레일을 흘린다 — 런닝머신이 아니면 아무 일도 안 한다
 func _process(delta: float) -> void:
+	_update_range_glow()
 	if kind != Kind.TREADMILL or belt_speed == 0.0 or belt_rect.size.x <= 0.0:
 		return
 	if not belt_always and _gauge < 0.0 and not Engine.is_editor_hint():
 		return
 	_belt_offset = fposmod(_belt_offset + belt_speed * delta, maxf(belt_gap, 1.0))
 	queue_redraw()
+
+## 범위 안에 사람이 있으면 바닥 표시가 또렷해진다 — 바뀔 때만 다시 그린다
+func _update_range_glow() -> void:
+	if not show_range:
+		return
+	var want: float = range_idle_alpha
+	for node in get_tree().get_nodes_in_group("fighters"):
+		var body := node as Node2D
+		if body != null and in_range(body.global_position):
+			want = range_near_alpha
+			break
+	if absf(want - _range_glow) > 0.005:
+		_range_glow = want
+		queue_redraw()
 
 ## 이 기구가 올려주는 `Fighter`의 배수 이름
 func stat_property() -> String:
@@ -160,16 +212,40 @@ func spec_key() -> String:
 func muscle_part() -> String:
 	return "arm" if kind == Kind.CURL else "leg"
 
+## **바닥보다 얼마나 묻혀 있는지.** `sink_to_belt`를 켜면 벨트 윗면에서 바로 구한다 —
+## 크기를 바꿔도 따라오니까 손으로 다시 맞출 일이 없다
+func sink() -> float:
+	if sink_to_belt and kind == Kind.TREADMILL and belt_rect.size.y > 0.0:
+		return -belt_rect.position.y * absf(scale.y) + sink_extra
+	return ground_sink + sink_extra
+
+## **범위 네모의 한가운데**(월드). 세로는 기구가 선 바닥 높이가 기준이다
+func range_center() -> Vector2:
+	var dir: float = -1.0 if flip else 1.0
+	return global_position + Vector2(range_offset.x * dir, range_offset.y - sink())
+
+## **운동할 수 있는 좌우 폭**(범위 한가운데에서 월드 px)
+func range_x() -> float:
+	if range_from_width and texture != null:
+		return width() * absf(scale.x) * 0.5 + range_margin
+	return use_range_x
+
+## 운동을 시작할 때 **설 자리**(월드). `stand_offset`이 0이면 서 있던 자리 그대로 둔다
+func stand_spot(now: Vector2) -> Vector2:
+	if not snap_on_use:
+		return now
+	var dir: float = -1.0 if flip else 1.0
+	return Vector2(global_position.x + stand_offset * dir, now.y)
+
 ## 이 기구를 쓸 수 있는 자리에 있는지
 func in_range(point: Vector2) -> bool:
-	var d: Vector2 = point - global_position
 	# **바닥에 묻어 둔 만큼은 빼고 잰다** — 기구를 내렸다고 운동할 수 있는 자리까지
-	# 같이 내려가면, 런닝머신 앞에 서 있어도 범위 밖이 되어 버린다
-	d.y += ground_sink
+	# 같이 내려가면, 런닝머신 앞에 서 있어도 범위 밖이 되어 버린다(`range_center`가 그걸 한다)
+	var d: Vector2 = point - range_center()
 	# ⚠️ **크기 배율을 곱하지 않는다.** 예전엔 size_scale을, 그다음엔 노드 scale을 곱했는데
 	# Sprite2D로 바꾸면서 노드 scale이 곧 그림 축소 배율(0.1쯤)이 되어 범위가 9px로 줄었다 —
 	# 기구 바로 앞에 서도 운동이 안 됐다(2026-10-06 발견). 범위는 월드 px 그대로 쓴다
-	return absf(d.x) <= use_range_x and absf(d.y) <= use_range_y
+	return absf(d.x) <= range_x() and absf(d.y) <= use_range_y
 
 ## 게이지를 갱신한다(-1이면 아무도 안 쓰는 중)
 func set_gauge(ratio: float) -> void:
@@ -215,6 +291,7 @@ func top_offset() -> float:
 			return -70.0 * size_scale
 
 func _draw() -> void:
+	_draw_range()
 	if shadow_alpha > 0.0:
 		# 바닥에 닿은 자리에 납작한 그림자 — 없으면 떠 보인다
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.22))
@@ -232,6 +309,34 @@ func _draw() -> void:
 	if kind == Kind.TREADMILL:
 		_draw_belt()
 	_draw_gauge()
+
+## **운동 자리** — 바닥에 **선 하나**와 양 끝 턱. 기구마다 색이 달라서 어느 기구 범위인지도 같이 읽힌다.
+##
+## ⚠️ 타원으로 그렸더니 기구를 덮어서 지저분했다(2026-10-07 사용자). 바닥 선이면 안 가린다
+##
+## ⚠️ `use_range_x`는 **월드 px**인데 `_draw()`는 기구 안쪽 좌표라, 배율로 나눠 되돌려야 범위와 그림이 맞는다.
+## 가로·세로 배율이 다르니(런닝머신 0.149 x 0.178) **굵기도 축마다 따로** 나눠야 네모로 보인다
+func _draw_range() -> void:
+	if not show_range:
+		return
+	var sx: float = absf(scale.x)
+	var sy: float = absf(scale.y)
+	if sx < 0.0001 or sy < 0.0001:
+		return
+	var dir: float = -1.0 if flip else 1.0
+	var half: float = range_x() / sx
+	var cx: float = range_offset.x * dir / sx
+	var y: float = (range_offset.y - sink()) / sy
+	var col: Color = accent()
+	var a: float = maxf(_range_glow, 0.0)
+	var tint := Color(col.r, col.g, col.b, a)
+	# 굵기·턱 높이는 월드 px로 잡고 축마다 나눈다
+	var thick: float = range_line_width / sy
+	var tick_w: float = range_line_width / sx
+	var tick_h: float = range_tick / sy
+	draw_rect(Rect2(cx - half, y - thick * 0.5, half * 2.0, thick), tint)
+	draw_rect(Rect2(cx - half - tick_w * 0.5, y - tick_h, tick_w, tick_h), tint)
+	draw_rect(Rect2(cx + half - tick_w * 0.5, y - tick_h, tick_w, tick_h), tint)
 
 ## **바벨 컬** — 낮은 거치대에 바벨이 얹혀 있다. 들어 올려 팔을 키우는 기구
 func _draw_curl() -> void:

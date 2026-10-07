@@ -10,7 +10,7 @@
 [ext_resource type="Script" path="res://skills/TaserGunSkill.gd" id="8_taser"]
 [ext_resource type="Script" path="res://skills/BatonModeUltimate.gd" id="11_baton"]
 [ext_resource type="PackedScene" path="res://skills/TaserBolt.tscn" id="10_bolt"]
-[ext_resource type="Script" path="res://skills/StoneThrowSkill.gd" id="9_stone"]
+[ext_resource type="Script" path="res://skills/FlashlightSkill.gd" id="9_stone"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -73,10 +73,10 @@ stun_time = 2.0
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("9_stone")
-cooldown = 8.0
-skill_name = "돌 던지기"
-description = "발밑의 돌을 주워 앞으로 던진다. 자전거로 돌진해 오는 상대에게 맞으면 그 자리에서 자전거가 멈춘다. 돌진 중이 아니어도 맞으면 피해를 입는다."
-damage = 6
+cooldown = 5.0
+skill_name = "후레쉬"
+description = "손전등을 켜 바라보는 쪽 앞을 둥글게 비춘다. 5초 동안 켜져 있고 쿨타임도 5초. 악플러의 집처럼 불이 나가는 맵에서 앞을 보려면 이게 있어야 한다. 시야만 밝힐 뿐 판정은 바뀌지 않는다."
+duration = 5.0
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("11_baton")

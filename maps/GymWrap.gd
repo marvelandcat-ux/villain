@@ -15,12 +15,21 @@ extends Node2D
 ## 넘어갈 때 **발밑 높이 차이는 그대로 둔다** — 뛰어오른 채로 끝에 닿으면 반대 층에서도 떠 있다.
 ## 그래야 이동이 끊기지 않고 이어지는 느낌이 난다
 
-## 맵의 **왼쪽 끝과 오른쪽 끝** x. 이 선을 넘으면 반대 층 반대쪽에서 나온다.
-## 맵을 화면 좌표(0~1720)에 맞춰 놓아서 가운데가 0이 아니다 — 그래서 양끝을 따로 적는다
+## **화면 가장자리를 넘어가는 선으로 쓴다**(2026-10-07 사용자: "좀만 걸어도 반대로 나와야").
+## 끄면 아래 `left_x`/`right_x`를 그대로 쓴다.
+##
+## ⚠️ 맵 끝(0~1720)을 선으로 쓰면 **화면 밖 220px이 숨는 자리가 된다** — 카메라가 고정이라
+## 거기 서 있으면 상대가 보이지도, 때릴 수도 없다(2026-10-07 발견). 화면 가장자리로 잡으면 숨을 데가 없다
+@export var use_screen_edge: bool = true
+## 화면 가장자리에서 **바깥으로** 이만큼 더 나가야 넘어간다.
+## 몸 반지름(20)만큼 주면 **몸이 화면에서 다 사라진 순간** 넘어가 뚝 끊기는 느낌이 안 난다
+@export var screen_margin: float = 20.0
+## 맵의 **왼쪽 끝과 오른쪽 끝** x — `use_screen_edge`를 껐을 때만 쓴다
 @export var left_x: float = 0.0
 @export var right_x: float = 1720.0
-## 넘어간 뒤 반대쪽 끝에서 **이만큼 안쪽**에 놓는다. 0이면 바로 또 넘어가 버린다
-@export var inset: float = 40.0
+## 넘어간 뒤 반대쪽 끝에서 **이만큼 안쪽**에 놓는다. 0이면 바로 또 넘어가 버린다.
+## `screen_margin`보다 넉넉히 커야 **나오자마자 화면 안**에 선다
+@export var inset: float = 90.0
 ## 1층 바닥 윗면 y
 @export var ground_y: float = 410.0
 ## 2층 바닥 윗면 y
@@ -41,6 +50,17 @@ func _ready() -> void:
 	# AI가 "끝까지 걸어가면 다른 층"이라는 걸 알 수 있게 찾을 이름표를 단다
 	add_to_group("level_wrap")
 
+## 지금 넘어가는 선 — (왼쪽, 오른쪽). 카메라 배율이 변해도 따라가게 **매번 다시 잰다**
+func edges() -> Vector2:
+	if not use_screen_edge:
+		return Vector2(left_x, right_x)
+	var cam: Camera2D = get_viewport().get_camera_2d()
+	if cam == null:
+		return Vector2(left_x, right_x)
+	var half: float = get_viewport().get_visible_rect().size.x * 0.5 / maxf(cam.zoom.x, 0.01)
+	return Vector2(cam.global_position.x - half - screen_margin,
+		cam.global_position.x + half + screen_margin)
+
 ## 이 위치가 2층인지. **2층 바닥 윗면 하나로 가른다** — 2층 선수의 원점은 늘 그 위,
 ## 1층 선수는 천장(2층 판 아랫면)에 막혀 그 아래다. 두 바닥의 한가운데로 가르면
 ## 1층에서 이단 점프한 선수(원점이 천장 밑까지 올라감)를 2층으로 잘못 봐서 땅 밑으로 보냈다
@@ -52,9 +72,10 @@ func is_upper(pos: Vector2) -> bool:
 func exit_x_toward(from: Vector2, to: Vector2) -> float:
 	if is_upper(from) == is_upper(to):
 		return NAN
-	var via_left: float = (from.x - left_x) + absf(to.x - (right_x - inset))
-	var via_right: float = (right_x - from.x) + absf(to.x - (left_x + inset))
-	return left_x - 10.0 if via_left <= via_right else right_x + 10.0
+	var side: Vector2 = edges()
+	var via_left: float = (from.x - side.x) + absf(to.x - (side.y - inset))
+	var via_right: float = (side.y - from.x) + absf(to.x - (side.x + inset))
+	return side.x - 10.0 if via_left <= via_right else side.y + 10.0
 
 func _physics_process(delta: float) -> void:
 	for key in _locked.keys():
@@ -69,7 +90,8 @@ func _check(fighter: Node2D) -> void:
 	if _locked.get(id, 0.0) > 0.0:
 		return
 	var at: Vector2 = fighter.global_position
-	if at.x > left_x and at.x < right_x:
+	var side: Vector2 = edges()
+	if at.x > side.x and at.x < side.y:
 		return
 	# 층을 바꾸면 발밑 높이가 그만큼 통째로 움직인다
 	var drop: float = ground_y - upper_y
@@ -78,7 +100,7 @@ func _check(fighter: Node2D) -> void:
 		# 1층으로 — 2층에서 높이 뛴 채였으면 천장(2층 판) 속에 박히니 머리가 천장 밑에 오게 내린다
 		new_y = maxf(at.y + drop, lower_ceiling_y + BODY_HALF + 2.0)
 	# 반대쪽 끝으로 — 왼쪽 끝으로 나갔으면 오른쪽 끝에서 들어온다
-	var new_x: float = (right_x - inset) if at.x <= left_x else (left_x + inset)
+	var new_x: float = (side.y - inset) if at.x <= side.x else (side.x + inset)
 	fighter.global_position = Vector2(new_x, new_y)
 	_locked[id] = cooldown
 	# 따라가는 카메라면 화면이 주욱 끌려가지 않게 곧바로 맞춘다(고정 카메라는 그대로 둔다)

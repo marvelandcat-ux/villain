@@ -125,7 +125,7 @@ const DEX_MAPS := {
 ## **한 번도 클리어하지 않은 에피소드는 목록에서 이름 대신 자물쇠로 보인다**(사용자 지정, 2026-09-15)
 const STORY_EPISODES := [
 	{"id": "ep1", "name": "EP.1-첫 임무", "scene": "res://ui/story/StoryScene1.tscn"},
-	{"id": "ep2", "name": "에피소드 2", "scene": ""},
+	{"id": "ep2", "name": "EP.2-악플러", "scene": "res://ui/story/StoryScene13.tscn"},
 	{"id": "ep3", "name": "에피소드 3", "scene": ""},
 	{"id": "ep4", "name": "에피소드 4", "scene": ""},
 	{"id": "ep5", "name": "에피소드 5", "scene": ""},

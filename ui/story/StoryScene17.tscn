@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/악플러/악플러집배경.png" id="2"]
+
+[node name="StoryScene17" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 1.0
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("DialogueBox")])
+fade_out_time = 1.0
+next_scene = "res://maps/TrashRoom.tscn"
+battle_p1 = "res://characters/police/Police.tscn"
+battle_p2 = "res://characters/akpeulleo/Akpeulleo.tscn"
+battle_rounds = 2
+battle_time_limit = 120
+battle_ai_skill = 0.6
+battle_win_scene = "res://ui/story/StoryScene18.tscn"
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Door" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="DialogueBox" parent="." instance=ExtResource("4")]
+layout_mode = 1
+speaker = "주인공"
+lines = PackedStringArray("여기인가...", "계십니까?", "@close", "@pause 0.9", "나레이션|문이 열린다.", "악플러|누구세요?", "주인공|신고를 받고 들어왔습니다.", "이 주소에 인터넷에 악한 영향력을 끼치는 악플러가 있다고 해서요.", "악플러|어....? 앗!...음.....아....네....", "악플러|에잇!", "나레이션|집안으로 도망치는 악플러", "주인공|거기 서!")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

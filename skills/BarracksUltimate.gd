@@ -89,7 +89,37 @@ func can_use() -> bool:
 func _execute(fighter: Fighter) -> void:
 	if _running or is_instance_valid(_arena) or is_instance_valid(_shatter):
 		return
+	var host: Node = DomainClash.running_enemy(get_tree(), fighter)
+	if host != null:
+		_fight_for_domain(host, fighter)
+		return
+	_begin(fighter)
+
+## **남의 영역 안에서 궁을 눌렀다** — 영역을 걸고 한 판 붙는다(`DomainClash`).
+## 이기면 그 영역을 깨고 내 영역이 전개되고, 지면 내 궁만 날아간다(쿨타임은 이미 `Skill.use`가 먹였다)
+func _fight_for_domain(host: Node, fighter: Fighter) -> void:
+	var won: bool = await DomainClash.fight(host, fighter)
+	if not won:
+		return
+	if is_instance_valid(host):
+		host.break_domain()
+	if is_instance_valid(fighter):
+		_begin(fighter)
+
+## 영역 주인
+func domain_owner() -> Fighter:
+	return _caster
+
+## **영역 싸움에서 져서 영역이 깨진다** — 나오는 연출(화면 깨짐) 없이 바로 걷어낸다.
+## 곧바로 이긴 쪽의 궁 연출이 이어지기 때문이다
+func break_domain() -> void:
+	if _running:
+		_leave(false)
+
+## 실제로 내무반을 펴는 곳 — 영역 싸움을 거치든 안 거치든 여기로 모인다
+func _begin(fighter: Fighter) -> void:
 	_running = true
+	add_to_group(DomainClash.GROUP)
 	_caster = fighter
 	_seal_opponents(true)
 	var delay: float = strip_time if bare_body_texture != null and _strip(fighter) else 0.0
@@ -219,6 +249,7 @@ func _start_leave(fighter: Fighter) -> void:
 ## 원래 맵으로 돌려놓는다. reveal이면 깨진 화면(검정)에서 원래 맵이 서서히 밝아지고 두 캐릭터가 서서히 나타난다(아니면 암전 풀기)
 func _leave(reveal: bool) -> void:
 	_running = false
+	remove_from_group(DomainClash.GROUP)
 	# 화면이 까만 동안 다시 옷을 입는다
 	if redress_on_return and not _saved_outfit.is_empty() and is_instance_valid(_caster):
 		var visual := _caster.get_node_or_null("Visual")
@@ -300,6 +331,9 @@ func _seal_opponents(on: bool) -> void:
 		if f == _caster:
 			continue
 		if on:
+			# ⚠️ **영역 궁은 안 막는다** — 갇힌 쪽이 영역 싸움을 걸 수 있어야 한다(2026-10-07)
+			if DomainClash.is_domain(f.skill_ultimate):
+				continue
 			f.seal_ultimate(&"barracks")
 		else:
 			f.unseal_ultimate(&"barracks")
