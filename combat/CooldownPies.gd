@@ -68,7 +68,7 @@ var _pies: Array[Pie] = []
 var _shown: Array[Pie] = []
 ## 지금 놓인 쪽(-1 = 왼쪽, 1 = 오른쪽). 방향을 바꾸면 반대편으로 미끄러져 간다
 var _side: float = -1.0
-## 맵 암전(`Blackout.gd`) 중이면 true — 방어·대시·빨간 X(패링 잠금)를 숨긴다. 금색(궁 쓰는 중)은 그대로
+## 맵 암전(`Blackout.gd`) 중이면 true — 방어·대시·빨간 X(패링 잠금)·금색(궁 쓰는 중)을 전부 숨긴다
 var _blackout_hidden: bool = false
 
 func _ready() -> void:
@@ -140,12 +140,11 @@ func _draw() -> void:
 func set_blackout_hidden(value: bool) -> void:
 	_blackout_hidden = value
 
-## 지금 실제로 그릴 파이들 — 암전 중엔 궁 칸만 남긴다(숨긴 칸이 슬롯을 차지하지 않게 따로 뽑는다)
+## 지금 실제로 그릴 파이들 — 암전 중엔 궁 지속시간(금색)까지 전부 숨긴다(2026-10-07 사용자 요청)
 func _drawn_pies() -> Array[Pie]:
 	if not _blackout_hidden:
 		return _shown
 	var out: Array[Pie] = []
-	out.assign(_shown.filter(func(p: Pie) -> bool: return p.method == "ultimate_timer_ratio"))
 	return out
 
 func _draw_pie(pie: Pie) -> void:

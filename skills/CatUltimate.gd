@@ -189,6 +189,8 @@ func _start_orange(fighter: Fighter) -> void:
 	_mode = Mode.ORANGE
 	fighter.custom_data["cat_suit"] = true
 	fighter.set_modifier("basic_attack_damage_multiplier", MODIFIER_ID, orange_damage_mult)
+	# 공격력이 오른 동안 빨간 칼 아이콘이 몸 근처에서 떠오른다(끄는 건 _end_orange_effects)
+	fighter.show_status_vfx(&"attack_up")
 	fighter.set_modifier("damage_taken_multiplier", MODIFIER_ID, orange_damage_taken)
 	fighter.set_modifier("dash_cooldown_multiplier", MODIFIER_ID, orange_cooldown_mult)
 	# 기본공격 쿨은 attack_speed_multiplier만큼 빨리 돈다 — 쿨 x0.5 = 속도 x2
@@ -200,6 +202,7 @@ func _end_orange_effects() -> void:
 	if not _has_fighter or not is_instance_valid(_fighter):
 		return
 	_fighter.custom_data.erase("cat_suit")
+	_fighter.hide_status_vfx(&"attack_up")
 	for property in ["basic_attack_damage_multiplier", "damage_taken_multiplier", "dash_cooldown_multiplier", "attack_speed_multiplier"]:
 		_fighter.clear_modifier(property, MODIFIER_ID)
 	_detach_suit_combo(_fighter)

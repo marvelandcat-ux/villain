@@ -60,7 +60,7 @@ fill_to = Vector2(0.5, 0)
 size = Vector2(374, 15)
 
 [sub_resource type="RectangleShape2D" id="Shape_MiddlePlatform"]
-size = Vector2(389, 15)
+size = Vector2(464, 36)
 
 [sub_resource type="RectangleShape2D" id="Shape_RightPlatform"]
 size = Vector2(573.5, 15)
@@ -532,25 +532,26 @@ region_rect = Rect2(1, 400, 1540, 118)
 z_index = -10
 position = Vector2(380, -317)
 
-[node name="Collision" type="CollisionShape2D" parent="MiddlePlatform2" unique_id=1510337031]
-position = Vector2(0.5, 8.5)
-shape = SubResource("Shape_MiddlePlatform")
-one_way_collision = true
-
 [node name="Sprite1" type="Sprite2D" parent="MiddlePlatform2" unique_id=490051763]
 position = Vector2(-200.9, 0)
-scale = Vector2(0.328, 0.328)
+scale = Vector2(0.4557189, 0.328)
 texture = ExtResource("plank")
 centered = false
 region_enabled = true
 region_rect = Rect2(1, 400, 612, 118)
 
 [node name="Sprite2" type="Sprite2D" parent="MiddlePlatform2" unique_id=2140835966]
+position = Vector2(78, 0)
 scale = Vector2(0.328, 0.328)
 texture = ExtResource("plank")
 centered = false
 region_enabled = true
 region_rect = Rect2(1531, 400, 612, 118)
+
+[node name="Collision" type="CollisionShape2D" parent="MiddlePlatform2" unique_id=1510337031]
+position = Vector2(38, 19)
+shape = SubResource("Shape_MiddlePlatform")
+one_way_collision = true
 
 [node name="Stair2" type="StaticBody2D" parent="." unique_id=1004876446]
 z_index = -10

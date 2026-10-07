@@ -46,6 +46,8 @@ func _execute(fighter: Fighter) -> void:
 	_armed_fighter = fighter
 	_left = duration
 	fighter.set_modifier("attack_debuff_multiplier", MODIFIER_ID, damage_multiplier)
+	# 공격력이 오른 동안 빨간 칼 아이콘이 몸 근처에서 떠오른다(끄는 건 _disarm)
+	fighter.show_status_vfx(&"attack_up")
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and "held_item_armed" in visual:
 		visual.held_item_armed = true
@@ -70,6 +72,7 @@ func _disarm() -> void:
 		_armed_fighter = null
 		return
 	_armed_fighter.clear_modifier("attack_debuff_multiplier", MODIFIER_ID)
+	_armed_fighter.hide_status_vfx(&"attack_up")
 	var visual: Node2D = _armed_fighter.get_node_or_null("Visual")
 	if visual and "held_item_armed" in visual:
 		visual.held_item_armed = false

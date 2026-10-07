@@ -106,8 +106,8 @@ const JUMP_WIND_SCRIPT := preload("res://combat/JumpWind.gd")
 const HEAL_BURST_SCRIPT := preload("res://combat/HealBurst.gd")
 ## 이 회복량(HP)이면 회복 이펙트가 가장 크게 터진다 — 그보다 작으면 비례해서 작아진다
 const HEAL_BURST_FULL_AMOUNT: float = 30.0
-## 이동속도를 낮추는 디버프(슬로우)가 걸린 동안 붙는 달팽이·회오리 이펙트
-const SLOW_VFX_SCRIPT := preload("res://combat/SlowDebuffVfx.gd")
+## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 흘러가는 이펙트(슬로우 물방울·공격력 칼 등)
+const STATUS_VFX_SCRIPT := preload("res://combat/StatusIconVfx.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
 ## 발판 두께(20px)를 지나 떨어지는 데 필요한 시간(약 0.21초)보다 넉넉하게 잡았다
@@ -1569,19 +1569,35 @@ func apply_temp_multiplier(property: String, value: float, duration: float, from
 	_next_modifier_id += 1
 	set_modifier(property, id, value)
 	_after(duration, func(): clear_modifier(property, id))
-	# 스킬이 거는 슬로우는 전부 여기를 지나므로, 어느 캐릭터의 슬로우든 이펙트가 자동으로 붙는다
+	# 스킬이 거는 슬로우는 전부 여기를 지나므로, 어느 캐릭터의 슬로우든 물방울 이펙트가 자동으로 붙는다
 	if property == "move_speed_multiplier" and value < 1.0:
-		_spawn_slow_vfx(duration)
+		show_status_vfx(&"slow", duration)
 
-## 슬로우 이펙트를 띄운다. 착지 먼지와 같은 이유로 **맵에 붙이고**, 이펙트가 스스로 캐릭터를 따라온다.
-## 이미 붙어 있으면 이펙트 쪽에서 예전 것을 지우고 더 늦게 끝나는 시간으로 이어 간다
-func _spawn_slow_vfx(duration: float) -> void:
+## 종류별로 하나씩 들고 있는 상태 이펙트 {종류: StatusIconVfx}
+var _status_vfx: Dictionary = {}
+
+## 버프·디버프 아이콘 이펙트를 켠다(종류는 `StatusIconVfx.KINDS`). duration초 뒤 저절로 꺼지고, 0이면 hide_status_vfx까지 계속.
+## 이미 켜져 있으면 새로 만들지 않고 남은 시간만 늘린다. 착지 먼지와 같은 이유로 **맵에 붙인다**
+func show_status_vfx(kind: StringName, duration: float = 0.0) -> void:
+	var vfx = _status_vfx.get(kind)
+	if vfx != null and is_instance_valid(vfx) and not vfx.is_stopping():
+		vfx.extend(duration)
+		return
 	var map: Node = get_parent()
 	if map == null:
 		return
-	var vfx := SLOW_VFX_SCRIPT.new()
+	vfx = STATUS_VFX_SCRIPT.new()
+	vfx.kind = kind
 	map.add_child(vfx)
 	vfx.setup(self, duration)
+	_status_vfx[kind] = vfx
+
+## 버프·디버프 아이콘 이펙트를 끈다(떠 있던 아이콘은 마저 흘러가며 사라진다)
+func hide_status_vfx(kind: StringName) -> void:
+	var vfx = _status_vfx.get(kind)
+	_status_vfx.erase(kind)
+	if vfx != null and is_instance_valid(vfx):
+		vfx.stop()
 
 ## tick_interval마다 damage_per_tick씩 ticks번 데미지를 준다 (화상 등 도트 데미지).
 ## 방어 중에 걸면 아예 안 붙는다 — 걸어두기만 하고 방어가 풀린 뒤 터지면 막은 의미가 없다

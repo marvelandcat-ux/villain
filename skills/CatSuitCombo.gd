@@ -24,6 +24,11 @@ extends Node
 ## 잡은 순간 슬로 모션 — 게임 속도 배수와 길이(실제 초)
 @export var slow_scale: float = 0.3
 @export var slow_duration: float = 0.5
+## 3타를 뻗는 순간 카메라가 아주머니에게 바짝 다가간다(지하철 아저씨 궁 3타 `XSlashFinisher`와 같은 값) —
+## 평소 배율의 몇 배까지, 다가가 있는 실제 시간(초), 들어가고 나오는 시간(초)
+@export var zoom_mul: float = 1.55
+@export var zoom_time: float = 1.1
+@export var zoom_blend: float = 0.12
 
 var _fighter: Fighter = null
 var _victim: Fighter = null
@@ -67,6 +72,9 @@ func on_combo_swing(fighter: Fighter, step: int) -> void:
 	var visual: Node = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_head_grab"):
 		visual.play_head_grab(combo._windup_for(step, fighter), reach_hold, reach_back)
+	var camera: Camera2D = fighter.get_viewport().get_camera_2d()
+	if camera and camera.has_method("focus_on"):
+		camera.focus_on(fighter, zoom_mul, zoom_time, zoom_blend)
 
 ## 부모(콤보)의 타가 맞았다 — 3타면 머리를 잡아 넘기기 시작한다
 func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:

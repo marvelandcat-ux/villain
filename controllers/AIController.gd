@@ -102,6 +102,8 @@ var _nav_next = null
 var _nav_from_id: int = -1
 ## 뛰어오른 발판의 높이 — 공중에서 "더 올라가야 하는지" 판단용
 var _nav_takeoff_top: float = 0.0
+## 뚫고 못 내려가는 발판(고양이 집 지붕 등)에서 걸어 내려가는 중이면 그 발판 — 착지할 자리를 그 밖으로 민다(없으면 빈 사전)
+var _nav_step_off: Dictionary = {}
 ## 끼임 탈출 — 가려는데 제자리(비스듬한 미끄럼틀 밑처럼 벽이 아닌 천장에 막힘)면 반대로 물러났다가 뛰어오른다
 var _stuck_time: float = 0.0
 var _detour_left: float = 0.0
@@ -722,6 +724,8 @@ func _navigate(goal: Dictionary, goal_x: float, delta: float) -> bool:
 		_nav_air_control(goal_x)
 		return true
 	var mine = _current_support()
+	if mine == null or not _nav_step_off.has("id") or _nav_step_off.id != mine.id:
+		_nav_step_off = {}
 	if mine == null or mine.id == goal.id:
 		_nav_next = null
 		return false
@@ -757,11 +761,30 @@ func _nav_ground_step(cur: Dictionary, nxt: Dictionary, goal_x: float) -> void:
 	if cur.one_way and _no_drop_left <= 0.0 and nxt.top > cur.top + 4.0 and x > nxt.left + 10.0 and x < nxt.right - 10.0:
 		if fighter.drop_through_platform():
 			return
+	# 뚫고 못 내려가는 발판(고양이 집 지붕) — 내릴 자리가 발판 위면 가장자리 밖으로 걸어 나간다.
+	# 안 그러면 목표(집 한가운데)에 서서 내려가지도 못하고 멈춘다
+	if not cur.one_way and nxt.top > cur.top + 4.0:
+		var out: float = _outside_of(cur, land_x, x)
+		# 그쪽이 아래 발판 밖(벽에 붙여 지은 집)이면 반대쪽으로
+		if out < nxt.left + 20.0 or out > nxt.right - 20.0:
+			out = cur.right + 28.0 if out < cur.left else cur.left - 28.0
+		_nav_step_off = {"id": cur.id, "left": cur.left, "right": cur.right, "x": out}
+		land_x = clampf(out, nxt.left + 20.0, nxt.right - 20.0)
 	fighter.move(signf(land_x - x) if absf(land_x - x) > 6.0 else 0.0)
 	# 옆 발판이 거의 같은 높이인데 사이가 비었으면 가장자리에서 뛰어 건넌다
 	var near_edge: bool = x > cur.right - 18.0 or x < cur.left + 18.0
 	if fighter.is_on_wall() or (near_edge and nxt.top < cur.top + 40.0 and (nxt.left > cur.right or nxt.right < cur.left)):
 		fighter.jump()
+
+## want_x가 발판 p 위(몸 반폭 포함)면 p 바깥 가장자리 쪽으로 민다 — want_x에 가까운 쪽, 같으면 지금 x에 가까운 쪽
+func _outside_of(p: Dictionary, want_x: float, x: float) -> float:
+	var left: float = p.left - 28.0
+	var right: float = p.right + 28.0
+	if want_x <= left or want_x >= right:
+		return want_x
+	var mid: float = (p.left + p.right) * 0.5
+	var pick: float = want_x if not is_equal_approx(want_x, mid) else x
+	return left if pick < mid else right
 
 ## cur 위 어디서 뛰어야 nxt에 닿는지
 func _takeoff_x(cur: Dictionary, nxt: Dictionary, x: float) -> float:
@@ -789,6 +812,8 @@ func _nav_air_control(goal_x: float) -> void:
 	var x: float = fighter.global_position.x
 	var feet: float = _feet_y(fighter)
 	var land_x: float = clampf(goal_x, p.left + 24.0, p.right - 24.0)
+	if _nav_step_off.has("id") and land_x > _nav_step_off.left - 28.0 and land_x < _nav_step_off.right + 28.0:
+		land_x = _nav_step_off.x
 	var going_up: bool = p.top < _nav_takeoff_top - 4.0
 	if not going_up or p.one_way or feet < p.top - 2.0:
 		fighter.move(signf(land_x - x) if absf(land_x - x) > 8.0 else 0.0)

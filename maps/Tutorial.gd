@@ -1,8 +1,13 @@
 extends Node2D
 
 ## 튜토리얼 맵(2026-10-01) — 군 시험장 풀밭. 처음 켠 사람은 타이틀 다음에 여기로 온다(GameState.tutorial_seen).
-## 배경: 하늘 < 랜덤 구름 < 산 < 숲 < 건물·막사·국기 < 땅. 훈련 더미 하나를 플레이어가 움직여 본다.
-## TODO: 칸별로 군인이 조작을 설명하는 진행
+## 배경: 하늘 < 랜덤 구름 < 산 < 숲 < 건물·막사·국기 < 땅. 교관(황근출)이 말풍선으로 조작을 가르친다.
+##
+## 진행은 `_lines`(대사 한 줄 = Dictionary) 순서대로다(2026-10-07에 번호 상수에서 바꿈):
+##  - `gate`  : 스페이스가 아니라 **이 행동을 해야** 다음 줄로 넘어가는 줄(move/jump/parkour/guard/dash)
+##  - `phase` : 스페이스를 누르면 말풍선이 닫히고 **이 실습이 시작**되는 줄(hit/parry/skill1/skill2/ult/fight). 실습이 끝나면 다음 줄
+##  - `goal`  : 그동안 화면 아래 흰 알약에 띄우는 목표 문장
+## 그 외 줄은 스페이스로 넘어간다. 키 이름은 설정에서 바꾼 키를 그대로 읽어 적는다(`_key()`)
 
 ## 훈련 더미 stats는 샌드백용이라 move_speed가 0 — 조작용으로 복제해 이 속도를 넣는다
 @export var player_move_speed: float = 411.75
@@ -33,18 +38,18 @@ var _intro_target_x: float = 0.0
 ## 훈련 안내 진행 단계
 enum Step { NONE, TALK, DONE }
 var _step: int = Step.NONE
-## 교관 대사 목록(스페이스바로 한 줄씩 넘긴다). _ready에서 강조를 입혀 채운다
-var _lines: Array[String] = []
+## 교관 대사 목록 — _ready에서 `_line()`으로 채운다
+var _lines: Array[Dictionary] = []
 var _line_idx: int = -1
 
-## 2번째 줄(움직이기 안내)은 스페이스가 아니라 "움직임"으로 넘어간다 — 말이 끝나고 이 초만큼 지난 뒤 움직이면 다음으로
-const MOVE_LINE_IDX := 1
+## 스페이스로 넘어가는 줄에서 안 넘기고 이만큼(초) 기다리면 "스페이스를 누르세요"를 띄운다(첫 줄은 바로)
+const PRESS_HINT_DELAY := 4.0
+
+## 움직이기 줄은 말이 끝나고 이 초만큼 지난 뒤 움직여야 넘어간다(읽기도 전에 넘어가지 않게)
 const MOVE_GATE_DELAY := 2.0
 ## 움직이기 줄에서 말이 끝난 뒤 흐른 시간(초)
 var _move_wait: float = 0.0
 
-## 마지막 줄("증명해라!")은 스페이스가 아니라 "발판 오르기"로 끝난다 — 이 줄을 띄우면 나무 발판이 땅에서 솟는다
-const PARKOUR_LINE_IDX := 5
 ## 땅 윗면 월드 y (발판 윗면 높이·솟는 자리 기준)
 @export var ground_top_y: float = 393.0
 ## 1·2단 발판 윗면이 땅 윗면에서 이만큼 위(px). 1단=땅에서 1점프(그림 한 장이 딱 땅에 닿는 높이),
@@ -75,13 +80,6 @@ var _platform2: StaticBody2D
 ## 발판2 꼭대기에 한 번이라도 올라섰나(그 뒤 왼쪽으로 떨어져 땅에 닿으면 발판이 사라진다)
 var _reached_p2: bool = false
 
-## "이제 내가 직접 몸으로 보여주지" 줄 — 이 줄을 넘기면 교관을 때리는 시연 구간이 시작된다
-const HIT_LINE_IDX := 11
-## 이 시간(초)만큼 교관을 안 때리면 "황근출을 때리세요" 알림을 띄운다
-const HIT_PROMPT_DELAY := 4.0
-
-## "내가 기본 공격을 할테니 너의 패링을 보여줘라" 줄 — 이 줄을 넘기면 교관이 플레이어에게 다가와 패링 시범이 시작된다
-const PARRY_LINE_IDX := 19
 ## 교관이 기본공격하는 간격(초) / 이 거리(px)까지 다가가 공격 / 이 거리(px) 안이면 공격을 낸다
 const PARRY_ATTACK_INTERVAL := 2.5
 const PARRY_FOLLOW_GAP := 52.0
@@ -92,9 +90,6 @@ const PARRY_SUCCESS_WAIT := 1.6
 ## 시범 중 플레이어 체력이 이 비율 아래로 떨어지면 가득 채워 준다(튜토리얼에서 KO는 없다)
 const PARRY_SAFE_HP_RATIO := 0.35
 
-## "방향키를 2번 연속으로 눌러라" 줄 — 스페이스가 아니라 플레이어가 실제로 대시를 하면 다음으로 넘어간다
-const DASH_LINE_IDX := 21
-
 var _parry_active: bool = false
 ## 패링에 성공해 X 아이콘을 보여 준 뒤 원래 자리로 걸어 돌아가는 중
 var _parry_returning: bool = false
@@ -104,9 +99,19 @@ var _parry_wait: float = 0.0
 ## 이 줄이 뜬 뒤 대시 쿨이 끝나 있는 걸 확인했나(이전 대시의 쿨 때문에 바로 넘어가지 않게)
 var _dash_armed: bool = false
 
-## "이등병 똥자루와 싸워서 이겨라" 줄 — 이 줄을 넘기면 똥자루(임시 캐릭터, 약한 AI)가 나와 싸움이 시작된다.
-## 이기면 마지막 줄, 지면(플레이어 체력 0) 둘 다 체력을 채우고 다시 싸운다
-const FIGHT_LINE_IDX := 24
+## 스킬 실습 중엔 쿨타임을 이 초로 깎는다 — 헛쏘면 금방 다시 쏠 수 있게(테이저건 원래 쿨 20초)
+const SKILL_RETRY_COOLDOWN := 1.5
+## 스킬을 쏜 뒤 이 초 안에 교관이 맞아야 "스킬로 맞힌 것"으로 친다(주먹으로 때린 걸 스킬 성공으로 안 치게)
+const SKILL_HIT_WINDOW := 2.5
+## 궁을 쓴 뒤 다음 대사까지 기다리는 시간(초) — 경봉을 뽑는 모션을 보여 준다
+const ULT_FINISH_WAIT := 1.0
+## 지금 진행 중인 스킬 실습("skill1"/"skill2"/"ult", 없으면 "")
+var _skill_phase: String = ""
+## 이번 실습에서 스킬을 쏜 뒤 흐른 시간(초). 음수면 아직 안 쐈다
+var _skill_fired_for: float = -1.0
+var _skill_was_ready: bool = false
+
+## 똥자루(임시 캐릭터, 약한 AI)와의 마지막 싸움. 이기면 마지막 줄, 지면(플레이어 체력 0) 둘 다 체력을 채우고 다시 싸운다
 const FIGHT_SCENE := "res://characters/ddongjaru/Ddongjaru.tscn"
 ## 똥자루가 플레이어에게서 이만큼(px) 떨어진 곳에 나타난다(교관 반대쪽)
 const FIGHT_SPAWN_GAP := 300.0
@@ -130,10 +135,9 @@ var _hit_active: bool = false
 ## 이번 시연에서 교관이 한 번이라도 날아갔나 / 날아갔다가 걸어 돌아오는 중인가
 var _instr_launched: bool = false
 var _instr_returning: bool = false
-## 교관을 안 때리고 흐른 시간(초) — 알림용
-var _hit_idle_time: float = 0.0
-## "황근출을 때리세요" 화면 알림(흰 알약)
-var _hit_prompt: Panel
+## 화면 아래 목표 알림(흰 알약)과 그 글자
+var _goal_panel: Panel
+var _goal_label: Label
 
 ## 강조(빨간색 굵게). 기본 글꼴이 이미 Bold라 굵기 차이는 거의 없고 빨간색으로 튄다
 const EM_COLOR := "e22020"
@@ -143,46 +147,103 @@ func _em(s: String) -> String:
 ## 초 단위 숫자를 대사용 글자로("3.0" -> "3초", "2.5" -> "2.5초")
 func _sec_text(sec: float) -> String:
 	if is_equal_approx(sec, roundf(sec)):
-		return "%d초 " % int(roundf(sec))
-	return "%s초 " % String.num(sec, 1)
+		return "%d초" % int(roundf(sec))
+	return "%s초" % String.num(sec, 1)
+
+## P1 조작키 이름 — 설정에서 바꾼 키를 그대로 읽는다("left" → A). 키가 안 걸려 있으면 "?"
+func _key(action: String) -> String:
+	for ev in InputMap.action_get_events("p1_" + action):
+		if ev is InputEventKey:
+			var code: Key = ev.keycode
+			# 설정은 물리 키로 저장된다 — 지금 키보드 배열의 글자로 바꾼다(헤드리스 등 지원 안 하면 물리 키 이름 그대로)
+			if code == KEY_NONE and DisplayServer.get_name() != "headless":
+				code = DisplayServer.keyboard_get_keycode_from_physical(ev.physical_keycode)
+			if code == KEY_NONE:
+				code = ev.physical_keycode
+			return OS.get_keycode_string(code)
+	return "?"
+
+## 강조된 키 이름(대사용)
+func _k(action: String) -> String:
+	return _em(_key(action))
+
+## 대사 한 줄. gate = 이 행동을 해야 넘어감 / phase = 스페이스 뒤 시작할 실습 / goal = 알약 문구
+func _line(text: String, extra: Dictionary = {}) -> Dictionary:
+	var d := {"text": text}
+	d.merge(extra)
+	return d
 
 func _ready() -> void:
 	GameState.mark_tutorial_seen()
 	_spawn_player()
 	_spawn_instructor()
-	_build_hit_prompt()
-	_lines = [
-		"%s 지금 부터 %s을 시작한다" % [_em("신병"), _em("훈련")],
-		"%s %s 로 움직일 수 있다. %s 실시!" % [_em("A"), _em("D"), _em("움직인다")],
-		"좋다 %s" % _em("신병"),
-		"%s로 점프를 할 수 있다, 최대 %s까지 가능하다." % [_em("W"), _em("더블 점프")],
-		"하지만 너무 높이 점프 하면 %s할 때 %s이 있다 조심하도록해라!" % [_em("착지"), _em("경직")],
-		"자 이제! 너가 %s이 아니란걸 %s!" % [_em("페급"), _em("증명해라")],
-		"기본 공격은 %s키이다" % _em("F"),
-		"기본 공격 %s에는 %s이 존재한다" % [_em("헛방시"), _em("쿨타임")],
-		"(너무 %s 하지 말라는 뜻)" % _em("연타"),
-		"기본 공격은 한번 %s 최대 %s 까지 쿨타임 없이 공격 가능하다" % [_em("맞추면"), _em("2번")],
-		"기본 공격으로 3번 째 맞출시 적은 날라가며 %s 및 %s 하니 콤보를 잘 써봐라" % [_em("넉백"), _em("기절")],
-		"이제 내가 직접 %s 보여주지" % _em("몸으로"),
-		"기본 공격 수준을 보아하니 평소에 %s 했겠군 %s" % [_em("게임만"), _em("신병")],
-		"이제 %s와 %s을 알려주지" % [_em("방어"), _em("패링")],
-		"방어 상태는 맵에서 나오는 %s 이 외에는 %s가 방어된다" % [_em("기믹 피해"), _em("모든 데미지")],
-		"%s은 방어 %s로 플레이어 %s에 표시된다" % [_em("방어 쿨타임"), _bubble.icon("guard"), _em("뒤쪽")],
-		"%s에 대해 알려주겠다" % _em("패링"),
-		"방어 중에 상대의 기본 공격을 %s 피해를 받지 않고, 공격한 상대는 %s동안 %s 된다" % [_em("막아내면"), _em(_sec_text(Fighter.blocked_attack_lock)), _em("기본 공격을 못 쓰게")],
-		"%s은 %s로 플레이어 뒤쪽에 표시 된다" % [_em("패링 쿨타임"), _bubble.icon("parry")],
-		"내가 %s을 할테니 %s! 너의 %s을 보여줘라 알겠나!?" % [_em("기본 공격"), _em("신병"), _em("패링")],
-		"좋다 %s" % _em("신병"),
-		"이제 %s를 배워 볼껀데 방향키를 %s 눌러라" % [_em("대쉬"), _em("2번 연속으로")],
-		"%s이 있으니 %s 하도록해라 알겠나?! %s" % [_em("쿨타임"), _em("주의"), _bubble.icon("dash")],
-		"이제 %s를 할꺼다 %s!" % [_em("마지막 테스트"), _em("신병")],
-		"이등병 키자.. 아니;; %s와 싸워서 %s 악!" % [_em("이등병 똥자루"), _em("이겨라")],
-		"좋다 이정도면 이제 %s은 끝난 것 같다." % _em("훈련"),
-	]
+	_build_goal_prompt()
+	_lines = _build_lines()
 	var rays := $Sunlight/Rays as ColorRect
 	if rays and rays.material is ShaderMaterial:
 		_sun_mat = rays.material
 		_sun_base = _sun_mat.get_shader_parameter("sun_pos")
+
+## 교관 대사 전부. 순서가 곧 진행 순서다 — 줄을 끼우거나 빼도 번호를 고칠 필요가 없다
+func _build_lines() -> Array[Dictionary]:
+	var L := _key("left")
+	var R := _key("right")
+	var guard_sec := _sec_text(_fighter.effective_guard_duration())
+	var guard_cd := _sec_text(Fighter.guard_cooldown)
+	var lock_sec := _sec_text(Fighter.blocked_attack_lock)
+	var dash_cd := _sec_text(_fighter.effective_dash_cooldown())
+	var lines: Array[Dictionary] = [
+		# --- 이동 / 점프 ---
+		_line("%s! 지금부터 %s을 시작한다. 대사는 %s로 넘긴다" % [_em("신병"), _em("훈련"), _em("스페이스")]),
+		_line("%s %s 로 움직일 수 있다. %s 실시!" % [_k("left"), _k("right"), _em("움직인다")],
+			{"gate": "move", "goal": "%s / %s 키로 움직이세요" % [L, R]}),
+		_line("좋다 %s" % _em("신병")),
+		_line("%s로 %s를 한다. 공중에서 한 번 더 누르면 %s이다. 뛰어 봐라!" % [_k("jump"), _em("점프"), _em("더블 점프")],
+			{"gate": "jump", "goal": "%s 키로 점프하세요" % _key("jump")}),
+		_line("하지만 너무 높이 점프하면 %s할 때 %s이 있다. 조심하도록 해라!" % [_em("착지"), _em("경직")]),
+		_line("자 이제! 네가 %s이 아니란 걸 %s! 저 발판 %s까지 올라갔다가 %s으로 내려와라!" % [_em("폐급"), _em("증명해라"), _em("꼭대기"), _em("왼쪽")],
+			{"gate": "parkour", "goal": "발판 꼭대기에 올라갔다가 왼쪽 땅으로 내려오세요"}),
+		# --- 기본 공격 ---
+		_line("기본 공격은 %s키다" % _k("basic_attack")),
+		_line("기본 공격을 %s 치면 %s이 돈다. (너무 %s 하지 말라는 뜻)" % [_em("헛"), _em("쿨타임"), _em("연타")]),
+		_line("한 번 %s 최대 %s까지 쿨타임 없이 이어서 때릴 수 있다" % [_em("맞추면"), _em("2번")]),
+		_line("%s를 맞추면 적은 날아가며 %s 및 %s한다. 콤보를 잘 써 봐라" % [_em("3번째"), _em("넉백"), _em("기절")]),
+		_line("말로는 모르겠지? %s! %s를 %s 맞춰서 나를 날려 보내라!" % [_em("나를 쳐 봐라"), _k("basic_attack"), _em("3번 연속")],
+			{"phase": "hit", "goal": "%s 키를 3번 연속 맞춰 교관을 날려 보내세요" % _key("basic_attack")}),
+		_line("기본 공격 수준을 보아하니 평소에 %s 했겠군 %s" % [_em("게임만"), _em("신병")]),
+		# --- 방어 / 패링 ---
+		_line("이제 %s와 %s을 알려주지" % [_em("방어"), _em("패링")]),
+		_line("방어는 %s키다. 누른 순간부터 %s 동안 %s이 켜지고, 맵에서 나오는 %s 말고는 %s를 막는다" % [_k("down"), _em(guard_sec), _em("보호막"), _em("기믹 피해"), _em("모든 피해")]),
+		_line("방어 중엔 %s. 그리고 %s %s가 있다 — 방어 %s 로 네 %s에 표시된다" % [_em("움직이지도 때리지도 못한다"), _em("쿨타임"), _em(guard_cd), _bubble.icon("guard"), _em("뒤쪽")]),
+		_line("한번 %s 봐라!" % _em("눌러"),
+			{"gate": "guard", "goal": "%s 키를 눌러 방어하세요" % _key("down")}),
+		_line("좋다. 이제 %s이다" % _em("패링")),
+		_line("방어 중에 상대의 기본 공격을 %s 피해를 받지 않고, 때린 상대는 %s 동안 %s" % [_em("막아내면"), _em(lock_sec), _em("기본 공격을 못 쓰게 된다")]),
+		_line("막힌 쪽 %s에는 빨간 %s 가 뜬다. X가 사라질 때까지 그놈은 주먹을 못 쓴다" % [_em("뒤쪽"), _bubble.icon("parry")]),
+		_line("내가 %s을 할 테니 때리는 %s에 맞춰 %s! 너의 %s을 보여줘라 알겠나!?" % [_em("기본 공격"), _em("순간"), _k("down"), _em("패링")],
+			{"phase": "parry", "goal": "교관이 때리는 순간에 맞춰 %s 키로 막으세요" % _key("down")}),
+		_line("좋다 %s" % _em("신병")),
+		# --- 대시 ---
+		_line("이제 %s다. %s 또는 %s를 %s 눌러라" % [_em("대시"), _k("left"), _k("right"), _em("빠르게 2번 연속")],
+			{"gate": "dash", "goal": "%s %s 또는 %s %s 로 대시하세요" % [L, L, R, R]}),
+		_line("대시도 %s %s가 있으니 %s하도록! 대시 %s 로 뒤쪽에 표시된다" % [_em("쿨타임"), _em(dash_cd), _em("주의"), _bubble.icon("dash")]),
+		# --- 스킬 / 궁극기 ---
+		_line("이제 %s이다. 캐릭터마다 %s 둘, %s 하나가 있다" % [_em("스킬"), _em("스킬"), _em("궁극기")]),
+		_line("%s는 %s이다. 네 %s으로 나를 쏴 봐라!" % [_k("skill_1"), _em("1번 스킬"), _em("테이저건")],
+			{"phase": "skill1", "goal": "%s 키로 테이저건을 쏴서 교관을 맞히세요" % _key("skill_1")}),
+		_line("%s는 %s이다. %s을 던져 봐라!" % [_k("skill_2"), _em("2번 스킬"), _em("돌")],
+			{"phase": "skill2", "goal": "%s 키로 돌을 던져 교관을 맞히세요" % _key("skill_2")}),
+		_line("스킬은 %s이 길다. 대전에선 화면 위 %s이 다시 차오르면 쓸 수 있다" % [_em("쿨타임"), _em("스킬 칸")]),
+		_line("%s은 %s다. 대전에선 쓰는 순간 %s이 나온다. 써 봐라!" % [_k("ultimate"), _em("궁극기"), _em("컷인 연출")],
+			{"phase": "ult", "goal": "%s 키로 궁극기를 쓰세요" % _key("ultimate")}),
+		_line("%s을 든 동안은 기본 공격이 %s 세진다. 맵마다 %s로 쓰는 %s도 있으니 맵 설명을 잘 봐라" % [_em("경관봉"), _em("두 배로"), _k("map_skill"), _em("맵 전용 스킬")]),
+		# --- 마지막 테스트 ---
+		_line("이제 %s를 할 거다 %s!" % [_em("마지막 테스트"), _em("신병")]),
+		_line("이등병 키자.. 아니;; %s와 싸워서 %s 악!" % [_em("이등병 똥자루"), _em("이겨라")],
+			{"phase": "fight", "goal": "이등병 똥자루를 쓰러뜨리세요"}),
+		_line("좋다. 이 정도면 이제 %s은 끝난 것 같다. 캐릭터·맵 설명은 메뉴의 %s에서 볼 수 있다" % [_em("훈련"), _em("가이드")]),
+	]
+	return lines
 
 func _process(delta: float) -> void:
 	if not (_fighter and is_instance_valid(_fighter)):
@@ -198,11 +259,10 @@ func _process(delta: float) -> void:
 		_fighter.global_position = $PlayerSpawn.global_position
 		_fighter.velocity = Vector2.ZERO
 	_update_tutorial(delta)
-	_update_move_gate(delta)
+	_update_gates(delta)
 	_update_parkour(delta)
-	_update_hit_phase(delta)
 	_update_parry_phase(delta)
-	_update_dash_gate()
+	_update_skill_phase(delta)
 	_update_fight()
 
 ## 교관 가까이(기본 500px) 오면 대사를 시작한다. 이후 진행은 스페이스바로(_advance).
@@ -214,48 +274,60 @@ func _update_tutorial(_delta: float) -> void:
 		_line_idx = 0
 		_say_current()
 
-## 지금 줄을 말풍선에 띄운다. "계속" 힌트(▼)를 켠다(마지막 줄도 스페이스로 넘겨 메인 메뉴로 나간다).
-## "스페이스를 누르세요"는 첫 줄에서만 바로 띄우고, 이후 줄엔 안 띄운다.
-## 스페이스로 안 넘어가는 줄(움직이기·파쿠르·대시)은 ▼·"스페이스를 누르세요"를 둘 다 끈다.
+## 지금 줄의 gate / phase / goal (없으면 "")
+func _gate(idx: int = _line_idx) -> String:
+	return str(_lines[idx].get("gate", "")) if idx >= 0 and idx < _lines.size() else ""
+
+func _phase(idx: int = _line_idx) -> String:
+	return str(_lines[idx].get("phase", "")) if idx >= 0 and idx < _lines.size() else ""
+
+func _goal(idx: int = _line_idx) -> String:
+	return str(_lines[idx].get("goal", "")) if idx >= 0 and idx < _lines.size() else ""
+
+## 지금 줄을 말풍선에 띄운다. 스페이스로 넘어가는 줄은 ▼과 "스페이스를 누르세요"(첫 줄은 바로, 그 뒤론 한참 안 넘길 때)를 켠다.
+## 행동으로 넘어가는 줄(gate)은 둘 다 끄고 대신 목표 알약을 띄운다(글자가 다 나온 뒤 — `_update_gates`).
 func _say_current() -> void:
-	var hint := not _is_action_gated_line(_line_idx)
-	var press_delay := 0.0 if _line_idx == 0 else -1.0
-	_bubble.say(_lines[_line_idx], hint, press_delay)
+	var gate := _gate()
+	var press_delay := -1.0 if gate != "" else (0.0 if _line_idx == 0 else PRESS_HINT_DELAY)
+	_bubble.say(_lines[_line_idx]["text"], gate == "", press_delay)
 	_move_wait = 0.0
 	_dash_armed = false
-	# 마지막 줄을 띄우는 순간 파쿠르 발판이 솟는다
-	if _line_idx == PARKOUR_LINE_IDX:
+	_show_goal("")
+	# 파쿠르 줄을 띄우는 순간 발판이 솟는다
+	if gate == "parkour":
 		_start_parkour()
 
-## 스페이스로 안 넘어가고 플레이어의 행동으로 넘어가는 줄 — 움직이기(이동) / 파쿠르(발판 오르기) / 대시(대시를 해 본다)
-func _is_action_gated_line(idx: int) -> bool:
-	return idx == MOVE_LINE_IDX or idx == PARKOUR_LINE_IDX or idx == DASH_LINE_IDX
-
 ## 스페이스바: 타이핑 중이면 즉시 다 띄운다. 행동으로 넘어가는 줄은 스페이스로 안 넘어간다.
+## 실습(phase)이 붙은 줄은 스페이스에 말풍선이 닫히고 실습이 시작된다 — 실습이 끝나야 다음 줄
 func _advance() -> void:
 	if _step != Step.TALK or _bubble == null:
 		return
 	if _bubble.is_typing():
 		_bubble.finish_typing()
 		return
-	if _is_action_gated_line(_line_idx):
+	if _gate() != "":
 		return
-	# "내가 직접 보여주지"를 넘기면 다음 줄 대신 교관 때리기 시연이 시작된다
-	if _line_idx == HIT_LINE_IDX:
-		_start_hit_phase()
-		return
-	# "너의 패링을 보여줘라"를 넘기면 다음 줄 대신 교관의 패링 시범이 시작된다
-	if _line_idx == PARRY_LINE_IDX:
-		_start_parry_phase()
-		return
-	# "이등병 똥자루와 싸워서 이겨라"를 넘기면 다음 줄 대신 똥자루와 싸움이 시작된다
-	if _line_idx == FIGHT_LINE_IDX:
-		_start_fight()
-		return
-	_go_next_line()
+	match _phase():
+		"hit":
+			_start_hit_phase()
+		"parry":
+			_start_parry_phase()
+		"skill1", "skill2", "ult":
+			_start_skill_phase(_phase())
+		"fight":
+			_start_fight()
+		_:
+			_go_next_line()
+
+## 실습을 시작할 때 공통 — 말풍선을 치우고 목표 알약을 띄운다
+func _begin_phase() -> void:
+	if _bubble:
+		_bubble.close()
+	_show_goal(_goal())
 
 ## 다음 줄로 넘어간다(마지막 줄을 넘기면 튜토리얼 끝 → 메인 메뉴).
 func _go_next_line() -> void:
+	_show_goal("")
 	_line_idx += 1
 	if _line_idx >= _lines.size():
 		_step = Step.DONE
@@ -263,22 +335,41 @@ func _go_next_line() -> void:
 		return
 	_say_current()
 
-## 움직이기 줄: 말이 끝나고 MOVE_GATE_DELAY초가 지난 뒤 플레이어가 좌우로 움직이면 다음 줄로 넘어간다.
-func _update_move_gate(delta: float) -> void:
-	if _step != Step.TALK or _line_idx != MOVE_LINE_IDX or _bubble == null:
+## 행동으로 넘어가는 줄들(gate) — 글자가 다 나온 뒤부터 목표 알약을 띄우고 행동을 기다린다
+func _update_gates(delta: float) -> void:
+	if _step != Step.TALK or _bubble == null:
+		return
+	var gate := _gate()
+	if gate == "" or gate == "parkour":
 		return
 	if _bubble.is_typing():
 		_move_wait = 0.0
+		_dash_armed = false
 		return
-	_move_wait += delta
-	if _move_wait < MOVE_GATE_DELAY:
-		return
-	if Input.is_action_pressed("p1_left") or Input.is_action_pressed("p1_right"):
-		_go_next_line()
+	_show_goal(_goal())
+	match gate:
+		"move":
+			# 읽기도 전에 넘어가지 않게 말이 끝나고 잠시 기다린다
+			_move_wait += delta
+			if _move_wait >= MOVE_GATE_DELAY and (Input.is_action_pressed("p1_left") or Input.is_action_pressed("p1_right")):
+				_go_next_line()
+		"jump":
+			if not _fighter.is_on_floor():
+				_go_next_line()
+		"guard":
+			if _fighter.is_guarding:
+				_go_next_line()
+		"dash":
+			# 이전 대시의 쿨 때문에 바로 넘어가지 않게, 쿨이 비어 있는 걸 본 뒤 새로 쿨이 돌기 시작하면 대시한 것
+			var ratio: float = _fighter.dash_cooldown_ratio()
+			if not _dash_armed:
+				_dash_armed = ratio >= 1.0
+			elif ratio < 1.0:
+				_go_next_line()
 
-# --- 파쿠르 발판(마지막 줄) ---
+# --- 파쿠르 발판 ---
 
-## 파쿠르 줄을 띄우면: 나무 발판 1·2단이 땅에서 먼지와 함께 솟아오른다(카메라는 _process에서 교관 고정을 푼다).
+## 파쿠르 줄을 띄우면: 나무 발판 1·2단이 땅에서 먼지와 함께 솟아오른다.
 func _start_parkour() -> void:
 	if _parkour_active or _parkour_done:
 		return
@@ -337,13 +428,17 @@ func _raise_platform(body: StaticBody2D, delay: float) -> void:
 	tw.tween_callback(_spawn_dust.bind(Vector2(body.position.x, ground_top_y), 1.8))
 	tw.tween_property(body, "position:y", final_y, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-## 파쿠르 진행 확인: 발판2에 올라선 뒤, 왼쪽으로 떨어져 땅에 닿으면 발판이 사라진다
+## 파쿠르 진행 확인: 발판2에 올라선 뒤, 왼쪽으로 떨어져 땅에 닿으면 발판이 사라진다.
+## 꼭대기에 올라서면 목표 문구도 "왼쪽으로 내려오세요"로 바뀐다
 func _update_parkour(_delta: float) -> void:
 	if not _parkour_active:
 		return
 	if not _reached_p2:
+		if _bubble and not _bubble.is_typing():
+			_show_goal(_goal())
 		if _standing_on(_platform2):
 			_reached_p2 = true
+			_show_goal("좋다! 이제 왼쪽 땅으로 내려오세요")
 		return
 	# 발판2를 밟은 뒤 → 발판2 왼쪽 땅에 내려서면(발판 왼쪽 끝보다 더 왼쪽의 진짜 땅) 발판이 사라진다
 	if _fighter.is_on_floor() and not _standing_on(_platform1) and not _standing_on(_platform2):
@@ -366,9 +461,10 @@ func _standing_on(body: Node) -> bool:
 func _finish_parkour() -> void:
 	_parkour_active = false
 	_parkour_done = true
+	_show_goal("")
 	_sink_platform(_platform1)
 	_sink_platform(_platform2)
-	# 가라앉는 연출이 끝날 즈음 다음 대사("기본 공격은 F키이다")로 넘어간다
+	# 가라앉는 연출이 끝날 즈음 다음 대사("기본 공격은 F키다")로 넘어간다
 	Timers.after(self, 0.9, _go_next_line)
 
 func _sink_platform(body: StaticBody2D) -> void:
@@ -396,10 +492,10 @@ func _spawn_dust(pos: Vector2, power: float) -> void:
 	dust.setup(power)
 	dust.z_index = 2   # 배경에 안 가리게(기본 LandDust는 -1이라 숲 뒤로 숨는다)
 
-# --- 교관(황근출) 때리기 시연 ---
+# --- 교관(황근출) ---
 
 ## 진짜 황근출 Fighter를 교관 자리에 세운다. 컨트롤러 없이 가만히 서서 대사만 하고,
-## 때리기 구간 전까진 무적이라 안 맞는다. 때리면 3타 콤보로 날아갔다 원래 자리로 돌아온다.
+## 실습 구간 전까진 무적이라 안 맞는다. 때리면 3타 콤보로 날아갔다 원래 자리로 돌아온다.
 func _spawn_instructor() -> void:
 	var scene: PackedScene = load("res://characters/hwanggeunchul/Hwanggeunchul.tscn")
 	_instructor = scene.instantiate()
@@ -413,7 +509,7 @@ func _spawn_instructor() -> void:
 	_instructor.global_position = _instructor_home
 	_instructor.facing = -1.0          # 플레이어(왼쪽)를 본다
 	_instructor.immovable = true       # 플레이어가 밀어도 안 밀린다(플레이어만 밀려남)
-	_set_instructor_hittable(false)    # 때리기 구간 전엔 때려도 아무 반응이 없다
+	_set_instructor_hittable(false)    # 실습 구간 전엔 때려도 아무 반응이 없다
 	var rig := _instructor.get_node_or_null("Visual")
 	if rig:
 		rig.idle_gestures = false       # 가만히 있을 때 몸짓 안 함
@@ -466,38 +562,41 @@ func _set_instructor_hittable(on: bool) -> void:
 		hurtbox.set_deferred("monitorable", on)
 	_instructor.is_invincible = not on   # 판정 말고 직접 피해를 주는 경로도 막는다
 
-## 교관이 원래 자리로 돌아왔다 → 때리기 시연 또는 패링 시범을 끝낸다
+## 교관이 원래 자리로 돌아왔다 → 때리기 시연 또는 패링 시범을 끝낸다.
+## 스킬 실습 중에 주먹 3타로 날려 보냈으면 돌아온 뒤 다시 맞을 수 있게만 한다(실습은 계속)
 func _on_instructor_home() -> void:
 	if _hit_active:
 		_finish_hit_phase()
 	elif _parry_returning:
 		_finish_parry_phase()
+	elif _skill_phase != "":
+		_set_instructor_hittable(true)
 
+## 교관이 맞았다 — 스킬 실습 중이고 방금 스킬을 쐈으면 그 스킬로 맞힌 것으로 친다
 func _on_instructor_damaged(_amount: int, _knockback: Vector2) -> void:
-	_hit_idle_time = 0.0
-	_show_hit_prompt(false)
+	if (_skill_phase == "skill1" or _skill_phase == "skill2") and _skill_fired_for >= 0.0 and _skill_fired_for <= SKILL_HIT_WINDOW:
+		_finish_skill_phase()
 
-## "내가 직접 보여주지"를 넘긴 순간: 말풍선을 치우고 교관을 때릴 수 있게 한다
+# --- 교관 때리기 시연 ---
+
+## "나를 쳐 봐라"를 넘긴 순간: 말풍선을 치우고 교관을 때릴 수 있게 한다
 func _start_hit_phase() -> void:
 	if _hit_active:
 		return
 	_hit_active = true
-	_hit_idle_time = 0.0
-	if _bubble:
-		_bubble.close()
+	_begin_phase()
 	_set_instructor_hittable(true)
 
 ## 교관이 날아갔다 돌아온 뒤: 다시 때려도 반응 없게 돌리고 다음 대사로 넘어간다
 func _finish_hit_phase() -> void:
 	_hit_active = false
-	_show_hit_prompt(false)
 	_set_instructor_hittable(false)
 	_go_next_line()
 
 # --- 패링 시범 ---
 
 ## "너의 패링을 보여줘라"를 넘긴 순간: 말풍선을 치우고 교관이 플레이어에게 다가와 2.5초마다 기본공격을 한다.
-## 플레이어가 방어(S)로 막으면 성공 — 교관 등 뒤에 패링 X 아이콘이 뜨고, 잠시 뒤 원래 자리로 돌아가 다음 대사로 넘어간다.
+## 플레이어가 방어로 막으면 성공 — 교관 등 뒤에 패링 X 아이콘이 뜨고, 잠시 뒤 원래 자리로 돌아가 다음 대사로 넘어간다.
 ## 못 막으면 실제로 맞는다(데미지·넉백). 체력은 바닥나지 않게 채워 준다
 func _start_parry_phase() -> void:
 	if _parry_active or _parry_returning:
@@ -505,8 +604,7 @@ func _start_parry_phase() -> void:
 	_parry_active = true
 	_parry_succeeded = false
 	_parry_timer = PARRY_FIRST_DELAY
-	if _bubble:
-		_bubble.close()
+	_begin_phase()
 
 ## 시범 중 교관: 플레이어 쪽을 보고, 너무 멀면 다가가고, 사거리 안이면 PARRY_ATTACK_INTERVAL초마다 기본공격을 낸다.
 ## 공격이 방어에 막혀 잠기면(is_basic_attack_locked) 패링 성공
@@ -532,6 +630,7 @@ func _drive_parry(delta: float) -> void:
 	if _instructor.is_basic_attack_locked():
 		_parry_succeeded = true
 		_parry_wait = PARRY_SUCCESS_WAIT
+		_show_goal("패링 성공! 교관 뒤의 빨간 X를 보세요")
 	_instructor.apply_physics(delta)
 
 ## 시범 중 플레이어는 죽지 않게 — 체력이 바닥에 가까우면 가득 채운다
@@ -552,6 +651,69 @@ func _finish_parry_phase() -> void:
 	_parry_returning = false
 	_go_next_line()
 
+# --- 스킬 / 궁극기 실습 ---
+
+## 실습할 스킬 노드("skill1"/"skill2"/"ult")
+func _phase_skill(phase: String) -> Skill:
+	match phase:
+		"skill1":
+			return _fighter.skill_1
+		"skill2":
+			return _fighter.skill_2
+		"ult":
+			return _fighter.skill_ultimate
+	return null
+
+## 스킬 줄을 넘긴 순간: 말풍선을 치우고, 쿨을 비워 바로 쓸 수 있게 하고(궁은 시작부터 쿨이 돌고 있다), 교관을 맞을 수 있게 한다
+func _start_skill_phase(phase: String) -> void:
+	if _skill_phase != "":
+		return
+	var skill := _phase_skill(phase)
+	if skill == null:
+		# 이 캐릭터에 그 스킬이 없으면 실습을 건너뛴다
+		_go_next_line()
+		return
+	_skill_phase = phase
+	_skill_fired_for = -1.0
+	skill.cooldown_left = 0.0
+	_skill_was_ready = true
+	_begin_phase()
+	_set_instructor_hittable(phase != "ult")
+
+## 실습 진행(매 프레임): 쿨이 "비어 있다 → 돈다"로 바뀌면 쐈다고 본다.
+## 스킬1·2는 헛쏘면 쿨을 짧게 깎아 금방 다시 쏘게 하고, 교관이 맞으면(`_on_instructor_damaged`) 끝.
+## 궁은 쓰기만 하면 잠시 뒤 끝(경봉을 뽑는 모션을 보여 준다)
+func _update_skill_phase(delta: float) -> void:
+	if _skill_phase == "":
+		return
+	var skill := _phase_skill(_skill_phase)
+	if skill == null:
+		_finish_skill_phase()
+		return
+	var is_ready: bool = skill.cooldown_left <= 0.0
+	if _skill_was_ready and not is_ready:
+		_skill_fired_for = 0.0
+	_skill_was_ready = is_ready
+	if _skill_fired_for >= 0.0:
+		_skill_fired_for += delta
+	if _skill_phase == "ult":
+		if _skill_fired_for >= ULT_FINISH_WAIT:
+			_finish_skill_phase()
+		return
+	if not is_ready:
+		skill.cooldown_left = minf(skill.cooldown_left, SKILL_RETRY_COOLDOWN)
+	# 쏜 지 한참 지나도 안 맞았으면 "다시"를 알려 준다
+	if _skill_fired_for > SKILL_HIT_WINDOW:
+		_show_goal("빗나갔다! 교관을 보고 다시 쏘세요")
+
+func _finish_skill_phase() -> void:
+	if _skill_phase == "":
+		return
+	_skill_phase = ""
+	_skill_fired_for = -1.0
+	_set_instructor_hittable(false)
+	_go_next_line()
+
 # --- 마지막 테스트: 이등병 똥자루와 싸움 ---
 
 ## "싸워서 이겨라"를 넘긴 순간: 말풍선을 치우고 플레이어 옆(교관 반대쪽)에 똥자루가 먼지와 함께 나타나 싸움을 건다
@@ -559,8 +721,7 @@ func _start_fight() -> void:
 	if _fight_active:
 		return
 	_fight_active = true
-	if _bubble:
-		_bubble.close()
+	_begin_phase()
 	var side: float = -signf(_instructor_home.x - _fighter.global_position.x)
 	if side == 0.0:
 		side = -1.0
@@ -615,10 +776,12 @@ func _restart_fight() -> void:
 	_enemy.global_position.x = _enemy_start_x
 	_enemy.facing = signf(_fighter.global_position.x - _enemy_start_x)
 	_spawn_dust(Vector2(_enemy_start_x, ground_top_y), 1.6)
+	_show_goal("쓰러졌다! 체력을 채웠으니 다시 싸우세요")
 
 ## 이겼다: 똥자루의 AI를 떼고 먼지와 함께 사라지게 한 뒤 마지막 대사로
 func _win_fight() -> void:
 	_fight_active = false
+	_show_goal("")
 	for child in _enemy.get_children():
 		if child is AIController:
 			child.queue_free()
@@ -697,41 +860,26 @@ func _update_fight_hud() -> void:
 		_fight_bars[i].max_value = fs[i].stats.max_hp
 		_fight_bars[i].value = maxi(fs[i].current_hp, 0)
 
-# --- 대시 ---
+# --- 목표 알림(흰 알약) ---
 
-## 대시 줄: 말이 끝난 뒤 대시 쿨이 비어 있는 걸 확인하고(이전 대시의 쿨 때문에 바로 넘어가지 않게),
-## 플레이어가 실제로 대시를 하면(쿨이 돌기 시작하면) 다음 줄로 넘어간다
-func _update_dash_gate() -> void:
-	if _step != Step.TALK or _line_idx != DASH_LINE_IDX or _bubble == null:
+## 화면 아래 가운데 목표 문구. 빈 문자열이면 숨긴다. 글자 폭에 맞춰 알약 폭이 늘어난다
+func _show_goal(text: String) -> void:
+	if _goal_panel == null or not is_instance_valid(_goal_panel):
 		return
-	if _bubble.is_typing():
-		_dash_armed = false
+	if text == "":
+		_goal_panel.visible = false
 		return
-	var ratio: float = _fighter.dash_cooldown_ratio()
-	if not _dash_armed:
-		_dash_armed = ratio >= 1.0
-		return
-	if ratio < 1.0:
-		_go_next_line()
+	if _goal_label.text != text or not _goal_panel.visible:
+		_goal_label.text = text
+		var font: Font = _goal_label.get_theme_font("font")
+		var fs: int = _goal_label.get_theme_font_size("font_size")
+		var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 48.0
+		_goal_panel.size = Vector2(w, 54)
+		_goal_panel.position = Vector2(-w * 0.5, -150)
+		_goal_panel.visible = true
 
-## 때리기 구간에서 한동안 안 때리면 "황근출을 때리세요" 알림을 띄운다
-func _update_hit_phase(delta: float) -> void:
-	if not _hit_active:
-		return
-	# 날아갔거나 돌아오는 중엔 알림을 세지 않는다
-	if _instr_launched or _instr_returning:
-		_hit_idle_time = 0.0
-		return
-	_hit_idle_time += delta
-	if _hit_idle_time >= HIT_PROMPT_DELAY:
-		_show_hit_prompt(true)
-
-func _show_hit_prompt(on: bool) -> void:
-	if _hit_prompt and is_instance_valid(_hit_prompt):
-		_hit_prompt.visible = on
-
-## "황근출을 때리세요" 알림(흰 알약 + 글자)을 화면 아래 가운데에 만든다(처음엔 숨김)
-func _build_hit_prompt() -> void:
+## 목표 알약(흰 알약 + 글자)을 화면 아래 가운데에 만든다(처음엔 숨김)
+func _build_goal_prompt() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 50
 	add_child(layer)
@@ -743,13 +891,11 @@ func _build_hit_prompt() -> void:
 	sb.border_color = Color(0.12, 0.12, 0.14)
 	panel.add_theme_stylebox_override("panel", sb)
 	panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	panel.custom_minimum_size = Vector2(320, 54)
 	panel.size = Vector2(320, 54)
 	panel.position = Vector2(-160, -150)
 	panel.visible = false
 	layer.add_child(panel)
 	var label := Label.new()
-	label.text = "황근출을 때리세요"
 	var font: Font = load("res://font/강한육군 Bold.ttf")
 	if font:
 		label.add_theme_font_override("font", font)
@@ -759,7 +905,8 @@ func _build_hit_prompt() -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(label)
-	_hit_prompt = panel
+	_goal_panel = panel
+	_goal_label = label
 
 func _spawn_player() -> void:
 	# 기본공격 3타 콤보가 필요해 경찰(주인공)로 플레이한다

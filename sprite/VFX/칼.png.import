@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mxd6kb4xf5ps"
-path="res://.godot/imported/heal_clean_5_beam.png-3c89d6d58205d6a7cdc14f276dc93dd3.ctex"
+uid="uid://cq414u5t71vrs"
+path="res://.godot/imported/칼.png-81496a444d9b113d90e8f59f2e08c5d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/VFX/heal_clean_5_beam.png"
-dest_files=["res://.godot/imported/heal_clean_5_beam.png-3c89d6d58205d6a7cdc14f276dc93dd3.ctex"]
+source_file="res://sprite/VFX/칼.png"
+dest_files=["res://.godot/imported/칼.png-81496a444d9b113d90e8f59f2e08c5d9.ctex"]
 
 [params]
 

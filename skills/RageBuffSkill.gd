@@ -26,6 +26,8 @@ func _execute(fighter: Fighter) -> void:
 		fighter.basic_attack.bonus_damage = bonus_damage
 	# 열받아서 씩씩거리는 동안 붉으락푸르락한 오라 + 분노한 표정
 	fighter.set_tint("rage", Color(1.0, 0.55, 0.35), duration)
+	# 공격력이 오른 동안 빨간 칼 아이콘이 몸 근처에서 떠오른다(끄는 건 _end_rage)
+	fighter.show_status_vfx(&"attack_up")
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("set_action_face"):
 		visual.set_action_face(true)
@@ -55,6 +57,7 @@ func _end_rage() -> void:
 		return
 	if fighter.basic_attack and "bonus_damage" in fighter.basic_attack:
 		fighter.basic_attack.bonus_damage = 0
+	fighter.hide_status_vfx(&"attack_up")
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("set_action_face"):
 		visual.set_action_face(false)
