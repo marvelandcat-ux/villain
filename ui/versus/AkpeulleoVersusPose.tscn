@@ -20,13 +20,13 @@ texture = ExtResource("2_hand")
 flip_h = true
 
 [node name="Keyboard" type="Sprite2D" parent="."]
-position = Vector2(110, 300)
+position = Vector2(150, 348)
 rotation = -0.5235988
-scale = Vector2(0.2, 0.2)
+scale = Vector2(0.14, 0.14)
 texture = ExtResource("3_keyboard")
 
 [node name="HandR" type="Sprite2D" parent="."]
-position = Vector2(225, 238)
+position = Vector2(130, 318)
 scale = Vector2(0.78, 0.78)
 texture = ExtResource("2_hand")
 
