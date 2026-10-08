@@ -245,6 +245,22 @@ func _physics_process(delta: float) -> void:
 		if absf(dy) > 0.001:
 			fighter.global_position.y += dy
 
+## 지금 이 줄을 탄 것으로 치는 사람이 있는지 — 비둘기(`DowntownPigeons`)가 "누가 올라탔나" 볼 때 쓴다
+func has_riders() -> bool:
+	return not _riders_prev.is_empty()
+
+## 월드 x에서 지금 그리는 줄(처짐 포함)의 월드 y. 줄 범위 밖이면 NAN. 전봇대 시차로 밀린 그림 끝은 안 친다
+func surface_global_y(global_x: float) -> float:
+	var ly: float = _y_at(to_local(Vector2(global_x, 0.0)).x)
+	if is_nan(ly):
+		return NAN
+	return to_global(Vector2(0.0, ly)).y
+
+## 줄 양 끝의 월드 x (작은 쪽, 큰 쪽)
+func global_ends() -> Vector2:
+	var e: Vector2 = _ends()
+	return Vector2(to_global(Vector2(e.x, 0.0)).x, to_global(Vector2(e.y, 0.0)).x)
+
 ## 줄에서 (위로) 이 거리 안에 있고 x가 줄 범위 안이면 "줄 근처" — 그레이스 동안 탄 사람으로 유지하는 조건
 func _near_wire(fighter: CharacterBody2D) -> bool:
 	var lp: Vector2 = to_local(fighter.global_position)

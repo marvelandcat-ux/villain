@@ -474,7 +474,7 @@ F6으로 띄우면 **게임과 같은 화면**에 헬스장이 나오고, 키보
 ### 궁극기 컷인 `ui/UltimateCutIn.tscn`
 
 - 기획 확정: 1.5초(장면 `cutin_duration` 우선), **연출 중 시간 정지**, 스킵 없음, 확정타 아님. `use_ultimate()` → 연출 → `fire_ultimate_now()`
-- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철. **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
+- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철·고양이 아주머니(검은 고양이만). **궁 스킬에 `cutin_scene_for(fighter)`가 있으면 스탯보다 우선**(같은 캐릭터라도 궁이 갈릴 때). **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
 - 지하철 컷인: ⚠️ `Metro!.png` 무늬가 기울어 칸마다 `rotation = -0.0158` + `skew = 0.0158`(그림 바꾸면 재측정), 이동은 x만. 칸 수·틈을 바꾸면 `train_from_x`/`train_to_x`도. 선글라스 반짝은 `LensGlint.always_show`
 - 금쪽이 컷인: 원래 머리 복원 → `set_action_face(true)` 순서. 경찰: 얼굴 두 장 크기·위치 같아야 함
 

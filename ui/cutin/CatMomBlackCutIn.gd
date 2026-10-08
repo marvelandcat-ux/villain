@@ -38,7 +38,7 @@ const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 ## 얼굴이 커지기 시작하는 시각과 걸리는 시간(초), 최종 배율
 @export var cat_zoom_at: float = 1.5
 @export var cat_zoom_time: float = 0.3
-@export var cat_zoom: float = 1.7
+@export var cat_zoom: float = 1.5
 ## 윙크 시작 시각과 감고 있는 시간(초)
 @export var wink_at: float = 1.9
 @export var wink_hold: float = 0.28
@@ -52,7 +52,7 @@ const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 ## 손이 그리는 곡선이 위로 부푸는 높이(px) — 클수록 크게 휘어 날아간다
 @export var grab_arc: float = 90.0
 ## 잡은 뒤 뒤로 당기는 거리(px)와 시간(초)
-@export var pull_offset: Vector2 = Vector2(-80.0, 14.0)
+@export var pull_offset: Vector2 = Vector2(-70.0, -6.0)
 @export var pull_time: float = 0.16
 ## 다 당긴 순간 칸이 흔들리는 폭(px)과 시간(초) — "철컥"
 @export var rack_shake: float = 9.0
@@ -61,9 +61,9 @@ const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 @export var pull_drag: float = 0.18
 
 @export_group("꼬리 모양")
-## 꼬리 길이(px), 뻗는 방향(도, 180 = 정왼쪽, 160 = 왼쪽 아래로 늘어짐), 끝이 위로 휘는 정도(px)
-@export var tail_length: float = 150.0
-@export var tail_deg: float = 160.0
+## 꼬리 길이(px), 뻗는 방향(도, 180 = 정왼쪽, 125 = 왼쪽 아래로 늘어짐), 끝이 위로 휘는 정도(px)
+@export var tail_length: float = 130.0
+@export var tail_deg: float = 125.0
 @export var tail_curl: float = 30.0
 ## 살랑대는 물결 크기(px)와 빠르기
 @export var tail_wave: float = 22.0

@@ -17,6 +17,7 @@
 [ext_resource type="Script" uid="uid://d0563n72i44ba" path="res://maps/ForegroundFade.gd" id="fgfade"]
 [ext_resource type="Resource" uid="uid://qvjtdgm3hbld" path="res://maps/grade/Downtown.tres" id="grade"]
 [ext_resource type="PackedScene" path="res://skills/TrashBagThrowSkill.tscn" id="ms_trash"]
+[ext_resource type="Script" uid="uid://cg5a2io5fvgx7" path="res://maps/DowntownPigeons.gd" id="pigeons"]
 [ext_resource type="Script" uid="uid://ctgyxsnnoae8t" path="res://maps/RimLight.gd" id="rim"]
 [ext_resource type="Texture2D" uid="uid://dq4j5b0jtfguo" path="res://sprite/맵/번화가/시멘트 도로.png" id="road"]
 [ext_resource type="Script" uid="uid://cgv1s2vxn5sh1" path="res://maps/DowntownTaxi.gd" id="taxi"]
@@ -261,8 +262,6 @@ z_index = -10
 script = ExtResource("d6")
 points = PackedVector2Array(-752, -420.3, -600, -305, -150, -192, 375, -200, 759.4, -467)
 spring_damping = 5.0
-rider_grace = null
-near_wire_px = null
 start_anchor = NodePath("../PoleLeft")
 end_anchor = NodePath("../PoleRightLow")
 
@@ -271,8 +270,6 @@ z_index = -10
 script = ExtResource("d6")
 points = PackedVector2Array(-791.6, -420.3, 0, -515, 600, -680, 893.4, -1014.3)
 spring_damping = 5.0
-rider_grace = null
-near_wire_px = null
 start_anchor = NodePath("../PoleLeft")
 end_anchor = NodePath("../PoleRightTop")
 
@@ -281,9 +278,11 @@ z_index = -10
 script = ExtResource("d6")
 points = PackedVector2Array(-532, -752, 112, -740, 797.3, -1014.3)
 spring_damping = 5.0
-rider_grace = null
-near_wire_px = null
 end_anchor = NodePath("../PoleRightTop")
+
+[node name="DecoPigeons" type="Node2D" parent="." unique_id=1522093417]
+z_index = -9
+script = ExtResource("pigeons")
 
 [node name="GroundArtLeft" type="Sprite2D" parent="." unique_id=1853256138]
 z_index = -10

@@ -61,6 +61,7 @@ paths:
 - 쓰레기: `TrashCans`(`DowntownTrashSpawner`) 10초마다 자식 통 하나 랜덤 → `DowntownTrashCan.burst(3~5)`(뚜껑 `Lid` 튕김) → 조각 `TrashPickup.gd`(물리 바디 아님, 레이캐스트 착지, **안 사라지고 쌓임**)
 - 맵 스킬 `TrashBagThrowSkill`: 스택 `custom_data["trash_stack"]`(최대 10), 전부 담아 포물선 투척 `ThrownTrashBag`(원웨이 발판은 통과). 크기·피해·넉백이 스택 비례. 스택 0이면 쿨 환불. 머리 위 표시는 **임시 숫자**(아이콘 예정)
 - 택시 `DowntownTaxi.gd`: 그림 `택시 본체.png` + `바퀴.png`(`Taxi/Art` 밑에 바퀴 둘 → 본체 순, 왼쪽 갈 땐 `Art.scale.x`만 뒤집음). 본체 0.215배(길이 269·표시등까지 117 = 판정 `body_length`/`roof_height`, **배율을 바꾸면 같이**). 바퀴 그림 중심이 캔버스에서 (3, 11.5) 비켜 있어 `offset`으로 보정. 8~15초마다 랜덤 방향, 닿으면 **피해 없이** 위로 튕김(스프링 방식 + `cancel_landing_lag`, **잔상(`start_air_trail`)은 안 남김** — 2026-10-08 사용자: 렉 느낌). 튕길 때 차체(`Art`)가 감쇠 스프링으로 **눌렸다 되돌아온다**(`squash_*`, 바퀴 바닥이 축, 가로는 반만큼 퍼짐, 실측 약 11%) — 좌우 뒤집기도 `_apply_squash()`가 같이 건다
+- **비둘기 `DowntownPigeons.gd`**(`DecoPigeons`, z -9 = 전선 앞·캐릭터 뒤, 2026-10-08 임시 — 그림은 `_draw()`, 괜찮으면 스프라이트로): 세 전선 중 **랜덤 한 줄**에 3~4마리 나란히(측면, 양 끝 25%는 피함 — 끝은 시차로 그림이 밀림). **순수 장식**(판정 없음). 앉은 전선에 누가 타거나(`PowerLine.has_riders()`), 캐릭터·투사체(`projectiles`·`thrown_stones` 그룹)가 100px 안에 오면 도망 → **판정 있는 표면 아무 데나**(다른 전선 + 원웨이 `RectangleShape2D` 발판 윗면, 전봇대 꼭대기는 그림뿐이라 제외) 중 40px 이상 위이고 안전한 곳 → 위협이 3~5초 없으면 집으로. 옆 비둘기가 뜨면 70px 안도 따라 뜸. 전선 출렁임을 따라 같이 오르내림(`surface_global_y`). ⚠️ `ThrownStone`은 `projectiles` 그룹이 아니라(평타 가르기 대상) `thrown_stones` 그룹을 따로 달았다
 - **투사체는 원웨이뿐인 바디(전선·발판)를 뚫는다** — `Projectile._on_body_entered`가 `PhysicsQuery.is_one_way_only()`로 거른다(2026-10-08, 금쪽이 비비탄이 전선에 막혔음). 쓰레기 봉투도 같은 헬퍼. 경찰 돌(`ThrownStone`)은 그대로 막힌다
 
 ## 헬스장 `maps/Gym.tscn`

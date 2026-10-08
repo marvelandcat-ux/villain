@@ -27,7 +27,7 @@ polygon = PackedVector2Array(19, -37, 640, -350, 640, 360, 239, 360)
 [node name="Content" type="Node2D" parent="PanelWalk"]
 
 [node name="Walker" type="Node2D" parent="PanelWalk/Content"]
-position = Vector2(423, 360)
+position = Vector2(400, 360)
 
 [node name="Body" type="Sprite2D" parent="PanelWalk/Content/Walker"]
 position = Vector2(0, -16)
@@ -56,8 +56,8 @@ polygon = PackedVector2Array(-160, -360, 640, -360, 640, -350, 19, -37)
 [node name="Content" type="Node2D" parent="PanelCat"]
 
 [node name="CatHead" type="Sprite2D" parent="PanelCat/Content"]
-position = Vector2(160, -240)
-scale = Vector2(0.2, 0.2)
+position = Vector2(130, -222)
+scale = Vector2(0.18, 0.18)
 texture = ExtResource("5_cat_head")
 
 [node name="Wink" type="Node2D" parent="PanelCat/Content/CatHead"]
