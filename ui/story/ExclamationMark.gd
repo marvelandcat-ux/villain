@@ -94,6 +94,9 @@ func _process(delta: float) -> void:
 
 ## 지금 얼마나 커져 있는지(0 = 아직 안 나옴, 1 = 제 크기). 튀는 동안 1을 넘었다 돌아온다
 func _pop() -> float:
+	# 에디터에서는 늘 제 크기로 세워 둔다 — 안 보이면 끌어서 자리를 맞출 수가 없다
+	if Engine.is_editor_hint():
+		return 1.0
 	if _age < start_delay:
 		return 0.0
 	if pop_time <= 0.0:

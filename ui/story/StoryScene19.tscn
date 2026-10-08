@@ -15,8 +15,10 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.5
+crossfade_time = 0.15
 hold_time = 2.6
 next_scene = "res://ui/story/StoryScene20.tscn"
+out_transition = 1
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -36,6 +38,7 @@ centered = false
 [node name="Mark" parent="." instance=ExtResource("3_mark")]
 position = Vector2(600, 120)
 texture = ExtResource("5_bang")
+start_delay = 0.0
 height = 170.0
 
 [node name="Fade" type="ColorRect" parent="."]

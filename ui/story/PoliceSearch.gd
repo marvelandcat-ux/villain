@@ -101,18 +101,18 @@ const CANVAS := Vector2(1672.0, 941.0)
 	set(value):
 		bag_pivot = value
 		_apply_pivots()
-## 몇 초마다 한 번 움찔하는지
-@export var bag_every: float = 2.8
+## **장면이 열리고 몇 초 뒤에** 한 번 움찔하는지. 반복하지 않는다(2026-10-08 사용자)
+@export var bag_at: float = 1.6
 ## 한 번 움찔하는 데 걸리는 시간(초)
-@export var bag_time: float = 0.45
+@export var bag_time: float = 0.55
 ## 그 사이에 좌우로 몇 번 흔들리는지
-@export var bag_shakes: float = 2.5
+@export var bag_shakes: float = 2.0
 ## 흔들리는 각도(도)
-@export var bag_angle: float = 4.0
+@export var bag_angle: float = 1.8
 ## 같이 들썩이는 높이(px)
-@export var bag_lift: float = 18.0
-## 눌렸다 펴지는 정도(0.05면 5%)
-@export_range(0.0, 0.3, 0.01) var bag_squash: float = 0.05
+@export var bag_lift: float = 7.0
+## 눌렸다 펴지는 정도(0.02면 2%)
+@export_range(0.0, 0.3, 0.01) var bag_squash: float = 0.02
 
 @export_group("휙 트레일")
 ## 고개가 바뀌는 순간 **머리가 지나온 쪽으로 뻗는 속도선**. 툭 바뀌기만 하면 심심해서 넣었다
@@ -247,21 +247,23 @@ func _breathe() -> void:
 	_body.scale = Vector2(1.0 + s * breath_amount * 0.4, 1.0 + s * breath_amount)
 	_body.position = body_pivot + Vector2(0.0, -s * breath_lift)
 
-## 쓰레기봉지가 **움찔**한다 — `bag_every`마다 `bag_time` 동안 바닥을 축으로 좌우로 떨고,
-## 떨면서 들썩이고 눌렸다 펴진다. 흔들림은 뒤로 갈수록 잦아든다(그래야 "한 번 움찔"로 읽힌다)
+## 쓰레기봉지가 **딱 한 번 움찔**한다 — `bag_at`에 시작해 `bag_time` 동안 바닥을 축으로 떤다.
+##
+## ⚠️ 세기를 `1 - k`(직선)로 줄이면 **시작하는 순간 최대로 꺾여서 덜컥거린다**(2026-10-08 사용자).
+## `sin(k*PI)`는 양 끝이 0이라 스르르 커졌다 스르르 잦아든다 — 같은 각도라도 훨씬 부드럽다
 func _twitch_bag() -> void:
-	var t: float = fmod(_time, maxf(bag_every, 0.1))
-	if not bag_twitch or bag_time <= 0.0 or t >= bag_time:
+	var t: float = _time - bag_at
+	if not bag_twitch or bag_time <= 0.0 or t < 0.0 or t >= bag_time:
 		_bag.rotation = 0.0
 		_bag.position = bag_pivot
 		_bag.scale = Vector2.ONE
 		return
 	var k: float = t / bag_time
-	var damp: float = 1.0 - k
+	var env: float = sin(k * PI)
 	var wave: float = sin(k * TAU * bag_shakes)
-	_bag.rotation = deg_to_rad(bag_angle) * wave * damp
-	_bag.position = bag_pivot + Vector2(0.0, -absf(wave) * bag_lift * damp)
-	var sq: float = bag_squash * damp * (1.0 - absf(wave))
+	_bag.rotation = deg_to_rad(bag_angle) * wave * env
+	_bag.position = bag_pivot + Vector2(0.0, -absf(wave) * bag_lift * env)
+	var sq: float = bag_squash * env * (1.0 - absf(wave))
 	_bag.scale = Vector2(1.0 + sq, 1.0 - sq)
 
 ## 어깨에서 도니까 손전등 끝이 **반원을 그린다**

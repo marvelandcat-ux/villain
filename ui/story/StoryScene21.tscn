@@ -13,7 +13,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.25
-hold_time = 3.2
+hold_time = 3.6
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1

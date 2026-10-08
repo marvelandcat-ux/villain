@@ -12,7 +12,8 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.8
-hold_time = 4.2
+hold_time = 1.45
+out_transition = 1
 next_scene = "res://ui/story/StoryScene19.tscn"
 
 [node name="Background" type="ColorRect" parent="."]

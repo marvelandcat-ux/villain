@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/story/HerePolice.gd" id="1"]
 [ext_resource type="Script" path="res://ui/story/HerePoliceTrail.gd" id="9_trail"]
 [ext_resource type="Texture2D" uid="uid://d1wak6lrly48f" path="res://sprite/storymode/악플러/여기인가경찰_0004_Layer-0.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://cfah3ydjjseun" path="res://sprite/storymode/악플러/여기인가경찰_0004_Layer-1.png" id="10_legs"]
 [ext_resource type="Texture2D" uid="uid://dpj80wkunve3l" path="res://sprite/storymode/악플러/여기인가경찰_0003_얼굴.png" id="3_face"]
 [ext_resource type="Texture2D" uid="uid://irf06jk0jkn8" path="res://sprite/storymode/악플러/여기인가경찰_0002_손전등든-팔.png" id="4_arm"]
 [ext_resource type="Texture2D" uid="uid://cbbjnsl6tkaq5" path="res://sprite/storymode/악플러/여기인가경찰_0001_몸통.png" id="5_body"]
@@ -13,6 +14,10 @@ script = ExtResource("1")
 
 [node name="Background" type="Sprite2D" parent="."]
 texture = ExtResource("2_bg")
+centered = false
+
+[node name="Legs" type="Sprite2D" parent="."]
+texture = ExtResource("10_legs")
 centered = false
 
 [node name="Trail" type="Node2D" parent="."]
