@@ -17,7 +17,7 @@ const PICKUP_SCRIPT := preload("res://maps/TrashPickup.gd")
 @export var trash_scale: float = 0.03
 ## 쓰레기 한 조각이 화면에서 차지할 크기(px, 보이는 영역의 긴 변). 그림마다 캔버스가 달라도(1254 / 1024x1536 / 1774x887)
 ## 같은 크기로 나온다. 2026-10-08 사용자 요청으로 예전(약 25px)의 **2배**
-@export var trash_px: float = 50.0
+@export var trash_px: float = 29.0
 ## 쓰레기가 나오는 자리(이 노드 기준) — 통 입구
 @export var spawn_offset: Vector2 = Vector2(0, -12)
 ## 튀어나오는 가로 속도 범위(px/s, 방향은 랜덤)

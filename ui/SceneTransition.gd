@@ -60,3 +60,24 @@ func go_to_scene(path: String) -> void:
 	await _wipe.uncovered
 	_wipe.queue_free()
 	_wipe = null
+
+## --- 검은 화면 전환(2026-10-08, 맵 선택 "빨려 들어가기") ---
+## 부르는 쪽이 이미 화면을 **검게 만든 채로** 넘어온다(맵 선택이 확대하며 어둡게 함). 여기선 검은 막으로 바로 덮고 →
+## 씬을 바꾸고 → 새 씬이 자리잡으면 `fade_time`초 동안 **서서히 밝아진다**(로딩 대신). 홀로그램 타일과 겹치면 무시한다
+var _black: ColorRect = null
+
+func go_to_scene_from_black(path: String, fade_time: float = 1.0) -> void:
+	if _wipe != null or _black != null:
+		return
+	_black = ColorRect.new()
+	_black.color = Color.BLACK
+	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_black)
+	get_tree().change_scene_to_file(path)
+	await get_tree().process_frame  # 새 씬이 트리에 완전히 자리잡을 시간을 한 프레임 준다
+	var tween := create_tween()
+	tween.tween_property(_black, "color:a", 0.0, maxf(fade_time, 0.05)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await tween.finished
+	_black.queue_free()
+	_black = null

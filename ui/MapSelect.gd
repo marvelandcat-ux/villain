@@ -29,21 +29,23 @@ const PX_PER_DEG := 66.0
 const TEX_SIZE := Vector2(2048, 1024)
 
 ## 지구본 중심·반지름(px), 기울기(라디안), 저절로 도는 속도(초당 그림 가로 몇 바퀴)
-const GLOBE_CENTER := Vector2(640, 73)
+const GLOBE_CENTER := Vector2(640, 345)
 const GLOBE_RADIUS := 920.0
 const GLOBE_TILT := -0.3
 const SPIN_SPEED := 1.0 / 160.0
 ## 펼친 지도의 반 크기(px)와 그 가로가 보여 주는 그림 폭(u) — 한반도가 세로로 꽉 차게
-const FLAT_HALF := Vector2(1400, 900)
-const FLAT_SPAN_U := 0.4844
+const FLAT_HALF := Vector2(660, 380)
+const FLAT_SPAN_U := 0.70
 ## 끌다 놓았을 때 미끄러지는 힘이 줄어드는 빠르기(1초에 남는 비율이 아니라 감속 계수)와 최대 속도(초당 바퀴)
 const FLING_DAMP := 3.0
 const FLING_MAX := 1.5
 ## 고른 뒤 연출 시간(초): 핀 쪽으로 돌기 / 펼치기 / 확대
 const TURN_TIME := 0.5
 const UNFOLD_TIME := 0.9
-const ZOOM_TIME := 0.7
-const ZOOM_TO := 2.0
+const ZOOM_TIME := 1.1
+const ZOOM_TO := 3.5
+## 검게 빨려 들어간 뒤 새 맵이 서서히 드러나는 시간(초)
+const MAP_FADE_IN := 1.0
 ## 핀에 마우스를 올리면 뜨는 썸네일 크기(px)와 핀 머리 위로 띄우는 틈(px)
 const THUMB_SIZE := Vector2(256, 144)
 const THUMB_GAP := 34.0
@@ -63,12 +65,17 @@ var _spin: float = 0.0           # 그림을 가로로 민 양(u) — 0이면 �
 ## 좌클릭으로 끄는 중인지 / 놓은 뒤 남은 미끄러지는 속도(초당 u)
 var _dragging: bool = false
 var _fling: float = 0.0
-var _flatten: float = 0.0
+var _flatten: float = 1.0   # 평면 지도 모드(2026-10-08) — 처음부터 펼쳐진 채로 시작
 var _zoom: float = 1.0
 var _zoom_uv: Vector2 = Vector2(0.5, 0.5)
 ## 고르는 연출 중(핀·버튼 잠금, 자동 회전 멈춤)
 var _busy: bool = false
 var _picked: String = ""
+## 평면 지도(2026-10-08): 바다 질감만 흐르는 밀림(그림 좌표 u·v)과 그 속도(초당). 땅은 고정
+const OCEAN_FLOW := Vector2(0.012, 0.005)
+var _ocean_scroll: Vector2 = Vector2.ZERO
+## 빨려 들어갈 때 화면을 덮어 가는 검은 막(코드로 만든다)
+var _dark: ColorRect = null
 
 func _ready() -> void:
 	for map_name in GameState.MAPS.keys():
@@ -85,19 +92,28 @@ func _ready() -> void:
 	# P1(왼쪽)은 오른쪽(가운데)을, P2(오른쪽)은 왼쪽(가운데)을 보게 마주 세운다
 	_spawn_standee(_p1_standee, GameState.p1_character_path, 1.0)
 	_spawn_standee(_p2_standee, GameState.p2_character_path, -1.0)
+	# 빨려 들어갈 때 화면을 덮어 가는 검은 막 — 맨 위에, 마우스는 안 막는다
+	_dark = ColorRect.new()
+	_dark.name = "Dark"
+	_dark.color = Color(0, 0, 0, 0)
+	_dark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dark.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_dark)
 	_apply_globe()
 
 func _process(delta: float) -> void:
 	var dt: float = minf(delta, 0.05)
-	if not _busy and not _dragging:
-		# 놓은 뒤 미끄러짐은 점점 줄고, 핀에 마우스를 올리고 있으면 저절로 도는 것만 멈춘다
-		_fling = move_toward(_fling, 0.0, absf(_fling) * FLING_DAMP * dt + 0.01 * dt)
-		var auto: float = 0.0 if _any_pin_hovered() else SPIN_SPEED
-		_spin = fposmod(_spin + (auto + _fling) * dt, 1.0)
+	# 평면 지도: 땅은 고정, 바다 질감만 천천히 비스듬히 흐른다
+	_ocean_scroll += OCEAN_FLOW * dt
+	_ocean_scroll = Vector2(fposmod(_ocean_scroll.x, 1.0), fposmod(_ocean_scroll.y, 1.0))
 	_apply_globe()
 
-## 지구본 위를 좌클릭으로 끌면 끈 만큼 돈다(핀은 버튼이라 핀 위 클릭은 여기로 안 온다)
-func _gui_input(event: InputEvent) -> void:
+## 평면 지도 모드에선 끌기 없음(땅이 고정이라 끌 것이 없다). 함수는 남겨 둠 — 지구본으로 되돌릴 때를 위해
+func _gui_input(_event: InputEvent) -> void:
+	return
+
+## (지구본 모드에서 쓰던 끌기 — 지금은 안 불린다)
+func _gui_input_globe(event: InputEvent) -> void:
 	if _busy:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -146,6 +162,7 @@ func _apply_globe() -> void:
 		mat.set_shader_parameter("flat_span_u", FLAT_SPAN_U)
 		mat.set_shader_parameter("zoom", _zoom)
 		mat.set_shader_parameter("zoom_uv", _zoom_uv)
+		mat.set_shader_parameter("ocean_scroll", _ocean_scroll)
 	for map_name in _pin_nodes:
 		var pin = _pin_nodes[map_name]
 		var spot: Dictionary = _screen_of(_pin_uv(map_name) - Vector2(_spin, 0.0))
@@ -253,21 +270,18 @@ func _on_map_picked(map_name: String) -> void:
 	_fling = 0.0
 	_picked = map_name
 	_set_buttons_disabled(true)
-	# 펼친 지도 윗변이 안내 글자 자리까지 올라오므로, 펼치기 전에 글자를 걷는다
-	create_tween().tween_property(_status_label, "modulate:a", 0.0, TURN_TIME)
-	var pin_uv: Vector2 = _pin_uv(map_name)
-	# 핀의 u가 정면(0.5)에 오는 spin 중 지금과 가장 가까운 값
-	var goal: float = _spin + wrapf(pin_uv.x - 0.5 - _spin, -0.5, 0.5)
-	# 돌고 나면 핀은 화면 기준 그림 좌표 (0.5, v)에 있다 — 거기를 향해 확대
-	var uv := Vector2(0.5, pin_uv.y)
-	var tween := create_tween()
-	tween.tween_method(_set_spin, _spin, goal, TURN_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_method(_set_flatten, 0.0, 1.0, UNFOLD_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_callback(func(): _zoom_uv = uv)
-	tween.tween_method(_set_zoom, 1.0, ZOOM_TO, ZOOM_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# 평면 지도(2026-10-08 사용자 설계): 핀 자리로 **점점 빠르게 확대되며 빨려 들어가고**, 동시에 화면이 점점 어두워진다.
+	# 완전히 검어지면 씬을 바꾸고, 새 맵이 자리잡으면 검은 막이 서서히 걷힌다(SceneTransition.go_to_scene_from_black) — 로딩 화면 대신
+	_zoom_uv = _pin_uv(map_name)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_method(_set_zoom, 1.0, ZOOM_TO, ZOOM_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_property(_dark, "color:a", 1.0, ZOOM_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# 글자·핀·캐릭터는 먼저 사라진다 — 빨려 들어가는 건 지도만
+	for node in [_status_label, _pins, _p1_standee, _p2_standee, _random_button]:
+		tween.tween_property(node, "modulate:a", 0.0, ZOOM_TIME * 0.4)
 	await tween.finished
 	GameState.selected_map_path = GameState.MAPS[map_name]
-	SceneTransition.go_to_scene(GameState.selected_map_path)
+	SceneTransition.go_to_scene_from_black(GameState.selected_map_path, MAP_FADE_IN)
 
 ## 랜덤 — 지구본이 빠르게 두어 바퀴 돌다 점점 느려지며 고른 핀이 정면에 온 채로 멈추고, 그 맵으로 들어간다
 func _on_random_pressed() -> void:
@@ -279,12 +293,9 @@ func _on_random_pressed() -> void:
 	_set_buttons_disabled(true)
 	var keys: Array = GameState.MAPS.keys()
 	var pick: String = keys[randi() % keys.size()]
-	var goal: float = _spin + 2.0 + fposmod(_pin_uv(pick).x - 0.5 - _spin, 1.0)
-	var tween := create_tween()
-	tween.tween_method(_set_spin, _spin, goal, 2.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	await tween.finished
-	_spin = fposmod(_spin, 1.0)
+	# 평면 지도라 돌릴 게 없다 — 핀을 잠깐 비춘 뒤 바로 빨려 들어간다
 	_pin_nodes[pick].grab_focus()
+	await get_tree().create_timer(0.45).timeout
 	_on_map_picked(pick)
 
 func _set_spin(value: float) -> void:

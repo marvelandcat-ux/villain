@@ -239,8 +239,8 @@ class PigeonBird extends Node2D:
 		_flap = randf() * TAU
 		_sprite = Sprite2D.new()
 		_sprite.centered = false
-		# 10분의 1로 줄여 그리므로 밉맵 보간이 없으면 윤곽선이 지글거린다
-		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		# 밉맵 보간을 쓰면 10분의 1로 줄인 그림이 뿌옇게 보였다(2026-10-08 사용자: "선명하게") → 밉맵 없는 선형 보간
+		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		var s: float = flock.sprite_scale()
 		_sprite.scale = Vector2(s, s)
 		add_child(_sprite)

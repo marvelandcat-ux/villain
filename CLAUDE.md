@@ -50,7 +50,7 @@
 - `attack_duration`을 바꾸면 `windup`(= x0.4)도. 회전·발차기 타는 리그 `spin_duration`/`kick_duration`을 `finisher_windup`과 같이
 - 확정 콤보: **넉백을 키우면 파고들기(`combo_lunge`)도 같이**
 - 회전 타격: 루트 `scale.x` 변경은 다음 프레임 `_apply_pose` 첫머리에서 되돌리기, 최소 0.04
-- 3타 날아가기 `launch_finisher()`: `FINISHER_*`는 배율 1 기준, `finisher_distance_scale`은 속도 배수(거리 ≈ 제곱). 벽 튕김 속도는 `move_and_slide()` **전에** 기억
+- 3타 날아가기 `launch_finisher()`: `FINISHER_*`는 배율 1 기준, `finisher_distance_scale`은 속도 배수(거리 ≈ 제곱). 벽 튕김 속도는 `move_and_slide()` **전에** 기억. **높이는 잃은 체력으로 보간**(2026-10-08): `FINISHER_PEAK_FULL` 150 → `FINISHER_PEAK_EMPTY` 350px, 솟는 속도 `FINISHER_UP_SCALE` √3은 상한이 항상 걸리게 하는 용도(실측 풀피 156 / 반피 256 / 빈사 347px). 체력 배율(속도)에 높이가 또 곱해지지 않는다. **날아가는 동안 받는 피해 절반**(`FINISHER_FLYING_DAMAGE_SCALE`, `take_damage` 맨 앞 올림)
 - 클래시 `SkillClashManager`: 스킬1·2·궁만. 테스트에서 스킬은 클래시 대기창 뒤에 나감
 - 점프·중력은 **static var**(영구는 `DEFAULT_*`). **점프·중력을 바꾸면 맵 발판 높이(놀이터·지하철 의자·공사현장·헬스장) 재확인**
 - 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 필수

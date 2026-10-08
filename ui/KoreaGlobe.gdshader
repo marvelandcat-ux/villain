@@ -16,6 +16,8 @@ uniform vec2 center = vec2(640.0, 330.0);
 uniform float radius = 230.0;
 // 그림을 가로로 얼마나 밀었는지(u) — 늘리면 지구본이 돈다. 0이면 한반도(u 0.5)가 정면
 uniform float spin = 0.0;
+// 바다만 흐르게 하는 밀림(그림 좌표 u·v). 평면 지도 모드(2026-10-08)에서 땅은 고정하고 바다 질감만 천천히 흐른다
+uniform vec2 ocean_scroll = vec2(0.0);
 // 지구본 축 기울기(라디안) — 펼칠수록 0으로
 uniform float tilt = -0.3;
 uniform float flatten : hint_range(0.0, 1.0) = 0.0;
@@ -68,7 +70,7 @@ vec2 surface_uv(vec2 p) {
 void fragment() {
 	vec2 p = UV * rect_size - center;
 	vec2 uv = surface_uv(p);
-	vec4 surface = texture(ocean_tex, uv + vec2(spin, 0.0));
+	vec4 surface = texture(ocean_tex, uv + vec2(spin, 0.0) + ocean_scroll);
 	vec2 world = vec2(fract(uv.x + spin), uv.y);
 	vec2 luv = (world - land_rect.xy) / land_rect.zw;
 	// 땅 그림 바깥은 바다(가장자리 픽셀이 늘어나 보이지 않게 직접 가린다). 미분은 fract 이음매가 없는 uv로 잡는다
