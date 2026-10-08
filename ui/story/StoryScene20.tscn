@@ -14,7 +14,8 @@ mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.25
 crossfade_time = 0.12
-hold_time = 2.8
+hold_time = 1.0
+out_transition = 1
 next_scene = "res://ui/story/StoryScene21.tscn"
 
 [node name="Background" type="ColorRect" parent="."]

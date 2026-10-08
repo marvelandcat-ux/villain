@@ -16,7 +16,7 @@ mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 0.5
 crossfade_time = 0.15
-hold_time = 2.6
+hold_time = 1.1
 next_scene = "res://ui/story/StoryScene20.tscn"
 out_transition = 1
 

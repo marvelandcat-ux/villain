@@ -102,9 +102,9 @@ const CANVAS := Vector2(1672.0, 941.0)
 		bag_pivot = value
 		_apply_pivots()
 ## **장면이 열리고 몇 초 뒤에** 한 번 움찔하는지. 반복하지 않는다(2026-10-08 사용자)
-@export var bag_at: float = 1.6
+@export var bag_at: float = 1.0
 ## 한 번 움찔하는 데 걸리는 시간(초)
-@export var bag_time: float = 0.55
+@export var bag_time: float = 0.5
 ## 그 사이에 좌우로 몇 번 흔들리는지
 @export var bag_shakes: float = 2.0
 ## 흔들리는 각도(도)
