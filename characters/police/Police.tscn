@@ -13,7 +13,7 @@
 [ext_resource type="Script" path="res://skills/StoneThrowSkill.gd" id="9_stone"]
 [ext_resource type="Texture2D" uid="uid://c5curqetb0ax4" path="res://sprite/storymode/경찰서/테이져건.png" id="12_logo_taser"]
 [ext_resource type="Texture2D" uid="uid://cgtpa788i235d" path="res://sprite/storymode/경찰서/던지는돌1-Photoroom.png" id="13_logo_stone"]
-[ext_resource type="Texture2D" uid="uid://birq3uuakxgj7" path="res://sprite/storymode/경찰서/경봉.png" id="14_logo_baton"]
+[ext_resource type="Texture2D" uid="uid://ck3gu7qcxpeeg" path="res://sprite/storymode/경찰서/미란다종이.png" id="14_logo_miranda"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_logo_taser"]
 atlas = ExtResource("12_logo_taser")
@@ -23,9 +23,9 @@ region = Rect2(16, 62, 1588, 870)
 atlas = ExtResource("13_logo_stone")
 region = Rect2(146, 266, 1088, 702)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_logo_baton"]
-atlas = ExtResource("14_logo_baton")
-region = Rect2(80, 92, 1120, 1100)
+[sub_resource type="AtlasTexture" id="AtlasTexture_logo_miranda"]
+atlas = ExtResource("14_logo_miranda")
+region = Rect2(89, 118, 893, 1258)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -102,7 +102,7 @@ script = ExtResource("11_baton")
 cooldown = 20.0
 start_on_cooldown = true
 skill_name = "경관봉"
-icon = SubResource("AtlasTexture_logo_baton")
+icon = SubResource("AtlasTexture_logo_miranda")
 description = "허리에서 경관봉을 뽑아 든다. 15초 동안 기본공격이 주먹 대신 경봉 타격이 되고 데미지가 두 배로 오른다. 시간이 끝나면 도로 집어넣는다."
 duration = 15.0
 damage_multiplier = 2.0

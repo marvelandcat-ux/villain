@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://etsbgl2e5n8c"
-path="res://.godot/imported/악플러의집.png-a180ba2d573325853f04850c955e79f5.ctex"
+uid="uid://dqfdio1pehkj6"
+path="res://.godot/imported/켜진손전등.png-6773b26dda0f03e1d3fc9b31973e5d57.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/악플러/악플러의집.png"
-dest_files=["res://.godot/imported/악플러의집.png-a180ba2d573325853f04850c955e79f5.ctex"]
+source_file="res://sprite/storymode/악플러/켜진손전등.png"
+dest_files=["res://.godot/imported/켜진손전등.png-6773b26dda0f03e1d3fc9b31973e5d57.ctex"]
 
 [params]
 

@@ -125,6 +125,7 @@ size = Vector2(24.255947, 8.437488)
 [node name="TrashRoom" type="Node2D" unique_id=1655989136]
 script = ExtResource("stage")
 hud_panels_top = true
+debug_story_skip_key = true
 
 [node name="Blackout" type="CanvasModulate" parent="." unique_id=1931403820]
 script = ExtResource("blackout")

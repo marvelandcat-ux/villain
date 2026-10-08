@@ -29,7 +29,10 @@ extends Control
 @export var hide_replies: bool = true
 ## 맨 위 댓글을 한 글자씩 찍을지 — "지금 막 올라오는 댓글"
 @export var type_root: bool = true
-@export var chars_per_second: float = 18.0
+## **답글도 한 글자씩 찍는다**(2026-10-08 사용자 — "너무 슥슥 나옴").
+## 통째로 떠오르면 누가 지금 치고 있다는 느낌이 안 난다
+@export var type_replies: bool = true
+@export var chars_per_second: float = 22.0
 @export var type_delay: float = 0.5
 
 @export_group("모양")
@@ -61,17 +64,22 @@ class Avatar:
 		var body := Rect2(c.x - r * 0.28, c.y + r * 0.08, r * 0.56, r * 0.6)
 		draw_rect(body, line, false, 2.0)
 
-## 맨 위 댓글 글자(한 글자씩 찍을 때 쓴다)
-var _root_label: RichTextLabel = null
-var _root_text: String = ""
-var _typed: float = 0.0
-var _delay_left: float = 0.0
+## 아직 다 안 찍힌 줄들. 한 칸은 {row, label, len, typed, delay}
+## (`row`가 있으면 **그 줄이 화면에 올라온 뒤에** 찍기 시작한다 — `@show`가 올려 준다)
+var _pending: Array[Dictionary] = []
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build()
-	_delay_left = type_delay
-	set_process(type_root and _root_label != null)
+	set_process(not _pending.is_empty())
+
+## 이 라벨을 **한 글자씩 드러낼** 준비를 한다.
+## ⚠️ 글자를 지웠다 채우면 안 된다 — 말풍선 크기가 글자마다 바뀌어서 아래 줄이 들썩인다.
+## 글은 다 써 둔 채로 `visible_characters`만 늘린다(대화창도 같은 방식이다)
+func _type_later(label: RichTextLabel, row: Control, delay: float) -> void:
+	label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
+	label.visible_characters = 0
+	_pending.append({"row": row, "label": label, "len": label.get_total_character_count(), "typed": 0.0, "delay": delay})
 
 func _font() -> Font:
 	return load(FONT_PATH) if ResourceLoader.exists(FONT_PATH) else null
@@ -180,27 +188,34 @@ func _build() -> void:
 		var head: Array = _split(root_comment)
 		var text := _row(thread, "Root", head[0], head[1], 0.0)
 		if type_root:
-			_root_label = text
-			_root_text = head[1]
-			text.text = ""
+			_type_later(text, null, type_delay)
 
 	for i in replies.size():
 		var part: Array = _split(replies[i])
-		_row(thread, "Reply%d" % i, part[0], part[1], reply_indent)
+		var body := _row(thread, "Reply%d" % i, part[0], part[1], reply_indent)
+		var node := thread.get_node("Reply%d" % i) as Control
 		if hide_replies:
-			# `@enter Screen/Thread/ReplyN` 이 올려 줄 때까지 숨어 있는다
-			var node := thread.get_node("Reply%d" % i) as Control
+			# `@show Screen/Column/Thread/ReplyN` 이 올려 줄 때까지 숨어 있는다
 			node.modulate.a = 0.0
 			node.visible = false
+		if type_replies:
+			_type_later(body, node, 0.0)
 
 func _process(delta: float) -> void:
-	if _root_label == null:
-		return
-	if _delay_left > 0.0:
-		_delay_left -= delta
-		return
-	_typed += delta * maxf(chars_per_second, 1.0)
-	var n: int = mini(int(_typed), _root_text.length())
-	_root_label.text = _root_text.substr(0, n)
-	if n >= _root_text.length():
+	var busy: bool = false
+	for item in _pending:
+		var label: RichTextLabel = item["label"]
+		if not is_instance_valid(label) or item["typed"] >= item["len"]:
+			continue
+		busy = true
+		var row: Control = item["row"]
+		# 아직 안 올라온 줄은 그대로 기다린다 — 안 보이는 데서 혼자 다 쳐 버리면 안 된다
+		if row != null and not row.visible:
+			continue
+		if item["delay"] > 0.0:
+			item["delay"] -= delta
+			continue
+		item["typed"] += delta * maxf(chars_per_second, 1.0)
+		label.visible_characters = mini(int(item["typed"]), int(item["len"]))
+	if not busy:
 		set_process(false)

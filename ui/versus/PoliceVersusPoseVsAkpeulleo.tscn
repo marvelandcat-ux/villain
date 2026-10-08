@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://vrn710ndraw4"]
+
+[ext_resource type="Texture2D" uid="uid://dc0w0ffpl3qjb" path="res://sprite/storymode/경찰서/분노경찰관.png" id="1_head"]
+[ext_resource type="Texture2D" uid="uid://dvacgl4pjacgu" path="res://sprite/storymode/경찰서/경찰몸정면.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
+[ext_resource type="Texture2D" uid="uid://dqfdio1pehkj6" path="res://sprite/storymode/악플러/켜진손전등.png" id="4_light"]
+[ext_resource type="Script" uid="uid://jabroynj53ym" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
+
+[node name="PoliceVersusPoseVsAkpeulleo" type="Node2D" unique_id=1181238985]
+
+[node name="Body" type="Sprite2D" parent="." unique_id=727600992]
+position = Vector2(53, 344)
+scale = Vector2(0.25347224, 0.29360363)
+texture = ExtResource("2_body")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=1719969197]
+position = Vector2(-173, 435)
+scale = Vector2(0.7451592, 0.74515915)
+texture = ExtResource("3_hand")
+flip_h = true
+
+[node name="Flashlight" type="Sprite2D" parent="." unique_id=1214723800]
+position = Vector2(268, 266.00003)
+rotation = -0.6108652
+scale = Vector2(0.175, 0.175)
+texture = ExtResource("4_light")
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=408409851]
+position = Vector2(257, 292)
+scale = Vector2(0.7868708, 0.7868707)
+texture = ExtResource("3_hand")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1969296393]
+position = Vector2(39, 82)
+scale = Vector2(0.3437244, 0.34372443)
+texture = ExtResource("1_head")
+
+[node name="Preview" type="Node2D" parent="." unique_id=1408395361]
+z_index = -100
+script = ExtResource("9_preview")
+opponent_pose = "res://ui/versus/AkpeulleoVersusPose.tscn"

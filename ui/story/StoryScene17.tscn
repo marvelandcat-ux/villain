@@ -2,10 +2,10 @@
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/악플러의집.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://cd2ikw2a4pssm" path="res://sprite/storymode/악플러/악플러의집.png" id="2"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/당당악플러.png" id="5"]
-[ext_resource type="Texture2D" path="res://sprite/메인메뉴/일러스트/악플러/불안악플러.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://chfo0nh40vewd" path="res://sprite/storymode/악플러/당당악플러.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://dc0o2tv1p7jkv" path="res://sprite/storymode/악플러/불안악플러.png" id="6"]
 
 [node name="StoryScene17" type="Control"]
 layout_mode = 3

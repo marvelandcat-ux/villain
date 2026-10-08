@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cr6vr0iwb0fx6"
-path="res://.godot/imported/불안악플러.png-2c3be6aaa751b70d25eb79509d668c86.ctex"
+uid="uid://b8ppa410gr3w"
+path="res://.godot/imported/악플러찾기_0002_몸통(숨쉬기).png-658f425eaeef6bf4266b4ae53b7d5590.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/악플러/불안악플러.png"
-dest_files=["res://.godot/imported/불안악플러.png-2c3be6aaa751b70d25eb79509d668c86.ctex"]
+source_file="res://sprite/storymode/악플러/악플러찾기_0002_몸통(숨쉬기).png"
+dest_files=["res://.godot/imported/악플러찾기_0002_몸통(숨쉬기).png-658f425eaeef6bf4266b4ae53b7d5590.ctex"]
 
 [params]
 
