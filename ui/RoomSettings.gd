@@ -25,7 +25,7 @@ extends Control
 ## 오른쪽 줄은 켜기/끄기 넷이다:
 ##  - **궁극기 연출**: 끄면 컷인 없이 궁이 바로 나간다(`GameState.ultimate_cutin_enabled`)
 ##  - **연타 미니게임**: 끄면 스킬이 부딪쳐도 연타 승부를 안 벌인다(`GameState.clash_minigame_enabled`)
-##  - **승패 연출**: 끄면 라운드 승패 띠를 건너뛴다(`GameState.result_cutscene_enabled`)
+##  - **승패 연출**: 끄면 라운드 승패 띠와 최종 승부 연출(승리·패배·연행)을 건너뛴다(`GameState.result_cutscene_enabled`)
 ##  - **상대**: 꺼짐이 사람, 켜짐이 컴퓨터(`GameState.vs_ai`)
 ##
 ## **화살표(◀ ▶)만 기본 폰트를 쓴다** — 주아체(Jua)에 그 글리프가 없어서 폰트를 지정하면 네모로 나온다.
