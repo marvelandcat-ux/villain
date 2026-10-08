@@ -37,12 +37,24 @@ const BAG_SCENE := preload("res://skills/ThrownTrashBag.tscn")
 
 @export_group("스택 표시")
 ## 캐릭터 원점 기준 표시 자리(머리 위)
-@export var label_offset: Vector2 = Vector2(0, -88)
+@export var label_offset: Vector2 = Vector2(0, -92)
+## 스택 1~10 뱃지 그림(`sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 N.png`, 1254 캔버스). 비어 있으면 예전처럼 숫자로 띄운다
+@export var stack_icons: Array[Texture2D] = []
+## 뱃지가 화면에서 차지할 크기(px, 긴 변)
+@export var icon_px: float = 46.0
+## 주울 때 뱃지가 **펌핑**(커졌다 되돌아옴)하는 배수와 시간(초)
+@export var icon_pump_scale: float = 1.4
+@export var icon_pump_time: float = 0.22
+## 숫자로 띄울 때(뱃지 그림이 없을 때)
 @export var label_font_size: int = 22
 @export var label_color: Color = Color(1.0, 0.86, 0.2)
 @export_group("")
 
 var _label: Label
+## 뱃지 스프라이트와 기본 배율(펌핑은 여기서 커졌다 돌아온다)
+var _badge: Sprite2D
+var _badge_base_scale: float = 1.0
+var _pump_tween: Tween
 
 func _ready() -> void:
 	super()
@@ -69,6 +81,7 @@ func add_trash(n: int) -> bool:
 		return false
 	fighter.custom_data[STACK_KEY] = mini(stack + n, max_stack)
 	_refresh_label()
+	_pump_badge()
 	return true
 
 func _execute(fighter: Fighter) -> void:
@@ -125,12 +138,21 @@ func ai_wants_use(fighter: Fighter, target: Node2D) -> bool:
 	var dy: float = target.global_position.y - fighter.global_position.y
 	return absf(dx) < 520.0 and absf(dy) < 140.0 and dx * fighter.facing > 0.0
 
-# --- 머리 위 스택 표시(임시 숫자) ---
+# --- 머리 위 스택 표시 ---
+## 뱃지 그림(`stack_icons`)이 있으면 스택 N번째 그림을 머리 위에 띄우고, 주울 때마다 펌핑한다(2026-10-08 사용자 요청).
+## 그림이 없으면 예전 임시 숫자. 둘 다 `top_level`이라 회전 타격 때 캐릭터 루트 scale.x가 잠깐 줄어도 안 찌그러진다
 
 func _make_label() -> void:
+	if not stack_icons.is_empty():
+		_badge = Sprite2D.new()
+		_badge.name = "TrashStackBadge"
+		_badge.top_level = true
+		_badge.z_index = 20
+		_badge.visible = false
+		add_child(_badge)
+		return
 	_label = Label.new()
 	_label.name = "TrashStackLabel"
-	# 회전 타격 때 캐릭터 루트 scale.x가 잠깐 줄어도 글자가 찌그러지지 않게 따로 논다
 	_label.top_level = true
 	_label.z_index = 20
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -145,19 +167,41 @@ func _make_label() -> void:
 	_label.visible = false
 	add_child(_label)
 
+## 스택이 바뀌었을 때 — 그림을 스택 번호 것으로 갈고(넘치면 마지막 그림), 0이면 숨긴다
 func _refresh_label() -> void:
-	if _label == null:
-		return
 	var stack: int = get_trash_stack()
-	_label.visible = stack > 0
-	# 주아체에 × 글리프가 없어서 영문 x를 쓴다
-	_label.text = "x%d" % stack
+	if _badge != null:
+		_badge.visible = stack > 0
+		if stack > 0:
+			var tex: Texture2D = stack_icons[clampi(stack, 1, stack_icons.size()) - 1]
+			if tex != null and _badge.texture != tex:
+				_badge.texture = tex
+				var longest: float = maxf(tex.get_size().x, tex.get_size().y)
+				_badge_base_scale = icon_px / maxf(longest, 1.0)
+				if _pump_tween == null or not _pump_tween.is_valid():
+					_badge.scale = Vector2.ONE * _badge_base_scale
+	elif _label != null:
+		_label.visible = stack > 0
+		# 주아체에 × 글리프가 없어서 영문 x를 쓴다
+		_label.text = "x%d" % stack
 	_place_label()
 
-func _place_label() -> void:
-	if _label == null or not _label.visible:
+## 주운 순간 뱃지가 커졌다 되돌아온다(펌핑). 연달아 주우면 처음부터 다시
+func _pump_badge() -> void:
+	if _badge == null or not _badge.visible:
 		return
+	if _pump_tween and _pump_tween.is_valid():
+		_pump_tween.kill()
+	_badge.scale = Vector2.ONE * _badge_base_scale * icon_pump_scale
+	_pump_tween = create_tween()
+	_pump_tween.tween_property(_badge, "scale", Vector2.ONE * _badge_base_scale, icon_pump_time) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _place_label() -> void:
 	var fighter := get_parent() as Fighter
 	if fighter == null:
 		return
-	_label.global_position = fighter.global_position + label_offset - _label.size * 0.5
+	if _badge != null and _badge.visible:
+		_badge.global_position = fighter.global_position + label_offset
+	elif _label != null and _label.visible:
+		_label.global_position = fighter.global_position + label_offset - _label.size * 0.5

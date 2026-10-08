@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://cy1nghp5pv53c"]
 
 [ext_resource type="Script" uid="uid://cekvgerymerph" path="res://maps/Stage.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="2"]
-[ext_resource type="Script" path="res://maps/CameraRig.gd" id="3"]
+[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="2"]
+[ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(960, 40)
@@ -10,49 +10,49 @@ size = Vector2(960, 40)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 1600)
 
-[node name="ConvenienceStore" type="Node2D"]
+[node name="ConvenienceStore" type="Node2D" unique_id=1606679447]
 script = ExtResource("1")
 
-[node name="Ground" type="StaticBody2D" parent="."]
+[node name="Ground" type="StaticBody2D" parent="." unique_id=1178690225]
 position = Vector2(0, 300)
 
-[node name="GroundCollision" type="CollisionShape2D" parent="Ground"]
+[node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=989534536]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+[node name="GroundVisual" type="Polygon2D" parent="Ground" unique_id=683972000]
 color = Color(0.35, 0.32, 0.28, 1)
 polygon = PackedVector2Array(-480, -20, 480, -20, 480, 20, -480, 20)
 
-[node name="LeftWall" type="StaticBody2D" parent="."]
+[node name="LeftWall" type="StaticBody2D" parent="." unique_id=1635121028]
 position = Vector2(-480, -500)
 
-[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall"]
+[node name="LeftWallCollision" type="CollisionShape2D" parent="LeftWall" unique_id=2041371930]
 shape = SubResource("RectangleShape2D_wall")
 
-[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall"]
+[node name="LeftWallVisual" type="Polygon2D" parent="LeftWall" unique_id=2078887523]
 position = Vector2(0, 600)
 color = Color(0.55, 0.5, 0.45, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 
-[node name="RightWall" type="StaticBody2D" parent="."]
+[node name="RightWall" type="StaticBody2D" parent="." unique_id=1847432266]
 position = Vector2(480, -500)
 
-[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall"]
+[node name="RightWallCollision" type="CollisionShape2D" parent="RightWall" unique_id=412713641]
 shape = SubResource("RectangleShape2D_wall")
 
-[node name="RightWallVisual" type="Polygon2D" parent="RightWall"]
+[node name="RightWallVisual" type="Polygon2D" parent="RightWall" unique_id=425814514]
 position = Vector2(0, 600)
 color = Color(0.55, 0.5, 0.45, 1)
 polygon = PackedVector2Array(-20, -200, 20, -200, 20, 200, -20, 200)
 
-[node name="PlayerSpawn1" type="Marker2D" parent="."]
+[node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=1344387261]
 position = Vector2(-300, 260)
 
-[node name="PlayerSpawn2" type="Marker2D" parent="."]
+[node name="PlayerSpawn2" type="Marker2D" parent="." unique_id=1213924197]
 position = Vector2(300, 260)
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2136811454]
 position = Vector2(0, 150)
 script = ExtResource("3")
 
-[node name="CombatHUD" parent="." instance=ExtResource("2")]
+[node name="CombatHUD" parent="." unique_id=1912325716 instance=ExtResource("2")]

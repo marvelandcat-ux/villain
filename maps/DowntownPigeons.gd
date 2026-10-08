@@ -1,6 +1,8 @@
 extends Node2D
 
-## 번화가 전선 위 비둘기(2026-10-08, 임시 — 그림은 `_draw()`로 그린다. 괜찮으면 스프라이트로 교체).
+## 번화가 전선 위 비둘기(2026-10-08). 그림은 `sprite/맵/번화가/비둘기/` 다섯 장(앉음·날개위·날개아래·활공·쪼기) —
+## 시트 `비둘기.png`를 `tools/cut_pigeons.py`로 자른 것. **시트를 바꾸면 도구를 다시 돌리고 `FRAMES`의 부리·발 좌표도 갱신할 것**.
+## 프레임 정렬: 앉은 그림은 **발바닥 가운데가 원점**, 나는 그림은 **부리가 앉은 그림의 부리 자리에 오게** 맞춘다(머리가 안 튄다).
 ## 라운드마다 세 전선 중 **랜덤 한 줄**에 `min_count`~`max_count`마리가 나란히 앉는다(측면).
 ## **순수 장식** — 판정 없음, 맞지도 막지도 않는다.
 ##
@@ -18,7 +20,12 @@ extends Node2D
 @export var min_count: int = 3
 @export var max_count: int = 4
 ## 나란히 앉는 간격(px)
-@export var spacing: float = 26.0
+@export var spacing: float = 34.0
+## 앉은 비둘기의 화면 높이(px) — 다섯 장 모두 같은 배율로 줄인다
+@export var perched_height: float = 30.0
+## 가만히 앉아 있다가 모이 쪼는 간격(초, 이 사이 랜덤)과 쪼는 시간
+@export var peck_interval: Vector2 = Vector2(2.5, 7.0)
+@export var peck_duration: float = 0.45
 ## 캐릭터·투사체가 이 반경(px) 안에 들어오면 도망
 @export var flee_radius: float = 100.0
 ## 날아오른 비둘기 근처 이 거리 안의 비둘기도 놀라서 따라 뜬다
@@ -37,6 +44,32 @@ extends Node2D
 
 ## 그룹 이름 — 둥지(전선)와 피신 자리 후보는 여기서 찾는다
 const WIRE_GROUP := "power_lines"
+
+## 자세별 그림과 기준점(원본 픽셀, `tools/cut_pigeons.py` 출력 `anchors.json`과 같은 값).
+## `beak` = 부리 중심, `feet` = 발 중심 x · 발바닥 y (앉은 자세만)
+const FRAMES := {
+	"perch": {"tex": preload("res://sprite/맵/번화가/비둘기/앉음.png"), "beak": Vector2(256.2, 47.4), "feet": Vector2(163.2, 293.0)},
+	"peck": {"tex": preload("res://sprite/맵/번화가/비둘기/쪼기.png"), "beak": Vector2(301.4, 138.1), "feet": Vector2(169.7, 180.0)},
+	"up": {"tex": preload("res://sprite/맵/번화가/비둘기/날개위.png"), "beak": Vector2(319.6, 218.3)},
+	"glide": {"tex": preload("res://sprite/맵/번화가/비둘기/활공.png"), "beak": Vector2(351.3, 42.9)},
+	"down": {"tex": preload("res://sprite/맵/번화가/비둘기/날개아래.png"), "beak": Vector2(312.4, 40.2)},
+}
+
+## 그림 배율 — 앉은 그림 높이가 `perched_height`가 되게
+func sprite_scale() -> float:
+	var tex: Texture2D = FRAMES["perch"]["tex"]
+	return perched_height / maxf(tex.get_height(), 1.0)
+
+## 이 자세 그림의 왼쪽 위가 비둘기 원점(발바닥)에서 어디에 놓이는지(화면 px)
+func frame_offset(frame: String) -> Vector2:
+	var s: float = sprite_scale()
+	var f: Dictionary = FRAMES[frame]
+	if f.has("feet"):
+		return -f["feet"] * s
+	# 나는 자세: 부리를 앉은 자세의 부리 자리에 맞춘다
+	var p: Dictionary = FRAMES["perch"]
+	var beak_local: Vector2 = (p["beak"] - p["feet"]) * s
+	return beak_local - f["beak"] * s
 
 var _pigeons: Array = []
 
@@ -192,6 +225,11 @@ class PigeonBird extends Node2D:
 	var _calm_needed: float = 0.0
 	var _recheck: float = 0.0
 	var _flee_delay: float = -1.0
+	var _sprite: Sprite2D
+	var _frame: String = ""
+	## 다음 모이 쪼기까지 남은 시간 / 쪼는 중 남은 시간
+	var _peck_in: float = 0.0
+	var _pecking: float = 0.0
 
 	func _ready() -> void:
 		perch_wire = home_wire
@@ -199,6 +237,22 @@ class PigeonBird extends Node2D:
 		global_position = perch_pos
 		scale.x = facing
 		_flap = randf() * TAU
+		_sprite = Sprite2D.new()
+		_sprite.centered = false
+		# 10분의 1로 줄여 그리므로 밉맵 보간이 없으면 윤곽선이 지글거린다
+		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		var s: float = flock.sprite_scale()
+		_sprite.scale = Vector2(s, s)
+		add_child(_sprite)
+		_peck_in = randf_range(flock.peck_interval.x, flock.peck_interval.y)
+		_show_frame("perch")
+
+	func _show_frame(frame: String) -> void:
+		if frame == _frame:
+			return
+		_frame = frame
+		_sprite.texture = flock.FRAMES[frame]["tex"]
+		_sprite.position = flock.frame_offset(frame)
 
 	func _process(delta: float) -> void:
 		delta = minf(delta, 0.05)
@@ -207,7 +261,21 @@ class PigeonBird extends Node2D:
 				_perched(delta)
 			State.FLYING:
 				_flying(delta)
-		queue_redraw()
+
+	## 앉아 있을 때 가끔 모이를 쫀다
+	func _idle_frame(delta: float) -> void:
+		if _pecking > 0.0:
+			_pecking -= delta
+			_show_frame("peck" if _pecking > 0.0 else "perch")
+			if _pecking <= 0.0:
+				_peck_in = randf_range(flock.peck_interval.x, flock.peck_interval.y)
+			return
+		_peck_in -= delta
+		if _peck_in <= 0.0:
+			_pecking = flock.peck_duration
+			_show_frame("peck")
+		else:
+			_show_frame("perch")
 
 	func _perched(delta: float) -> void:
 		# 전선이 출렁이면 같이 오르내린다
@@ -216,6 +284,7 @@ class PigeonBird extends Node2D:
 			if not is_nan(y):
 				perch_pos.y = y
 		global_position = perch_pos
+		_idle_frame(delta)
 		if _flee_delay >= 0.0:
 			_flee_delay -= delta
 			if _flee_delay < 0.0:
@@ -278,6 +347,9 @@ class PigeonBird extends Node2D:
 
 	func _flying(delta: float) -> void:
 		_flap += flock.flap_speed * delta
+		# 퍼덕임: 위 → 활공 → 아래 → 활공
+		var wave: float = sin(_flap)
+		_show_frame("up" if wave > 0.45 else ("down" if wave < -0.45 else "glide"))
 		# 목표가 전선이면 출렁임을 따라 목표 높이를 매 프레임 갱신
 		if _target_wire != null and is_instance_valid(_target_wire):
 			var y: float = _target_wire.surface_global_y(_target.x)
@@ -324,38 +396,6 @@ class PigeonBird extends Node2D:
 		_velocity = Vector2.ZERO
 		state = State.PERCHED
 		_calm = 0.0
-
-	func _draw() -> void:
-		var body_col := Color(0.6, 0.62, 0.68)
-		var head_col := Color(0.42, 0.46, 0.56)
-		var dark := Color(0.38, 0.4, 0.46)
-		var orange := Color(0.9, 0.5, 0.2)
-		var flying: bool = state == State.FLYING
-		# 다리(앉아 있을 때만)
-		if not flying:
-			draw_line(Vector2(-2.5, -3.0), Vector2(-2.5, 0.0), orange, 1.2)
-			draw_line(Vector2(2.0, -3.0), Vector2(2.0, 0.0), orange, 1.2)
-		# 꼬리
-		draw_colored_polygon(PackedVector2Array([Vector2(-6, -7), Vector2(-14, -5), Vector2(-13, -9.5), Vector2(-6, -10)]), dark)
-		if flying:
-			# 먼쪽 날개(연함) → 몸 → 가까운 날개(진함). 퍼덕임은 날개 끝 높이로 — 얇아질 때 넓이 0이 되므로 draw_primitive
-			var flap: float = sin(_flap)
-			_draw_wing(Vector2(1, -9), flap * 0.75, Color(0.7, 0.72, 0.78))
-		# 몸통
-		draw_circle(Vector2(0, -8), 7.0, body_col)
-		if not flying:
-			# 접은 날개
-			draw_colored_polygon(PackedVector2Array([Vector2(-3, -11), Vector2(4, -10), Vector2(-1, -5.5), Vector2(-8, -7)]), dark)
-		# 머리·눈·부리
-		draw_circle(Vector2(6, -14), 4.2, head_col)
-		draw_circle(Vector2(7.6, -15), 0.9, Color(0.05, 0.05, 0.06))
-		draw_colored_polygon(PackedVector2Array([Vector2(9.6, -14.6), Vector2(13.5, -13.6), Vector2(9.6, -12.6)]), orange)
-		if flying:
-			_draw_wing(Vector2(-1, -9), sin(_flap + 0.35), dark)
-
-	## 어깨에서 뒤쪽으로 뻗는 날개 — `lift`가 -1(위)~1(아래)로 날개 끝 높이
-	func _draw_wing(shoulder: Vector2, lift: float, col: Color) -> void:
-		var tip: Vector2 = shoulder + Vector2(-7.0, 17.0 * lift)
-		var pts := PackedVector2Array([shoulder + Vector2(4, 0), tip + Vector2(3, 0), tip + Vector2(-4, 0), shoulder + Vector2(-5, 0)])
-		var cols := PackedColorArray([col, col, col, col])
-		draw_primitive(pts, cols, PackedVector2Array())
+		_pecking = 0.0
+		_peck_in = randf_range(flock.peck_interval.x, flock.peck_interval.y)
+		_show_frame("perch")

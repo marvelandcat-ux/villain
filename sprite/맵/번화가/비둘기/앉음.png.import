@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://df2dkixfhkiha"
-path="res://.godot/imported/편의점.png-085a2abffcabb2a4d27325ba957fc1a3.ctex"
+uid="uid://cphs5m0gjry24"
+path="res://.godot/imported/앉음.png-3aa982b5dab9f75e3a3fecfaa6b40490.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/번화가/편의점.png"
-dest_files=["res://.godot/imported/편의점.png-085a2abffcabb2a4d27325ba957fc1a3.ctex"]
+source_file="res://sprite/맵/번화가/비둘기/앉음.png"
+dest_files=["res://.godot/imported/앉음.png-3aa982b5dab9f75e3a3fecfaa6b40490.ctex"]
 
 [params]
 

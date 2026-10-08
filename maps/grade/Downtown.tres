@@ -4,6 +4,8 @@
 
 [resource]
 script = ExtResource("1")
-tint = Color(0.86, 0.92, 1, 1)
-tint_strength = 0.45
-contrast = 1.08
+tint = Color(0.8, 0.78, 1, 1)
+tint_strength = 0.4
+contrast = 1.12
+saturation = 1.18
+brightness = 0.0

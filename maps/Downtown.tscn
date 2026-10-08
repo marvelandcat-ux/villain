@@ -4,7 +4,11 @@
 [ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="2"]
 [ext_resource type="Script" uid="uid://c6wwnjxhnmxj2" path="res://maps/CameraRig.gd" id="3"]
 [ext_resource type="Texture2D" uid="uid://bq3exgv88l0h1" path="res://sprite/맵/번화가/폴랫폼.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://bfnqta2ypmucq" path="res://sprite/맵/번화가/건물 세로 간판 버전.png" id="8_7bsqs"]
+[ext_resource type="Texture2D" uid="uid://dp11kqr57ttqf" path="res://sprite/맵/번화가/전포다찌.png" id="10_putxd"]
+[ext_resource type="Texture2D" uid="uid://dwduv8m4cm5rg" path="res://sprite/맵/번화가/술집2.png" id="11_putxd"]
 [ext_resource type="Texture2D" uid="uid://do3agikg35tt5" path="res://sprite/맵/번화가/쓰래기 통 쓰래기 없는 버전.png" id="15_flaia"]
+[ext_resource type="Texture2D" uid="uid://ettquiagixvc" path="res://sprite/맵/번화가/감성 술집.png" id="bar_emotion"]
 [ext_resource type="Texture2D" uid="uid://bj1c1bbsqrry" path="res://sprite/맵/번화가/배경.png" id="bg"]
 [ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="bgblur"]
 [ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="bgpar"]
@@ -12,11 +16,11 @@
 [ext_resource type="Texture2D" uid="uid://r3wxqb3gn4wx" path="res://sprite/맵/번화가/건물 세로.png" id="d3"]
 [ext_resource type="Texture2D" uid="uid://bi7j3vhhfag8k" path="res://sprite/맵/번화가/전봇데.png" id="d5"]
 [ext_resource type="Script" uid="uid://c87rwo3t8jn7m" path="res://maps/PowerLine.gd" id="d6"]
-[ext_resource type="Texture2D" uid="uid://c8y0ikextdrci" path="res://sprite/맵/번화가/할인 마트.png" id="e1"]
 [ext_resource type="Texture2D" uid="uid://df2dkixfhkiha" path="res://sprite/맵/번화가/편의점.png" id="e2"]
 [ext_resource type="Script" uid="uid://d0563n72i44ba" path="res://maps/ForegroundFade.gd" id="fgfade"]
 [ext_resource type="Resource" uid="uid://qvjtdgm3hbld" path="res://maps/grade/Downtown.tres" id="grade"]
 [ext_resource type="PackedScene" path="res://skills/TrashBagThrowSkill.tscn" id="ms_trash"]
+[ext_resource type="Shader" uid="uid://drmnqnfu6ujv" path="res://maps/NeonSign.gdshader" id="neon_shader"]
 [ext_resource type="Script" uid="uid://cg5a2io5fvgx7" path="res://maps/DowntownPigeons.gd" id="pigeons"]
 [ext_resource type="Script" uid="uid://ctgyxsnnoae8t" path="res://maps/RimLight.gd" id="rim"]
 [ext_resource type="Texture2D" uid="uid://dq4j5b0jtfguo" path="res://sprite/맵/번화가/시멘트 도로.png" id="road"]
@@ -26,32 +30,55 @@
 [ext_resource type="Texture2D" uid="uid://djdhfpyxadh58" path="res://sprite/맵/번화가/쓰래기1.png" id="tr_1"]
 [ext_resource type="Texture2D" uid="uid://bh72dr7t8fq2n" path="res://sprite/맵/번화가/쓰래기2.png" id="tr_2"]
 [ext_resource type="Texture2D" uid="uid://dynvrbhgwu3x7" path="res://sprite/맵/번화가/쓰래기3.png" id="tr_3"]
+[ext_resource type="Texture2D" uid="uid://dv3aerj4j7wqg" path="res://sprite/맵/번화가/메가 커피.png" id="tr_coffee"]
+[ext_resource type="Texture2D" uid="uid://3wr8iiiw2wkf" path="res://sprite/맵/번화가/담배 꽁초.png" id="tr_cig"]
 [ext_resource type="Script" uid="uid://cp0vcpdyk76eb" path="res://maps/DowntownTrashCan.gd" id="tr_can"]
 [ext_resource type="Texture2D" uid="uid://bcdbbkp0e462v" path="res://sprite/맵/번화가/쓰래기 통 뚜껑.png" id="tr_lid"]
 [ext_resource type="Script" uid="uid://bmygbgloywnhg" path="res://maps/DowntownTrashSpawner.gd" id="tr_spawner"]
+[ext_resource type="Script" path="res://maps/DowntownAlley.gd" id="alley"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_far"]
 shader = ExtResource("bgblur")
 shader_parameter/blur_px = 1.4
 shader_parameter/dim = 0.1
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeL1"]
-size = Vector2(495.75, 14.875)
+[sub_resource type="ShaderMaterial" id="NeonSignMaterial"]
+shader = ExtResource("neon_shader")
+shader_parameter/neon_sat_min = 0.45
+shader_parameter/neon_val_min = 0.55
+shader_parameter/contrast_min = 0.07
+shader_parameter/boost = 0.35
+shader_parameter/glow_strength = 0.7
+shader_parameter/glow_px = 7.0
+shader_parameter/flicker = 0.07
+shader_parameter/flicker_speed = 6.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_s7jpx"]
-size = Vector2(64.9375, 44.4375)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeL1"]
+size = Vector2(450.4375, 14.875)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_7bsqs"]
+size = Vector2(259.21875, 19.21875)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_putxd"]
+size = Vector2(450.4375, 17.21875)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mx4y7"]
+size = Vector2(44.21875, 14.875)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sr2ug"]
+size = Vector2(106.109375, 14.875)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeL3"]
 size = Vector2(397, 10)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_LedgeR2"]
-size = Vector2(398.00003, 10)
+size = Vector2(346.99997, 29.5)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_q1gne"]
-size = Vector2(462, 12)
+size = Vector2(527, 15)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_flaia"]
-size = Vector2(489, 14)
+size = Vector2(600.5, 14)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_StepL2"]
 size = Vector2(474, 20)
@@ -60,7 +87,7 @@ size = Vector2(474, 20)
 size = Vector2(60, 89)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(1951, 34)
+size = Vector2(1951, 38)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(40, 2400)
@@ -92,6 +119,9 @@ position = Vector2(0, -537.5)
 scale = Vector2(1.8, 1.8)
 texture = ExtResource("bg")
 
+[node name="DecoAlley" type="Node2D" parent="." unique_id=1760000001]
+script = ExtResource("alley")
+
 [node name="BuildingRightTall2" type="Sprite2D" parent="." unique_id=901093348]
 z_index = -20
 position = Vector2(1036, -219)
@@ -100,19 +130,20 @@ texture = ExtResource("d3")
 
 [node name="BuildingRightTall" type="Sprite2D" parent="." unique_id=1655906943]
 z_index = -20
-position = Vector2(726, -263.6)
+material = SubResource("NeonSignMaterial")
+position = Vector2(715, -365)
 scale = Vector2(0.4878, 0.4878)
-texture = ExtResource("d3")
+texture = ExtResource("8_7bsqs")
 
 [node name="BuildingLeftTower" type="Sprite2D" parent="." unique_id=1494426346]
 z_index = -20
-position = Vector2(-749.2, -481.8)
+position = Vector2(-669, -463.00003)
 scale = Vector2(0.4248, 0.4248)
 texture = ExtResource("d3")
 
 [node name="BuildingLeftTower2" type="Sprite2D" parent="." unique_id=1962049360]
 z_index = -20
-position = Vector2(-1022, -480)
+position = Vector2(-939.00006, -467)
 scale = Vector2(0.4248, 0.4248)
 texture = ExtResource("d3")
 
@@ -124,24 +155,28 @@ texture = ExtResource("d2")
 
 [node name="BuildingLeftUpper3" type="Sprite2D" parent="." unique_id=825969546]
 z_index = -20
-position = Vector2(-1131, 143.33719)
+material = SubResource("NeonSignMaterial")
+position = Vector2(-1144, 146)
 scale = Vector2(0.362644, 0.4069086)
-texture = ExtResource("d2")
+texture = ExtResource("10_putxd")
 
 [node name="BuildingMart" type="Sprite2D" parent="." unique_id=538896015]
 z_index = -20
-position = Vector2(-659, 148)
-scale = Vector2(0.3302, 0.3133)
-texture = ExtResource("e1")
+material = SubResource("NeonSignMaterial")
+position = Vector2(-628.0239, 144.8524)
+scale = Vector2(0.3661056, 0.34736794)
+texture = ExtResource("11_putxd")
 
 [node name="BuildingLeftUpper" type="Sprite2D" parent="." unique_id=332497988]
 z_index = -20
-position = Vector2(-648, -89.65119)
-scale = Vector2(0.3373, 0.3463844)
-texture = ExtResource("d2")
+material = SubResource("NeonSignMaterial")
+position = Vector2(-605.00006, -110)
+scale = Vector2(0.32642347, 0.3352149)
+texture = ExtResource("bar_emotion")
 
 [node name="BuildingConvenience" type="Sprite2D" parent="." unique_id=1600676233]
 z_index = -20
+material = SubResource("NeonSignMaterial")
 position = Vector2(666, 122.00001)
 scale = Vector2(0.3625, 0.3625)
 texture = ExtResource("e2")
@@ -151,13 +186,38 @@ z_index = -10
 position = Vector2(-658.5, -204.5)
 
 [node name="Collision" type="CollisionShape2D" parent="LedgeL1" unique_id=1449203130]
-position = Vector2(11.375, 8.5)
+position = Vector2(51.5, -33.5)
 shape = SubResource("RectangleShape2D_LedgeL1")
 one_way_collision = true
 
-[node name="Collision2" type="CollisionShape2D" parent="LedgeL1" unique_id=1073000637]
-position = Vector2(26.03125, 60.28125)
-shape = SubResource("RectangleShape2D_s7jpx")
+[node name="Collision2" type="CollisionShape2D" parent="LedgeL1" unique_id=58418176]
+position = Vector2(-301.89063, -5.890625)
+shape = SubResource("RectangleShape2D_7bsqs")
+one_way_collision = true
+
+[node name="Collision3" type="CollisionShape2D" parent="LedgeL1" unique_id=259249772]
+position = Vector2(-393.5, 14.5)
+shape = SubResource("RectangleShape2D_putxd")
+one_way_collision = true
+
+[node name="Collision4" type="CollisionShape2D" parent="LedgeL1" unique_id=94802387]
+position = Vector2(113.390625, -226.5)
+shape = SubResource("RectangleShape2D_mx4y7")
+one_way_collision = true
+
+[node name="Collision5" type="CollisionShape2D" parent="LedgeL1" unique_id=104205063]
+position = Vector2(-156.5, -229.5)
+shape = SubResource("RectangleShape2D_mx4y7")
+one_way_collision = true
+
+[node name="Collision6" type="CollisionShape2D" parent="LedgeL1" unique_id=151365442]
+position = Vector2(-28.554688, -469.5)
+shape = SubResource("RectangleShape2D_sr2ug")
+one_way_collision = true
+
+[node name="Collision7" type="CollisionShape2D" parent="LedgeL1" unique_id=1627995462]
+position = Vector2(-299.5, -469.5)
+shape = SubResource("RectangleShape2D_sr2ug")
 one_way_collision = true
 
 [node name="LedgeL3" type="StaticBody2D" parent="." unique_id=1773360515]
@@ -190,15 +250,15 @@ position = Vector2(663, -41.2)
 
 [node name="LedgeR2" type="StaticBody2D" parent="." unique_id=1196376060]
 z_index = -10
-position = Vector2(719.2, -584)
-
-[node name="Art" type="Sprite2D" parent="LedgeR2" unique_id=1382315269]
-position = Vector2(0, 17.5)
-scale = Vector2(0.1902, 0.1902)
-texture = ExtResource("5")
+position = Vector2(667, -661)
 
 [node name="Collision" type="CollisionShape2D" parent="LedgeR2" unique_id=1814600638]
-position = Vector2(0.7999878, 5)
+position = Vector2(48.5, -6.5)
+shape = SubResource("RectangleShape2D_LedgeR2")
+one_way_collision = true
+
+[node name="Collision2" type="CollisionShape2D" parent="LedgeR2" unique_id=1466190066]
+position = Vector2(394, 140.25)
 shape = SubResource("RectangleShape2D_LedgeR2")
 one_way_collision = true
 
@@ -211,12 +271,12 @@ position = Vector2(-233, 40)
 scale = Vector2(0.1206, 0.1206)
 
 [node name="Collision2" type="CollisionShape2D" parent="StepL2" unique_id=1151285334]
-position = Vector2(-449, 150)
+position = Vector2(-414, 183)
 shape = SubResource("RectangleShape2D_q1gne")
 one_way_collision = true
 
 [node name="Collision3" type="CollisionShape2D" parent="StepL2" unique_id=1130249891]
-position = Vector2(-434.5, 70)
+position = Vector2(-465.75, 72)
 shape = SubResource("RectangleShape2D_flaia")
 one_way_collision = true
 
@@ -232,7 +292,7 @@ one_way_collision = true
 
 [node name="PoleLeft" type="Sprite2D" parent="." unique_id=449673795]
 z_index = 10
-position = Vector2(-833, -214)
+position = Vector2(-841, -209)
 scale = Vector2(0.299, 0.299)
 texture = ExtResource("d5")
 script = ExtResource("fgfade")
@@ -250,7 +310,7 @@ extend_to_ground = true
 
 [node name="PoleRightTop" type="Sprite2D" parent="." unique_id=1394880428]
 z_index = 10
-position = Vector2(852, -808)
+position = Vector2(919.00006, -762.00006)
 scale = Vector2(0.299, 0.299)
 texture = ExtResource("d5")
 script = ExtResource("fgfade")
@@ -260,7 +320,7 @@ extend_to_ground = true
 [node name="WireLow" type="StaticBody2D" parent="." unique_id=626360225]
 z_index = -10
 script = ExtResource("d6")
-points = PackedVector2Array(-752, -420.3, -600, -305, -150, -192, 375, -200, 759.4, -467)
+points = PackedVector2Array(-760, -415.3, -600, -305, -150, -192, 375, -200, 759.4, -467)
 spring_damping = 5.0
 start_anchor = NodePath("../PoleLeft")
 end_anchor = NodePath("../PoleRightLow")
@@ -268,7 +328,7 @@ end_anchor = NodePath("../PoleRightLow")
 [node name="WireDiagonal" type="StaticBody2D" parent="." unique_id=1319511308]
 z_index = -10
 script = ExtResource("d6")
-points = PackedVector2Array(-791.6, -420.3, 0, -515, 600, -680, 893.4, -1014.3)
+points = PackedVector2Array(-800, -415.3, 0, -515, 600, -680, 960.3, -968.3)
 spring_damping = 5.0
 start_anchor = NodePath("../PoleLeft")
 end_anchor = NodePath("../PoleRightTop")
@@ -276,7 +336,7 @@ end_anchor = NodePath("../PoleRightTop")
 [node name="WireTop" type="StaticBody2D" parent="." unique_id=1843448174]
 z_index = -10
 script = ExtResource("d6")
-points = PackedVector2Array(-532, -752, 112, -740, 797.3, -1014.3)
+points = PackedVector2Array(-532, -752, 112, -740, 864.3, -968.3)
 spring_damping = 5.0
 end_anchor = NodePath("../PoleRightTop")
 
@@ -309,7 +369,7 @@ script = ExtResource("tr_spawner")
 [node name="Can1" type="Node2D" parent="TrashCans" unique_id=1198031911]
 position = Vector2(4, 213)
 script = ExtResource("tr_can")
-trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3")])
+trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3"), ExtResource("tr_coffee"), ExtResource("tr_cig")])
 
 [node name="Can" type="Sprite2D" parent="TrashCans/Can1" unique_id=1151412869]
 scale = Vector2(0.123941556, 0.123941556)
@@ -324,7 +384,7 @@ texture = ExtResource("tr_lid")
 [node name="Can2" type="Node2D" parent="TrashCans" unique_id=250355003]
 position = Vector2(608, -102.999985)
 script = ExtResource("tr_can")
-trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3")])
+trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3"), ExtResource("tr_coffee"), ExtResource("tr_cig")])
 
 [node name="Can" type="Sprite2D" parent="TrashCans/Can2" unique_id=1917029759]
 scale = Vector2(0.123941556, 0.123941556)
@@ -337,9 +397,9 @@ scale = Vector2(0.068, 0.068)
 texture = ExtResource("tr_lid")
 
 [node name="Can3" type="Node2D" parent="TrashCans" unique_id=1585887093]
-position = Vector2(-783, -273)
+position = Vector2(-678, -316)
 script = ExtResource("tr_can")
-trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3")])
+trash_textures = Array[Texture2D]([ExtResource("tr_1"), ExtResource("tr_2"), ExtResource("tr_3"), ExtResource("tr_coffee"), ExtResource("tr_cig")])
 
 [node name="Can" type="Sprite2D" parent="TrashCans/Can3" unique_id=1640286690]
 position = Vector2(4.000061, -3.9999695)
@@ -381,7 +441,7 @@ texture = ExtResource("taxi_body")
 position = Vector2(0, 300)
 
 [node name="GroundCollision" type="CollisionShape2D" parent="Ground" unique_id=1743862431]
-position = Vector2(1.5, 3)
+position = Vector2(1.5, 1)
 shape = SubResource("RectangleShape2D_ground")
 
 [node name="LeftWall" type="StaticBody2D" parent="." unique_id=597951601]
@@ -419,6 +479,6 @@ lock_ground_to_bottom = true
 
 [node name="BuildingLeftUpper2" type="Sprite2D" parent="." unique_id=681108462]
 z_index = -20
-position = Vector2(-1119.9999, -89.00001)
+position = Vector2(-1070, -84)
 scale = Vector2(0.3373, 0.3463844)
 texture = ExtResource("d2")

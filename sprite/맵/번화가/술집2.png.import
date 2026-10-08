@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://df2dkixfhkiha"
-path="res://.godot/imported/편의점.png-085a2abffcabb2a4d27325ba957fc1a3.ctex"
+uid="uid://dwduv8m4cm5rg"
+path="res://.godot/imported/술집2.png-a1c59a085187a6f9aa398788953fd324.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/맵/번화가/편의점.png"
-dest_files=["res://.godot/imported/편의점.png-085a2abffcabb2a4d27325ba957fc1a3.ctex"]
+source_file="res://sprite/맵/번화가/술집2.png"
+dest_files=["res://.godot/imported/술집2.png-a1c59a085187a6f9aa398788953fd324.ctex"]
 
 [params]
 

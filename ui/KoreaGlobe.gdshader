@@ -76,11 +76,14 @@ void fragment() {
 	land.a *= step(0.0, luv.x) * step(luv.x, 1.0) * step(0.0, luv.y) * step(luv.y, 1.0);
 	surface.rgb = mix(surface.rgb, land.rgb, land.a);
 
-	// 보이는 모양 = 커지는 공 ∩ 펼친 지도 틀(둥근 모서리 사각형). 공이 틀보다 커지면 틀에 잘려 지도가 된다
+	// 보이는 모양 = 커지는 공 ∩ 지도 틀(둥근 모서리 사각형). 공이 틀보다 커지면 틀에 잘려 지도가 된다.
+	// ⚠️ 틀은 **펼치는 동안에만** flat_half로 줄어든다 — 공일 때(flatten 0)는 공보다 넉넉히 커서 공이 안 잘린다
+	//    (반지름을 flat_half.y보다 키웠더니 위아래가 수평으로 잘렸다, 2026-10-08)
 	float c = bend();
 	float ball_r = c < 0.001 ? 1e6 : scale_px() / c;
 	float db = length(p) / ball_r;
-	vec2 a = abs(p) / flat_half;
+	vec2 frame_half = mix(vec2(max(radius, flat_half.x), max(radius, flat_half.y)) * 1.25, flat_half, flatten);
+	vec2 a = abs(p) / frame_half;
 	float df = pow(pow(a.x, 12.0) + pow(a.y, 12.0), 1.0 / 12.0);
 	float inside = (1.0 - smoothstep(1.0 - fwidth(db) * 1.5, 1.0, db)) * (1.0 - smoothstep(1.0 - fwidth(df) * 1.5, 1.0, df));
 
@@ -94,7 +97,7 @@ void fragment() {
 	float rim = smoothstep(0.75, 1.0, length(s)) * 0.25 * round_left;
 	surface.rgb = mix(surface.rgb, glow_color.rgb, rim);
 
-	float edge = max(length(p) - ball_r, (df - 1.0) * flat_half.y);
+	float edge = max(length(p) - ball_r, (df - 1.0) * frame_half.y);
 	float glow = glow_color.a * exp(-max(edge, 0.0) / glow_width * 2.5) * round_left;
 	vec4 halo = vec4(glow_color.rgb, glow);
 

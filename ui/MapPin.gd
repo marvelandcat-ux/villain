@@ -11,7 +11,7 @@ const LABEL_GAP := 2.0
 @export var pin_color: Color = Color(0.95, 0.3, 0.35)
 
 var map_name: String = ""
-var label_side: LabelSide = LabelSide.ABOVE
+var label_side: LabelSide = LabelSide.BELOW
 var _label: Label = null
 
 func _ready() -> void:

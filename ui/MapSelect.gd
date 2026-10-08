@@ -29,13 +29,13 @@ const PX_PER_DEG := 66.0
 const TEX_SIZE := Vector2(2048, 1024)
 
 ## 지구본 중심·반지름(px), 기울기(라디안), 저절로 도는 속도(초당 그림 가로 몇 바퀴)
-const GLOBE_CENTER := Vector2(640, 342)
-const GLOBE_RADIUS := 255.0
+const GLOBE_CENTER := Vector2(640, 73)
+const GLOBE_RADIUS := 920.0
 const GLOBE_TILT := -0.3
-const SPIN_SPEED := 1.0 / 24.0
+const SPIN_SPEED := 1.0 / 160.0
 ## 펼친 지도의 반 크기(px)와 그 가로가 보여 주는 그림 폭(u) — 한반도가 세로로 꽉 차게
-const FLAT_HALF := Vector2(540, 250)
-const FLAT_SPAN_U := 0.70
+const FLAT_HALF := Vector2(1400, 900)
+const FLAT_SPAN_U := 0.4844
 ## 끌다 놓았을 때 미끄러지는 힘이 줄어드는 빠르기(1초에 남는 비율이 아니라 감속 계수)와 최대 속도(초당 바퀴)
 const FLING_DAMP := 3.0
 const FLING_MAX := 1.5
@@ -43,7 +43,7 @@ const FLING_MAX := 1.5
 const TURN_TIME := 0.5
 const UNFOLD_TIME := 0.9
 const ZOOM_TIME := 0.7
-const ZOOM_TO := 4.0
+const ZOOM_TO := 2.0
 ## 핀에 마우스를 올리면 뜨는 썸네일 크기(px)와 핀 머리 위로 띄우는 틈(px)
 const THUMB_SIZE := Vector2(256, 144)
 const THUMB_GAP := 34.0
@@ -155,31 +155,12 @@ func _apply_globe() -> void:
 	_layout_labels()
 	_update_thumbs()
 
-## 핀 이름표가 다른 이름표·핀과 겹치지 않게 위·아래·오른쪽·왼쪽 중 빈 쪽에 단다.
-## 지금 쪽이 비어 있으면 그대로 둔다 — 지구본이 도는 동안 이름표가 이리저리 튀지 않게
+## 핀 이름표는 **항상 핀 아래**에 단다(2026-10-08 사용자: 자리를 찾아 이리저리 움직이는 게 거슬림).
+## 겹침은 지구본을 키워서(`GLOBE_RADIUS`) 핀 사이를 벌리는 것으로 푼다
 func _layout_labels() -> void:
-	var shown: Array = []
 	for pin in _pin_nodes.values():
-		if pin.visible:
-			shown.append(pin)
-	var placed: Array[Rect2] = []
-	for pin in shown:
-		var blockers: Array[Rect2] = placed.duplicate()
-		for other in shown:
-			if other != pin:
-				blockers.append(Rect2(other.position, other.size))
-		var best: int = pin.label_side
-		var best_cost: float = INF
-		for side in [pin.label_side, 0, 1, 2, 3]:
-			var cost: float = _overlap_area(pin.label_rect(side).grow(LABEL_PAD), blockers)
-			if cost < best_cost:
-				best = side
-				best_cost = cost
-			if cost <= 0.0:
-				break
-		if best != pin.label_side:
-			pin.set_label_side(best)
-		placed.append(pin.label_rect(best).grow(LABEL_PAD))
+		if pin.label_side != PIN_SCRIPT.LabelSide.BELOW:
+			pin.set_label_side(PIN_SCRIPT.LabelSide.BELOW)
 
 func _overlap_area(rect: Rect2, others: Array[Rect2]) -> float:
 	var total: float = 0.0

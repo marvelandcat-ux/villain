@@ -40,6 +40,27 @@ extends Node2D
 @export var squash_max: float = 0.3
 @export_group("")
 
+@export_group("달리는 느낌")
+## 달리는 동안 차체 뒤로 하얀 스피드 라인(`combat/SpeedLines.gd`)을 끌고 간다(2026-10-08 사용자 요청 "자동차가 가고 있다는 느낌")
+@export var speed_lines: bool = true
+## 줄이 생기는 높이 범위(원점 = 바퀴 바닥 기준, 위가 음수). 차체 높이 117 안쪽
+@export var speed_line_spread: Vector2 = Vector2(-105.0, -22.0)
+@export var speed_line_count: int = 5
+@export var speed_line_length: float = 170.0
+## 뒷바퀴 밑에서 먼지(`combat/LandDust.gd`)를 이 간격(초)마다 피운다. 0이면 안 피움
+@export var dust_interval: float = 0.09
+## 먼지 세기(착지 먼지 기준 1 = 큰 뭉치)와 색 — 도로 먼지라 누르스름하게
+@export var dust_power: float = 0.5
+@export var dust_color: Color = Color(0.86, 0.8, 0.68, 0.75)
+## 지나갈 때 화면이 미세하게 떨린다(카메라 `set_rumble`). 가까울수록 세고 0이면 안 떨림
+@export var rumble_strength: float = 0.08
+## 이 거리(px) 밖이면 안 떨린다
+@export var rumble_range: float = 900.0
+@export_group("")
+
+const SPEED_LINES_SCRIPT := preload("res://combat/SpeedLines.gd")
+const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
+
 var _driving: bool = false
 var _dir: float = 1.0
 var _wait: float = 0.0
@@ -49,6 +70,9 @@ var _cooldowns: Dictionary = {}
 var _squash: float = 0.0
 var _squash_vel: float = 0.0
 var _art_base_scale: Vector2 = Vector2.ONE
+## 달리는 동안 끌고 가는 스피드 라인(없으면 null) / 다음 먼지까지 남은 시간
+var _lines: Node2D = null
+var _dust_left: float = 0.0
 
 @onready var _art: Node2D = $Art
 @onready var _wheels: Array[Node2D] = [$Art/WheelBack, $Art/WheelFront]
@@ -73,9 +97,12 @@ func _physics_process(delta: float) -> void:
 	_spin_wheels(delta)
 	_bounce_fighters()
 	_update_squash(delta)
+	_update_dust(delta)
+	_update_rumble()
 	if position.x * _dir > start_x:
 		_driving = false
 		visible = false
+		_stop_speed_lines()
 		_wait = randf_range(min_interval, max_interval)
 
 func _start() -> void:
@@ -87,6 +114,8 @@ func _start() -> void:
 	_apply_squash()
 	_driving = true
 	visible = true
+	_start_speed_lines()
+	_dust_left = 0.0
 
 ## 굴러간 거리 / 바퀴 반지름만큼 돈다. Art가 뒤집혀 있으면 화면에선 반대로 돌아 진행 방향과 맞는다
 func _spin_wheels(delta: float) -> void:
@@ -132,3 +161,59 @@ func _update_squash(delta: float) -> void:
 ## 원점이 바퀴 바닥이라 Art 배율만 바꾸면 바닥에 붙은 채 눌린다. 좌우 뒤집기(_dir)는 여기서 같이 건다
 func _apply_squash() -> void:
 	_art.scale = Vector2(_art_base_scale.x * (1.0 + _squash * 0.5) * _dir, _art_base_scale.y * (1.0 - _squash))
+
+## --- 달리는 느낌 ---
+## 차체 뒤로 끌리는 하얀 줄. 택시를 따라다니다(`setup`의 caster) 떠나면 `stop()`으로 꼬리부터 지워진다
+func _start_speed_lines() -> void:
+	_stop_speed_lines()
+	if not speed_lines:
+		return
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	_lines = SPEED_LINES_SCRIPT.new()
+	_lines.line_count = speed_line_count
+	_lines.spread_y = speed_line_spread
+	_lines.follow_length = speed_line_length
+	_lines.z_index = -11   # 택시(-10) 바로 뒤
+	_lines.z_as_relative = false
+	parent.add_child(_lines)
+	# 길이는 넉넉히 — 화면을 다 건너는 데 약 4초, 떠날 때 stop()으로 끊는다
+	_lines.setup(self, _dir, 30.0)
+
+func _stop_speed_lines() -> void:
+	if _lines != null and is_instance_valid(_lines):
+		_lines.stop()
+	_lines = null
+
+## 뒷바퀴가 도로를 구르는 자리에서 먼지가 피어오른다 — 착지 먼지를 작게·누르스름하게 돌려쓴다
+func _update_dust(delta: float) -> void:
+	if dust_interval <= 0.0:
+		return
+	_dust_left -= delta
+	if _dust_left > 0.0:
+		return
+	_dust_left = dust_interval
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var dust := LAND_DUST_SCRIPT.new()
+	dust.color = dust_color
+	dust.outline_color = Color(dust_color.r * 0.5, dust_color.g * 0.45, dust_color.b * 0.4, 0.4)
+	parent.add_child(dust)
+	# 뒷바퀴 = 진행 방향 반대쪽 바퀴. 바퀴 자리는 Art 기준 ±80이라 뒤집힘(_dir)만 곱한다
+	var back_wheel_x: float = -79.8 * _dir
+	dust.global_position = global_position + Vector2(back_wheel_x, 0.0)
+	dust.setup(dust_power)
+
+## 가까이 지나갈수록 화면이 미세하게 떨린다 — 땅이 울리는 느낌
+func _update_rumble() -> void:
+	if rumble_strength <= 0.0:
+		return
+	var cam: Camera2D = get_viewport().get_camera_2d()
+	if cam == null or not cam.has_method("set_rumble"):
+		return
+	var dist: float = absf(cam.get_screen_center_position().x - global_position.x)
+	var closeness: float = clampf(1.0 - dist / maxf(rumble_range, 1.0), 0.0, 1.0)
+	if closeness > 0.0:
+		cam.set_rumble(rumble_strength * closeness)

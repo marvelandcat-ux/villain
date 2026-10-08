@@ -66,6 +66,7 @@ var _focus_zoom_mul: float = 1.0
 var _focus_base_zoom: float = 1.0
 ## 씬에 저장돼 있던 원래 배율
 var _authored_zoom: float = 1.0
+
 ## **흐르기(팬)** — 0보다 크면 캐릭터를 따라가지 않고 맵 왼쪽 끝에서 오른쪽 끝까지 이 시간(초) 동안 천천히 흐른다.
 ## 타이틀 뒤 싸움 장면이 쓴다(start_pan). 평소 대전은 0이라 예전처럼 따라간다
 var pan_time: float = 0.0
