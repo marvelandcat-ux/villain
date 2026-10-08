@@ -648,7 +648,7 @@ godot --headless --path . res://_chk.tscn 2>&1 | grep -iE ">>> |씬 [0-9]+ \||SC
 res://
   GameState.gd  Timers.gd
   characters/   # Fighter.gd + BodyRig.gd + 캐릭터별(chokbeopsonyeon, akpeulleo, jujeongbaengi, catmom,
-                #   subwayvillain, floornoise, gymbro, iljin, hwanggeunchul / 로스터 밖: police, dummy)
+				#   subwayvillain, floornoise, gymbro, iljin, hwanggeunchul / 로스터 밖: police, dummy)
   skills/  combat/  controllers/  stats/  maps/  ui/(story/, cutin/)  tools/
 ```
 
