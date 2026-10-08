@@ -126,6 +126,7 @@ size = Vector2(24.255947, 8.437488)
 script = ExtResource("stage")
 hud_panels_top = true
 debug_story_skip_key = true
+story_match_ending = true
 
 [node name="Blackout" type="CanvasModulate" parent="." unique_id=1931403820]
 script = ExtResource("blackout")

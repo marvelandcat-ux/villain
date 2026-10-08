@@ -1,0 +1,49 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://drn2o8tt2e12d" path="res://sprite/storymode/악플러/소리를들은경찰.png" id="2_bg"]
+[ext_resource type="PackedScene" path="res://ui/story/ExclamationMark.tscn" id="3_mark"]
+[ext_resource type="Texture2D" uid="uid://dnt1xavhmm2qi" path="res://sprite/storymode/악플러/앗!소리다.png" id="5_bang"]
+
+[node name="StoryScene19" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.5
+hold_time = 2.6
+next_scene = "res://ui/story/StoryScene20.tscn"
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Room" type="Sprite2D" parent="."]
+scale = Vector2(0.765550, 0.765550)
+texture = ExtResource("2_bg")
+centered = false
+
+[node name="Mark" parent="." instance=ExtResource("3_mark")]
+position = Vector2(600, 120)
+texture = ExtResource("5_bang")
+height = 170.0
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

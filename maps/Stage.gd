@@ -27,6 +27,12 @@ extends Node2D
 ## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
 @export var debug_story_skip_key: bool = false
 
+## **스토리 전투를 이겼을 때도 승리 → 패배 → 연행 연출을 보여줄지**(2026-10-08 사용자, 악플러 편).
+## 평소 스토리 전투는 "승리!" 띠 하나만 지나가고 바로 다음 이야기로 넘어간다 — 그게 기본이다.
+## 켜면 대전과 **같은 연출 한 벌**을 보여준 뒤 다음 장면으로 간다.
+## `S`로 건너뛸 때도 똑같이 나온다 — 연출을 손보려고 켜 둔 것이라 건너뛰면 안 보이면 의미가 없다
+@export var story_match_ending: bool = false
+
 ## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
 const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 const DEBUG_GRID := preload("res://maps/DebugGrid.gd")
@@ -336,7 +342,11 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 	if match_decided:
 		# 스토리 전투를 이겼으면 결과창 대신 라운드와 같은 "승리!" 띠를 띄우고 이야기로 넘어간다
 		if p1_won and not is_draw and GameState.game_mode == "story" and GameState.story_next_scene != "":
-			await _play_round_banner(true, false)
+			# 이 맵에서 연출을 켜 뒀으면 띠 대신 대전과 같은 한 벌(승리 → 패배 → 연행)을 보여준다
+			if _wants_story_match_ending():
+				await _play_match_ending(true, false)
+			else:
+				await _play_round_banner(true, false)
 			if is_inside_tree():
 				_go_story_next()
 			return
@@ -398,6 +408,16 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 ## 스토리(진 판은 결과창, 이긴 판은 이야기로)와 구경 모드는 그대로 둔다
 func _wants_match_ending() -> bool:
 	return GameState.game_mode == "pvp" and GameState.result_cutscene_enabled and ResourceLoader.exists(ARREST_SCENE)
+
+## 스토리 전투에서 연출 한 벌을 보여줄 차례인지. 맵의 `story_match_ending`을 켠 곳에서만 참이다.
+##
+## ⚠️ **선수가 아직 안 나왔으면 거짓이다.** 격돌(VS) 화면이 도는 동안에도 `S`는 먹는데,
+## 그때는 `_p1`/`_p2`가 없어서 연출에 세울 사람도 이름도 없다 — 인물 없는 빈 승리 화면이 떴다(실측).
+## 그땐 옛날처럼 연출 없이 그냥 다음 장면으로 간다
+func _wants_story_match_ending() -> bool:
+	if not story_match_ending or not GameState.result_cutscene_enabled or not ResourceLoader.exists(ARREST_SCENE):
+		return false
+	return is_instance_valid(_p1) and is_instance_valid(_p2)
 
 ## 승리 화면 → 패배 화면 → 연행 장면(무승부면 연행만). 연행 장면은 끝나도 남아서 결과창의 배경이 된다.
 ## 두 장면 다 실제 시간으로 돌고 스스로 검게 닫혔다 열리므로 여기서는 순서만 잇는다
@@ -603,6 +623,12 @@ func _debug_skip_story_battle() -> void:
 	_round_over = true
 	_freeze_controllers()
 	GameState.p1_round_wins = GameState.rounds_to_win   # 이긴 것으로 기록해 둔다
+	# 연출을 켠 맵이면 **건너뛰어도 연출은 본다** — 연출을 손보려고 건너뛰는 거라 여기서 빼면 못 본다.
+	# `_play_match_ending`이 `_ending_active`를 세워서 그동안 S를 또 눌러도 안 먹는다
+	if _wants_story_match_ending():
+		await _play_match_ending(true, false)
+		if not is_inside_tree():
+			return
 	var next_scene: String = GameState.story_next_scene
 	GameState.story_next_scene = ""
 	get_tree().change_scene_to_file(next_scene)
