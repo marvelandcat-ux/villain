@@ -3780,6 +3780,43 @@ func _update_blocked_outline(amount: float) -> void:
 		mat.set_shader_parameter("outline_width", blocked_outline_px / maxf(absf(part.scale.x), 0.0001))
 		mat.set_shader_parameter("outline_alpha", amount)
 
+## --- 림 라이트(윤곽광) ---
+## 맵의 `RimLight` 노드가 매 프레임 `set_rim_light()`로 켜고 방향을 갱신한다(2026-10-08). 리그 전체가 **재질 하나를 같이 쓴다**.
+## 빨간 테두리(`_set_blocked_outline`)·황금 손(`GOLD_SHADER`)이 파츠 material을 바꿨다가 null로 되돌리므로,
+## 여기선 **material이 비어 있는 파츠에만** 붙이고 뗄 때도 **내 재질일 때만** 뗀다 — 그 둘이 끝나면 다음 호출에서 저절로 다시 붙는다
+const RIM_LIGHT_SHADER := preload("res://characters/RimLight.gdshader")
+var _rim_material: ShaderMaterial = null
+## 지금 림 라이트 재질이 붙어 있는 파츠들
+var _rim_parts: Array = []
+
+## 림 라이트를 켜거나 갱신한다. params = {셰이더 uniform 이름: 값} — `light_dir`(캐릭터→광원, 월드), `rim_color`,
+## `rim_strength`, `rim_px`, `shade_color`, `shade_strength`, `gradient_strength` …(`RimLight.gdshader` 참고). 매 프레임 불러도 된다
+func set_rim_light(params: Dictionary) -> void:
+	if _rim_material == null:
+		_rim_material = ShaderMaterial.new()
+		_rim_material.shader = RIM_LIGHT_SHADER
+	for key in params:
+		_rim_material.set_shader_parameter(key, params[key])
+	_apply_rim_materials(self)
+
+## 림 라이트를 끈다 — 내 재질이 붙은 파츠만 되돌린다
+func clear_rim_light() -> void:
+	for part in _rim_parts:
+		if is_instance_valid(part) and part.material == _rim_material:
+			part.material = null
+	_rim_parts.clear()
+
+## 그림이 있는 파츠(Sprite2D) 전부에 재질을 붙인다. 스크립트가 달린 스프라이트(핏줄·반짝이 표시)와
+## 다른 재질이 이미 붙은 파츠는 건드리지 않는다
+func _apply_rim_materials(node: Node) -> void:
+	for child in node.get_children():
+		if child is Sprite2D and child.get_script() == null:
+			if child.material == null:
+				child.material = _rim_material
+				if not _rim_parts.has(child):
+					_rim_parts.append(child)
+		_apply_rim_materials(child)
+
 ## 피격 표정 — 맞은 순간 잠깐 아파하는 얼굴로 바꾼다. Fighter.take_damage가 호출한다.
 ## hurt_head_texture가 비어 있으면(그 표정이 없는 캐릭터) 아무 일도 안 한다
 func play_hurt_face() -> void:

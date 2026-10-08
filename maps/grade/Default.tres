@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ScreenGradeStyle" format=3 uid="uid://bocbc7gbg3ivu"]
+
+[ext_resource type="Script" uid="uid://uceil1omb1w5" path="res://maps/ScreenGradeStyle.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contrast = 1.06
+saturation = 1.05

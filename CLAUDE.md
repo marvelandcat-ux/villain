@@ -75,6 +75,7 @@
 - 머리 돌리기 앵커 = **머리 공의 중심x·y·지름**(알파 1/4 축소 → 높이 22% 열림 연산 → 무게중심·`2sqrt(넓이/pi)`, 프로펠러·턱 제외)
 - ⚠️ 머리/몸통 파일명이 비슷 — **덮어쓰기 전 내용 확인**
 - 표정 우선순위: 피격 > 토하기/액션 > 취함 > 지침 > 맨정신. `_update_hp_face()`는 `take_damage`/`heal`/`ring_out` 세 곳
+- **캐릭터 조명(위에서 오는 빛)** `set_rim_light(params: Dictionary)`/`clear_rim_light()`(2026-10-08): 맵의 `maps/RimLight.gd` 노드가 매 프레임 uniform 값을 넣어 줌. 셰이더 `characters/RimLight.gdshader` = 윗가장자리 림 + 아랫가장자리 그늘 + 파츠 안 위아래 명암(사용자: "맨 위에서 빛, 지붕 아래 명암, 모든 윤곽선에 두르지 말 것"). 안쪽 테두리, 두께는 화면 px, 방향은 MODEL_MATRIX 역변환. ⚠️ 셰이더 함수 안에서는 `UV`/`TEXTURE`를 못 써서 인자로 넘긴다. **리그 재질 하나를 Sprite2D 파츠가 같이 씀 — material이 비어 있는 파츠에만 붙이고 내 재질일 때만 뗌**(빨간 테두리·황금 손이 material을 바꿨다 null로 되돌리는 것과 공존). 파츠 셰이더를 새로 만들면 같은 규칙으로
 
 ### 그림 파일 교체
 
@@ -86,7 +87,7 @@
 
 ## 조작 / AI
 
-- P1: A/D·W 점프·S 아래·F 평타·G/H 스킬·R 궁·E 맵 스킬 / P2: ←→·↑·↓·L·;·'·]·[. 대시 = 이동키 두 번, 발판 내려가기 = 아래키 두 번(원웨이 발판 위에서만), **방어 = 평타+스킬1 동시**(`GUARD_CHORD_WINDOW` 0.06초 동안 짝을 기다려서 혼자 누른 평타·스킬1은 그만큼 늦게 나감). ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION` 올릴 것**
+- P1: A/D·W 점프·S 아래·F 평타·G/H 스킬·R 궁·E 맵 스킬 / P2: ←→·↑·↓·L·;·'·]·[. 대시 = 이동키 두 번, 발판 내려가기 = 아래키 한 번(원웨이 발판 위에서만, 2026-10-08), **방어 = 평타+스킬1 동시**(`GUARD_CHORD_WINDOW` 0.06초 동안 짝을 기다려서 혼자 누른 평타·스킬1은 그만큼 늦게 나감). ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION` 올릴 것**
 - ⚠️ `move()`/`dash()`가 `facing`도 바꿈 → 후퇴 직후 되돌릴 것
 - AI 발판 길찾기 그룹: `"ai_jump_over"`, `"ai_danger_zone"` → `"ai_safe_spot"`. 기믹 위험 판정은 `can_process()`인 것만
 
@@ -94,6 +95,7 @@
 
 - 새 맵 필수: 바닥·벽(또는 링아웃)·`PlayerSpawn1/2`·`Camera2D`(`CameraRig.gd`)·`CombatHUD`, 목록 `GameState.MAPS`. **`Deco*` 노드는 맵 선택 미리보기 제외**. 맵 스킬은 클래시 안 탐
 - `Fade`는 씬의 **맨 마지막 자식**. 기준 해상도 1280x720
+- 맵 전체 색보정 `maps/ScreenGrade.gd`(월드 z 3000, HUD 안 물듦) — 맵별 `.tres`는 `maps/grade/`, 자세한 건 `.claude/rules/maps.md`
 - 폰트 주아체는 ⚠️ **기호 글리프가 거의 없음**(`◀ ▶ ● ○ · × ↑ ↓` → 코드로 그릴 것)
 
 ## 코드 스타일

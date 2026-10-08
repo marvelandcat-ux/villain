@@ -25,3 +25,15 @@ static func raycast_ignoring_fighters(ctx: Node, from: Vector2, to: Vector2) -> 
 static func ground_y_below(ctx: Node, from: Vector2, probe_distance: float, fallback_y: float) -> float:
 	var hit: Dictionary = raycast_ignoring_fighters(ctx, from, from + Vector2(0.0, probe_distance))
 	return fallback_y if hit.is_empty() else hit.position.y
+
+## 이 바디의 판정이 **전부 원웨이**(밟는 발판·전선)인지. 투사체가 이런 바디는 뚫고 지나가게 할 때 쓴다 —
+## 옆에서 날아온 비비탄이 발판 가장자리나 전선 한 가닥에 막혀 허공에서 사라지면 이상하다(2026-10-08).
+## 판정이 하나도 없는 바디는 false
+static func is_one_way_only(body: Node) -> bool:
+	var found: bool = false
+	for child in body.get_children():
+		if child is CollisionShape2D:
+			if not child.one_way_collision:
+				return false
+			found = true
+	return found

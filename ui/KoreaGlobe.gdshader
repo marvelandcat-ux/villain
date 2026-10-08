@@ -9,7 +9,7 @@ uniform sampler2D ocean_tex : source_color, repeat_enable, filter_linear_mipmap;
 uniform sampler2D land_tex : source_color, repeat_disable, filter_linear_mipmap;
 // 땅 그림이 지구 전체 그림(바다 그림) 안에서 차지하는 자리(u0, v0, 가로, 세로) — 펼쳐 확대해도 안 깨지게 한반도만 고해상도로 따로 그렸다.
 // ⚠️ tools/make_korea_globe.py를 돌리면 찍히는 land_rect 값과 같아야 한다
-uniform vec4 land_rect = vec4(0.3828125, 0.20703125, 0.263671875, 0.615234375);
+uniform vec4 land_rect = vec4(0.37109375, 0.177734375, 0.2900390625, 0.6767578125);
 // 이 사각형(ColorRect)의 크기와, 그 안에서 지구본 중심(px)·반지름(px)
 uniform vec2 rect_size = vec2(1280.0, 720.0);
 uniform vec2 center = vec2(640.0, 330.0);

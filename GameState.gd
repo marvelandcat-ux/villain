@@ -240,6 +240,8 @@ const DEFAULT_SFX_VOLUME := 1.0
 const MUTE_IN_BUILD := true
 
 var is_fullscreen: bool = false
+## 화면 색보정(`ScreenGrade` — 비네트·그레인·틴트)을 켤지. 끄면 맵이 원래 색 그대로 나온다. 설정 파일에 저장
+var screen_effects_enabled: bool = true
 ## 기본 1920x1080(RESOLUTIONS 1번, 2026-09-28 사용자 요청) — 설정을 한 번도 안 바꾼 새 PC에서 처음 켜면 이 크기
 var resolution_index: int = 1
 var master_volume: float = DEFAULT_MASTER_VOLUME
@@ -350,6 +352,7 @@ func _load_settings() -> void:
 				_apply_keybind(action, int(saved))
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
+	screen_effects_enabled = config.get_value("graphics", "screen_effects", screen_effects_enabled)
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
 	set_music_volume(config.get_value("audio", "music_volume", music_volume))
 	set_sfx_volume(config.get_value("audio", "sfx_volume", sfx_volume))
@@ -408,6 +411,11 @@ func reset_keybindings() -> void:
 
 ## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다.
 ## **창 모드로 돌아올 때는 저장해 둔 해상도를 다시 적용한다** — 안 그러면 전체화면 크기 그대로 남는다
+## 화면 색보정 켜고 끄기 — `ScreenGrade`가 매 프레임 이 값을 보므로 바로 반영된다
+func set_screen_effects(enabled: bool) -> void:
+	screen_effects_enabled = enabled
+	_save_setting("graphics", "screen_effects", enabled)
+
 func set_fullscreen(enabled: bool) -> void:
 	is_fullscreen = enabled
 	get_window().mode = Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED

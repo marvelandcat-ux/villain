@@ -1,0 +1,136 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/cutin/CatMomBlackCutIn.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://f37evm3qe40d" path="res://sprite/고양이 아줌마/고양이아줌마정면.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://d0aqgl2hi8cd5" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="4_hand"]
+[ext_resource type="Texture2D" uid="uid://u5jl76f8umpd" path="res://sprite/고양이 아줌마/고양이들/검은 고양이 머리.png" id="5_cat_head"]
+[ext_resource type="Texture2D" uid="uid://dbeg85ggbtbcg" path="res://sprite/고양이 아줌마/고양이들/검은 고양이 몸.png" id="6_cat_body"]
+[ext_resource type="Script" uid="uid://c8qv88phqb0w8" path="res://characters/LensGlint.gd" id="7_glint"]
+[ext_resource type="Script" uid="uid://4ystuepvifgv" path="res://characters/EyeBlink.gd" id="8_blink"]
+
+[node name="CatMomBlackCutIn" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="PageWhite" type="ColorRect" parent="."]
+offset_left = -700.0
+offset_top = -420.0
+offset_right = 700.0
+offset_bottom = 420.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="PanelWalk" type="Polygon2D" parent="."]
+clip_children = 2
+polygon = PackedVector2Array(19, -37, 640, -350, 640, 360, 239, 360)
+
+[node name="Content" type="Node2D" parent="PanelWalk"]
+
+[node name="Walker" type="Node2D" parent="PanelWalk/Content"]
+position = Vector2(423, 360)
+
+[node name="Body" type="Sprite2D" parent="PanelWalk/Content/Walker"]
+position = Vector2(0, -16)
+scale = Vector2(0.26, 0.26)
+texture = ExtResource("3_body")
+
+[node name="Head" type="Sprite2D" parent="PanelWalk/Content/Walker"]
+position = Vector2(0, -320)
+scale = Vector2(0.36, 0.36)
+texture = ExtResource("2_head")
+
+[node name="LensGlint" type="Node2D" parent="PanelWalk/Content/Walker/Head"]
+position = Vector2(-176, 96)
+script = ExtResource("7_glint")
+lens_size = Vector2(180, 80)
+always_show = true
+sparkle_size = 140.0
+sweep_time = 0.35
+interval_min = 9999.0
+interval_max = 9999.0
+
+[node name="PanelCat" type="Polygon2D" parent="."]
+clip_children = 2
+polygon = PackedVector2Array(-160, -360, 640, -360, 640, -350, 19, -37)
+
+[node name="Content" type="Node2D" parent="PanelCat"]
+
+[node name="CatHead" type="Sprite2D" parent="PanelCat/Content"]
+position = Vector2(160, -240)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("5_cat_head")
+
+[node name="Wink" type="Node2D" parent="PanelCat/Content/CatHead"]
+position = Vector2(212, 59)
+script = ExtResource("8_blink")
+eye_size = Vector2(225, 160)
+skin_color = Color(0.165, 0.157, 0.157, 1)
+line_color = Color(0.78, 0.75, 0.7, 1)
+line_width = 45.0
+close_time = 0.06
+open_time = 0.12
+interval_min = 9999.0
+interval_max = 9999.0
+double_blink_chance = 0.0
+
+[node name="PanelHold" type="Polygon2D" parent="."]
+clip_children = 2
+polygon = PackedVector2Array(-640, -360, -160, -360, 239, 360, -640, 360)
+
+[node name="Content" type="Node2D" parent="PanelHold"]
+
+[node name="Body" type="Sprite2D" parent="PanelHold/Content"]
+position = Vector2(-343, 220)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("3_body")
+
+[node name="Head" type="Sprite2D" parent="PanelHold/Content"]
+position = Vector2(-343, -65)
+scale = Vector2(0.33, 0.33)
+texture = ExtResource("2_head")
+
+[node name="TailRoot" type="Marker2D" parent="PanelHold/Content"]
+position = Vector2(-370, 220)
+
+[node name="Tail" type="Line2D" parent="PanelHold/Content"]
+width = 25.0
+joint_mode = 2
+
+[node name="CatBody" type="Sprite2D" parent="PanelHold/Content"]
+position = Vector2(-290, 200)
+rotation = -0.26
+scale = Vector2(0.15, 0.15)
+texture = ExtResource("6_cat_body")
+
+[node name="CatHead" type="Sprite2D" parent="PanelHold/Content"]
+position = Vector2(-150, 135)
+scale = Vector2(0.16, 0.16)
+texture = ExtResource("5_cat_head")
+
+[node name="HandL" type="Sprite2D" parent="PanelHold/Content"]
+position = Vector2(-480, 150)
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("4_hand")
+
+[node name="HandR" type="Sprite2D" parent="PanelHold/Content"]
+position = Vector2(-160, 215)
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("4_hand")
+
+[node name="Dividers" type="Node2D" parent="."]
+
+[node name="Line1" type="Line2D" parent="Dividers"]
+points = PackedVector2Array(-182, -400, 261, 400)
+width = 18.0
+default_color = Color(0, 0, 0, 1)
+
+[node name="Line2" type="Line2D" parent="Dividers"]
+points = PackedVector2Array(19, -37, 680, -370)
+width = 18.0
+default_color = Color(0, 0, 0, 1)
+
+[node name="Border" type="Line2D" parent="Dividers"]
+points = PackedVector2Array(-640, -360, 640, -360, 640, 360, -640, 360)
+closed = true
+width = 24.0
+default_color = Color(0, 0, 0, 1)

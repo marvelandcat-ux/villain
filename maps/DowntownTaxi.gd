@@ -27,17 +27,35 @@ extends Node2D
 @export var body_length: float = 269.0
 @export var roof_height: float = 117.0
 
+@export_group("눌림")
+## 사람을 튕길 때 차체가 스프링처럼 눌렸다 되돌아온다(2026-10-08 사용자 요청). 바닥(바퀴)을 축으로 세로는 눌리고 가로는 반만큼 퍼진다
+@export var squash_enabled: bool = true
+## 튕길 때 주는 충격(눌림 속도). 3.4면 실측 약 11% 눌린다(2.6 → 8%)
+@export var squash_kick: float = 3.4
+## 스프링 세기 — 클수록 빨리 되돌아온다
+@export var squash_stiffness: float = 380.0
+## 잦아드는 빠르기 — 작을수록 여러 번 출렁인다
+@export var squash_damping: float = 10.0
+## 가장 깊이 눌릴 수 있는 비율
+@export var squash_max: float = 0.3
+@export_group("")
+
 var _driving: bool = false
 var _dir: float = 1.0
 var _wait: float = 0.0
 ## {Fighter: 다시 튕길 수 있을 때까지 남은 시간}
 var _cooldowns: Dictionary = {}
+## 눌린 비율(+ = 납작)과 그 속도, 그림 원래 배율
+var _squash: float = 0.0
+var _squash_vel: float = 0.0
+var _art_base_scale: Vector2 = Vector2.ONE
 
 @onready var _art: Node2D = $Art
 @onready var _wheels: Array[Node2D] = [$Art/WheelBack, $Art/WheelFront]
 
 func _ready() -> void:
 	visible = false
+	_art_base_scale = _art.scale.abs()
 	_wait = randf_range(min_interval, max_interval)
 
 func _physics_process(delta: float) -> void:
@@ -54,6 +72,7 @@ func _physics_process(delta: float) -> void:
 	position.x += _dir * speed * delta
 	_spin_wheels(delta)
 	_bounce_fighters()
+	_update_squash(delta)
 	if position.x * _dir > start_x:
 		_driving = false
 		visible = false
@@ -63,7 +82,9 @@ func _start() -> void:
 	_dir = -1.0 if randf() < 0.5 else 1.0
 	position.x = -start_x * _dir
 	# 그림은 오른쪽을 보고 있다 — 왼쪽으로 갈 땐 뒤집는다
-	_art.scale.x = absf(_art.scale.x) * _dir
+	_squash = 0.0
+	_squash_vel = 0.0
+	_apply_squash()
 	_driving = true
 	visible = true
 
@@ -90,5 +111,24 @@ func _bounce_fighters() -> void:
 			continue
 		fighter.velocity = Vector2(fighter.velocity.x + push_x * _dir, -bounce_velocity)
 		fighter.cancel_landing_lag()
-		fighter.start_air_trail(bounce_velocity / maxf(Fighter.gravity, 1.0))
 		_cooldowns[fighter] = rebounce_delay
+		if squash_enabled:
+			_squash_vel += squash_kick
+
+## 감쇠 스프링 — 눌림이 0으로 되돌아오며 몇 번 출렁인다
+func _update_squash(delta: float) -> void:
+	if not squash_enabled:
+		return
+	if absf(_squash) < 0.0005 and absf(_squash_vel) < 0.005:
+		if _squash != 0.0:
+			_squash = 0.0
+			_apply_squash()
+		return
+	_squash_vel += (-squash_stiffness * _squash - squash_damping * _squash_vel) * delta
+	_squash += _squash_vel * delta
+	_squash = clampf(_squash, -squash_max, squash_max)
+	_apply_squash()
+
+## 원점이 바퀴 바닥이라 Art 배율만 바꾸면 바닥에 붙은 채 눌린다. 좌우 뒤집기(_dir)는 여기서 같이 건다
+func _apply_squash() -> void:
+	_art.scale = Vector2(_art_base_scale.x * (1.0 + _squash * 0.5) * _dir, _art_base_scale.y * (1.0 - _squash))

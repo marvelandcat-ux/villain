@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ScreenGradeStyle" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://maps/ScreenGradeStyle.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tint = Color(1, 1, 1, 1)
+tint_strength = 0.0
+contrast = 1.0
+saturation = 1.0
+brightness = 0.0
+vignette = 0.0
+vignette_radius = 1.0
+vignette_softness = 1.0
+grain = 0.0
+grain_size = 1.5

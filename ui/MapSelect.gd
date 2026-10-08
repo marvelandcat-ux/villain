@@ -25,17 +25,17 @@ const DEFAULT_PIN := Vector2(127.8, 36.8)
 ## 표면 그림의 경위도 배치 — ⚠️ tools/make_korea_globe.py의 같은 이름 값과 똑같아야 한다
 const CENTER_LON := 127.5
 const CENTER_LAT := 38.0
-const PX_PER_DEG := 60.0
+const PX_PER_DEG := 66.0
 const TEX_SIZE := Vector2(2048, 1024)
 
 ## 지구본 중심·반지름(px), 기울기(라디안), 저절로 도는 속도(초당 그림 가로 몇 바퀴)
-const GLOBE_CENTER := Vector2(640, 320)
-const GLOBE_RADIUS := 220.0
+const GLOBE_CENTER := Vector2(640, 342)
+const GLOBE_RADIUS := 255.0
 const GLOBE_TILT := -0.3
 const SPIN_SPEED := 1.0 / 24.0
 ## 펼친 지도의 반 크기(px)와 그 가로가 보여 주는 그림 폭(u) — 한반도가 세로로 꽉 차게
-const FLAT_HALF := Vector2(540, 260)
-const FLAT_SPAN_U := 0.62
+const FLAT_HALF := Vector2(540, 250)
+const FLAT_SPAN_U := 0.70
 ## 끌다 놓았을 때 미끄러지는 힘이 줄어드는 빠르기(1초에 남는 비율이 아니라 감속 계수)와 최대 속도(초당 바퀴)
 const FLING_DAMP := 3.0
 const FLING_MAX := 1.5
@@ -47,6 +47,8 @@ const ZOOM_TO := 4.0
 ## 핀에 마우스를 올리면 뜨는 썸네일 크기(px)와 핀 머리 위로 띄우는 틈(px)
 const THUMB_SIZE := Vector2(256, 144)
 const THUMB_GAP := 34.0
+## 핀 이름표끼리 띄울 여유(px) — 딱 붙지 않을 만큼만
+const LABEL_PAD := 4.0
 
 @onready var _globe: ColorRect = $Globe
 @onready var _pins: Control = $Pins
@@ -150,7 +152,40 @@ func _apply_globe() -> void:
 		pin.visible = spot.visible and (_picked == "" or map_name == _picked)
 		if pin.visible:
 			pin.place_tip(spot.pos)
+	_layout_labels()
 	_update_thumbs()
+
+## 핀 이름표가 다른 이름표·핀과 겹치지 않게 위·아래·오른쪽·왼쪽 중 빈 쪽에 단다.
+## 지금 쪽이 비어 있으면 그대로 둔다 — 지구본이 도는 동안 이름표가 이리저리 튀지 않게
+func _layout_labels() -> void:
+	var shown: Array = []
+	for pin in _pin_nodes.values():
+		if pin.visible:
+			shown.append(pin)
+	var placed: Array[Rect2] = []
+	for pin in shown:
+		var blockers: Array[Rect2] = placed.duplicate()
+		for other in shown:
+			if other != pin:
+				blockers.append(Rect2(other.position, other.size))
+		var best: int = pin.label_side
+		var best_cost: float = INF
+		for side in [pin.label_side, 0, 1, 2, 3]:
+			var cost: float = _overlap_area(pin.label_rect(side).grow(LABEL_PAD), blockers)
+			if cost < best_cost:
+				best = side
+				best_cost = cost
+			if cost <= 0.0:
+				break
+		if best != pin.label_side:
+			pin.set_label_side(best)
+		placed.append(pin.label_rect(best).grow(LABEL_PAD))
+
+func _overlap_area(rect: Rect2, others: Array[Rect2]) -> float:
+	var total: float = 0.0
+	for o in others:
+		total += rect.intersection(o).get_area()
+	return total
 
 ## 맵 썸네일 카드 — 실제 맵 모양을 축소한 MapPreview + 이름. 마우스를 막지 않는다(밑의 핀을 계속 누를 수 있게)
 func _make_thumb(map_name: String) -> Control:
