@@ -76,10 +76,15 @@ func _fly(delta: float) -> void:
 	var next: Vector2 = global_position + velocity * delta
 	next.x = clampf(next.x, -x_limit, x_limit)
 	if velocity.y > 0.0:
-		# 이번 프레임에 지나갈 구간 아래에 바닥(발판·전선 포함)이 있으면 그 위에 내려앉는다
+		# 이번 프레임에 지나갈 구간 아래에 바닥(발판)이 있으면 그 위에 내려앉는다.
+		# 전선(`power_lines`)은 뚫고 떨어진다(2026-10-09 사용자: 줄 위엔 안 올라가게)
 		var foot: float = _foot()
+		var lines: Array[RID] = []
+		for line in get_tree().get_nodes_in_group("power_lines"):
+			if line is PhysicsBody2D:
+				lines.append(line.get_rid())
 		var hit: Dictionary = PhysicsQuery.raycast_ignoring_fighters(self,
-			global_position + Vector2(0.0, foot), next + Vector2(0.0, foot))
+			global_position + Vector2(0.0, foot), next + Vector2(0.0, foot), lines)
 		if not hit.is_empty():
 			_landed = true
 			rotation = randf_range(-0.35, 0.35)

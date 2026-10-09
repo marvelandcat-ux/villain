@@ -100,11 +100,13 @@ func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:
 	var target: Fighter = victim
 	if target.is_invincible:
 		return
-	# 막았으면 평소처럼 BLOCK — 피해도 잡기도 없다
+	# 막았으면 평소처럼 막힌 이펙트 — 피해도 잡기도 없다
 	if target.is_guarding:
 		if hitbox:
 			hitbox._notify_blocked_by_guard()
-			hitbox._spawn_block_popup(target.global_position)
+			var hurt: Area2D = target.get_node_or_null("Hurtbox")
+			if hurt:
+				hitbox._spawn_guard_impact(hurt, hitbox.knockback)
 		return
 	# 잡을 수 없는 상대(슈퍼아머·카운터 자세 등)는 평소 3타처럼 맞고 날아간다
 	if target.is_grabbed or not target.can_be_grabbed():

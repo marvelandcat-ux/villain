@@ -35,6 +35,13 @@ func _ready() -> void:
 	material = _mat
 	apply_style(style if style != null else DEFAULT_STYLE)
 	modulate.a = strength
+	# ⚠️ Godot은 한 프레임에 화면을 **처음 읽는 곳에서 딱 한 번만** 복사한다. 흐림(`far_blur`) CanvasGroup의
+	# 자식이 전부 화면 밖으로 잘리면 그 그룹이 맨 뒤(z -29)에서 복사를 써 버려, 여기서 그 낡은 화면(하늘+건물)을
+	# 덮어 그렸다 → 전선·전봇대·쓰레기통·캐릭터가 통째로 사라짐(2026-10-09). 바로 앞에서 새로 복사하게 강제한다
+	var copy := BackBufferCopy.new()
+	copy.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
+	copy.show_behind_parent = true
+	add_child(copy)
 
 ## 스타일의 칸 값을 이름 그대로 셰이더에 넘긴다
 func apply_style(new_style: Resource) -> void:

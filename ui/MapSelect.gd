@@ -49,8 +49,6 @@ const MAP_FADE_IN := 1.0
 ## 핀에 마우스를 올리면 뜨는 썸네일 크기(px)와 핀 머리 위로 띄우는 틈(px)
 const THUMB_SIZE := Vector2(256, 144)
 const THUMB_GAP := 34.0
-## 썸네일 사진이 있는 폴더 — 맵 그림을 바꾸면 `tools/MapThumbGen.tscn`을 다시 돌릴 것
-const THUMB_DIR := "res://ui/map_thumbs"
 ## 핀 이름표끼리 띄울 여유(px) — 딱 붙지 않을 만큼만
 const LABEL_PAD := 4.0
 
@@ -216,10 +214,10 @@ func _make_thumb(map_name: String) -> Control:
 ## 찍어 둔 게 없는 맵(새 맵)만 예전처럼 MapPreview 스케치로 그린다(스케치는 맵마다 깨져 보여서 2026-10-09 사진으로 바꿈)
 func _make_thumb_art(map_name: String) -> Control:
 	var map_path: String = GameState.MAPS[map_name]
-	var shot_path: String = "%s/%s.png" % [THUMB_DIR, map_path.get_file().get_basename()]
-	if ResourceLoader.exists(shot_path):
+	var shot: Texture2D = MapPreview.snapshot_texture(map_path)
+	if shot:
 		var art := TextureRect.new()
-		art.texture = load(shot_path)
+		art.texture = shot
 		art.custom_minimum_size = THUMB_SIZE
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED

@@ -195,6 +195,11 @@ func _load_art(key: String, path: String) -> void:
 func _render_art(path: String) -> Texture2D:
 	if not ResourceLoader.exists(path):
 		return null
+	# 찍어 둔 게임 화면 사진이 있으면 그걸 칸 비율로 자르기만 한다(스케치보다 정확하다)
+	var photo: Texture2D = MAP_PREVIEW.snapshot_texture(path)
+	if photo:
+		var shot_image: Image = photo.get_image()
+		return ImageTexture.create_from_image(shot_image.get_region(_crop_rect(shot_image.get_size())))
 	var viewport := SubViewport.new()
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS

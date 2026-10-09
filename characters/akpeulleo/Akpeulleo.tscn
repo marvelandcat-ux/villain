@@ -56,6 +56,7 @@ combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
 cooldown = 0.3
 miss_cooldown = 1.0
 spin_flurry_enabled = true
+spin_wind = false
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
 monitoring = false

@@ -7,8 +7,8 @@ extends Node
 ## 맵은 타이틀 구경 모드("attract")로 띄운다 — HUD·카운트다운이 없다. 캐릭터는 찍기 직전에 숨긴다
 
 const OUT_DIR := "res://ui/map_thumbs"
-## 저장 크기(16:9). 썸네일 칸(256x144)의 두 배라 확대돼도 안 뭉개진다
-const OUT_SIZE := Vector2i(512, 288)
+## 저장 크기 = 게임 기준 해상도. 맵 상세 칸(1040px 폭)에 크게 띄워도 안 뭉개지게
+const OUT_SIZE := Vector2i(1280, 720)
 ## 맵을 띄우고 찍기까지 기다리는 시간(실제 초) — 페이드·카메라가 자리를 잡게
 const SETTLE_SEC := 1.5
 

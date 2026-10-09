@@ -23,7 +23,6 @@
 [ext_resource type="PackedScene" path="res://skills/TrashBagThrowSkill.tscn" id="ms_trash"]
 [ext_resource type="Shader" uid="uid://drmnqnfu6ujv" path="res://maps/NeonSign.gdshader" id="neon_shader"]
 [ext_resource type="Script" uid="uid://cg5a2io5fvgx7" path="res://maps/DowntownPigeons.gd" id="pigeons"]
-[ext_resource type="Script" uid="uid://ctgyxsnnoae8t" path="res://maps/RimLight.gd" id="rim"]
 [ext_resource type="Texture2D" uid="uid://dq4j5b0jtfguo" path="res://sprite/맵/번화가/시멘트 도로.png" id="road"]
 [ext_resource type="Script" uid="uid://cgv1s2vxn5sh1" path="res://maps/DowntownTaxi.gd" id="taxi"]
 [ext_resource type="Texture2D" uid="uid://qk2nepfr6qpi" path="res://sprite/맵/번화가/택시 본체.png" id="taxi_body"]
@@ -221,6 +220,11 @@ one_way_collision = true
 [node name="Collision7" type="CollisionShape2D" parent="LedgeL1" unique_id=1627995462]
 position = Vector2(-299.5, -469.5)
 shape = SubResource("RectangleShape2D_sr2ug")
+one_way_collision = true
+
+[node name="Collision8" type="CollisionShape2D" parent="LedgeL1" unique_id=1044401690]
+position = Vector2(54.5, 44.5)
+shape = SubResource("RectangleShape2D_LedgeL1")
 one_way_collision = true
 
 [node name="LedgeL3" type="StaticBody2D" parent="." unique_id=1773360515]
@@ -469,10 +473,6 @@ position = Vector2(-585, 240)
 
 [node name="PlayerSpawn2" type="Marker2D" parent="." unique_id=1071244593]
 position = Vector2(585, 240)
-
-[node name="RimLight" type="Node2D" parent="." unique_id=1739120846]
-position = Vector2(-1500, -700)
-script = ExtResource("rim")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=447796120]
 position = Vector2(0, 150)

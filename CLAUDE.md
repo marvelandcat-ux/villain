@@ -56,6 +56,7 @@
 - 점프·중력은 **static var**(영구는 `DEFAULT_*`). **점프·중력을 바꾸면 맵 발판 높이(놀이터·지하철 의자·공사현장·헬스장) 재확인**
 - 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 필수
 - 방어: 디버프 차단은 `blocks_debuff(from_ultimate)` 한 곳(궁만 관통). 막힘 판정은 `Hitbox._try_hit()`에서 한 번만. 가드/대시 off는 `can_guard()`/`can_dash()` 맨 앞
+- **막혔을 때 표시는 `combat/GuardImpact.gd` 하나**(2026-10-10, "BLOCK" 글자·파란 불꽃 대체): `Hitbox._spawn_guard_impact()`가 때린 쪽 몸 가장자리에서 터뜨림. 보호막(`GuardShield`)은 그대로
 - **발판 내려가기**: 레이어 끄지 말고 발판에 collision exception(바디 전체에 걸림 → 한 바디에 막힘 충돌 섞지 말 것). 올라갈 발판은 `one_way_collision`
 - 히트스톱은 꺼져 있음. 켜면 복귀 타이머 `ignore_time_scale = true`. `Engine.time_scale` 바꾼 스킬은 `_exit_tree`에서 복구
 
@@ -76,7 +77,7 @@
 - 머리 돌리기 앵커 = **머리 공의 중심x·y·지름**(알파 1/4 축소 → 높이 22% 열림 연산 → 무게중심·`2sqrt(넓이/pi)`, 프로펠러·턱 제외)
 - ⚠️ 머리/몸통 파일명이 비슷 — **덮어쓰기 전 내용 확인**
 - 표정 우선순위: 피격 > 토하기/액션 > 취함 > 지침 > 맨정신. `_update_hp_face()`는 `take_damage`/`heal`/`ring_out` 세 곳
-- **캐릭터 조명(위에서 오는 빛)** `set_rim_light(params: Dictionary)`/`clear_rim_light()`(2026-10-08): 맵의 `maps/RimLight.gd` 노드가 매 프레임 uniform 값을 넣어 줌. 셰이더 `characters/RimLight.gdshader` = 윗가장자리 림 + 아랫가장자리 그늘 + 파츠 안 위아래 명암(사용자: "맨 위에서 빛, 지붕 아래 명암, 모든 윤곽선에 두르지 말 것"). 안쪽 테두리, 두께는 화면 px, 방향은 MODEL_MATRIX 역변환. ⚠️ 셰이더 함수 안에서는 `UV`/`TEXTURE`를 못 써서 인자로 넘긴다. **리그 재질 하나를 Sprite2D 파츠가 같이 씀 — material이 비어 있는 파츠에만 붙이고 내 재질일 때만 뗌**(빨간 테두리·황금 손이 material을 바꿨다 null로 되돌리는 것과 공존). 파츠 셰이더를 새로 만들면 같은 규칙으로
+- **캐릭터 조명(위에서 오는 빛)** `set_rim_light(params: Dictionary)`/`clear_rim_light()`(2026-10-08) — ⚠️ **2026-10-09 사용자 요청으로 번화가에서 노드를 뺐다. 지금 쓰는 맵 없음**(코드·셰이더는 남김, 다시 쓰려면 맵에 `RimLight` 노드만 넣으면 됨): 맵의 `maps/RimLight.gd` 노드가 매 프레임 uniform 값을 넣어 줌. 셰이더 `characters/RimLight.gdshader` = 윗가장자리 림 + 아랫가장자리 그늘 + 파츠 안 위아래 명암(사용자: "맨 위에서 빛, 지붕 아래 명암, 모든 윤곽선에 두르지 말 것"). 안쪽 테두리, 두께는 화면 px, 방향은 MODEL_MATRIX 역변환. ⚠️ 셰이더 함수 안에서는 `UV`/`TEXTURE`를 못 써서 인자로 넘긴다. **리그 재질 하나를 Sprite2D 파츠가 같이 씀 — material이 비어 있는 파츠에만 붙이고 내 재질일 때만 뗌**(빨간 테두리·황금 손이 material을 바꿨다 null로 되돌리는 것과 공존). 파츠 셰이더를 새로 만들면 같은 규칙으로
 
 ### 그림 파일 교체
 

@@ -20,9 +20,9 @@ extends Node2D
 @export var min_count: int = 3
 @export var max_count: int = 4
 ## 나란히 앉는 간격(px)
-@export var spacing: float = 34.0
+@export var spacing: float = 44.0
 ## 앉은 비둘기의 화면 높이(px) — 다섯 장 모두 같은 배율로 줄인다
-@export var perched_height: float = 30.0
+@export var perched_height: float = 39.0
 ## 가만히 앉아 있다가 모이 쪼는 간격(초, 이 사이 랜덤)과 쪼는 시간
 @export var peck_interval: Vector2 = Vector2(2.5, 7.0)
 @export var peck_duration: float = 0.45

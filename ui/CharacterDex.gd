@@ -423,6 +423,13 @@ func _render_map_art(key: String, box: Vector2) -> Texture2D:
 	var path: String = str(GameState.DEX_MAPS.get(key, ""))
 	if path == "" or not ResourceLoader.exists(path):
 		return null
+	# 찍어 둔 게임 화면 사진이 있으면 그걸 칸 비율로 자르기만 한다(스케치보다 정확하다)
+	var photo: Texture2D = MAP_PREVIEW.snapshot_texture(path)
+	if photo:
+		var shot_image: Image = photo.get_image()
+		var shot_tex := ImageTexture.create_from_image(shot_image.get_region(_map_crop_rect(shot_image.get_size(), box)))
+		_map_art_cache[key] = shot_tex
+		return shot_tex
 	var viewport := SubViewport.new()
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
