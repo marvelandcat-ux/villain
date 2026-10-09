@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://skills/TrashBagThrowSkill.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://bwhapbh8dtdmn" path="res://sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 1.png" id="icon_1"]
@@ -11,10 +11,12 @@
 [ext_resource type="Texture2D" uid="uid://cpjj1ximbvk4p" path="res://sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 8.png" id="icon_8"]
 [ext_resource type="Texture2D" uid="uid://btf2gmbm3o0lt" path="res://sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 9.png" id="icon_9"]
 [ext_resource type="Texture2D" uid="uid://dim1wa0pag766" path="res://sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 10.png" id="icon_10"]
+[ext_resource type="Texture2D" uid="uid://c3o7dlp4yx1xi" path="res://sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 픨.png" id="icon_blank"]
 
 [node name="TrashBagThrowSkill" type="Node"]
 script = ExtResource("1")
-cooldown = 1.0
-skill_name = "쓰레기 봉투 던지기"
-description = "주운 쓰레기를 전부 봉투에 담아 던진다. 많이 모을수록 크고 아프다."
+cooldown = 0.5
+skill_name = "쓰레기 줍기"
+description = "주변 바닥의 쓰레기를 한 번에 줍는다. 많이 모은 쪽이 이긴다."
 stack_icons = Array[Texture2D]([ExtResource("icon_1"), ExtResource("icon_2"), ExtResource("icon_3"), ExtResource("icon_4"), ExtResource("icon_5"), ExtResource("icon_6"), ExtResource("icon_7"), ExtResource("icon_8"), ExtResource("icon_9"), ExtResource("icon_10")])
+blank_icon = ExtResource("icon_blank")

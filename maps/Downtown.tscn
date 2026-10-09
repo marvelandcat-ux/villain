@@ -39,7 +39,7 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_far"]
 shader = ExtResource("bgblur")
-shader_parameter/blur_px = 1.4
+shader_parameter/blur_px = 0.9
 shader_parameter/dim = 0.1
 
 [sub_resource type="ShaderMaterial" id="NeonSignMaterial"]
@@ -95,6 +95,7 @@ size = Vector2(40, 2400)
 [node name="Downtown" type="Node2D" unique_id=1457522344]
 script = ExtResource("1")
 map_skill_scene = ExtResource("ms_trash")
+trash_collect_mode = true
 screen_grade = ExtResource("grade")
 
 [node name="DecoBackdropSky" type="Polygon2D" parent="." unique_id=1075318281]
@@ -298,6 +299,7 @@ texture = ExtResource("d5")
 script = ExtResource("fgfade")
 parallax = Vector2(1.1, 1)
 extend_to_ground = true
+behind_alpha = 0.6
 
 [node name="PoleRightLow" type="Sprite2D" parent="." unique_id=1116286863]
 z_index = 10
@@ -307,6 +309,7 @@ texture = ExtResource("d5")
 script = ExtResource("fgfade")
 parallax = Vector2(1.1, 1)
 extend_to_ground = true
+behind_alpha = 0.6
 
 [node name="PoleRightTop" type="Sprite2D" parent="." unique_id=1394880428]
 z_index = 10
@@ -316,6 +319,7 @@ texture = ExtResource("d5")
 script = ExtResource("fgfade")
 parallax = Vector2(1.1, 1)
 extend_to_ground = true
+behind_alpha = 0.6
 
 [node name="WireLow" type="StaticBody2D" parent="." unique_id=626360225]
 z_index = -10

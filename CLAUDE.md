@@ -40,6 +40,7 @@
 - `duplicate()`는 신호까지 복사 → 판정 복제는 `DUPLICATE_SCRIPTS | DUPLICATE_GROUPS`. **잔상은 복제 후 스크립트를 뗄 것**
 - 명중 콜백 안에서 판정 모양 변경은 `set_deferred`
 - 셰이더: **`COLOR` 덮어쓸 땐 원래 `COLOR`를 곱할 것**. CanvasGroup 어둡게는 `self_modulate`. Polygon2D는 `vertex_colors`가 있으면 `color` 무시
+- **CanvasGroup(흐림 셰이더) 자식에 `z_index`를 주면 그룹 밖에서 그려져 흐림이 안 먹는다** → 앞뒤는 트리 순서로(번화가 골목 2·3층, 2026-10-09)
 - 이펙트(먼지·바람·자국)는 **맵에 붙일 것**(캐릭터 자식이면 반전에 뒤집힘). 피격 움찔은 그림만(물리로 띄우면 확정 콤보 깨짐)
 - 무언가 사라지면 `git stash list`부터(GitHub Desktop이 치운 적 있음)
 - PowerShell 변수는 대소문자 무시. Bash heredoc 속 python의 `\` 줄끝 주의
@@ -94,6 +95,7 @@
 ## 맵 / UI
 
 - 새 맵 필수: 바닥·벽(또는 링아웃)·`PlayerSpawn1/2`·`Camera2D`(`CameraRig.gd`)·`CombatHUD`, 목록 `GameState.MAPS`. **`Deco*` 노드는 맵 선택 미리보기 제외**. 맵 스킬은 클래시 안 탐
+- **번화가 = 쓰레기 모으기 규칙**(2026-10-09, `Stage.trash_collect_mode`): 체력 0 → 쓰레기 절반(올림) 뿌리고 튕겨 나감 → 스폰 자리에서 깜박이며 2초 → 부활. 시간 끝에 쓰레기 많은 쪽 승, 같으면 무승부. 개수는 맵 스킬 `TrashBagThrowSkill`(한도 9999) — **이름과 달리 이제 "쓰레기 줍기"**(던지기 삭제, 범위 110px 안을 한 번에, 닿아서는 안 주움 `auto_pickup`), 뱃지는 빈 그림 `blank_icon` + 코드 숫자
 - `Fade`는 씬의 **맨 마지막 자식**. 기준 해상도 1280x720
 - 맵 전체 색보정 `maps/ScreenGrade.gd`(월드 z 3000, HUD 안 물듦) — 맵별 `.tres`는 `maps/grade/`, 자세한 건 `.claude/rules/maps.md`
 - 폰트 주아체는 ⚠️ **기호 글리프가 거의 없음**(`◀ ▶ ● ○ · × ↑ ↓` → 코드로 그릴 것)

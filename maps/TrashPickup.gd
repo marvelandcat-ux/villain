@@ -47,6 +47,21 @@ func setup(texture: Texture2D, art_scale: float, start_velocity: Vector2) -> voi
 	_corners = PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
 	velocity = start_velocity
 	rotation = randf_range(-PI, PI)
+	add_to_group("trash_pickups")   # 줍기 스킬(TrashBagThrowSkill)이 범위 안 조각을 찾는다
+
+## 지금 주울 수 있는지 — 막 튀어나온 직후(`pickup_delay`)나 이미 주운 것은 안 된다
+func can_collect() -> bool:
+	return not _taken and _age >= pickup_delay
+
+## 이 캐릭터가 줍는다 — 맵 스킬에 한 개 더하고 캐릭터 쪽으로 빨려 들어가며 사라진다. 꽉 찼으면 false
+func collect_by(fighter: Fighter) -> bool:
+	if not can_collect():
+		return true
+	var skill = fighter.map_skill
+	if skill == null or not skill.has_method("add_trash") or not skill.add_trash(1):
+		return false
+	_vanish(fighter.global_position + Vector2(0, -30))
+	return true
 
 func _physics_process(delta: float) -> void:
 	delta = minf(delta, 0.05)
@@ -121,17 +136,20 @@ func _check_pickup() -> void:
 		var skill = fighter.map_skill
 		if skill == null or not skill.has_method("add_trash"):
 			continue
+		# 줍기 스킬로만 줍는 설정이면 닿아도 안 줍는다
+		if not bool(skill.get("auto_pickup") if "auto_pickup" in skill else true):
+			continue
 		if not skill.add_trash(1):
 			continue
-		_vanish()
+		_vanish(global_position + Vector2(0, -24))
 		return
 
-## 주웠을 때 — 살짝 위로 빨려 올라가며 사라진다
-func _vanish() -> void:
+## 주웠을 때 — `to`(줍는 사람 쪽) 로 빨려 들어가며 사라진다
+func _vanish(to: Vector2) -> void:
 	_taken = true
 	set_physics_process(false)
 	var tween := create_tween().set_parallel(true)
-	tween.tween_property(self, "position:y", position.y - 24.0, 0.15)
+	tween.tween_property(self, "global_position", to, 0.15)
 	tween.tween_property(self, "modulate:a", 0.0, 0.15)
 	tween.tween_property(self, "scale", Vector2(0.4, 0.4), 0.15)
 	tween.chain().tween_callback(queue_free)

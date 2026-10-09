@@ -34,15 +34,27 @@ const BUILDINGS := {
 ## size를 t처럼 (1-t)로 두면 뒷줄이 장난감처럼 작아졌다(2026-10-08 사용자: "앞줄 건물보다 300px쯤만 작게") —
 ## 사진처럼 멀어도 건물은 크게, 길만 모이게 한다. 건물 세로(앞면 749px) 기준 0.85/0.72/0.6 = 637/539/449px
 const LAYERS := [
-	{"t": 0.3, "size": 0.85, "parallax": 0.9, "blur": 0.7, "dim": 0.08, "z": -26,
+	{"t": 0.3, "size": 0.85, "parallax": 0.9, "blur": 0.4, "dim": 0.08, "z": -26,
 		"left": ["mood", "tall"], "right": ["pocha", "wide"]},
-	{"t": 0.55, "size": 0.72, "parallax": 0.82, "blur": 1.2, "dim": 0.15, "z": -27,
+	{"t": 0.55, "size": 0.72, "parallax": 0.82, "blur": 0.7, "dim": 0.15, "z": -27,
 		"left": ["bar2", "mart"], "right": ["conv", "tall_sign"]},
-	{"t": 0.75, "size": 0.6, "parallax": 0.74, "blur": 1.8, "dim": 0.22, "z": -28,
+	{"t": 0.75, "size": 0.6, "parallax": 0.74, "blur": 1.0, "dim": 0.22, "z": -28,
 		"left": ["tall_sign", "wide"], "right": ["mood", "tall"]},
 ]
 ## 가장 먼 겹 뒤에서 소실점을 막는 건물(가운데 정렬)과 그 깊이·배율
-const END_WALL := {"t": 0.9, "size": 0.5, "keys": ["wide", "bar2", "wide"]}
+## 맨 뒤라 **자기 겹을 따로 가진다**(2026-10-09 사용자: "맨 뒤니까 맨 뒤처럼 블러") — 셋째 겹보다 조금 더 흐리고 어둡고 덜 움직인다.
+## (예전엔 셋째 겹 안에서 z_index -1을 받아 CanvasGroup 밖으로 빠지는 바람에 **흐림이 아예 안 먹었다**)
+const END_WALL := {"t": 0.9, "size": 0.5, "keys": ["wide", "bar2", "wide"],
+	"parallax": 0.68, "blur": 1.2, "dim": 0.26, "z": -28}
+## 위층으로 쌓는 그림 — 골목 전체에서 **돌아가며** 고른다(같은 그림이 줄줄이 이어지면 복붙처럼 보였다, 2026-10-09)
+const UPPER_FLOORS := [
+	"res://sprite/맵/번화가/건물 세로.png",
+	"res://sprite/맵/번화가/건물.png",
+	"res://sprite/맵/번화가/건물3 .png",
+	"res://sprite/맵/번화가/건물 가루.png",
+]
+## "맛있는 술이 좋은날" 글씨 그림 — 반복되면 바로 티 나고 뒤집으면 글자가 거꾸로라 **한 번만**
+const UPPER_FLOOR_TEXT := "res://sprite/맵/번화가/건물2.png"
 
 ## 소실점(월드). 땅(286)에서 50px 위 — 사진처럼 길이 멀어지는 느낌(2026-10-08 사용자 선택)
 @export var vanish: Vector2 = Vector2(11.0, 236.0)
@@ -54,6 +66,9 @@ const END_WALL := {"t": 0.9, "size": 0.5, "keys": ["wide", "bar2", "wide"]}
 @export var parallax_reference: Vector2 = Vector2(0.0, -226.0)
 ## 이어 붙일 때 건물끼리 겹치는 폭(앞면 px) — 틈이 안 보이게
 @export var overlap: float = 6.0
+## 골목 벽 꼭대기 y(월드) — 1층 건물 위로 `UPPER_FLOORS_*` 그림을 2·3층으로 쌓아 여기까지 올린다.
+## 앞줄 건물 꼭대기(≈ -760)보다 200px 아래(2026-10-09 사용자). 마지막 층은 아래를 잘라 딱 맞춘다
+@export var wall_top_y: float = -560.0
 ## 켜면 다시 만든다(에디터에서 값을 바꾼 뒤)
 @export var rebuild: bool = false:
 	set(v):
@@ -62,6 +77,8 @@ const END_WALL := {"t": 0.9, "size": 0.5, "keys": ["wide", "bar2", "wide"]}
 			_build()
 
 var _neon_material: ShaderMaterial = null
+var _floor_index: int = 0
+var _text_floor_used: bool = false
 
 func _ready() -> void:
 	_build()
@@ -70,6 +87,8 @@ func _build() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
+	_floor_index = 0
+	_text_floor_used = false
 	_neon_material = ShaderMaterial.new()
 	_neon_material.shader = NEON_SHADER
 	for i in LAYERS.size():
@@ -90,8 +109,11 @@ func _build() -> void:
 		# 양옆 벽
 		_place_wall(group, layer["left"], float(layer["t"]), float(layer["size"]), -1.0)
 		_place_wall(group, layer["right"], float(layer["t"]), float(layer["size"]), 1.0)
-		if i == LAYERS.size() - 1:
-			_place_end_wall(group)
+	# 맨 뒤 막는 건물 — 셋째 겹과 같은 z라 트리 순서로 뒤에 그려지게 맨 앞 자식으로
+	var end_group := _make_group("DecoAlleyEnd", END_WALL)
+	add_child(end_group)
+	move_child(end_group, 0)
+	_place_end_wall(end_group)
 
 ## 겹 하나 = CanvasGroup(흐림·어둡기) + 시차
 func _make_group(group_name: String, layer: Dictionary) -> CanvasGroup:
@@ -122,8 +144,49 @@ func _place_wall(group: Node, keys: Array, t: float, size: float, side: float) -
 		var inner_edge: float = r.end.x if side < 0.0 else r.position.x
 		spr.position = Vector2(cursor - inner_edge, ground_y - r.end.y)
 		group.add_child(spr)
+		_stack_floors(group, spr, spr.position + r.position, r.size.x)
 		# 다음 건물은 바깥쪽으로 — 왼쪽 벽(side -1)은 x가 줄고, 오른쪽 벽은 는다
 		cursor += side * (r.size.x - overlap * (1.0 - t))
+
+## 1층 건물(왼쪽 위 `top_left`, 폭 `width`) 위로 같은 폭의 층을 `wall_top_y`까지 쌓는다
+func _stack_floors(group: Node, ground: Node, top_left: Vector2, width: float) -> void:
+	var top: float = top_left.y + 2.0   # 아래층 지붕 턱과 2px 겹침
+	var n: int = 0
+	while top > wall_top_y + 1.0 and n < 6:
+		# 칸 번호(_floor_index) + 층 번호로 고른다 — 같은 높이 줄에 4장이 다 돌고, 목록이 세로·가로 번갈아라 위아래 층도 세로·가로가 섞인다(2026-10-09 사용자: "가로와 세로를 적당히 섞어서").
+		# (예전엔 한 줄로 이어 돌려서 칸마다 2개씩 쌓이면 2층 줄엔 짝수 번째 그림 2종만 왔다, 2026-10-09)
+		# 4칸마다 좌우를 뒤집어 같은 그림도 다르게 보이게
+		var path: String
+		var flip: bool = false
+		if not _text_floor_used and _floor_index == 1 and n == 0:
+			path = UPPER_FLOOR_TEXT
+			_text_floor_used = true
+		else:
+			path = UPPER_FLOORS[(_floor_index + n) % UPPER_FLOORS.size()]
+			flip = (_floor_index / UPPER_FLOORS.size()) % 2 == 1
+		var tex: Texture2D = load(path)
+		if tex == null:
+			return
+		var op: Rect2 = PICKUP_SCRIPT._opaque_rect_of(tex)
+		var s: float = width / op.size.x
+		var h: float = minf(op.size.y * s, top - wall_top_y)
+		var spr := Sprite2D.new()
+		spr.name = "floor%d" % (n + 2)
+		spr.texture = tex
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		spr.centered = false
+		spr.region_enabled = true
+		spr.region_rect = Rect2(op.position, Vector2(op.size.x, h / s))   # 모자라면 아래를 잘라 지붕 턱은 남긴다
+		spr.scale = Vector2(s, s)
+		spr.position = Vector2(top_left.x, top - h)
+		spr.flip_h = flip
+		# ⚠️ z_index 금지 — CanvasGroup 자식이 z를 바꾸면 그룹 밖에서 그려져 **흐림이 안 먹는다**(2026-10-09 겪음).
+		# 아래층 지붕 턱이 위에 오게 트리 순서로 1층 그림 앞에 끼운다
+		group.add_child(spr)
+		group.move_child(spr, ground.get_index())
+		top -= h - 2.0
+		n += 1
+	_floor_index += 1
 
 ## 가장 먼 겹 끝 — 소실점을 가리는 건물 몇 채를 가운데 정렬로 나란히
 func _place_end_wall(group: Node) -> void:
@@ -142,8 +205,7 @@ func _place_end_wall(group: Node) -> void:
 	for spr in sprites:
 		var r: Rect2 = _visible_rect(spr)
 		spr.position = Vector2(cursor - r.position.x, ground_y - r.end.y)
-		spr.z_index = -1   # 양옆 벽보다 뒤
-		group.add_child(spr)
+		group.add_child(spr)   # 자기 겹(DecoAlleyEnd)이 맨 앞 자식이라 양옆 벽보다 뒤 — z_index 주면 흐림이 빠진다
 		cursor += r.size.x
 
 ## 건물 스프라이트(배율 = 앞면 배율 x size). 축소된 그림은 밉맵 필터가 없으면 지글거리며 **뒤가 더 또렷해 보인다**(2026-10-08 겪음)

@@ -112,6 +112,21 @@ func _eject_riders() -> void:
 		fighter.velocity.y = -eject_velocity
 		fighter.cancel_landing_lag()
 
+## 아무 자리(`world_pos`)에서 쓰레기 count개를 사방으로 뿌린다 — 쓰레기 모으기 모드에서 죽은 사람이 떨어뜨릴 때(Stage)
+func drop_from(world_pos: Vector2, count: int) -> void:
+	if trash_textures.is_empty():
+		return
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	for i in count:
+		var piece = PICKUP_SCRIPT.new()
+		var vel := Vector2(randf_range(-260.0, 260.0), -randf_range(launch_up_range.x, launch_up_range.y))
+		var tex: Texture2D = trash_textures.pick_random()
+		piece.setup(tex, _scale_for(tex), vel)
+		parent.add_child(piece)
+		piece.global_position = world_pos
+
 func _spawn_one() -> void:
 	if trash_textures.is_empty():
 		return

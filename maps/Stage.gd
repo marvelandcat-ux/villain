@@ -72,6 +72,18 @@ static var show_debug_grid: bool = false
 ## 날아가던 몸이 끝내 안 멈춰도 결과로 넘어가는 한도(초, 실제 시간 — 슬로모션 포함)
 @export var knockout_max_wait: float = 4.0
 
+@export_group("쓰레기 모으기")
+## 켜면 **쓰레기 모으기 규칙**(2026-10-09 사용자, 번화가 전용): 체력 0이어도 라운드가 안 끝나고,
+## 가진 쓰레기 절반을 떨어뜨리며 튕겨 나갔다가 `trash_respawn_delay`초 뒤 스폰 자리에서 부활한다.
+## 시간이 끝나면 쓰레기 많은 쪽이 이기고 같으면 무승부. 쓰레기 개수는 맵 스킬(`TrashBagThrowSkill`)이 들고 있다
+@export var trash_collect_mode: bool = false
+@export var trash_respawn_delay: float = 2.0
+## 죽은 순간 튕겨 나가는 속도(px/s, x는 맞은 반대쪽으로)
+@export var trash_death_launch: Vector2 = Vector2(420, -620)
+## 부활한 뒤 무적 시간(초)
+@export var trash_respawn_invincible: float = 1.0
+@export_group("")
+
 @export_group("화면 효과")
 ## 화면 전체 색보정(`maps/ScreenGrade.gd`)을 이 맵에 깔지. 설정의 `GameState.screen_effects_enabled`가 꺼져 있으면 어차피 안 보인다
 @export var screen_grade_enabled: bool = true
@@ -101,6 +113,8 @@ var _combat_hud: CombatHUD
 ## 두 캐릭터 모두 AI, 체력바·카운트다운·일시정지·연타 대결·궁극기 컷인 없음(화면을 멈추거나 UI를 띄우므로),
 ## 판이 끝나도 결과 화면·재시작을 하지 않는다 — 카메라를 흘리고 새 조합으로 바꾸는 건 TitleScreen이 한다
 var _attract: bool = false
+## 쓰레기 모으기 모드에서 지금 부활을 기다리는 캐릭터(Fighter → true, 깜박이는 동안엔 그 Tween)
+var _respawning: Dictionary = {}
 
 func _ready() -> void:
 	_attract = GameState.game_mode == "attract"
@@ -201,6 +215,9 @@ func _process(delta: float) -> void:
 	# 구경 모드는 승패 판정·결과 화면·재시작을 하지 않는다(체력 0이 돼도 계속 싸운다)
 	if _attract:
 		return
+	if trash_collect_mode:
+		_process_trash_mode(delta)
+		return
 	if _p1.current_hp <= 0 or _p2.current_hp <= 0:
 		var p1_dead: bool = _p1.current_hp <= 0
 		var p2_dead: bool = _p2.current_hp <= 0
@@ -221,6 +238,80 @@ func _process(delta: float) -> void:
 				_end_round(false, false)
 			else:
 				_end_round(false, true)
+
+## 쓰레기 모으기 모드의 한 프레임 — 쓰러진 사람은 부활시키고, 시간이 끝나면 쓰레기 개수로 가른다
+func _process_trash_mode(delta: float) -> void:
+	for f in [_p1, _p2]:
+		if f.current_hp <= 0 and not _respawning.has(f):
+			_trash_knockout(f)
+	if GameState.time_limit_seconds <= 0:
+		return
+	_round_time_left -= delta
+	if _combat_hud:
+		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
+	if _round_time_left <= 0.0:
+		var a: int = _trash_of(_p1)
+		var b: int = _trash_of(_p2)
+		_end_round(a > b, a == b)
+
+func _trash_of(fighter: Fighter) -> int:
+	var skill = fighter.map_skill
+	return skill.get_trash_stack() if skill != null and skill.has_method("get_trash_stack") else 0
+
+## 쓰러짐 → 쓰레기 절반(올림)을 사방에 뿌리고 튕겨 나감 → 스폰 자리로 옮겨 깜박이며 대기 → 부활
+func _trash_knockout(fighter: Fighter) -> void:
+	_respawning[fighter] = true
+	var skill = fighter.map_skill
+	var held: int = _trash_of(fighter)
+	var drop: int = ceili(held * 0.5)
+	if drop > 0 and skill.has_method("remove_trash"):
+		skill.remove_trash(drop)
+		var can: Node = _any_trash_can()
+		if can:
+			can.drop_from(fighter.global_position + Vector2(0, -30), drop)
+	_set_fighter_controller_active(fighter, false)
+	fighter.push_invincible()
+	fighter.cancel_finisher_flight()
+	# 맞은 반대쪽으로 튕겨 나간다(상대가 오른쪽이면 왼쪽으로)
+	var other: Fighter = _p2 if fighter == _p1 else _p1
+	var dir: float = -1.0 if other.global_position.x > fighter.global_position.x else 1.0
+	fighter.velocity = Vector2(trash_death_launch.x * dir, trash_death_launch.y)
+	fighter.apply_hitstun(trash_respawn_delay)
+	# 날아가는 걸 잠깐 보여 준 뒤 스폰 자리로 옮겨 남은 시간 동안 깜박인다
+	var fly_time: float = minf(0.6, trash_respawn_delay * 0.4)
+	Timers.after(fighter, fly_time, func() -> void:
+		_rescue_fallen(fighter)
+		# ⚠️ set_loops(0)은 무한 반복이라 최소 1. 부활할 때 kill해서 반투명으로 남지 않게 사전에 둔다
+		var blink := fighter.create_tween().set_loops(maxi(int((trash_respawn_delay - fly_time) / 0.2), 1))
+		blink.tween_property(fighter, "modulate:a", 0.15, 0.1)
+		blink.tween_property(fighter, "modulate:a", 0.9, 0.1)
+		_respawning[fighter] = blink)
+	Timers.after(fighter, trash_respawn_delay, func() -> void:
+		_trash_respawn(fighter))
+
+func _trash_respawn(fighter: Fighter) -> void:
+	_rescue_fallen(fighter)
+	var blink = _respawning.get(fighter)
+	if blink is Tween and blink.is_valid():
+		blink.kill()
+	fighter.modulate.a = 1.0
+	fighter.heal(fighter.stats.max_hp, false)
+	fighter.pop_invincible()
+	fighter.grant_invincibility(trash_respawn_invincible)
+	_respawning.erase(fighter)
+	if not _round_over:
+		_set_fighter_controller_active(fighter, true)
+
+func _any_trash_can() -> Node:
+	for node in find_children("*", "", true, false):
+		if node.has_method("drop_from"):
+			return node
+	return null
+
+func _set_fighter_controller_active(fighter: Fighter, active: bool) -> void:
+	for child in fighter.get_children():
+		if child is PlayerController or child is AIController:
+			child.is_active = active
 
 ## 라운드가 끝났을 때 제일 먼저 들어오는 곳 — 처치 연출이 있으면 그걸 먼저 보여주고 결과로 넘긴다.
 ## `_knockout_playing` 동안 `_process`의 판정을 멈춰서 연출 중에 같은 라운드가 두 번 끝나지 않게 한다
@@ -514,6 +605,9 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 		fighter.add_child(controller)
 	if map_skill_scene:
 		var skill: Skill = map_skill_scene.instantiate()
+		# 쓰레기 모으기 모드는 쓰레기가 곧 점수라 줍는 한도를 없앤다(add_child 전에 — _ready가 바로 돈다)
+		if trash_collect_mode and "max_stack" in skill:
+			skill.max_stack = 9999
 		fighter.add_child(skill)
 		fighter.map_skill = skill
 	return fighter
