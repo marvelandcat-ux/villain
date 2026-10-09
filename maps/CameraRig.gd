@@ -5,6 +5,9 @@ extends Camera2D
 ## 맵에 LeftWall/RightWall이 있으면 그 바깥면을 카메라 한계선으로 잡아, 벽 너머(배경 끝, 빈 공간)가
 ## 화면에 들어오지 않게 한다
 @export var follow_speed: float = 4.0
+## **영역(궁) 안에서 쓰는 따라가기 속도.** 고정 카메라 맵이라도 영역 안에서는 이만큼은 따라간다 —
+## 영역은 원래 맵과 아무 상관 없는 좁은 방이라 "이 맵은 고정"이라는 결정이 그대로 먹으면 안 된다
+@export var arena_follow_speed: float = 4.0
 @export var min_y: float = 100.0
 @export var max_y: float = 250.0
 ## 켜면 화면 아래로 보이는 흙(지면 아래) 두께를 **배율과 상관없이** ground_margin_px로 고정한다.
@@ -398,7 +401,14 @@ func enter_arena(area: Rect2, look_at: Vector2, close_zoom: float = 0.0, look_up
 			"min_y": min_y, "max_y": max_y, "lock": lock_ground_to_bottom, "ceiling": use_ceiling,
 			"min_zoom": _min_zoom, "max_zoom": _max_zoom,
 			"pos": global_position, "zoom": zoom,
+			# ⚠️ **따라가는 속도와 자동 배율도 같이 맡아 둔다.** 헬스장처럼 `follow_speed = 0`인
+			# **고정 카메라 맵**에서는 영역(궁) 안에서도 카메라가 선수를 아예 안 따라가서,
+			# 둘이 영역 구석으로 가면 화면은 가운데만 비춘다(2026-10-07 실측)
+			"follow": follow_speed, "dyn": dynamic_zoom,
 		}
+	# 영역 안은 **늘 따라가는 카메라**다 — 맵이 어떻게 잡혀 있든 상관없이
+	follow_speed = maxf(follow_speed, arena_follow_speed)
+	dynamic_zoom = true
 	_arena_active = true
 	_arena_look_up = look_up
 	limit_left = int(floorf(area.position.x))
@@ -440,6 +450,8 @@ func leave_arena(look_at: Vector2) -> void:
 		_letterbox.visible = use_ceiling
 	_min_zoom = _arena_saved["min_zoom"]
 	_max_zoom = _arena_saved["max_zoom"]
+	follow_speed = _arena_saved.get("follow", follow_speed)
+	dynamic_zoom = _arena_saved.get("dyn", dynamic_zoom)
 	var z: float = clampf(zoom.x, _min_zoom, _max_zoom)
 	zoom = Vector2(z, z)
 	global_position = Vector2(look_at.x, clampf(look_at.y, _highest_center_y(), _lowest_center_y()))

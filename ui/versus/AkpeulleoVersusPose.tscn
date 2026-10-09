@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://chgocngi8g5x4"]
+
+[ext_resource type="Texture2D" uid="uid://daj7hrn5nnjrj" path="res://sprite/악플러/몸/악플러몸통.png" id="1_body"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="2_hand"]
+[ext_resource type="Texture2D" uid="uid://btx50km8m0yla" path="res://sprite/악플러/몸/악플러키보드.png" id="3_keyboard"]
+[ext_resource type="Texture2D" uid="uid://b4j2i0yc5nom6" path="res://sprite/악플러/몸/악플러 분노.png" id="4_head"]
+[ext_resource type="Script" uid="uid://jabroynj53ym" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
+
+[node name="AkpeulleoVersusPose" type="Node2D" unique_id=1312264910]
+position = Vector2(2, 0)
+
+[node name="Body" type="Sprite2D" parent="." unique_id=331922690]
+position = Vector2(19.999985, 348)
+scale = Vector2(1.0894444, 1.2333333)
+texture = ExtResource("1_body")
+
+[node name="HandL" type="Sprite2D" parent="." unique_id=328958953]
+position = Vector2(-130.00003, 420)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("2_hand")
+flip_h = true
+
+[node name="Keyboard" type="Sprite2D" parent="." unique_id=521475650]
+position = Vector2(29.000015, 343)
+rotation = -0.5235988
+scale = Vector2(0.18852727, 0.18852727)
+texture = ExtResource("3_keyboard")
+
+[node name="HandR" type="Sprite2D" parent="." unique_id=1843657508]
+position = Vector2(149.99998, 318)
+scale = Vector2(0.78, 0.78)
+texture = ExtResource("2_hand")
+
+[node name="Head" type="Sprite2D" parent="." unique_id=1566767691]
+position = Vector2(-21.000015, 84)
+scale = Vector2(0.335, 0.335)
+texture = ExtResource("4_head")
+
+[node name="Preview" type="Node2D" parent="." unique_id=1425538790]
+z_index = -100
+script = ExtResource("9_preview")
+origin_on_screen = Vector2(1020, 223)
+facing = -1.0
+opponent_pose = "res://ui/versus/PoliceVersusPose.tscn"

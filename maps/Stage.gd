@@ -14,8 +14,10 @@ extends Node2D
 ## 자동으로 붙는다(Fighter.map_skill) — 캐릭터 씬 쪽은 전혀 안 건드려도 된다. Skill을 상속한
 ## 스크립트가 루트인 씬이어야 하고, 비워두면 그냥 일반 맵(맵 전용 스킬 없음)
 @export var map_skill_scene: PackedScene
-## 스토리 전투에서 이겼을 때 결과창을 보여주고 있는 시간(초). 지나면 이어지는 이야기 장면으로 넘어간다
-@export var story_win_delay: float = 1.8
+## **스토리 모드 라운드 띠에 쓰는 말** — 대전 모드처럼 "P1 승리!"가 아니라 주인공 쪽에서 본 말만 쓴다(2026-10-07 사용자).
+## 스토리 전투를 이기면 결과창 대신 이 띠가 지나가고 바로 이야기로 넘어간다(승패 모션은 아직 없음)
+@export var story_win_text: String = "승리!"
+@export var story_lose_text: String = "패배"
 ## (임시) 테스트용 — **스토리 전투 중 `S`를 누르면 이긴 것으로 치고 바로 다음 이야기로 넘어간다.**
 ## 스토리 장면의 건너뛰기(`StoryFadeScene.debug_skip_key`)와 같은 키다. 스토리를 다 만들면 같이 지울 것.
 ##
@@ -25,9 +27,21 @@ extends Node2D
 ## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
 @export var debug_story_skip_key: bool = false
 
+## **스토리 전투를 이겼을 때도 승리 → 패배 → 연행 연출을 보여줄지**(2026-10-08 사용자, 악플러 편).
+## 평소 스토리 전투는 "승리!" 띠 하나만 지나가고 바로 다음 이야기로 넘어간다 — 그게 기본이다.
+## 켜면 대전과 **같은 연출 한 벌**을 보여준 뒤 다음 장면으로 간다.
+## `S`로 건너뛸 때도 똑같이 나온다 — 연출을 손보려고 켜 둔 것이라 건너뛰면 안 보이면 의미가 없다
+@export var story_match_ending: bool = false
+
 ## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
 const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 const DEBUG_GRID := preload("res://maps/DebugGrid.gd")
+## 대전 최종 승부 연출 — 승리·패배 화면 / 연행 장면(둘 다 레이어 25)
+const MATCH_ENDING_SCENE := "res://ui/result/MatchEnding.tscn"
+const ARREST_SCENE := "res://ui/result/ArrestScene.tscn"
+const ARREST_SCRIPT := "res://ui/result/ArrestScene.gd"
+## 연행 장면 위에 결과 버튼 창을 올릴 레이어 — 연행 장면(25)보다 위
+const RESULT_OVER_ENDING_LAYER := 30
 
 ## 50px 격자를 켰는지(G + ') — static이라 라운드가 바뀌어 씬을 다시 읽어도 켠 채로 남는다
 static var show_debug_grid: bool = false
@@ -115,6 +129,13 @@ var _combat_hud: CombatHUD
 var _attract: bool = false
 ## 쓰레기 모으기 모드에서 지금 부활을 기다리는 캐릭터(Fighter → true, 깜박이는 동안엔 그 Tween)
 var _respawning: Dictionary = {}
+## 최종 승부 연출(승리 → 패배 → 연행)을 시작했는지. 켜지면 이 판이 끝날 때까지 일시정지를 막는다 —
+## 일시정지 창(레이어 12)이 연출(25) 밑에 숨어 열리면 화면은 안 보이는데 게임만 멈춘다
+var _ending_active: bool = false
+## KO 슬로 동안 미리 읽기 시작한 최종 연출 경로들(`_preload_match_ending`)
+var _ending_preloads: Array[String] = []
+## 왼쪽 위 일시정지 버튼 — 최종 연출이 시작되면 치운다(연출 화면은 클릭을 통과시켜서 그대로 두면 눌린다)
+var _pause_button_node: Node = null
 
 func _ready() -> void:
 	_attract = GameState.game_mode == "attract"
@@ -317,6 +338,8 @@ func _set_fighter_controller_active(fighter: Fighter, active: bool) -> void:
 ## `_knockout_playing` 동안 `_process`의 판정을 멈춰서 연출 중에 같은 라운드가 두 번 끝나지 않게 한다
 func _finish_round(p1_won: bool, is_draw: bool) -> void:
 	var loser: Fighter = _p2 if p1_won else _p1
+	if _decides_match(p1_won, is_draw) and _wants_match_ending():
+		_preload_match_ending(p1_won)
 	if not is_draw and _wants_knockout(loser):
 		_knockout_playing = true
 		_freeze_controllers()
@@ -408,6 +431,7 @@ func _lay_down_when_settled(loser: Fighter, direction: float) -> void:
 ## 연출 도중에 맵을 벗어나도(메뉴로 나가기 등) 시간 배속이 느린 채로 남지 않게 한다
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	_release_match_ending_preload()
 
 ## 한 라운드가 끝났을 때 호출. 승수를 갱신하고, rounds_to_win에 도달했으면 최종 결과를,
 ## 아니면 라운드 중간 배너를 보여준 뒤 같은 맵에서 다음 라운드를 새로 시작한다(씬 리로드로 HP/위치 초기화)
@@ -425,8 +449,28 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
 	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win or GameState.p2_round_wins >= GameState.rounds_to_win
 	if match_decided:
+		# 스토리 전투를 이겼으면 결과창 대신 라운드와 같은 "승리!" 띠를 띄우고 이야기로 넘어간다
+		if p1_won and not is_draw and GameState.game_mode == "story" and GameState.story_next_scene != "":
+			# 이 맵에서 연출을 켜 뒀으면 띠 대신 대전과 같은 한 벌(승리 → 패배 → 연행)을 보여준다
+			if _wants_story_match_ending():
+				await _play_match_ending(true, false)
+			else:
+				await _play_round_banner(true, false)
+			if is_inside_tree():
+				_go_story_next()
+			return
+		# 대전(컴퓨터 상대 포함)은 결과창 전에 승리 → 패배 → 연행 연출을 보여주고, 결과창은 연행 장면 위 아래쪽에 띄운다
+		var cinematic: bool = _wants_match_ending()
+		if cinematic:
+			await _play_match_ending(p1_won, is_draw)
+			if not is_inside_tree():
+				return
 		var result_screen: MatchResult = load("res://ui/MatchResult.tscn").instantiate()
+		if cinematic:
+			result_screen.layer = RESULT_OVER_ENDING_LAYER
 		add_child(result_screen)
+		if cinematic:
+			result_screen.dock_bottom()
 		_show_final_result(result_screen, p1_won, is_draw)
 		return
 	# **라운드 중간은 결과창 대신 띠 하나가 지나간다** — 창이 뜨면 흐름이 끊겨서
@@ -456,6 +500,8 @@ func _play_round_banner(p1_won: bool, is_draw: bool) -> void:
 			banner.queue_free()
 		await get_tree().create_timer(1.2).timeout
 		return
+	if GameState.game_mode == "story" and "win_text" in band:
+		band.win_text = story_win_text if p1_won else story_lose_text
 	band.play(p1_won, is_draw)
 	await band.finished
 	banner.queue_free()
@@ -466,25 +512,141 @@ func _show_final_result(result_screen: MatchResult, p1_won: bool, is_draw: bool)
 		return
 	var winner_name: String = _p1.stats.character_name if p1_won else _p2.stats.character_name
 	result_screen.show_result(p1_won, winner_name)
-	# 스토리 전투를 이겼으면 결과창을 잠깐 보여준 뒤 이야기를 이어간다 (졌으면 예전처럼 재시도/메뉴)
-	if p1_won and GameState.game_mode == "story" and GameState.story_next_scene != "":
-		result_screen.hide_buttons()
-		await get_tree().create_timer(story_win_delay).timeout
+
+## 최종 승부 연출을 쓸지 — 대전 모드(컴퓨터 상대 포함)이고 방 설정의 승패 연출이 켜져 있을 때만.
+## 스토리(진 판은 결과창, 이긴 판은 이야기로)와 구경 모드는 그대로 둔다
+func _wants_match_ending() -> bool:
+	return GameState.game_mode == "pvp" and GameState.result_cutscene_enabled and ResourceLoader.exists(ARREST_SCENE)
+
+## 스토리 전투에서 연출 한 벌을 보여줄 차례인지. 맵의 `story_match_ending`을 켠 곳에서만 참이다.
+##
+## ⚠️ **선수가 아직 안 나왔으면 거짓이다.** 격돌(VS) 화면이 도는 동안에도 `S`는 먹는데,
+## 그때는 `_p1`/`_p2`가 없어서 연출에 세울 사람도 이름도 없다 — 인물 없는 빈 승리 화면이 떴다(실측).
+## 그땐 옛날처럼 연출 없이 그냥 다음 장면으로 간다
+func _wants_story_match_ending() -> bool:
+	if not story_match_ending or not GameState.result_cutscene_enabled or not ResourceLoader.exists(ARREST_SCENE):
+		return false
+	return is_instance_valid(_p1) and is_instance_valid(_p2)
+
+## 승리 화면 → 패배 화면 → 연행 장면(무승부면 연행만). 연행 장면은 끝나도 남아서 결과창의 배경이 된다.
+## 두 장면 다 실제 시간으로 돌고 스스로 검게 닫혔다 열리므로 여기서는 순서만 잇는다
+func _play_match_ending(p1_won: bool, is_draw: bool) -> void:
+	_ending_active = true
+	_freeze_controllers()
+	Engine.time_scale = 1.0
+	# 영역 궁(층간소음·내무반)이 펼쳐진 채 KO가 나면 연출 뒤에서 제 타이머대로 계속 돌다가 끝나며 맵·카메라를 되돌린다 — 먼저 걷는다
+	for domain in get_tree().get_nodes_in_group(DomainClash.GROUP):
+		if domain.has_method("break_domain"):
+			domain.break_domain()
+	if _combat_hud:
+		_combat_hud.visible = false
+	if is_instance_valid(_pause_button_node):
+		_pause_button_node.queue_free()
+	_pause_button_node = null
+	var info: Dictionary = _match_ending_info(p1_won, is_draw)
+	if not is_draw and ResourceLoader.exists(MATCH_ENDING_SCENE):
+		var ending: Node = load(MATCH_ENDING_SCENE).instantiate()
+		add_child(ending)
+		ending.play(info)
+		_release_match_ending_preload()
+		# 승리 화면이 자기 리그를 다 읽은 **뒤에** 건다 — 먼저 걸면 승리 화면의 load()가 미리 읽기 줄 뒤에 서서
+		# 첫 화면이 2초쯤 멈췄다(실측)
+		_warm_up_arrest(info)
+		await ending.finished
 		if not is_inside_tree():
-			return   # 기다리는 동안 맵이 사라졌으면(재시도·메뉴 등) 아무 것도 하지 않는다
-		var next_scene: String = GameState.story_next_scene
-		GameState.story_next_scene = ""
-		if ResourceLoader.exists(next_scene):
-			get_tree().change_scene_to_file(next_scene)
-		else:
-			push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
+			return
+		if is_instance_valid(ending):
+			ending.queue_free()
+	# 승리·패배 화면이 검게 닫힌 채 끝나고 연행 장면도 검게 시작한다 — add_child와 play를 같은 프레임에.
+	# (무승부는 승리·패배 화면이 없어 미리 읽을 틈이 없다 — 여기서 걸면 리그들을 나눠서 한꺼번에 읽는다)
+	_warm_up_arrest(info)
+	var arrest: Node = load(ARREST_SCENE).instantiate()
+	add_child(arrest)
+	arrest.play(info)
+	await arrest.finished
+
+## 연행 장면(리그 일곱 개 + 경찰서 그림)을 뒤에서 미리 읽기 시작한다(이미 건 것은 건너뛴다) —
+## 안 그러면 연행으로 넘어갈 때 검은 화면에서 1~2초 멈췄다(실측). 손을 놓는 건 연행 장면이 끝날 때 스스로 한다
+## 이번 라운드 결과로 최종 승부가 나는지(승수는 아직 안 올린 때 묻는다). 무승부는 승수를 안 줘서 판을 끝내지 못한다
+func _decides_match(p1_won: bool, is_draw: bool) -> bool:
+	if is_draw:
+		return false
+	var wins: int = GameState.p1_round_wins if p1_won else GameState.p2_round_wins
+	return wins + 1 >= GameState.rounds_to_win
+
+## 최종 KO 슬로(실제 시간 2초 이상)가 도는 동안 승리·패배 화면과 두 선수 리그를 뒤에서 미리 읽는다.
+## 안 그러면 KO가 끝나고 승리 화면이 뜨기 전에 0.3~0.7초 멈췄다(2026-10-08 실측). 손 놓기는 `_release_match_ending_preload()`
+func _preload_match_ending(p1_won: bool) -> void:
+	# 헤드리스(가짜 렌더러)에선 스레드로 그림을 만들면 에러가 쏟아진다 — ArrestScene.warm_up과 같은 이유로 끈다
+	if DisplayServer.get_name() == "headless":
+		return
+	var info: Dictionary = _match_ending_info(p1_won, false)
+	for path in [MATCH_ENDING_SCENE, info["winner_rig"], info["loser_rig"]]:
+		var p: String = str(path)
+		if p == "" or _ending_preloads.has(p) or not ResourceLoader.exists(p):
+			continue
+		if ResourceLoader.load_threaded_request(p) == OK:
+			_ending_preloads.append(p)
+
+## 미리 읽기에서 손을 놓는다 — 승리 화면이 이미 붙들고 있으니 메모리에서 바로 풀리지는 않는다
+func _release_match_ending_preload() -> void:
+	for p in _ending_preloads:
+		ResourceLoader.load_threaded_get(p)
+	_ending_preloads.clear()
+
+func _warm_up_arrest(info: Dictionary) -> void:
+	var arrest_script = load(ARREST_SCRIPT)
+	if arrest_script != null:
+		arrest_script.warm_up([ARREST_SCENE, info["winner_rig"], info["loser_rig"]])
+
+## 연출에 넘길 정보. 화면 속 인물은 **이 판에서 실제로 싸운 캐릭터의 게임 속 리그**다.
+## 무승부면 P1을 승자 자리, P2를 패자 자리에 채운다(연출 쪽 약속). 같은 캐릭터끼리면 P2 쪽만 2P 색
+func _match_ending_info(p1_won: bool, is_draw: bool) -> Dictionary:
+	var winner_is_p1: bool = p1_won or is_draw
+	var winner: Fighter = _p1 if winner_is_p1 else _p2
+	var loser: Fighter = _p2 if winner_is_p1 else _p1
+	var same_pick: bool = GameState.p1_character_path == GameState.p2_character_path
+	return {
+		"winner_rig": _rig_path_of(winner),
+		"loser_rig": _rig_path_of(loser),
+		"winner_is_p1": winner_is_p1,
+		"winner_name": _fighter_name(winner),
+		"loser_name": _fighter_name(loser),
+		"winner_p2_color": same_pick and not winner_is_p1,
+		"loser_p2_color": same_pick and winner_is_p1,
+		"is_draw": is_draw,
+	}
+
+## 선수 몸(`Visual`)이 어느 리그 씬인지. 못 읽으면 로스터의 리그 목록에서 이름으로 찾는다
+func _rig_path_of(fighter: Fighter) -> String:
+	if fighter == null or not is_instance_valid(fighter):
+		return ""
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and visual.scene_file_path != "":
+		return visual.scene_file_path
+	return str(GameState.CHARACTER_RIGS.get(_fighter_name(fighter), ""))
+
+func _fighter_name(fighter: Fighter) -> String:
+	if fighter == null or not is_instance_valid(fighter) or fighter.stats == null:
+		return ""
+	return fighter.stats.character_name
+
+## 스토리 전투를 이긴 뒤 다음 장면으로 넘어간다(`battle_win_scene`). 졌을 땐 안 부른다 — 결과창에서 재시도/메뉴
+func _go_story_next() -> void:
+	var next_scene: String = GameState.story_next_scene
+	GameState.story_next_scene = ""
+	if ResourceLoader.exists(next_scene):
+		get_tree().change_scene_to_file(next_scene)
+	else:
+		push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
 
 ## ESC(ui_cancel)를 누르면 일시정지 메뉴를 띄운다. 이 함수 자체가 get_tree().paused일 때는
 ## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
 ## 메뉴가 떠 있는 동안 다시 ESC를 눌러도 여기서 중복으로 또 띄우는 일은 없다
 func _unhandled_input(event: InputEvent) -> void:
-	# 구경 모드는 키 입력을 전부 타이틀 화면에 맡긴다(ESC로 일시정지가 뜨면 안 된다)
-	if _attract:
+	# 구경 모드는 키 입력을 전부 타이틀 화면에 맡긴다(ESC로 일시정지가 뜨면 안 된다).
+	# KO 슬로 중에도 막는다 — 거기서 멈추면 곧이어 뜨는 최종 연출(process ALWAYS)이 멈춘 화면 위로 돈다
+	if _attract or _ending_active or _knockout_playing:
 		return
 	if debug_story_skip_key and event is InputEventKey:
 		var key: InputEventKey = event
@@ -542,10 +704,13 @@ func _add_pause_button() -> void:
 	button.hide_story_list = true   # 싸우는 중엔 다른 에피소드 목록까지 볼 이유가 없다
 	button.hide_title = true        # "일시정지" 제목도 빼서 메뉴만 남긴다
 	add_child(button)
+	_pause_button_node = button
 
 ## 일시정지 화면을 띄운다 (ESC와 왼쪽 버튼이 같이 쓴다).
 ## **대전 중에는 오른쪽 에피소드 목록과 왼쪽 "일시정지" 제목을 감춘다** — "진행 중인 스토리"만 남는다
 func open_pause_menu() -> void:
+	if _ending_active or _knockout_playing:
+		return
 	var menu: Node = load("res://ui/PauseMenu.tscn").instantiate()
 	menu.show_story_list = false
 	menu.show_title = false
@@ -567,6 +732,12 @@ func _debug_skip_story_battle() -> void:
 	_round_over = true
 	_freeze_controllers()
 	GameState.p1_round_wins = GameState.rounds_to_win   # 이긴 것으로 기록해 둔다
+	# 연출을 켠 맵이면 **건너뛰어도 연출은 본다** — 연출을 손보려고 건너뛰는 거라 여기서 빼면 못 본다.
+	# `_play_match_ending`이 `_ending_active`를 세워서 그동안 S를 또 눌러도 안 먹는다
+	if _wants_story_match_ending():
+		await _play_match_ending(true, false)
+		if not is_inside_tree():
+			return
 	var next_scene: String = GameState.story_next_scene
 	GameState.story_next_scene = ""
 	get_tree().change_scene_to_file(next_scene)
@@ -578,6 +749,8 @@ func _spawn_fighter(character_path: String, spawn_marker_name: String, is_ai: bo
 	# ⚠️ 체력·공격력 손보기는 **add_child 전에** 해야 한다 — Fighter._ready()가 current_hp를 stats.max_hp로 잡는다
 	if is_ai and GameState.game_mode == "story":
 		_apply_story_handicap(fighter)
+	if not is_ai and GameState.game_mode == "story":
+		_swap_story_skill2(fighter)
 	_apply_hp_multiplier(fighter)
 	add_child(fighter)
 	# **둘이 같은 캐릭터를 골랐을 때만** 2P의 몸 색을 바꾼다(2026-10-05 사용자 지정) —
@@ -635,6 +808,22 @@ func _apply_hp_multiplier(fighter: Fighter) -> void:
 		return
 	fighter.stats = fighter.stats.duplicate()
 	fighter.stats.max_hp = maxi(int(round(fighter.stats.max_hp * scale)), 1)
+
+## 스토리 전투마다 **주인공 2번 스킬을 그 에피소드 것으로** 갈아 끼운다(`GameState.story_p1_skill2`).
+## **add_child 전에** 한다 — `Fighter._ready()`가 자식 `Skill2`를 찾아 슬롯에 꽂으므로 이름만 같으면 된다
+func _swap_story_skill2(fighter: Fighter) -> void:
+	var path: String = GameState.story_p1_skill2
+	if path == "" or not ResourceLoader.exists(path):
+		return
+	var skill: Node = (load(path) as PackedScene).instantiate()
+	if skill == null:
+		return
+	var old: Node = fighter.get_node_or_null("Skill2")
+	if old:
+		fighter.remove_child(old)
+		old.free()
+	skill.name = "Skill2"
+	fighter.add_child(skill)
 
 func _apply_story_handicap(fighter: Fighter) -> void:
 	var hp_scale: float = GameState.story_enemy_hp_scale

@@ -50,8 +50,8 @@ var _marker: Line2D = null
 
 ## 지금 고른 대상과 배치 번호
 var _target: int = Target.SQUAT
-## **범위를 고치는 중인지**(Tab으로 바꾼다). 켜면 화살표·크기 키가 기구 대신 범위 선을 건드린다
-var _edit_range: bool = false
+## **무엇을 고치는 중인지** — Tab으로 돌아간다: 0 기구 / 1 범위 선 / 2 운동할 때 설 자리
+var _edit_mode: int = 0
 var _arrangement: int = 0
 ## 비교용 캐릭터
 var _cast_mode: int = Cast.ONE
@@ -154,7 +154,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var step: float = 10.0 if key.shift_pressed else 1.0
 	var grow: float = 0.05 if key.shift_pressed else 0.01
 	match key.keycode:
-		KEY_TAB, KEY_T: _edit_range = not _edit_range
+		KEY_TAB, KEY_T: _edit_mode = (_edit_mode + 1) % 3
 		KEY_1: _target = Target.CURL
 		KEY_2: _target = Target.SQUAT
 		KEY_3: _target = Target.TREADMILL
@@ -206,7 +206,17 @@ func _machine() -> GymMachine:
 
 ## 고른 것을 옮긴다. 기구는 자리(배치표), 2층 바닥은 네 변이 움직인다
 func _nudge(delta: Vector2) -> void:
-	if _edit_range:
+	if _edit_mode == 2:
+		# **운동할 때 설 자리** — 비교 캐릭터가 거기로 따라 선다
+		var who: GymMachine = _machine()
+		if who:
+			who.snap_on_use = true
+			who.stand_offset += delta.x
+			# **위로 올리는 건 그림만** — 위쪽이 양수라 화살표 방향과 맞추려면 부호를 뒤집는다
+			who.stand_lift -= delta.y
+			_rebuild_cast()
+		return
+	if _edit_mode == 1:
 		var m: GymMachine = _machine()
 		if m:
 			m.range_offset += delta
@@ -227,7 +237,7 @@ func _nudge(delta: Vector2) -> void:
 ## 크기 — 기구는 통째로, 2층 바닥은 **가운데를 잡고 가로로만** 늘인다.
 ## 바닥을 세로로도 같이 늘이면 1층 천장 높이가 따라 바뀌어 버린다
 func _resize(by: float, px: float = 0.0) -> void:
-	if _edit_range:
+	if _edit_mode == 1:
 		var m: GymMachine = _machine()
 		if m:
 			# 배수가 아니라 **px를 더한다** — 범위는 "기구 반폭 + 여유"라 여유를 직접 만지는 게 맞다
@@ -248,7 +258,7 @@ func _resize(by: float, px: float = 0.0) -> void:
 
 ## 2층 바닥 두께(세로)만 바꾼다 — 눌린 정도가 곧 입체 효과라 따로 잡을 수 있어야 한다
 func _thicken(by: float) -> void:
-	if _edit_range:
+	if _edit_mode == 1:
 		var m: GymMachine = _machine()
 		if m:
 			# 세로폭이 좁아야 **2층 기구를 1층에서 쓰는** 일이 안 생긴다
@@ -281,6 +291,8 @@ func _restore() -> void:
 		machine.range_margin = saved["margin"]
 		machine.range_offset = saved["roff"]
 		machine.use_range_y = saved["ry"]
+		machine.stand_offset = saved["stand"]
+		machine.stand_lift = saved["lift"]
 	_rebuild_cast()
 	_say("처음 값으로 되돌렸다")
 
@@ -297,7 +309,8 @@ func _snapshot() -> void:
 		var machine: GymMachine = _machines[kind]
 		_origin[kind] = {"scale": machine.scale, "pos": machine.position, "flip": machine.flip,
 			"margin": machine.range_margin, "roff": machine.range_offset,
-			"ry": machine.use_range_y}
+			"ry": machine.use_range_y, "stand": machine.stand_offset,
+			"lift": machine.stand_lift}
 	if _slab:
 		_slab_origin = Rect2(_slab.offset_left, _slab.offset_top,
 			_slab.offset_right - _slab.offset_left, _slab.offset_bottom - _slab.offset_top)
@@ -352,13 +365,24 @@ func _rebuild_cast() -> void:
 	if _cast_mode == Cast.OFF or _cast_names.is_empty():
 		return
 	if _cast_mode == Cast.ONE:
-		# 고른 기구 **바로 옆**에 한 명 — 기구와 사람을 나란히 놓고 보는 게 크기 비교엔 제일 빠르다
+		# 고른 기구 옆(또는 **운동할 때 실제로 서는 자리**)에 한 명 세운다
 		var machine: GymMachine = _machine()
 		var at := Vector2(camera_at.x - 240.0, GROUND_Y)
+		var face_left: bool = at.x > camera_at.x
 		if machine:
-			var reach: float = machine.width() * absf(machine.scale.x) * 0.5 + 60.0
-			at = Vector2(machine.position.x - reach, machine.position.y - machine.sink())
-		_stand(_cast_names[_cast_index], at, at.x > camera_at.x)
+			var ground: float = machine.position.y - machine.sink()
+			if machine.snap_on_use:
+				# **운동을 켰을 때 가는 그 자리**에 세운다 — 그래야 설 자리를 눈으로 맞출 수 있다
+				at = Vector2(machine.stand_spot(Vector2(0.0, ground)).x, ground - machine.stand_lift)
+				face_left = at.x > camera_at.x
+			else:
+				var reach: float = machine.width() * absf(machine.scale.x) * 0.5 + 60.0
+				at = Vector2(machine.position.x - reach, ground)
+				face_left = at.x > camera_at.x
+			if not is_zero_approx(machine.face_dir):
+				# 기구가 바라볼 쪽을 정해 뒀으면 그쪽을 따른다(런닝머신은 조작판 쪽)
+				face_left = machine.face_dir < 0.0
+		_stand(_cast_names[_cast_index], at, face_left)
 		return
 	# 전부 줄 세우기 — 맵 전체 폭과 사람 크기를 한눈에 견준다
 	var span: float = 1560.0
@@ -405,7 +429,7 @@ func _refresh() -> void:
 	var total: int = table.count() if table else 0
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("[헬스장 눈대중 조절]   고른 것: %s%s" % [
-		_target_name(), "  ← 범위 고치는 중 (Tab)" if _edit_range else ""])
+		_target_name(), ["", "  ← 범위 선 고치는 중 (Tab)", "  ← 설 자리 고치는 중 (Tab)"][_edit_mode]])
 	lines.append("")
 	if _target == Target.SLAB and _slab:
 		lines.append("  좌 %s   우 %s   폭 %s   두께 %s" % [
@@ -416,7 +440,13 @@ func _refresh() -> void:
 	else:
 		var machine: GymMachine = _machine()
 		if machine:
-			if _edit_range:
+			if _edit_mode == 2:
+				lines.append("  운동할 때 설 자리: 가로 %s px   들어올림 %s px   (끌어오기 %s)" % [
+					_num(roundf(machine.stand_offset)), _num(roundf(machine.stand_lift)),
+					"켬" if machine.snap_on_use else "끔"])
+				lines.append("  ←→ 좌우      ↑↓ 그림만 위아래      Tab 다음으로   (Shift 10배)")
+				lines.append("  C 를 눌러 캐릭터를 켜 두면 그 자리에 서 보여준다")
+			elif _edit_mode == 1:
 				lines.append("  범위 가로 ±%s   세로 ±%s   (기구 반폭 %s + 여유 %s)" % [
 					_num(roundf(machine.range_x())), _num(roundf(machine.use_range_y)),
 					_num(roundf(machine.width() * absf(machine.scale.x) * 0.5)),
@@ -428,13 +458,13 @@ func _refresh() -> void:
 				lines.append("  크기 %s   자리 (%s, %s)   뒤집기 %s   범위 ±%s" % [
 					_num(machine.scale.x), _num(machine.position.x), _num(machine.position.y),
 					"O" if machine.flip else "X", _num(roundf(machine.range_x()))])
-				lines.append("  ←→↑↓ 옮기기    +/- 크기    F 뒤집기    Tab 범위 고치기")
+				lines.append("  ←→↑↓ 옮기기    +/- 크기    F 뒤집기    Tab 범위/설자리")
 	lines.append("")
 	lines.append("  1 바벨거치대   2 스쿼트랙   3 런닝머신   4 2층바닥")
 	lines.append("  N 다음 배치 (%d/%d)    C 캐릭터 %s    V 다음 캐릭터" % [
 		_arrangement + 1, maxi(total, 1), _cast_name()])
 	lines.append("  휠 확대/축소    0 화면 원래대로    R 되돌리기    Esc 끄기")
-	lines.append("  Tab(또는 T) = 기구 <-> 범위 선 바꿔 고치기")
+	lines.append("  Tab(또는 T) = 기구 -> 범위 선 -> 설 자리 차례로")
 	lines.append("  Enter 저장  →  Gym.tscn(크기) + GymPlacements.tres(자리)")
 	if _notice_left > 0.0:
 		lines.append("")
@@ -459,7 +489,7 @@ func _mark() -> void:
 		if machine == null:
 			_marker.clear_points()
 			return
-		if _edit_range:
+		if _edit_mode == 1:
 			# 지금 고치는 게 범위라는 걸 보이게 — 범위 네모를 그대로 감싼다
 			var c: Vector2 = machine.range_center()
 			_marker.points = PackedVector2Array([
@@ -517,6 +547,9 @@ func _save_scene() -> bool:
 		text = _set_props(text, machine.name, "Equipment", {
 			"scale": "Vector2(%s, %s)" % [_dec(machine.scale.x), _dec(machine.scale.y)],
 			"range_margin": _dec(machine.range_margin),
+			"stand_offset": _dec(machine.stand_offset),
+			"stand_lift": _dec(machine.stand_lift),
+			"snap_on_use": "true" if machine.snap_on_use else "false",
 			"use_range_y": _dec(machine.use_range_y),
 			"range_offset": "Vector2(%s, %s)" % [
 				_dec(machine.range_offset.x), _dec(machine.range_offset.y)],

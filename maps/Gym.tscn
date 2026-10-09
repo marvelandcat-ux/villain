@@ -350,6 +350,9 @@ spec_max = 10.0
 range_margin = 25.0
 use_range_y = 70.0
 range_offset = Vector2(0.0, -5.0)
+stand_offset = 1.0
+stand_lift = 14.0
+snap_on_use = true
 
 [node name="Squat" type="Sprite2D" parent="Equipment" unique_id=38738641]
 position = Vector2(1306, 628)
@@ -363,7 +366,10 @@ flip = true
 spec_max = 10.0
 range_margin = 25.0
 use_range_y = 70.0
-range_offset = Vector2(0.0, -13.0)
+range_offset = Vector2(3.0, -13.0)
+stand_offset = 6.0
+stand_lift = 14.0
+snap_on_use = true
 
 [node name="Treadmill" type="Sprite2D" parent="Equipment" unique_id=351157242]
 position = Vector2(860, 317.9)
@@ -381,10 +387,11 @@ belt_gap = 88.0
 belt_width = 13.0
 belt_speed = -640.0
 snap_on_use = true
-stand_offset = 0.0
+stand_offset = 7.0
 range_margin = 25.0
 use_range_y = 70.0
 range_offset = Vector2(0.0, 15.0)
+stand_lift = 20.0
 
 [node name="PlayerSpawn1" type="Marker2D" parent="." unique_id=1418429840]
 position = Vector2(440, 581)

@@ -30,6 +30,19 @@ paths:
 - 카운트다운 중엔 컨트롤러 `is_active` false + `move(0)`(`set_physics_process(false)`는 미끄러짐)
 - KO 연출 `Stage._play_knockout`: 마지막 넉백대로 물리로 밀려남(`apply_hitstun`으로 `move(0)`를 막음) + 실제 시간 슬로 + 눈 X, 멈추면 `_lay_down_when_settled()`가 Visual만 90도 눕힘. 화면 흔들림 없음
 
+## 대전 최종 승부 연출 `ui/result/` (2026-10-08)
+
+대전(pvp, 컴퓨터 상대 포함) 최종 승부 → KO 슬로 → **승리(3.5초) → 패배(3초) → 연행(3초)** → 결과 띠(`MatchResult.dock_bottom()`). 스토리·attract는 안 탄다. 방 설정 "승패 연출" 끄면 통째로 건너뜀. 무승부는 연행만.
+
+- `MatchEnding.tscn`(승리·패배) / `ArrestScene.tscn`(우사미짱 패러디 연행, 원근은 카메라 하나로 투영 — 발 위치만 옮기면 크기·그림자·밧줄이 따라옴). 둘 다 CanvasLayer 25, `process_mode` ALWAYS, **실제 시간**(Time.get_ticks_usec), `signal finished` + `play(info)`. 결과 띠는 layer 30
+- info 키: `winner_rig`/`loser_rig`(= 선수 `Visual.scene_file_path`), `winner_is_p1`, `winner_name`/`loser_name`, `winner_p2_color`/`loser_p2_color`(같은 캐릭터끼리일 때 P2 쪽만), `is_draw`
+- 인물 = **그 판에서 싸운 캐릭터의 리그**, 자기 쪽(P1 왼쪽/P2 오른쪽). 리그 루트 scale은 건드리지 말 것(`play_squash`가 덮어써서 좌우 부호가 날아간다) → Holder > Puppet > Mount > 리그
+- 효과음은 `ResultSfx.gd`(class_name 없음, preload) — `Sound/result/<이름>.ogg|wav|mp3`만 맞추면 됨, 없으면 무음. ⚠️ **슬픈 트롬본은 사용자가 싫다고 해서 뺐다**(다시 넣지 말 것). 빗소리(rain)는 아직 파일 없음
+- ⚠️ **템포**: 연행은 6초 → 3초로 줄였다("게임 템포가 느려졌다", 사용자). 늘리지 말 것. 박자는 `ArrestScene.gd` 상단 상수
+- 멈춤 방지: 최종 KO 때 `Stage._preload_match_ending()`이 승리 화면·두 리그를, 승리 화면 동안 `ArrestScene.warm_up()`이 경찰·구경꾼 리그를 스레드로 미리 읽는다(헤드리스에선 끔 — 가짜 렌더러 에러)
+- 연출 중엔 일시정지 막음(`_ending_active`/`_knockout_playing`), 영역 궁은 연출 시작 때 `break_domain()`
+- TODO: 옆모습 경찰차 그림(지금 `PoliceCarSide.gd` 코드 그림), 승리/패배 표정이 없는 리그(주정뱅이·지하철·캣맘·황근출·인베이전·경찰 등)는 `action_head_texture`/`hurt_head_texture`를 꽂으면 바로 쓰임. 클로즈업(8~9배)에선 손 그림이 털뭉치 고리로 보임
+
 ## 궁극기 컷인 `ui/UltimateCutIn.tscn`
 
 - 기획 확정: 1.5초(장면 `cutin_duration` 우선), **연출 중 시간 정지**, 스킵 없음, 확정타 아님. `use_ultimate()` → 연출 → `fire_ultimate_now()`

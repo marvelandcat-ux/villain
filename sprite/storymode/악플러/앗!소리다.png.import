@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xx26gn4r8odw"
-path="res://.godot/imported/들킨악플러.png-2853e1accb6f411153b0528b82625a9a.ctex"
+uid="uid://dnt1xavhmm2qi"
+path="res://.godot/imported/앗!소리다.png-c893c2add4dfbde815b78c905b083f2b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/메인메뉴/일러스트/악플러/들킨악플러.png"
-dest_files=["res://.godot/imported/들킨악플러.png-2853e1accb6f411153b0528b82625a9a.ctex"]
+source_file="res://sprite/storymode/악플러/앗!소리다.png"
+dest_files=["res://.godot/imported/앗!소리다.png-c893c2add4dfbde815b78c905b083f2b.ctex"]
 
 [params]
 

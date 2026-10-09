@@ -167,6 +167,8 @@ var story_enemy_hp_scale: float = 1.0
 var story_enemy_damage_scale: float = 1.0
 ## 스토리 상대 AI의 솜씨. 1.0 = 평소 대전 AI 그대로, 0.0 = 아주 둔함(반응 느리고 거의 안 막는다)
 var story_ai_skill: float = 1.0
+## 스토리 전투에서 주인공 2번 스킬을 갈아 끼울 스킬 씬(비면 캐릭터 씬 그대로) — `StoryFadeScene.battle_p1_skill2`가 넣는다
+var story_p1_skill2: String = ""
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)
 var rounds_to_win: int = 2
 ## 한 라운드 제한 시간(초). 0이면 시간 제한 없음.
@@ -189,8 +191,8 @@ var hp_multiplier: float = 1.0
 ## 꺼두면 **궁극기 컷인 연출**을 건너뛰고 바로 궁이 나간다(RoomSettings에서 설정, 2026-10-05).
 ## 자기 연출을 가진 궁(층간소음 영역전개)은 이 값과 상관없이 제 연출을 그대로 보여준다
 var ultimate_cutin_enabled: bool = true
-## 꺼두면 **라운드 승패 띠**(평행사변형 배너)를 건너뛴다(RoomSettings에서 설정, 2026-10-05).
-## 최종 결과 화면은 그대로 뜬다 — 그건 연출이 아니라 결과 보고다
+## 꺼두면 **라운드 승패 띠**(평행사변형 배너)와 **대전 최종 승부 연출**(승리·패배·연행, `Stage._play_match_ending`)을
+## 건너뛴다(RoomSettings에서 설정, 2026-10-05). 최종 결과 화면은 그대로 뜬다 — 그건 연출이 아니라 결과 보고다
 var result_cutscene_enabled: bool = true
 ## 켜면 대전 모드(pvp)의 P2를 컴퓨터(규칙 기반 AIController)가 조종한다(RoomSettings "상대" 줄, 2026-09-27).
 ## 스토리 모드는 이 값과 상관없이 항상 P2가 AI(ClaudeAIController)다

@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://skills/FlashlightSkill.gd" id="1_flash"]
+[ext_resource type="Texture2D" uid="uid://dqfdio1pehkj6" path="res://sprite/storymode/악플러/켜진손전등.png" id="2_icon"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_logo_flash"]
+atlas = ExtResource("2_icon")
+region = Rect2(325, 222, 1230, 530)
+
+[node name="Skill2" type="Node"]
+script = ExtResource("1_flash")
+cooldown = 5.0
+icon = SubResource("AtlasTexture_logo_flash")
+skill_name = "후레쉬"
+description = "앞쪽을 손전등으로 비춘다. 5초 동안 어두운 방 안에서도 앞이 보인다. 빛만 비출 뿐 피해는 없다."

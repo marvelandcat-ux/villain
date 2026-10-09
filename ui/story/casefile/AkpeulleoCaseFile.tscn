@@ -1,0 +1,144 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" uid="uid://qj3itcdbvh7p" path="res://sprite/storymode/경찰서/사건파일양식.png" id="1_form"]
+[ext_resource type="Texture2D" uid="uid://d4bkmrohs0bs7" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러원본.png" id="2_photo"]
+[ext_resource type="Shader" path="res://ui/story/casefile/SepiaPhoto.gdshader" id="3_sepia"]
+[ext_resource type="FontFile" uid="uid://4gi0ju3g52u3" path="res://fonts/NanumGothic-Regular.ttf" id="4_font"]
+[ext_resource type="Script" path="res://ui/story/casefile/CaseFileSheet.gd" id="5_sheet"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_photo"]
+atlas = ExtResource("2_photo")
+region = Rect2(127, 30, 1000, 543)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sepia"]
+shader = ExtResource("3_sepia")
+shader_parameter/dark = Color(0.27, 0.18, 0.1, 1)
+shader_parameter/light = Color(0.97, 0.9, 0.75, 1)
+shader_parameter/lift = 0.35
+shader_parameter/opacity = 0.93
+
+[node name="AkpeulleoCaseFile" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1748.0
+offset_bottom = 900.0
+mouse_filter = 2
+script = ExtResource("5_sheet")
+
+[node name="Form" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 1748.0
+offset_bottom = 900.0
+mouse_filter = 2
+texture = ExtResource("1_form")
+
+[node name="Photo" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_sepia")
+layout_mode = 0
+offset_left = 100.0
+offset_top = 122.0
+offset_right = 810.0
+offset_bottom = 508.0
+mouse_filter = 2
+texture = SubResource("AtlasTexture_photo")
+expand_mode = 1
+
+[node name="Time" type="Label" parent="."]
+layout_mode = 0
+offset_left = 1150.0
+offset_top = 62.0
+offset_right = 1672.0
+offset_bottom = 112.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 36
+text = "2027-03-13 02:47:11.08"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Name" type="Label" parent="."]
+layout_mode = 0
+offset_left = 892.0
+offset_top = 130.0
+offset_right = 1650.0
+offset_bottom = 203.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 44
+text = "이름: 미상 (닉네임 ㅇㅇ)"
+vertical_alignment = 1
+
+[node name="Gender" type="Label" parent="."]
+layout_mode = 0
+offset_left = 892.0
+offset_top = 232.0
+offset_right = 1650.0
+offset_bottom = 304.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 44
+text = "성별: 남"
+vertical_alignment = 1
+
+[node name="Age" type="Label" parent="."]
+layout_mode = 0
+offset_left = 892.0
+offset_top = 334.0
+offset_right = 1650.0
+offset_bottom = 406.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 44
+text = "나이: 20대 추정"
+vertical_alignment = 1
+
+[node name="Place" type="Label" parent="."]
+layout_mode = 0
+offset_left = 892.0
+offset_top = 436.0
+offset_right = 1650.0
+offset_bottom = 509.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 44
+text = "목격장소: 동영상 플랫폼 댓글창"
+vertical_alignment = 1
+
+[node name="DetailTitle" type="Label" parent="."]
+layout_mode = 0
+offset_left = 128.0
+offset_top = 565.0
+offset_right = 500.0
+offset_bottom = 612.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 32
+text = "상세설명"
+vertical_alignment = 1
+
+[node name="Detail" type="Label" parent="."]
+layout_mode = 0
+offset_left = 115.0
+offset_top = 614.0
+offset_right = 1640.0
+offset_bottom = 745.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_constants/line_spacing = 8
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 31
+text = "2027년 3월 13일 새벽 2시 47분경, 동영상 플랫폼 댓글창에서 닉네임 \"ㅇㅇ\"으로
+영상 출연자의 외모를 비하하는 악성 댓글을 반복하여 게시함.
+같은 말투의 댓글이 여러 영상에서 발견되어 다수의 피해자가 고통을 호소함."
+
+[node name="Law" type="Label" parent="."]
+layout_mode = 0
+offset_left = 900.0
+offset_top = 742.0
+offset_right = 1648.0
+offset_bottom = 792.0
+theme_override_colors/font_color = Color(0.13, 0.11, 0.1, 1)
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 19
+text = "· 공연히 사람을 모욕 — 형법 제311조(모욕)
+· 정보통신망을 이용한 비방 — 정보통신망법 제70조(명예훼손)"
+horizontal_alignment = 2

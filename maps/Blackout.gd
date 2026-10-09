@@ -26,6 +26,10 @@ extends CanvasModulate
 ## glow_target이 암전 중 도달하는 최대 알파 — CanvasModulate가 곱해져도 알아볼 수 있을 만큼 밝게 잡는다
 @export var glow_alpha: float = 0.85
 
+## **스토리 모드에선 처음부터 끝까지 어둡게 둔다**(2026-10-07 사용자 — 에피소드 2 악플러의 집).
+## 깜빡임·복귀 없이 시작하자마자 암전 상태로 들어가 그대로 멈춘다. 후레쉬(`FlashlightSkill`)가 그 어둠을 뚫는다
+@export var always_dark_in_story: bool = true
+
 ## 암전 중 주변을 비출 조명(모니터 앞 PointLight2D). 방이 어두워지는 박자에 맞춰 켜지고, 불이 돌아오면 꺼진다.
 ## CanvasModulate가 방 전체를 어둡게 깔아도 Light2D는 그 위에 빛을 더하므로 이 조명 근처만 밝게 보인다 —
 ## 근처에 선 캐릭터도 같이 밝아져서, 암전 중엔 모니터 앞에 있으면 위치가 드러난다. 비워두면 아무 일도 안 한다
@@ -51,6 +55,8 @@ func _ready() -> void:
 		_glow.modulate.a = 0.0
 	if _light:
 		_light.energy = 0.0
+	if always_dark_in_story and GameState.game_mode == "story":
+		_stay_dark()
 
 func _process(delta: float) -> void:
 	_timer -= delta
@@ -68,6 +74,18 @@ func _run_sequence() -> void:
 	_set_pies_hidden(false)
 	is_dark = false
 	await _fade_to(1.0, 0.0, 0.0)
+
+## 시작부터 암전 상태로 들어가 그대로 멈춘다 — 주기·깜빡임·복귀를 다 끈다
+func _stay_dark() -> void:
+	set_process(false)
+	is_dark = true
+	color = _dim(blackout_brightness)
+	if _glow:
+		_glow.modulate.a = glow_alpha
+	if _light:
+		_light.energy = light_energy
+	# 쿨타임 원은 캐릭터가 생길 때 같이 생긴다 — 이 노드가 맵(Stage)보다 먼저 준비되므로 한 박자 미뤄 숨긴다
+	_set_pies_hidden.call_deferred(true)
 
 ## 쿨타임 원 숨기기/보이기 — 라운드가 리로드되면 원도 새로 만들어지므로 따로 되돌릴 필요는 없다
 func _set_pies_hidden(value: bool) -> void:

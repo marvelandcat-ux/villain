@@ -33,7 +33,23 @@ const EXTRA_RIGS := {
 const VERSUS_POSES := {
 	"주인공": "res://ui/versus/PoliceVersusPose.tscn",
 	"금쪽이": "res://ui/versus/ChokbeopsonyeonVersusPose.tscn",
+	"악플러": "res://ui/versus/AkpeulleoVersusPose.tscn",
 }
+## **상대가 누구냐에 따라 달라지는 포즈.** 열쇠는 `"내 이름|상대 이름"`이고,
+## 여기 맞는 게 있으면 위 VERSUS_POSES보다 **먼저** 쓴다.
+## (경찰은 악플러를 잡으러 갈 때 테이저건이 아니라 손전등을 들고 간다 — 2화 스킬이 그거다)
+const VERSUS_POSES_VS := {
+	"주인공|악플러": "res://ui/versus/PoliceVersusPoseVsAkpeulleo.tscn",
+}
+
+## 이 대진에서 띄울 포즈 씬 경로. 없으면 빈 문자열.
+## **대진 전용 -> 캐릭터 기본** 순으로 찾는다
+static func pose_for(character_name: String, opponent_name: String) -> String:
+	var key: String = "%s|%s" % [character_name, opponent_name]
+	if VERSUS_POSES_VS.has(key):
+		return str(VERSUS_POSES_VS[key])
+	return str(VERSUS_POSES.get(character_name, ""))
+
 ## 포즈 씬을 그린 기준 화면 높이(px). 화면이 이보다 크면 그 비율만큼 통째로 커진다
 const POSE_REFERENCE_HEIGHT := 720.0
 
@@ -89,16 +105,18 @@ func _ready() -> void:
 	set_process(false)
 	# 그림을 넣는 것도, 날아올 거리를 재는 것도 **칸 크기가 잡힌 뒤에** 해야 한다
 	await get_tree().process_frame
-	_fill_side(_p1_box, _p1_image, _p1_name_label, GameState.p1_character_path, 1.0)
-	_fill_side(_p2_box, _p2_image, _p2_name_label, GameState.p2_character_path, -1.0)
+	# 포즈가 상대에 따라 달라질 수 있어서, 각자에게 **상대 경로까지** 넘긴다
+	_fill_side(_p1_box, _p1_image, _p1_name_label, GameState.p1_character_path, 1.0, GameState.p2_character_path)
+	_fill_side(_p2_box, _p2_image, _p2_name_label, GameState.p2_character_path, -1.0, GameState.p1_character_path)
 	_play_intro()
 
 ## 칸에 인게임 몸을 세운다. 리그가 없는 캐릭터만 초상화 그림으로 대신한다.
 ## facing이 -1이면 좌우로 뒤집는다 — **둘이 서로 마주 보게** 하려고 오른쪽 캐릭터만 뒤집는다
-func _fill_side(box: Control, image: TextureRect, name_label: Label, character_path: String, facing: float) -> void:
+func _fill_side(box: Control, image: TextureRect, name_label: Label, character_path: String, facing: float, opponent_path: String = "") -> void:
 	var character_name: String = _find_character_name(character_path)
+	var opponent_name: String = _find_character_name(opponent_path) if opponent_path != "" else ""
 	name_label.text = character_name
-	var rig: Node2D = _make_rig(character_name)
+	var rig: Node2D = _make_rig(character_name, opponent_name)
 	if rig != null:
 		image.texture = null
 		box.add_child(rig)
@@ -131,9 +149,9 @@ func _swap_head(rig: Node2D, character_name: String) -> void:
 	if blink != null:
 		blink.visible = false
 
-func _make_rig(character_name: String) -> Node2D:
+func _make_rig(character_name: String, opponent_name: String = "") -> Node2D:
 	# 포즈 씬이 있으면 그걸 먼저 쓴다 — 격돌 화면 전용으로 자리를 잡아 둔 씬이다
-	var pose: String = str(VERSUS_POSES.get(character_name, ""))
+	var pose: String = pose_for(character_name, opponent_name)
 	if pose != "":
 		var node: Node2D = (load(pose) as PackedScene).instantiate() as Node2D
 		# 포즈 씬 안의 에디터용 미리보기(배경·상대 캐릭터)는 게임에선 지운다

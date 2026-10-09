@@ -1,0 +1,117 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://ui/result/ArrestScene.gd" id="1_scene"]
+[ext_resource type="Script" path="res://ui/result/ArrestBackdrop.gd" id="2_backdrop"]
+[ext_resource type="Script" path="res://ui/result/PoliceCarSide.gd" id="3_car"]
+[ext_resource type="Texture2D" uid="uid://dnbjc4ovid2lj" path="res://sprite/storymode/경찰서/경찰서_건물.png" id="4_building"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발1.png" id="5_flag1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발2.png" id="6_flag2"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발3.png" id="7_flag3"]
+[ext_resource type="Shader" path="res://ui/story/FlagWave.gdshader" id="8_flagwave"]
+
+[sub_resource type="Shader" id="Shader_edgefade"]
+code = "shader_type canvas_item;
+
+// 경찰서 그림 양옆 나무가 그림 끝에서 칼같이 잘려 보이지 않게, 좌우 끝을 투명하게 녹인다.
+// region이 그림 가로 전체라 UV.x가 곧 그림 가로 위치다
+uniform float fade_left = 0.07;
+uniform float fade_right = 0.07;
+
+void fragment() {
+	vec4 c = texture(TEXTURE, UV) * COLOR;
+	c.a *= smoothstep(0.0, max(fade_left, 0.0001), UV.x) * smoothstep(1.0, 1.0 - max(fade_right, 0.0001), UV.x);
+	COLOR = c;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_edgefade"]
+shader = SubResource("Shader_edgefade")
+shader_parameter/fade_left = 0.07
+shader_parameter/fade_right = 0.07
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flag1"]
+shader = ExtResource("8_flagwave")
+shader_parameter/hoist_x0 = 46.74
+shader_parameter/hoist_slope = -0.0968
+shader_parameter/flag_width = 28.3
+shader_parameter/amplitude = 3.0
+shader_parameter/wave_speed = 2.6
+shader_parameter/wavelength = 70.0
+shader_parameter/phase = 0.0
+shader_parameter/shade = 0.08
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flag2"]
+shader = ExtResource("8_flagwave")
+shader_parameter/hoist_x0 = 48.12
+shader_parameter/hoist_slope = -0.0831
+shader_parameter/flag_width = 29.6
+shader_parameter/amplitude = 3.0
+shader_parameter/wave_speed = 2.9
+shader_parameter/wavelength = 70.0
+shader_parameter/phase = 2.1
+shader_parameter/shade = 0.08
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flag3"]
+shader = ExtResource("8_flagwave")
+shader_parameter/hoist_x0 = 52.58
+shader_parameter/hoist_slope = -0.1679
+shader_parameter/flag_width = 28.1
+shader_parameter/amplitude = 3.0
+shader_parameter/wave_speed = 2.4
+shader_parameter/wavelength = 70.0
+shader_parameter/phase = 4.2
+shader_parameter/shade = 0.08
+
+[node name="ArrestScene" type="CanvasLayer"]
+process_mode = 3
+layer = 25
+script = ExtResource("1_scene")
+
+[node name="Stage" type="Node2D" parent="."]
+
+[node name="Backdrop" type="Node2D" parent="Stage"]
+script = ExtResource("2_backdrop")
+
+[node name="Building" type="Sprite2D" parent="Stage"]
+modulate = Color(0.95, 0.97, 1, 1)
+material = SubResource("ShaderMaterial_edgefade")
+position = Vector2(760, 110)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("4_building")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 1536, 956)
+
+[node name="Flag1" type="Sprite2D" parent="Stage/Building"]
+material = SubResource("ShaderMaterial_flag1")
+position = Vector2(77, 506)
+texture = ExtResource("5_flag1")
+centered = false
+
+[node name="Flag2" type="Sprite2D" parent="Stage/Building"]
+material = SubResource("ShaderMaterial_flag2")
+position = Vector2(136, 497)
+texture = ExtResource("6_flag2")
+centered = false
+
+[node name="Flag3" type="Sprite2D" parent="Stage/Building"]
+material = SubResource("ShaderMaterial_flag3")
+position = Vector2(190, 508)
+texture = ExtResource("7_flag3")
+centered = false
+
+[node name="Crowd" type="Node2D" parent="Stage"]
+
+[node name="Procession" type="Node2D" parent="Stage"]
+
+[node name="Car" type="Node2D" parent="Stage"]
+script = ExtResource("3_car")
+
+[node name="Fade" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

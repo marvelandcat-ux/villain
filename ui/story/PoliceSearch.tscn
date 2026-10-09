@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://hx5a35ehcvd0"]
+
+[ext_resource type="Script" uid="uid://t0wcewqy7o4o" path="res://ui/story/PoliceSearch.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cq73436pqgltl" path="res://sprite/storymode/악플러/쓰레기봉지 경찰제거버전-봉지.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://delshf8ympdi4" path="res://sprite/storymode/악플러/악플러찾기_0004_수상한쓰레기봉지.png" id="7_bag"]
+[ext_resource type="Texture2D" uid="uid://ctguhrqg26srq" path="res://sprite/storymode/악플러/악플러찾기_0003_다리.png" id="3_legs"]
+[ext_resource type="Texture2D" uid="uid://b8ppa410gr3w" path="res://sprite/storymode/악플러/악플러찾기_0002_몸통(숨쉬기).png" id="4_body"]
+[ext_resource type="Texture2D" uid="uid://c4g202k2fk1ta" path="res://sprite/storymode/악플러/악플러찾기_0001_팔.png" id="5_arm"]
+[ext_resource type="Texture2D" uid="uid://b1vxx3v5ma1rs" path="res://sprite/storymode/악플러/악플러찾기_0000_얼굴.png" id="6_face"]
+
+[node name="PoliceSearch" type="Node2D" unique_id=1335653806]
+position = Vector2(0, -1)
+scale = Vector2(1.5514354, 1.5514354)
+script = ExtResource("1")
+look_around = false
+look_offset = Vector2(-29.025, -1)
+
+[node name="Background" type="Sprite2D" parent="." unique_id=852382169]
+texture = ExtResource("2_bg")
+centered = false
+
+[node name="BagPivot" type="Node2D" parent="."]
+
+[node name="Bag" type="Sprite2D" parent="BagPivot"]
+texture = ExtResource("7_bag")
+centered = false
+
+[node name="Legs" type="Sprite2D" parent="." unique_id=1913741133]
+texture = ExtResource("3_legs")
+centered = false
+
+[node name="BodyPivot" type="Node2D" parent="." unique_id=556748476]
+position = Vector2(1075, 769)
+
+[node name="Body" type="Sprite2D" parent="BodyPivot" unique_id=1091935867]
+position = Vector2(-1075, -769)
+texture = ExtResource("4_body")
+centered = false
+
+[node name="ArmPivot" type="Node2D" parent="BodyPivot" unique_id=590117940]
+position = Vector2(-263, -403)
+
+[node name="Arm" type="Sprite2D" parent="BodyPivot/ArmPivot" unique_id=514971570]
+position = Vector2(-812, -366)
+texture = ExtResource("5_arm")
+centered = false
+
+[node name="FacePivot" type="Node2D" parent="BodyPivot" unique_id=1245210805]
+position = Vector2(51, -555)
+
+[node name="Face" type="Sprite2D" parent="BodyPivot/FacePivot" unique_id=577754474]
+position = Vector2(-1127.2891, -214.00002)
+texture = ExtResource("6_face")
+centered = false

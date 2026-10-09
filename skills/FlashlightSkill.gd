@@ -38,6 +38,10 @@ func active_ratio() -> float:
 		return -1.0
 	return clampf(_left / duration, 0.0, 1.0)
 
+## **클래시(연타 대결)에 안 낀다** — 빛만 켜는 스킬이라, 상대가 마침 2번 스킬을 같이 써도 대결할 거리가 아니다
+func clashable() -> bool:
+	return false
+
 func _execute(fighter: Fighter) -> void:
 	if not is_instance_valid(fighter):
 		return

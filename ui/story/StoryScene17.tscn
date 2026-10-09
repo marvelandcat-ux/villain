@@ -2,8 +2,10 @@
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
-[ext_resource type="Texture2D" path="res://sprite/storymode/악플러/악플러집배경.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://cd2ikw2a4pssm" path="res://sprite/storymode/악플러/악플러의집.png" id="2"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3"]
+[ext_resource type="Texture2D" uid="uid://chfo0nh40vewd" path="res://sprite/storymode/악플러/당당악플러.png" id="5"]
+[ext_resource type="Texture2D" uid="uid://dc0o2tv1p7jkv" path="res://sprite/storymode/악플러/불안악플러.png" id="6"]
 
 [node name="StoryScene17" type="Control"]
 layout_mode = 3
@@ -16,7 +18,8 @@ mouse_filter = 2
 script = ExtResource("1")
 fade_in_time = 1.0
 dialogue = NodePath("DialogueBox")
-reveal = Array[NodePath]([NodePath("Hall/Police"), NodePath("DialogueBox")])
+reveal = Array[NodePath]([NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("Hall/Police"), NodePath("Hall/Ak"), NodePath("Hall/AkWorried")])
 fade_out_time = 1.0
 next_scene = "res://maps/TrashRoom.tscn"
 battle_p1 = "res://characters/police/Police.tscn"
@@ -24,6 +27,7 @@ battle_p2 = "res://characters/akpeulleo/Akpeulleo.tscn"
 battle_rounds = 2
 battle_time_limit = 120
 battle_ai_skill = 0.6
+battle_p1_skill2 = "res://skills/FlashlightSkill.tscn"
 battle_win_scene = "res://ui/story/StoryScene18.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
@@ -38,38 +42,30 @@ color = Color(0, 0, 0, 1)
 
 [node name="Hall" type="Node2D" parent="."]
 
-[node name="DoorLeft" type="Sprite2D" parent="Hall"]
-position = Vector2(38.0, 340)
-scale = Vector2(-0.5600, 0.5600)
-texture = ExtResource("2")
-
-[node name="DoorRight" type="Sprite2D" parent="Hall"]
-position = Vector2(1242.0, 340)
-scale = Vector2(-0.5600, 0.5600)
-texture = ExtResource("2")
-
 [node name="Door" type="Sprite2D" parent="Hall"]
-position = Vector2(640, 340)
-scale = Vector2(0.5600, 0.5600)
+position = Vector2(640, 360)
+scale = Vector2(0.76555, 0.76596)
 texture = ExtResource("2")
-
-[node name="Shade" type="ColorRect" parent="Hall"]
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0, 0, 0, 0.22)
-mouse_filter = 2
 
 [node name="Police" type="Sprite2D" parent="Hall"]
 position = Vector2(640, 430)
 scale = Vector2(0.46, 0.46)
 texture = ExtResource("3")
 
+[node name="Ak" type="Sprite2D" parent="Hall"]
+position = Vector2(640, 430)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("5")
+
+[node name="AkWorried" type="Sprite2D" parent="Hall"]
+position = Vector2(640, 430)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("6")
+
 [node name="DialogueBox" parent="." instance=ExtResource("4")]
 layout_mode = 1
 speaker = "주인공"
-lines = PackedStringArray("여기인가...", "계십니까?", "@close", "@pause 0.9", "나레이션|문이 열린다.", "악플러|누구세요?", "주인공|신고를 받고 들어왔습니다.", "이 주소에 인터넷에 악한 영향력을 끼치는 악플러가 있다고 해서요.", "악플러|어....? 앗!...음.....아....네....", "악플러|에잇!", "나레이션|집안으로 도망치는 악플러", "주인공|거기 서!")
+lines = PackedStringArray("@enter Hall/Police 0.35", "여기인가...", "계십니까?", "@hide Hall/Police 0.25", "@pause 0.7", "나레이션|문이 열린다.", "@enter Hall/Ak 0.35", "악플러|누구세요?", "@hide Hall/Ak 0.25", "@enter Hall/Police 0.35", "주인공|신고를 받고 들어왔습니다.", "이 주소에 인터넷에 악한 영향력을 끼치는 악플러가 있다고 해서요.", "@hide Hall/Police 0.25", "@enter Hall/AkWorried 0.35", "악플러|어....? 앗!...음.....아....네....", "에잇!", "@exit Hall/AkWorried 0.4 420", "나레이션|집안으로 도망치는 악플러", "@enter Hall/Police 0.3", "주인공|거기 서!")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
