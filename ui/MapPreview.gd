@@ -9,6 +9,10 @@ extends Control
 ## {kind: "tex", texture: Texture2D, src: Rect2, rect: Rect2, deco: bool}
 ## deco가 true면 이름이 "Deco"로 시작하는 배경 장식(벽·선로·열차 그림 등)이라, 크기 기준(bbox)에는 안 넣고
 ## 화면에 그리기만 한다 — 실제 스테이지보다 훨씬 커서 같이 재면 스테이지가 점처럼 작아지기 때문
+## 실제 게임 화면을 찍어 둔 사진 폴더(`tools/MapThumbGen.tscn`이 만든다). 맵 선택·도감·맵 상세가 **이 사진을 먼저 쓰고**,
+## 사진이 없는 맵만 아래 스케치로 그린다 — 스케치는 크기·뒤집기·조명을 몰라서 헬스장 등이 깨져 보였다(2026-10-09)
+const SNAPSHOT_DIR := "res://ui/map_thumbs"
+
 var _shapes: Array = []
 var _bbox_min := Vector2.ZERO
 var _bbox_max := Vector2.ZERO
@@ -16,6 +20,15 @@ var _bbox_max := Vector2.ZERO
 func _ready() -> void:
 	# 뒷배경 그림이 bbox보다 훨씬 커서 이 칸 밖으로 삐져나가므로, 칸 경계에서 잘려 보이게 한다
 	clip_contents = true
+
+## 맵 씬 경로 -> 그 맵의 사진 경로(`ui/map_thumbs/<맵 파일 이름>.png`)
+static func snapshot_path(map_path: String) -> String:
+	return "%s/%s.png" % [SNAPSHOT_DIR, map_path.get_file().get_basename()]
+
+## 그 맵의 사진. 찍어 둔 게 없으면 null
+static func snapshot_texture(map_path: String) -> Texture2D:
+	var path: String = snapshot_path(map_path)
+	return load(path) if ResourceLoader.exists(path) else null
 
 ## Camera2D/CombatHUD처럼 판정·연출용이라 스테이지 모양과 무관한 가지는 건너뛴다.
 func set_map(map_path: String) -> void:

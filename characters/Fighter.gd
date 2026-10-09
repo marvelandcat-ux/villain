@@ -106,7 +106,7 @@ const JUMP_WIND_SCRIPT := preload("res://combat/JumpWind.gd")
 const HEAL_BURST_SCRIPT := preload("res://combat/HealBurst.gd")
 ## 이 회복량(HP)이면 회복 이펙트가 가장 크게 터진다 — 그보다 작으면 비례해서 작아진다
 const HEAL_BURST_FULL_AMOUNT: float = 30.0
-## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 흘러가는 이펙트(슬로우 물방울·공격력 칼 등)
+## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 흘러가는 이펙트(슬로우 달팽이·점프력 감소 발·공격력 칼 등)
 const STATUS_VFX_SCRIPT := preload("res://combat/StatusIconVfx.gd")
 
 ## 통과 가능한 발판(one_way_collision)을 뚫고 내려갈 때 그 발판과의 충돌을 꺼두는 시간(초).
@@ -444,6 +444,9 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	if is_guarding and not ignore_guard:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + amount
 		return
+	# 3타에 맞아 날아가는(기절) 동안 받는 피해는 절반(2026-10-08 사용자 결정) — 추가타 콤보가 너무 아프지 않게. 올림이라 1은 1
+	if _finisher_flying:
+		amount = ceili(amount * FINISHER_FLYING_DAMAGE_SCALE)
 	var reduced_amount: int = int(round(amount * (1.0 - damage_reduction) * damage_taken_multiplier))
 	if damage_reduction > 0.0:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + (amount - reduced_amount)
@@ -604,8 +607,14 @@ const FINISHER_GROUND_TRAUMA := 0.2
 const FINISHER_MAX_FLY_TIME := 6.0
 ## 3타로 날아가는 각도(도, 수평에서 위로) — 2026-09-29 사용자 요청 "아래로 말고 위쪽으로" 45도. 속도 크기는 그대로, 방향만 돌린다
 const FINISHER_LAUNCH_ANGLE_DEG := 45.0
-## 최고 높이 상한(px) = 이 값 x 체력 배율(풀피 150 ~ 빈사 300) — 45도 그대로면 빈사 때 약 720px(화면 위로 사라짐)라 위로 솟는 속도를 자른다
-const FINISHER_PEAK_PER_SCALE := 150.0
+## 3타 최고 높이(px) — **잃은 체력 비율로 보간**(2026-10-08 사용자 결정: "3배는 너무 높다, 잃은 체력에 비례"): 풀피 150 → 빈사 350(예전 상한 150·실측 약 115의 3배).
+## 솟는 속도는 FINISHER_UP_SCALE로 넉넉히 키워 두고 이 상한이 **항상 자르게** 한다 — 그래야 높이가 체력 배율(속도)에 또 곱해지지 않고 정확히 이 값이 된다
+const FINISHER_PEAK_FULL := 150.0
+const FINISHER_PEAK_EMPTY := 350.0
+## 3타로 위로 솟는 속도 배수 — 상한(FINISHER_PEAK_*)이 항상 걸리도록 크게
+const FINISHER_UP_SCALE := 1.732
+## 3타로 날아가는(기절) 동안 받는 피해 배율
+const FINISHER_FLYING_DAMAGE_SCALE := 0.5
 ## 3타로 날아가는 동안 중력 배율(평소의 45%, 사용자 결정) — 다른 피격 경직의 HIT_LAUNCH_GRAVITY_SCALE(0.6)과 따로
 const FINISHER_GRAVITY_SCALE := 0.45
 ## 3타로 날아가는 동안 **공중에서** 옆 속도가 매초 줄어드는 비율(옆 속도 x e^(-이 값 x 초)) — 2026-10-01 사용자 요청 "직각 포물선 싫다".
@@ -668,17 +677,17 @@ func launch_finisher(dir: float, speed: float, pop: float, stun: float, turns: f
 	# 날아가는(기절) 시간 = 기본 + 추가 피격으로 누적된 시간. 속도는 그대로라 시간이 늘수록 더 멀리 간다
 	var time: float = stun * launch_scale + _finisher_extra_time
 	# 속도 크기는 예전 가로 속도 그대로, 방향은 FINISHER_LAUNCH_ANGLE_DEG 위로(2026-09-29). pop은 더 안 쓴다 —
-	# 위로 솟는 속도는 각도로 정하되 최고 높이(FINISHER_PEAK_PER_SCALE x 배율)를 넘지 않게 자른다
+	# 위로 솟는 속도는 각도로 정하되 최고 높이(FINISHER_PEAK_FULL~EMPTY를 잃은 체력으로 보간)를 넘지 않게 자른다
 	var total: float = speed * KNOCKBACK_MULTIPLIER * launch_scale * FINISHER_TIME_SCALE
 	var ang: float = deg_to_rad(FINISHER_LAUNCH_ANGLE_DEG)
 	var airtime: float = maxf(float(shape.get("airtime", 1.0)), 0.01)
 	var peak_mult: float = float(shape.get("peak", 1.0))
 	_finisher_air_mult = airtime
 	_finisher_gravity_mult = peak_mult / (airtime * airtime)
-	_finisher_up_cap = sqrt(2.0 * _finisher_gravity() * FINISHER_PEAK_PER_SCALE * launch_scale * peak_mult)
+	_finisher_up_cap = sqrt(2.0 * _finisher_gravity() * lerpf(FINISHER_PEAK_FULL, FINISHER_PEAK_EMPTY, lost_ratio) * peak_mult)
 	_finisher_launch_vx = total * cos(ang) * FINISHER_HORIZONTAL_SCALE * float(shape.get("speed", 1.0))
 	velocity.x = d * _finisher_launch_vx
-	velocity.y = -minf(total * sin(ang), _finisher_up_cap)
+	velocity.y = -minf(total * sin(ang) * FINISHER_UP_SCALE, _finisher_up_cap)
 	# 모양을 바꾼 날아가기는 정확히 그 높이까지 솟는다 — 안 그러면 체공 배수가 안 맞는다
 	if not shape.is_empty():
 		velocity.y = -_finisher_up_cap
@@ -1569,9 +1578,11 @@ func apply_temp_multiplier(property: String, value: float, duration: float, from
 	_next_modifier_id += 1
 	set_modifier(property, id, value)
 	_after(duration, func(): clear_modifier(property, id))
-	# 스킬이 거는 슬로우는 전부 여기를 지나므로, 어느 캐릭터의 슬로우든 물방울 이펙트가 자동으로 붙는다
+	# 스킬이 거는 슬로우·점프력 감소는 전부 여기를 지나므로, 어느 캐릭터의 것이든 아이콘 이펙트가 자동으로 붙는다
 	if property == "move_speed_multiplier" and value < 1.0:
 		show_status_vfx(&"slow", duration)
+	elif property == "jump_multiplier" and value < 1.0:
+		show_status_vfx(&"jump_down", duration)
 
 ## 종류별로 하나씩 들고 있는 상태 이펙트 {종류: StatusIconVfx}
 var _status_vfx: Dictionary = {}

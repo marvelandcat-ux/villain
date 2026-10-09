@@ -138,8 +138,8 @@ const MAP_DESCRIPTIONS := {
 	"지하철역": "가만히 서 있으면 안 되는 승강장. 30초쯤마다 열차가 들이닥치는데, 경고등이 깜빡이기 시작하면 5초 안에 양쪽 벤치 위로 올라가야 한다. 늦으면 가드도 소용없이 깔린 채로 반대편까지 실려 간다. 안전한 자리가 벤치 두 개뿐이라 싸움이 저절로 그 위로 몰린다.",
 	"놀이터": "구름 발판 꼭대기에 왕관이 놓여 있다. 주운 쪽은 발이 빨라지고 주먹도 매워지지만 한 대만 맞아도 머리에서 튕겨 나가니, 훔치고 달아나고 다시 빼앗는 싸움이 된다. 정자 양옆 모래밭은 걸어서 지나면 발이 푹푹 빠지고(왕만 멀쩡하다), 한가운데 그네는 쉬지 않고 오가다 닿는 쪽을 팅 하고 튕겨낸다. 스프링 시소는 밟는 순간 솟구친다.",
 	"악플러의 집": "쓰레기가 발목까지 쌓인 방. 12초쯤마다 형광등이 두어 번 깜빡이더니 방이 통째로 어두워진다. 안 보일 뿐 판정은 그대로라 깜깜한 채로 계속 맞는다. 그동안 빛이라고는 책상 모니터뿐이다. 발판이 세 단으로 걸쳐 있어서 위아래로 도망칠 길은 많은 편.",
-	"헬스장": "밤늦은 헬스장 1층. 기구는 전부 배경이고 실제로는 아무 장치도 없는 맨바닥이다. 올라설 발판도 피할 구석도 없어서 처음부터 끝까지 정면으로 붙어야 한다. 맵이 도와주지 않는 만큼 실력 차가 그대로 드러난다.",
-	"번화가": "쓰레기봉투가 산처럼 쌓인 24시 상가 앞 거리. 여기도 장치 없는 평지라 맵이 싸움에 끼어들 일이 없다. 배경만 시끄럽고 승부는 가장 단순해지는 곳.",
+	"헬스장": "밤늦은 2층짜리 헬스장. 기구에 붙어 운동하면 바벨은 주먹을, 스쿼트 랙은 점프를, 런닝머신은 다리를 키워 주고 할수록 계속 쌓인다. 대신 운동하는 동안엔 발이 묶이고, 한 대 맞거나 손을 대거나 기구에서 멀어지면 끊긴다. 상대가 땀 흘리는 걸 두고 볼지 달려가 방해할지가 승부다. 화면 끝으로 걸어 나가면 다른 층 반대쪽에서 나온다.",
+	"번화가": "쓰레기봉투가 산처럼 쌓인 24시 상가 앞 거리. 여기선 쓰러뜨리는 게 아니라 쓰레기를 모으는 싸움이다. 근처 쓰레기를 한 번에 주워 담을 수 있고, 체력이 바닥나면 가진 쓰레기 절반을 흩뿌리며 튕겨 나갔다가 잠시 뒤 다시 일어난다. 시간이 끝났을 때 쓰레기를 더 많이 든 쪽이 이긴다.",
 }
 
 var p1_character_path: String = CHARACTERS.values()[0]
@@ -242,6 +242,8 @@ const DEFAULT_SFX_VOLUME := 1.0
 const MUTE_IN_BUILD := true
 
 var is_fullscreen: bool = false
+## 화면 색보정(`ScreenGrade` — 비네트·그레인·틴트)을 켤지. 끄면 맵이 원래 색 그대로 나온다. 설정 파일에 저장
+var screen_effects_enabled: bool = true
 ## 기본 1920x1080(RESOLUTIONS 1번, 2026-09-28 사용자 요청) — 설정을 한 번도 안 바꾼 새 PC에서 처음 켜면 이 크기
 var resolution_index: int = 1
 var master_volume: float = DEFAULT_MASTER_VOLUME
@@ -352,6 +354,7 @@ func _load_settings() -> void:
 				_apply_keybind(action, int(saved))
 	set_fullscreen(config.get_value("graphics", "fullscreen", is_fullscreen))
 	set_resolution(config.get_value("graphics", "resolution_index", resolution_index))
+	screen_effects_enabled = config.get_value("graphics", "screen_effects", screen_effects_enabled)
 	set_master_volume(config.get_value("audio", "master_volume", master_volume))
 	set_music_volume(config.get_value("audio", "music_volume", music_volume))
 	set_sfx_volume(config.get_value("audio", "sfx_volume", sfx_volume))
@@ -410,6 +413,11 @@ func reset_keybindings() -> void:
 
 ## ui/Settings.gd의 전체화면 체크박스가 호출한다. 즉시 적용하고 저장한다.
 ## **창 모드로 돌아올 때는 저장해 둔 해상도를 다시 적용한다** — 안 그러면 전체화면 크기 그대로 남는다
+## 화면 색보정 켜고 끄기 — `ScreenGrade`가 매 프레임 이 값을 보므로 바로 반영된다
+func set_screen_effects(enabled: bool) -> void:
+	screen_effects_enabled = enabled
+	_save_setting("graphics", "screen_effects", enabled)
+
 func set_fullscreen(enabled: bool) -> void:
 	is_fullscreen = enabled
 	get_window().mode = Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED

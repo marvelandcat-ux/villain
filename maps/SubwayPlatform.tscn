@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://maps/ParallaxFollow.gd" id="20_parallax"]
 [ext_resource type="Script" path="res://maps/ForegroundPillars.gd" id="18_pillars"]
 [ext_resource type="Texture2D" uid="uid://b7ga4j48llp2w" path="res://sprite/맵/지하철역/기둥_반복.png" id="19_pillar"]
+[ext_resource type="Resource" path="res://maps/grade/Subway.tres" id="grade"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bench"]
 size = Vector2(192, 27)
@@ -38,6 +39,7 @@ shader_parameter/dim = 0.08
 
 [node name="SubwayPlatform" type="Node2D" unique_id=521268642]
 script = ExtResource("1")
+screen_grade = ExtResource("grade")
 stage_width = 1080.0
 
 [node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=801279361]

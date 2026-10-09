@@ -39,6 +39,8 @@ var _spent: bool = false
 
 func _ready() -> void:
 	super._ready()
+	# 비둘기(`DowntownPigeons`)가 "날아오는 게 있나" 볼 때 쓰는 표식. `projectiles` 그룹은 평타 가르기 대상이라 안 섞는다
+	add_to_group("thrown_stones")
 	body_entered.connect(_on_body_entered)
 	connected.connect(_on_connected)
 	_visual = get_node_or_null("Visual")

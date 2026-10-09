@@ -40,8 +40,6 @@ var _chord_left: float = 0.0
 var _pending_attack: bool = false
 var _pending_skill_1: bool = false
 
-## 아래키 첫 탭이 "두 번 누르기"의 첫 번째로 유효한 남은 시간(발판 내려가기)
-var _down_tap_left: float = 0.0
 
 ## "left" → "p1_left" 처럼 이 컨트롤러가 담당하는 플레이어의 액션 이름을 만든다
 func _action(action_name: String) -> String:
@@ -53,11 +51,9 @@ func _physics_process(delta: float) -> void:
 		_tap_left = maxf(_tap_left - delta, 0.0)
 		if is_zero_approx(_tap_left):
 			_tap_dir = 0.0
-	if _down_tap_left > 0.0:
-		_down_tap_left = maxf(_down_tap_left - delta, 0.0)
 	if is_active:
 		if Input.is_action_just_pressed(_action("down")):
-			_check_double_tap_drop()
+			_drop_through()
 		if fighter.movement_override == null:
 			var direction := Input.get_axis(_action("left"), _action("right"))
 			fighter.move(direction)
@@ -106,13 +102,9 @@ func _check_double_tap_dash() -> void:
 		_tap_dir = dir
 		_tap_left = DOUBLE_TAP_WINDOW
 
-## 아래키를 DOUBLE_TAP_WINDOW 안에 두 번 누르면 발밑 발판을 통과해 아래층으로 내려간다(대시와 같은 규칙).
-## 통과 가능한 발판 위가 아니면(진짜 지면·공중) 아무 일도 없다
-func _check_double_tap_drop() -> void:
-	if _down_tap_left <= 0.0:
-		_down_tap_left = DOUBLE_TAP_WINDOW
-		return
-	_down_tap_left = 0.0
+## 아래키를 **한 번** 누르면 발밑 발판을 통과해 아래층으로 내려간다(2026-10-08 사용자 요청 — 예전엔 두 번).
+## 아래키가 방어를 겸하던 시절의 두 번 누르기는 이제 필요 없다. 통과 가능한 발판 위가 아니면(진짜 지면·공중) 아무 일도 없다
+func _drop_through() -> void:
 	if fighter.movement_override == null:
 		fighter.drop_through_platform()
 

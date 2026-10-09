@@ -8,12 +8,12 @@ extends Node2D
 ## 머리 그림(`엄마 머리.png`, 1254x1254)에서 눈동자 가운데 — 그림을 바꾸면 다시 잴 것
 @export var eye_pixel: Vector2 = Vector2(950, 745)
 @export var glow_color: Color = Color(1.0, 0.88, 0.2)
-## 십자 빛줄기 길이(가로·세로, 대각선)와 굵기(화면 px)
-@export var ray_length: float = 13.0
-@export var diag_length: float = 6.0
-@export var ray_width: float = 2.2
+## 십자 빛줄기 길이(가로·세로, 대각선)와 굵기(화면 px). 2026-10-08 사용자 요청으로 약 2.5배 키움 — 눈을 덮을 만큼
+@export var ray_length: float = 34.0
+@export var diag_length: float = 18.0
+@export var ray_width: float = 5.0
 ## 눈 둘레 둥근 번짐 반지름(화면 px)
-@export var halo_radius: float = 6.0
+@export var halo_radius: float = 16.0
 ## 켜지는·꺼지는 시간(초)
 @export var fade_in: float = 0.1
 @export var fade_out: float = 0.35

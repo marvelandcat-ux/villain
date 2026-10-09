@@ -37,7 +37,10 @@ func can_use() -> bool:
 		return false
 	var fighter := get_parent() as Fighter
 	# 궁극기 주황 고양이 옷을 입은 동안은 못 쓴다(CatUltimate)
-	return fighter != null and fighter.is_on_floor() and not _building and not fighter.custom_data.get("cat_suit", false)
+	if fighter == null or not fighter.is_on_floor() or _building or fighter.custom_data.get("cat_suit", false):
+		return false
+	# 전선 위에서는 못 짓는다(2026-10-08 사용자 결정) — 집 터가 전선이면 스킬 자체가 안 나간다(쿨도 안 돈다)
+	return not _ground_at(fighter, _house_x(fighter)).get("on_wire", false)
 
 func _execute(fighter: Fighter) -> void:
 	_fighter = fighter
@@ -62,18 +65,35 @@ func _execute(fighter: Fighter) -> void:
 	_next_hit = _hammer_period
 	_place_house(fighter)
 
+## 집 가운데가 올 x — 앞이 벽이면 벽 앞까지 당긴다. 바라보는 쪽은 `_dir`이 아니라 지금 facing으로 본다(can_use에서도 부른다)
+func _house_x(fighter: Fighter) -> float:
+	var dir: float = signf(fighter.facing) if not is_zero_approx(fighter.facing) else 1.0
+	var feet_y: float = fighter.global_position.y + 30.0
+	var from := Vector2(fighter.global_position.x, feet_y - 20.0)
+	var x: float = fighter.global_position.x + dir * place_distance
+	var wall: Dictionary = PhysicsQuery.raycast_ignoring_fighters(fighter, from, Vector2(x + dir * 35.0, from.y))
+	if not wall.is_empty():
+		x = wall.position.x - dir * 35.0
+	return x
+
+## 집 터 x 아래의 바닥 — {"y": 바닥 y, "on_wire": 그 바닥이 전선인지}. 바닥을 못 찾으면 발 높이
+func _ground_at(fighter: Fighter, x: float) -> Dictionary:
+	var feet_y: float = fighter.global_position.y + 30.0
+	var from := Vector2(x, feet_y - 20.0)
+	var hit: Dictionary = PhysicsQuery.raycast_ignoring_fighters(fighter, from, from + Vector2(0.0, 120.0))
+	if hit.is_empty():
+		return {"y": feet_y, "on_wire": false}
+	var collider: Object = hit.get("collider")
+	var on_wire: bool = collider is Node and (collider as Node).is_in_group("power_lines")
+	return {"y": hit.position.y, "on_wire": on_wire}
+
 ## 집 터를 잡는다 — 앞이 벽이면 벽 앞까지 당기고, 그 아래 바닥 위에 놓는다
 func _place_house(fighter: Fighter) -> void:
 	var map: Node = fighter.get_parent()
 	if map == null:
 		return
-	var feet_y: float = fighter.global_position.y + 30.0
-	var from := Vector2(fighter.global_position.x, feet_y - 20.0)
-	var x: float = fighter.global_position.x + _dir * place_distance
-	var wall: Dictionary = PhysicsQuery.raycast_ignoring_fighters(fighter, from, Vector2(x + _dir * 35.0, from.y))
-	if not wall.is_empty():
-		x = wall.position.x - _dir * 35.0
-	var ground_y: float = PhysicsQuery.ground_y_below(fighter, Vector2(x, feet_y - 20.0), 120.0, feet_y)
+	var x: float = _house_x(fighter)
+	var ground_y: float = _ground_at(fighter, x).get("y", fighter.global_position.y + 30.0)
 	_house = CAT_HOUSE.new()
 	# 설치하는 지금 고른 고양이로 고정 — 짓는 도중·완성 뒤에 바꿔도 이 집은 안 바뀐다
 	_house.cat_kind = int(fighter.custom_data.get("cat_kind", 0))

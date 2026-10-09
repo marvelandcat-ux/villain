@@ -20,6 +20,7 @@
 [ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="19_blur"]
 [ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="20_parallax"]
 [ext_resource type="Script" path="res://maps/GymWrapGate.gd" id="21_gate"]
+[ext_resource type="Resource" path="res://maps/grade/Gym.tres" id="grade"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_far"]
 shader = ExtResource("19_blur")
@@ -39,6 +40,7 @@ size = Vector2(1760, 40)
 
 [node name="Gym" type="Node2D" unique_id=1416216186]
 script = ExtResource("1")
+screen_grade = ExtResource("grade")
 map_skill_scene = ExtResource("7")
 hud_panels_drop = 48.0
 

@@ -11,7 +11,8 @@ extends CanvasLayer
 ##    상대도 멈춰 있지만 자동 조준이 아니라서 방향이 어긋나면 빗나갈 수 있다(확정타 아님)
 ##  - 컷인 장면은 캐릭터 스탯(CharacterStats.ultimate_cutin_scene)에 지정한다.
 ##    미리 그린 그림이 아니라 파츠를 코드로 흔드는 씬이라 한 장면이면 된다(ui/cutin/ 참고).
-##    지정 안 된 캐릭터는 이름만 크게 띄우는 임시 화면이 나온다
+##    지정 안 된 캐릭터는 이름만 크게 띄우는 임시 화면이 나온다.
+##    궁 스킬에 `cutin_scene_for(fighter)`가 있으면 그 결과가 우선한다(같은 캐릭터라도 궁이 갈리는 경우)
 
 ## 카메라가 시전자에게 빨려들어가는 시간(초)
 @export var zoom_in_time: float = 0.25
@@ -121,6 +122,12 @@ func _move_camera(t: float) -> void:
 ## 지정된 장면이 없으면 이름만 뜨는 임시 화면을 쓴다
 func _spawn_cutin(fighter: Fighter) -> void:
 	var scene: PackedScene = fighter.stats.ultimate_cutin_scene if fighter.stats else null
+	# 궁이 상황에 따라 장면을 고르면 그쪽이 우선한다(고양이 아주머니 = 고른 고양이별). null을 주면 위의 기본값을 쓴다
+	var ult: Skill = fighter.skill_ultimate
+	if ult and ult.has_method("cutin_scene_for"):
+		var chosen: PackedScene = ult.cutin_scene_for(fighter)
+		if chosen:
+			scene = chosen
 	_placeholder.visible = scene == null
 	_name_label.visible = scene == null
 	if scene == null:
