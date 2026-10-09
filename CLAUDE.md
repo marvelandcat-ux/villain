@@ -584,6 +584,6 @@ res://
 
 - 기획 미정은 임시값 + TODO
 - `invalid UID` 경고 → 씬 uid를 `.import`의 uid로
-- **코드 수정 후 헤드리스 확인 안 함(사용자 요청)** — "실행해서 확인해줘"일 때만
-- Godot 실행 파일: `Godot*4.7*win64*console*.exe` 검색
+- **결과가 확실하지 않으면 실행해서 확인할 것**(2026-10-09 사용자 — 예전 "확인 안 함" 규칙을 바꿈). 특히 **화면에 보이는 것**(배치·그림·흐림)은 창 모드로 띄워 `get_viewport().get_texture().get_image().save_png()` 스크린샷을 찍어 직접 본 뒤 보고. 뻔한 수정은 생략해도 됨
+- Godot 실행 파일: `C:\Program Files (x86)\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`(Steam판 4.7.2, console판 없음)
 - 헤드리스 테스트: 쓰이는 씬을 띄울 것(`--quit-after`만으론 파싱 에러 못 잡음). `extends SceneTree --script` 금지 → `extends Node` 임시 `.tscn`. 시간 기반은 `--fixed-fps 60`. `apply_physics()` 중복 호출 금지, 순간이동 직후 착지 랙 대기

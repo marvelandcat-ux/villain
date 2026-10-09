@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://dp11kqr57ttqf" path="res://sprite/맵/번화가/전포다찌.png" id="10_putxd"]
 [ext_resource type="Texture2D" uid="uid://dwduv8m4cm5rg" path="res://sprite/맵/번화가/술집2.png" id="11_putxd"]
 [ext_resource type="Texture2D" uid="uid://do3agikg35tt5" path="res://sprite/맵/번화가/쓰래기 통 쓰래기 없는 버전.png" id="15_flaia"]
+[ext_resource type="Script" uid="uid://bfd8kcvlju33r" path="res://maps/DowntownAlley.gd" id="alley"]
 [ext_resource type="Texture2D" uid="uid://ettquiagixvc" path="res://sprite/맵/번화가/감성 술집.png" id="bar_emotion"]
 [ext_resource type="Texture2D" uid="uid://bj1c1bbsqrry" path="res://sprite/맵/번화가/배경.png" id="bg"]
 [ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="bgblur"]
@@ -30,12 +31,11 @@
 [ext_resource type="Texture2D" uid="uid://djdhfpyxadh58" path="res://sprite/맵/번화가/쓰래기1.png" id="tr_1"]
 [ext_resource type="Texture2D" uid="uid://bh72dr7t8fq2n" path="res://sprite/맵/번화가/쓰래기2.png" id="tr_2"]
 [ext_resource type="Texture2D" uid="uid://dynvrbhgwu3x7" path="res://sprite/맵/번화가/쓰래기3.png" id="tr_3"]
-[ext_resource type="Texture2D" uid="uid://dv3aerj4j7wqg" path="res://sprite/맵/번화가/메가 커피.png" id="tr_coffee"]
-[ext_resource type="Texture2D" uid="uid://3wr8iiiw2wkf" path="res://sprite/맵/번화가/담배 꽁초.png" id="tr_cig"]
 [ext_resource type="Script" uid="uid://cp0vcpdyk76eb" path="res://maps/DowntownTrashCan.gd" id="tr_can"]
+[ext_resource type="Texture2D" uid="uid://3wr8iiiw2wkf" path="res://sprite/맵/번화가/담배 꽁초.png" id="tr_cig"]
+[ext_resource type="Texture2D" uid="uid://dv3aerj4j7wqg" path="res://sprite/맵/번화가/메가 커피.png" id="tr_coffee"]
 [ext_resource type="Texture2D" uid="uid://bcdbbkp0e462v" path="res://sprite/맵/번화가/쓰래기 통 뚜껑.png" id="tr_lid"]
 [ext_resource type="Script" uid="uid://bmygbgloywnhg" path="res://maps/DowntownTrashSpawner.gd" id="tr_spawner"]
-[ext_resource type="Script" path="res://maps/DowntownAlley.gd" id="alley"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_far"]
 shader = ExtResource("bgblur")
@@ -104,6 +104,7 @@ color = Color(0.4588, 0.7647, 0.9882, 1)
 polygon = PackedVector2Array(-3000, -2400, 3000, -2400, 3000, 280, -3000, 280)
 
 [node name="DecoBackdropFloor" type="Polygon2D" parent="." unique_id=513848309]
+visible = false
 z_index = -30
 color = Color(0.2941, 0.2941, 0.3294, 1)
 polygon = PackedVector2Array(-3000, 280, 3000, 280, 3000, 2400, -3000, 2400)
@@ -297,9 +298,9 @@ position = Vector2(-841, -209)
 scale = Vector2(0.299, 0.299)
 texture = ExtResource("d5")
 script = ExtResource("fgfade")
+behind_alpha = 0.6
 parallax = Vector2(1.1, 1)
 extend_to_ground = true
-behind_alpha = 0.6
 
 [node name="PoleRightLow" type="Sprite2D" parent="." unique_id=1116286863]
 z_index = 10
@@ -307,9 +308,9 @@ position = Vector2(814, -261.00003)
 scale = Vector2(0.2986, 0.2986)
 texture = ExtResource("d5")
 script = ExtResource("fgfade")
+behind_alpha = 0.6
 parallax = Vector2(1.1, 1)
 extend_to_ground = true
-behind_alpha = 0.6
 
 [node name="PoleRightTop" type="Sprite2D" parent="." unique_id=1394880428]
 z_index = 10
@@ -317,9 +318,9 @@ position = Vector2(919.00006, -762.00006)
 scale = Vector2(0.299, 0.299)
 texture = ExtResource("d5")
 script = ExtResource("fgfade")
+behind_alpha = 0.6
 parallax = Vector2(1.1, 1)
 extend_to_ground = true
-behind_alpha = 0.6
 
 [node name="WireLow" type="StaticBody2D" parent="." unique_id=626360225]
 z_index = -10

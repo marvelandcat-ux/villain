@@ -46,15 +46,23 @@ const LAYERS := [
 ## (예전엔 셋째 겹 안에서 z_index -1을 받아 CanvasGroup 밖으로 빠지는 바람에 **흐림이 아예 안 먹었다**)
 const END_WALL := {"t": 0.9, "size": 0.5, "keys": ["wide", "bar2", "wide"],
 	"parallax": 0.68, "blur": 1.2, "dim": 0.26, "z": -28}
-## 위층으로 쌓는 그림 — 골목 전체에서 **돌아가며** 고른다(같은 그림이 줄줄이 이어지면 복붙처럼 보였다, 2026-10-09)
+## 위층으로 쌓는 그림 — 민무늬 벽만 쓰면 다 똑같아 보였다(2026-10-09 사용자: "가로세로 신경 쓰지 말고 다른 건물들 넣어").
+## 간판 건물·가게 그림까지 전부 섞고, 민무늬와 가게가 번갈아 오게 순서를 짰다. 글씨가 있는 그림이 많아서 **뒤집지 않는다**
 const UPPER_FLOORS := [
 	"res://sprite/맵/번화가/건물 세로.png",
+	"res://sprite/맵/번화가/감성 술집.png",
 	"res://sprite/맵/번화가/건물.png",
+	"res://sprite/맵/번화가/술집2.png",
 	"res://sprite/맵/번화가/건물3 .png",
+	"res://sprite/맵/번화가/전포다찌.png",
 	"res://sprite/맵/번화가/건물 가루.png",
+	"res://sprite/맵/번화가/편의점.png",
+	"res://sprite/맵/번화가/건물2.png",
+	"res://sprite/맵/번화가/건물 세로 간판 버전.png",
+	"res://sprite/맵/번화가/할인 마트.png",
 ]
-## "맛있는 술이 좋은날" 글씨 그림 — 반복되면 바로 티 나고 뒤집으면 글자가 거꾸로라 **한 번만**
-const UPPER_FLOOR_TEXT := "res://sprite/맵/번화가/건물2.png"
+## 위아래 층 번호 간격 — 목록 길이(11)와 서로소라 같은 칸 위아래가 안 겹치고, 같은 높이 줄은 칸마다 다음 그림
+const UPPER_FLOOR_STRIDE := 5
 
 ## 소실점(월드). 땅(286)에서 50px 위 — 사진처럼 길이 멀어지는 느낌(2026-10-08 사용자 선택)
 @export var vanish: Vector2 = Vector2(11.0, 236.0)
@@ -78,7 +86,6 @@ const UPPER_FLOOR_TEXT := "res://sprite/맵/번화가/건물2.png"
 
 var _neon_material: ShaderMaterial = null
 var _floor_index: int = 0
-var _text_floor_used: bool = false
 
 func _ready() -> void:
 	_build()
@@ -88,7 +95,6 @@ func _build() -> void:
 		remove_child(child)
 		child.queue_free()
 	_floor_index = 0
-	_text_floor_used = false
 	_neon_material = ShaderMaterial.new()
 	_neon_material.shader = NEON_SHADER
 	for i in LAYERS.size():
@@ -153,18 +159,11 @@ func _stack_floors(group: Node, ground: Node, top_left: Vector2, width: float) -
 	var top: float = top_left.y + 2.0   # 아래층 지붕 턱과 2px 겹침
 	var n: int = 0
 	while top > wall_top_y + 1.0 and n < 6:
-		# 칸 번호(_floor_index) + 층 번호로 고른다 — 같은 높이 줄에 4장이 다 돌고, 목록이 세로·가로 번갈아라 위아래 층도 세로·가로가 섞인다(2026-10-09 사용자: "가로와 세로를 적당히 섞어서").
-		# (예전엔 한 줄로 이어 돌려서 칸마다 2개씩 쌓이면 2층 줄엔 짝수 번째 그림 2종만 왔다, 2026-10-09)
-		# 4칸마다 좌우를 뒤집어 같은 그림도 다르게 보이게
-		var path: String
-		var flip: bool = false
-		if not _text_floor_used and _floor_index == 1 and n == 0:
-			path = UPPER_FLOOR_TEXT
-			_text_floor_used = true
-		else:
-			path = UPPER_FLOORS[(_floor_index + n) % UPPER_FLOORS.size()]
-			flip = (_floor_index / UPPER_FLOORS.size()) % 2 == 1
-		var tex: Texture2D = load(path)
+		# 칸 번호(_floor_index) + 층 번호 x STRIDE로 고른다. 바로 아래 1층과 같은 그림이면 하나 건너뛴다
+		var i: int = (_floor_index + n * UPPER_FLOOR_STRIDE) % UPPER_FLOORS.size()
+		if UPPER_FLOORS[i] == (ground as Sprite2D).texture.resource_path:
+			i = (i + 1) % UPPER_FLOORS.size()
+		var tex: Texture2D = load(UPPER_FLOORS[i])
 		if tex == null:
 			return
 		var op: Rect2 = PICKUP_SCRIPT._opaque_rect_of(tex)
@@ -179,7 +178,6 @@ func _stack_floors(group: Node, ground: Node, top_left: Vector2, width: float) -
 		spr.region_rect = Rect2(op.position, Vector2(op.size.x, h / s))   # 모자라면 아래를 잘라 지붕 턱은 남긴다
 		spr.scale = Vector2(s, s)
 		spr.position = Vector2(top_left.x, top - h)
-		spr.flip_h = flip
 		# ⚠️ z_index 금지 — CanvasGroup 자식이 z를 바꾸면 그룹 밖에서 그려져 **흐림이 안 먹는다**(2026-10-09 겪음).
 		# 아래층 지붕 턱이 위에 오게 트리 순서로 1층 그림 앞에 끼운다
 		group.add_child(spr)

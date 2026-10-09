@@ -58,6 +58,18 @@ extends Node2D
 @export var rumble_range: float = 900.0
 @export_group("")
 
+@export_group("슈퍼 점프")
+## 택시에 튕길 때 점프를 누르면(닿는 순간 누르고 있거나, 튕긴 뒤 `boost_window`초 안에 누르면) **높이가** 이 배수가 된다(2026-10-09 사용자: 약 1.5배).
+## 높이는 속도의 제곱이라 속도는 √배수만 올린다(속도 1.5배로 했더니 실측 2.3배 높이)
+@export var boost_multiplier: float = 1.5
+@export var boost_window: float = 0.3
+## AI가 슈퍼 점프를 성공할 확률
+@export var ai_boost_chance: float = 0.5
+## 효과음 — 비우면 코드로 만든 "뾰잉" 소리(올라가는 음)를 쓴다
+@export var boost_sound: AudioStream = null
+@export var boost_volume_db: float = -6.0
+@export_group("")
+
 const SPEED_LINES_SCRIPT := preload("res://combat/SpeedLines.gd")
 const LAND_DUST_SCRIPT := preload("res://combat/LandDust.gd")
 
@@ -73,6 +85,9 @@ var _art_base_scale: Vector2 = Vector2.ONE
 ## 달리는 동안 끌고 가는 스피드 라인(없으면 null) / 다음 먼지까지 남은 시간
 var _lines: Node2D = null
 var _dust_left: float = 0.0
+## {Fighter: 슈퍼 점프를 받아 주는 남은 시간} — 튕긴 직후 점프를 누르면 더 높이
+var _boost_windows: Dictionary = {}
+static var _boing: AudioStreamWAV = null
 
 @onready var _art: Node2D = $Art
 @onready var _wheels: Array[Node2D] = [$Art/WheelBack, $Art/WheelFront]
@@ -88,6 +103,7 @@ func _physics_process(delta: float) -> void:
 		_cooldowns[f] -= delta
 		if _cooldowns[f] <= 0.0:
 			_cooldowns.erase(f)
+	_update_boost_windows(delta)
 	if not _driving:
 		_wait -= delta
 		if _wait <= 0.0:
@@ -141,8 +157,79 @@ func _bounce_fighters() -> void:
 		fighter.velocity = Vector2(fighter.velocity.x + push_x * _dir, -bounce_velocity)
 		fighter.cancel_landing_lag()
 		_cooldowns[fighter] = rebounce_delay
+		if _wants_boost(fighter, true):
+			_super_jump(fighter)
+		else:
+			_boost_windows[fighter] = boost_window
 		if squash_enabled:
 			_squash_vel += squash_kick
+
+## 튕긴 직후 창 안에서 점프를 누르면 슈퍼 점프. 택시가 화면 밖으로 나간 뒤에도 창은 끝까지 센다
+func _update_boost_windows(delta: float) -> void:
+	for f in _boost_windows.keys():
+		if not is_instance_valid(f):
+			_boost_windows.erase(f)
+			continue
+		_boost_windows[f] -= delta
+		if _wants_boost(f, false):
+			_boost_windows.erase(f)
+			_super_jump(f)
+		elif _boost_windows[f] <= 0.0:
+			_boost_windows.erase(f)
+
+## 사람은 점프 키(닿는 순간엔 누르고 있기, 그 뒤엔 새로 누르기), AI는 닿는 순간 확률로 한 번
+func _wants_boost(fighter: Fighter, at_contact: bool) -> bool:
+	for child in fighter.get_children():
+		if child is PlayerController:
+			var action: StringName = child._action("jump")
+			return Input.is_action_pressed(action) if at_contact else Input.is_action_just_pressed(action)
+		if child is AIController:
+			return at_contact and randf() < ai_boost_chance
+	return false
+
+## 1.5배 높이로 다시 쏘아 올린다 + 세로 스피드 라인 + 효과음.
+## 같은 프레임에 컨트롤러가 공중 점프(jump())로 속도를 덮을 수 있어서 **프레임 끝(deferred)에** 넣는다
+func _super_jump(fighter: Fighter) -> void:
+	var v := Vector2(fighter.velocity.x, -bounce_velocity * sqrt(boost_multiplier))
+	fighter.set_deferred("velocity", v)
+	if fighter.has_method("_spawn_jump_speed_lines"):
+		fighter._spawn_jump_speed_lines()
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("play_jump_stretch"):
+		visual.play_jump_stretch()
+	_play_boost_sound(fighter.global_position)
+
+func _play_boost_sound(at: Vector2) -> void:
+	var player := AudioStreamPlayer2D.new()
+	player.stream = boost_sound if boost_sound != null else _boing_stream()
+	player.volume_db = boost_volume_db
+	player.max_distance = 4000.0
+	get_parent().add_child(player)
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+
+## "뾰잉" — 0.28초 동안 220Hz → 880Hz로 올라가는 사인파(살짝 떨림 + 끝으로 줄어듦). 한 번 만들어 같이 쓴다
+static func _boing_stream() -> AudioStreamWAV:
+	if _boing != null:
+		return _boing
+	const RATE := 22050
+	const LENGTH := 0.28
+	var n: int = int(RATE * LENGTH)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	var phase: float = 0.0
+	for i in n:
+		var t: float = float(i) / n
+		var freq: float = lerpf(220.0, 880.0, t * t) * (1.0 + 0.04 * sin(t * 60.0))
+		phase += TAU * freq / RATE
+		var env: float = minf(t * 30.0, 1.0) * pow(1.0 - t, 1.5)
+		data.encode_s16(i * 2, int(sin(phase) * env * 0.6 * 32767.0))
+	_boing = AudioStreamWAV.new()
+	_boing.format = AudioStreamWAV.FORMAT_16_BITS
+	_boing.mix_rate = RATE
+	_boing.data = data
+	return _boing
 
 ## 감쇠 스프링 — 눌림이 0으로 되돌아오며 몇 번 출렁인다
 func _update_squash(delta: float) -> void:
