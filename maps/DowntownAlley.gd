@@ -63,6 +63,11 @@ const UPPER_FLOORS := [
 ]
 ## 위아래 층 번호 간격 — 목록 길이(11)와 서로소라 같은 칸 위아래가 안 겹치고, 같은 높이 줄은 칸마다 다음 그림
 const UPPER_FLOOR_STRIDE := 5
+## 칸 하나만 그림을 고정하고 싶을 때 — 키 "겹번호(1~3) + L/R + 칸번호(안쪽부터 0) - 층(0 = 2층)", 값 = 그림 경로.
+## 2026-10-09 사용자가 에디터에서 빨간 네모로 짚은 건물(3번째 겹 오른쪽 첫 칸 3층, 원래 벽등 달린 건물3)을 간판으로
+const UPPER_FLOOR_OVERRIDES := {
+	"3R0-1": "res://sprite/맵/번화가/건물 세로 간판 버전.png",
+}
 
 ## 소실점(월드). 땅(286)에서 50px 위 — 사진처럼 길이 멀어지는 느낌(2026-10-08 사용자 선택)
 @export var vanish: Vector2 = Vector2(11.0, 236.0)
@@ -113,8 +118,8 @@ func _build() -> void:
 		road.t_to = float(layer["t"]) if i < LAYERS.size() - 1 else 1.0
 		group.add_child(road)
 		# 양옆 벽
-		_place_wall(group, layer["left"], float(layer["t"]), float(layer["size"]), -1.0)
-		_place_wall(group, layer["right"], float(layer["t"]), float(layer["size"]), 1.0)
+		_place_wall(group, layer["left"], float(layer["t"]), float(layer["size"]), -1.0, "%dL" % (i + 1))
+		_place_wall(group, layer["right"], float(layer["t"]), float(layer["size"]), 1.0, "%dR" % (i + 1))
 	# 맨 뒤 막는 건물 — 셋째 겹과 같은 z라 트리 순서로 뒤에 그려지게 맨 앞 자식으로
 	var end_group := _make_group("DecoAlleyEnd", END_WALL)
 	add_child(end_group)
@@ -137,11 +142,12 @@ func _make_group(group_name: String, layer: Dictionary) -> CanvasGroup:
 	return group
 
 ## 골목 한쪽 벽 — 안쪽 가장자리(도로 끝)부터 바깥으로 건물을 이어 붙인다. side -1 = 왼쪽, +1 = 오른쪽
-func _place_wall(group: Node, keys: Array, t: float, size: float, side: float) -> void:
+func _place_wall(group: Node, keys: Array, t: float, size: float, side: float, wall_id: String) -> void:
 	var inner_x: float = _edge(front_left if side < 0.0 else front_right, t).x
 	var ground_y: float = _edge(0.0, t).y
 	var cursor: float = inner_x
-	for key in keys:
+	for col in keys.size():
+		var key: String = keys[col]
 		var spr := _make_building(String(key), size)
 		if spr == null:
 			continue
@@ -150,20 +156,20 @@ func _place_wall(group: Node, keys: Array, t: float, size: float, side: float) -
 		var inner_edge: float = r.end.x if side < 0.0 else r.position.x
 		spr.position = Vector2(cursor - inner_edge, ground_y - r.end.y)
 		group.add_child(spr)
-		_stack_floors(group, spr, spr.position + r.position, r.size.x)
+		_stack_floors(group, spr, spr.position + r.position, r.size.x, "%s%d" % [wall_id, col])
 		# 다음 건물은 바깥쪽으로 — 왼쪽 벽(side -1)은 x가 줄고, 오른쪽 벽은 는다
 		cursor += side * (r.size.x - overlap * (1.0 - t))
 
 ## 1층 건물(왼쪽 위 `top_left`, 폭 `width`) 위로 같은 폭의 층을 `wall_top_y`까지 쌓는다
-func _stack_floors(group: Node, ground: Node, top_left: Vector2, width: float) -> void:
+func _stack_floors(group: Node, ground: Node, top_left: Vector2, width: float, column_id: String) -> void:
 	var top: float = top_left.y + 2.0   # 아래층 지붕 턱과 2px 겹침
 	var n: int = 0
-	while top > wall_top_y + 1.0 and n < 6:
+	while top > wall_top_y + 3.0 and n < 6:   # 3: 2px 겹침 때문에 꼭대기에 2px짜리 층이 줄줄이 생기던 것 막기
 		# 칸 번호(_floor_index) + 층 번호 x STRIDE로 고른다. 바로 아래 1층과 같은 그림이면 하나 건너뛴다
 		var i: int = (_floor_index + n * UPPER_FLOOR_STRIDE) % UPPER_FLOORS.size()
 		if UPPER_FLOORS[i] == (ground as Sprite2D).texture.resource_path:
 			i = (i + 1) % UPPER_FLOORS.size()
-		var tex: Texture2D = load(UPPER_FLOORS[i])
+		var tex: Texture2D = load(UPPER_FLOOR_OVERRIDES.get("%s-%d" % [column_id, n], UPPER_FLOORS[i]))
 		if tex == null:
 			return
 		var op: Rect2 = PICKUP_SCRIPT._opaque_rect_of(tex)

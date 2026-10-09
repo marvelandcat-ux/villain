@@ -20,6 +20,7 @@ paths:
 - 도감 `CharacterDex`(⚠️ TODO: 놀이터 설명이 옛 기믹). `FanTile.gd`(@tool) 네 점 모양 버튼
 - 초상화: 크기·위치는 `ui/PortraitFrames.tscn`, 전부 `GameState.frame_portrait()` 경유. 스킬 로고 `Skill.icon`(투명 여백 잘라 넣기)
 - 맵 선택 `MapSelect`(**2026-10-08 평면 지도로 개편** — 사용자: "구는 비율이 이상하다, 평면에 바다만 흐르고 한반도 보여주기"): `KoreaGlobe.gdshader`를 **`flatten` 1로 고정**해 평면으로 쓴다(지구본 코드는 남아 있어 `_flatten` 0으로 돌리면 공으로 복귀). 그림은 `korea_ocean.png` + `korea_land.png`(`tools/make_korea_globe.py`, 땅 자리는 셰이더 `land_rect`). **땅은 고정, 바다만 흐른다**(셰이더 `ocean_scroll` ← `OCEAN_FLOW` (0.012, 0.005)/초; `spin`은 0). 끌기·자전 없음(`_gui_input`은 빈 함수, 옛 끌기는 `_gui_input_globe`에 보관). 배율: `FLAT_HALF` (660, 380)·`FLAT_SPAN_U` 0.70 → 1라디안 300px, 위도 1도 ≈ 60px, 지도 중심 `GLOBE_CENTER` (640, 345) = 경위도 (127.5, 38). 핀(`MapPin`, `MAP_PINS` 경위도)은 이름표 **항상 아래 고정**. **고르면**: 핀 자리로 `ZOOM_TO` 3.5배까지 `ZOOM_TIME` 1.1초 동안 CUBIC EASE_IN(점점 빠르게 빨려 들어감) + 검은 막 `_dark` 알파 0→1(글자·핀·캐릭터는 0.44초에 먼저 사라짐) → `SceneTransition.go_to_scene_from_black(맵, MAP_FADE_IN 1.0)` = 검은 막으로 덮은 채 씬 바꾸고 새 맵이 **서서히 밝아진다**(로딩 화면 대신). 랜덤 버튼은 핀을 0.45초 비춘 뒤 같은 길. ⚠️ 셰이더 `surface_uv()` ↔ `_screen_of()`, 파이썬 `CENTER_*`/`PX_PER_DEG` ↔ 스크립트 상수는 짝
+- 맵 선택 썸네일(2026-10-09): 실제 게임 화면 사진 `ui/map_thumbs/<맵파일>.png`(`tools/MapThumbGen.tscn` F6로 찍음, 구경 모드로 띄우고 캐릭터는 숨김). **맵 그림을 바꾸거나 새 맵을 넣으면 다시 돌릴 것** — 사진이 없으면 옛 `MapPreview` 스케치로 떨어진다(도감·맵 상세는 아직 스케치)
 - 숨겨진 캐릭터: 선택창에서 **aaddssww** → `_toggle_hidden_mode`. 경로 `GameState.character_path()`. 타이틀 구경·도감엔 안 나옴
 
 ## 대전 진행

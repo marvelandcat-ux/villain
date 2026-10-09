@@ -117,7 +117,7 @@ factor = Vector2(0.72, 0.72)
 reference = Vector2(0, -226)
 
 [node name="Art" type="Sprite2D" parent="DecoBackground" unique_id=1858043771]
-position = Vector2(0, -537.5)
+position = Vector2(0, -537)
 scale = Vector2(1.8, 1.8)
 texture = ExtResource("bg")
 
@@ -126,6 +126,7 @@ script = ExtResource("alley")
 
 [node name="BuildingRightTall2" type="Sprite2D" parent="." unique_id=901093348]
 z_index = -20
+material = SubResource("NeonSignMaterial")
 position = Vector2(1036, -219)
 scale = Vector2(0.4878, 0.4878)
 texture = ExtResource("d3")
