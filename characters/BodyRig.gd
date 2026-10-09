@@ -208,6 +208,8 @@ extends Node2D
 @export var fan_ghost_count: int = 6
 @export var fan_ghost_life: float = 0.09
 @export_range(0.0, 1.0, 0.05) var fan_ghost_alpha: float = 0.4
+## 도는 무기 양 끝이 지나간 길을 겹겹의 호(흰 심 + 분홍 번짐)로 그린다(`combat/SpinArcTrail.gd`, 2026-10-10 사용자 레퍼런스)
+@export var fan_trail: bool = true
 ## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
 ## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
 @export var attack_swing_arc: float = 0.0
@@ -676,6 +678,14 @@ var held_item_l_thrown: bool = false
 ## 평타 1·2·3타 때 무기 끝(맨손이면 치는 주먹, 발차기면 발)이 지나간 자리에 하얀 띠(combat/SwingTrail.gd)를 남긴다.
 ## ComboMeleeAttack이 휘두를 때 `play_swing_trail()`을 불러야 켜진다 — 스킬·카운터의 스윙엔 안 나온다
 @export var swing_trail: bool = true
+## 켜면 **무기를 든 평타**의 하얀 궤적 대신 무기 스미어(`combat/WeaponSmear.gd`)가 나온다 —
+## 무기가 지나간 자리를 속이 찬 초승달 띠로 칠하고, 색은 무기 그림에서 손잡이 → 끝 순서로 뽑는다(2026-10-10, 주정뱅이 소주병부터).
+## 맨손·발차기 타는 그대로 하얀 궤적. `swing_trail`도 켜져 있어야 한다(같은 길목을 쓴다)
+@export var weapon_smear: bool = false
+## 스미어 색 줄 수(손잡이 → 끝) — 많을수록 무기 무늬를 잘게 따른다
+@export var weapon_smear_bands: int = 6
+## 스미어가 손잡이에서 얼마나 떨어진 곳부터 칠해지는지(무기 길이 비율) — 손을 덮지 않게
+@export_range(0.0, 0.8, 0.05) var weapon_smear_inner: float = 0.12
 
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
@@ -1183,6 +1193,9 @@ var _swing_serial: int = 0
 var _trail_serial: int = -1
 var _trail_src: Node2D = null
 var _trail_tip := Vector2.ZERO
+## 스미어일 때 손잡이 쪽 점(조각 로컬) / 지금 띠가 스미어인지
+var _trail_inner := Vector2.ZERO
+var _trail_is_smear: bool = false
 ## 직전 프레임 조각 자세(리그 기준) — 프레임 사이를 채운다(_smear_prev와 같은 이유)
 var _trail_prev := Transform2D()
 var _trail_has_prev: bool = false
@@ -1312,6 +1325,9 @@ var _fan_phase: float = 0.0
 ## 선풍기 회전 잔상 칸(주먹·스미어 잔상과 따로 쓴다) — 처음 쓸 때 만든다
 var _fan_ghosts: Array[Sprite2D] = []
 var _fan_ghost_left: Array[float] = []
+## 회전 호 트레일(`SpinArcTrail`) — 처음 돌 때 만들어 두고 다시 쓴다
+var _fan_trail_node: Node2D = null
+const SPIN_ARC_TRAIL_SCRIPT := preload("res://combat/SpinArcTrail.gd")
 ## 선풍기 회전 중 무기 자식의 원래 위치(끝나면 복구) — 회전축을 손 중심에 맞추려고 잠깐 (0,0)으로 옮긴다.
 ## 이러면 무기 중심이 손(HandRHold 원점)에 와서, 손 주위를 공전하지 않고 그 자리에서 제자리로 자전한다
 var _fan_child_rest: Dictionary = {}
@@ -1333,6 +1349,10 @@ const BLOCKED_OUTLINE_SHADER := preload("res://combat/BlockedOutline.gdshader")
 const SWING_TRAIL_SCRIPT := preload("res://combat/SwingTrail.gd")
 ## 프레임 사이에 끼워 넣는 궤적 점 수 — 많을수록 호가 매끈하다
 const SWING_TRAIL_FILL: int = 4
+## 무기 스미어(combat/WeaponSmear.gd) — 새 스크립트라 preload로 쓴다
+const WEAPON_SMEAR_SCRIPT := preload("res://combat/WeaponSmear.gd")
+## 무기 그림 → [색 줄무늬, 윤곽선 색] 캐시(그림 경로 + 줄 수로 기억한다)
+static var _smear_color_cache: Dictionary = {}
 ## 지금 빨간 테두리가 걸려 있는 파츠들 (끝날 때 material을 떼어내야 해서 들고 있는다)
 var _blocked_outline_parts: Array = []
 ## 머리 떨림 남은 시간과 전체 시간(초)
@@ -2685,7 +2705,18 @@ func _update_swing_trail() -> void:
 		if _trail_src == null:
 			_end_swing_trail()
 			return
-		var trail = SWING_TRAIL_SCRIPT.new()
+		var trail
+		_trail_is_smear = weapon_smear and _hand_r_hold != null and _trail_src.get_parent() == _hand_r_hold
+		if _trail_is_smear:
+			var item: Sprite2D = _trail_src
+			var grip: Vector2 = item.transform.affine_inverse() * Vector2.ZERO
+			_trail_inner = grip.lerp(_trail_tip, weapon_smear_inner)
+			trail = WEAPON_SMEAR_SCRIPT.new()
+			var colors: Array = _weapon_smear_colors(item, grip, _trail_tip)
+			trail.bands = colors[0]
+			trail.outline_color = colors[1]
+		else:
+			trail = SWING_TRAIL_SCRIPT.new()
 		map.add_child(trail)
 		# 캐릭터 뒤, 배경 앞 — z는 캐릭터와 같게, 트리 순서만 캐릭터 바로 앞(대시 잔상과 같은 방식)
 		trail.z_index = body.z_index
@@ -2701,10 +2732,91 @@ func _update_swing_trail() -> void:
 	if _trail_has_prev:
 		for k in range(1, SWING_TRAIL_FILL + 1):
 			var w: float = float(k) / float(SWING_TRAIL_FILL + 1)
-			_swing_trail_node.add_point(rig_xf * (_trail_prev.interpolate_with(now, w) * _trail_tip))
-	_swing_trail_node.add_point(rig_xf * (now * _trail_tip))
+			var mid: Transform2D = _trail_prev.interpolate_with(now, w)
+			if _trail_is_smear:
+				_swing_trail_node.add_sample(rig_xf * (mid * _trail_inner), rig_xf * (mid * _trail_tip))
+			else:
+				_swing_trail_node.add_point(rig_xf * (mid * _trail_tip))
+	if _trail_is_smear:
+		_swing_trail_node.add_sample(rig_xf * (now * _trail_inner), rig_xf * (now * _trail_tip))
+	else:
+		_swing_trail_node.add_point(rig_xf * (now * _trail_tip))
 	_trail_prev = now
 	_trail_has_prev = true
+
+## 무기 그림에서 스미어 색을 뽑는다 → [손잡이 → 끝 색 줄무늬, 윤곽선 색].
+## 보이는 픽셀마다 손잡이(grip)→끝(tip) 축에 내린 위치로 줄을 정해 평균을 낸다. 아주 어두운 픽셀은 윤곽선으로 따로 모은다
+## (안 그러면 검은 테두리가 섞여 띠가 칙칙해진다). 빈 줄은 이웃 줄 색으로 채운다. grip·tip은 조각 로컬 좌표
+func _weapon_smear_colors(item: Sprite2D, grip: Vector2, tip: Vector2) -> Array:
+	var count: int = maxi(weapon_smear_bands, 1)
+	var tex: Texture2D = item.texture
+	var key: String = "%s|%d|%s" % [tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id()), count, item.region_rect]
+	if _smear_color_cache.has(key):
+		return _smear_color_cache[key]
+	var bands := PackedColorArray()
+	bands.resize(count)
+	bands.fill(Color.WHITE)
+	var outline := Color(0.05, 0.05, 0.06)
+	var img: Image = tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		var rect: Rect2 = item.get_rect()
+		var region: Rect2 = item.region_rect if item.region_enabled else Rect2(Vector2.ZERO, tex.get_size())
+		# 조각 로컬 → 그림 픽셀
+		var to_px := func(p: Vector2) -> Vector2:
+			var q: Vector2 = (p - rect.position) / rect.size * region.size
+			if item.flip_h:
+				q.x = region.size.x - q.x
+			if item.flip_v:
+				q.y = region.size.y - q.y
+			return q + region.position
+		var g: Vector2 = to_px.call(grip)
+		var t: Vector2 = to_px.call(tip)
+		var axis: Vector2 = t - g
+		var len2: float = maxf(axis.length_squared(), 1.0)
+		var sums: Array[Color] = []
+		var counts: Array[int] = []
+		for i in count:
+			sums.append(Color(0, 0, 0, 0))
+			counts.append(0)
+		var dark_sum := Color(0, 0, 0, 0)
+		var dark_n: int = 0
+		const STEP := 3
+		for y in range(int(region.position.y), int(region.end.y), STEP):
+			for x in range(int(region.position.x), int(region.end.x), STEP):
+				var c: Color = img.get_pixel(x, y)
+				if c.a < 0.5:
+					continue
+				if c.get_luminance() < 0.12:
+					dark_sum += c
+					dark_n += 1
+					continue
+				var f: float = clampf((Vector2(x, y) - g).dot(axis) / len2, 0.0, 0.999)
+				var b: int = int(f * count)
+				sums[b] += c
+				counts[b] += 1
+		for i in count:
+			if counts[i] > 0:
+				var s: Color = sums[i] / float(counts[i])
+				bands[i] = Color(s.r, s.g, s.b, 1.0)
+		# 빈 줄은 가까운 채워진 줄 색으로
+		for i in count:
+			if counts[i] > 0:
+				continue
+			for d in range(1, count):
+				if i - d >= 0 and counts[i - d] > 0:
+					bands[i] = bands[i - d]
+					break
+				if i + d < count and counts[i + d] > 0:
+					bands[i] = bands[i + d]
+					break
+		if dark_n > 0:
+			var o: Color = dark_sum / float(dark_n)
+			outline = Color(o.r, o.g, o.b, 1.0)
+	var result: Array = [bands, outline]
+	_smear_color_cache[key] = result
+	return result
 
 ## 지금 띠를 놓는다 — 띠는 남은 꼬리가 사라질 때까지 맵에 남았다가 스스로 지워진다
 func _end_swing_trail() -> void:
@@ -3076,9 +3188,19 @@ func play_keyboard_fan(duration: float) -> void:
 		_hand_r.z_index = attack_grip_hand_z
 	if _hand_l:
 		_hand_l.z_index = attack_grip_hand_z
+	if fan_trail and _fan_time > 0.0 and _hand_r_hold:
+		if _fan_trail_node == null:
+			# 키보드(HandRHold) 바로 앞 순서·같은 z — 호가 몸 위, 키보드 밑에 깔린다. owner 없음 = 씬에 저장 안 됨
+			_fan_trail_node = SPIN_ARC_TRAIL_SCRIPT.new()
+			add_child(_fan_trail_node)
+			move_child(_fan_trail_node, _hand_r_hold.get_index())
+		_fan_trail_node.z_index = _hand_r_hold.z_index
+		_fan_trail_node.set_active(true)
 
 func end_keyboard_fan() -> void:
 	_fan_time = 0.0
+	if _fan_trail_node:
+		_fan_trail_node.set_active(false)
 	# 회전 때문에 (0,0)으로 옮기고 키운 무기를 원래 자리·크기로 되돌린다
 	for child in _fan_child_rest:
 		if is_instance_valid(child):
@@ -3119,6 +3241,31 @@ func _update_fan_ghosts(delta: float) -> void:
 	for child in _hand_r_hold.get_children():
 		if child is Sprite2D and child.visible:
 			_spawn_fan_ghost(child)
+	_update_fan_trail()
+
+## 회전 호 트레일에 이번 프레임 무기 끝 자리를 넘긴다(리그 로컬). 무기 그림의 긴 쪽 양 끝 중 축에서 먼 쪽을 끝으로 본다 —
+## 그림 offset·회전이 어떻든 실제로 보이는 끝을 따라간다
+func _update_fan_trail() -> void:
+	if _fan_trail_node == null:
+		return
+	var center: Vector2 = _hand_r_hold.position
+	var best: Vector2 = center
+	var best_d: float = 0.0
+	for child in _hand_r_hold.get_children():
+		if not (child is Sprite2D and child.visible):
+			continue
+		var rect: Rect2 = child.get_rect()
+		var mid_y: float = rect.get_center().y
+		for x in [rect.position.x, rect.end.x]:
+			var tip: Vector2 = _hand_r_hold.transform * (child.transform * Vector2(x, mid_y))
+			if tip.distance_to(center) > best_d:
+				best = tip
+				best_d = tip.distance_to(center)
+	if best_d <= 1.0:
+		return
+	_fan_trail_node.center = center
+	_fan_trail_node.angle = (best - center).angle()
+	_fan_trail_node.radius = best.distance_to(center)
 
 func _spawn_fan_ghost(src: Sprite2D) -> void:
 	if _fan_ghosts.is_empty():

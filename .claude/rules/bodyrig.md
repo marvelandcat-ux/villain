@@ -19,3 +19,4 @@ paths:
 - 눈 생동감(`Head`의 자식, 머리 그림 픽셀 좌표, 기본 얼굴일 때만): 깜빡임 `EyeBlink.gd`, 렌즈 반짝임 `LensGlint.gd`, 소용돌이 `SwirlEye.gd`, 눈빛 `EyeGlow.gd`. 특수 idle `idle_special`(안경 올리기·딸꾹질)
 - 표정 결정은 `_apply_base_head()`
 - 평타 하얀 궤적 `swing_trail`(기본 켬, `combat/SwingTrail.gd`): `ComboMeleeAttack._fire`가 스윙 직후 `play_swing_trail()`. 따라가는 점 = 발차기·드롭킥은 오른발, 무기는 손잡이에서 가장 먼 모서리, 맨손은 치는 주먹. **unshaded**(맵 조명에 안 어두워짐) + 가운데 하얀 심지(`core_ratio`), 꼬리 옅어짐 `fade_power`
+- **무기 스미어** `weapon_smear`(기본 끔, `combat/WeaponSmear.gd`): 켜면 무기 든 타만 하얀 궤적 대신 속이 찬 초승달 띠. 색은 무기 그림에서 자동(`_weapon_smear_colors`, 손잡이 → 끝 줄무늬 + 윤곽선색), 조명은 받는다(무기와 같은 밝기). 2026-10-10 주정뱅이부터

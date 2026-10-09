@@ -29,6 +29,7 @@
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 힘듬.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
+weapon_smear = true
 curl_face_rise = ExtResource("gym_face_rise")
 curl_face_fall = ExtResource("gym_face_fall")
 squat_face_move = ExtResource("gym_face_rise")
