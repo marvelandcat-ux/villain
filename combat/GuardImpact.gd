@@ -9,6 +9,8 @@ extends Node2D
 ## 그리는 좌표는 "+x = 막는 사람의 뒤쪽(공격이 밀고 들어가는 쪽)" 하나로 짜고,
 ## 반대쪽이면 `draw_set_transform`으로 가로만 뒤집는다(돌리면 번개의 위아래까지 뒤집힌다)
 
+## 전체 크기 배율 — 모양·굵기·거리를 통째로 키운다(2026-10-10 사용자: 1 -> 1.4)
+@export var size: float = 1.4
 ## 전체가 사라지기까지(초)
 @export var life: float = 0.34
 ## 고리 색 / 가운데 번쩍 색 / 판 색 / 번개 바깥(번짐)·안쪽 색 / 속도선 색
@@ -54,6 +56,7 @@ var _streaks: Array[Vector3] = []
 
 func _ready() -> void:
 	z_index = 30
+	scale = Vector2(size, size)
 	_build_streaks()
 	_build_bolts()
 
