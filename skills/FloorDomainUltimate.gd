@@ -48,8 +48,13 @@ extends Skill
 @export_range(0.0, 8.0, 0.1) var sofa_blur: float = 0.3
 ## 영역에 머무는 시간(초)
 @export var duration: float = 12.0
-## 배경 그림 배율 — 1942x809 그림이 0.55면 1068x445가 된다(화면 비율과 거의 같아 꽉 찬다)
-@export var image_scale: float = 0.45
+## 배경 그림 배율 — 1944x809 그림이 0.72면 1400x583이 된다(화면 비율 2.39와 거의 같아 꽉 찬다).
+## **이 값이 곧 궁 안 카메라 거리다.** 카메라 배율은 `enter_arena()`가 "영역 전체가 화면에 꽉 차게"
+## 자동으로 정하고 `arena_close_zoom = 1`로 묶여 있어서, 줌을 직접 건드릴 수가 없다.
+## 대신 **이걸 키우면** 방 그림은 그대로 화면을 꽉 채우고 캐릭터만 작아져 **더 뒤에서** 본 화면이 된다.
+## (2026-10-10 사용자: "줌이 너무 가까워서 답답해 보임" → 0.45에서 0.72로 1.6배.
+##  절대 px인 `wall_inset`·`spawn_spread`도 같은 배로 키워야 비율이 안 깨진다)
+@export var image_scale: float = 0.72
 ## 그림에서 **위층 바닥 윗면**(엄마 발이 닿는 높이, 그림 픽셀). 그림을 훑어 잰 값이다
 @export var upper_floor_image_y: float = 331.0
 ## 그림에서 **위층 바닥(슬래브) 아랫면** = 아래층 천장(그림 픽셀).
@@ -62,9 +67,9 @@ extends Skill
 ## 원래 맵 원점에서 영역 가운데까지 — 위로 멀리 둬서 원래 맵 지형과 안 겹치게 한다
 @export var arena_offset: Vector2 = Vector2(0, -7000)
 ## 그림 좌우 끝에서 벽 안쪽 면까지(px)
-@export var wall_inset: float = 24.0
+@export var wall_inset: float = 38.0
 ## 들어갈 때 두 사람이 가운데에서 좌우로 떨어져 서는 거리(px)
-@export var spawn_spread: float = 160.0
+@export var spawn_spread: float = 256.0
 ## **기본 궁극기 컷인 상자를 띄우지 않는다** — 이 궁은 초인종·문 쾅 연출이 곧 컷인이다
 @export var skip_cutin: bool = true
 ## **궁을 쓴 순간 → 현관문 앞으로 넘어가는 전환.** 다른 캐릭터는 컷인이 그 몫을 하는데
