@@ -78,6 +78,11 @@ var _external_hit: bool = false
 @export var lunge_follows_pushback: bool = false
 ## 한 타가 맞은 뒤 다음 타를 눌러 이어갈 수 있는 시간(초)
 @export var chain_window: float = 1.0
+## 켜면 **한 타의 휘두르는 모션이 끝나야 다음 타가 나간다**(2026-10-10 사용자: "1·2·3타가 너무 빠르게 나간다").
+## 예전엔 맞는 순간(모션 40% 지점) 바로 다음 타를 받아서 연타하면 남은 모션이 잘리고 ~0.1초 간격으로 튀어나갔다.
+## 모션 중에 누른 건 **기억했다가(선입력)** 끝나는 순간 낸다 — 연타해도 입력이 씹히지 않는다.
+## 그 대기만큼 상대 경직도 늘려서(`_apply_link_stun`) 확정 콤보는 그대로 이어진다
+@export var wait_for_swing_end: bool = true
 ## 헛발질(빗맞음)했을 때만 도는 쿨타임(초). 음수면 기본 cooldown을 그대로 쓴다.
 ## 3타 마무리 쿨은 cooldown이라, 이 값으로 "못 맞췄을 때만" 더 크게 벌칙을 줄 수 있다
 @export var miss_cooldown: float = -1.0
@@ -254,6 +259,10 @@ var _resolved: bool = false
 var _swing_step: int = 0
 ## 맞은 뒤 다음 입력을 기다리는 여유 시간
 var _chain_left: float = 0.0
+## 지금 타의 휘두르는 모션이 끝나기까지 남은 시간(초) — 0이 돼야 다음 타가 나간다(wait_for_swing_end)
+var _anim_left: float = 0.0
+## 모션 중에 눌러 둔 다음 타(선입력) — 모션이 끝나는 순간 낸다
+var _queued: bool = false
 ## 이번 스윙이 건물만 맞혔는지 — 판정 창이 끝날 때 "건물 명중"으로 정리한다(그 사이 적이 맞으면 적이 우선)
 var _building_pending: bool = false
 ## 이어서 건물을 친 횟수 — BUILDING_HIT_LIMIT에 닿으면 마무리 쿨
@@ -451,8 +460,9 @@ func _hold_for_next_hit(victim: Node) -> void:
 		target.apply_hitstun(d.hitstun)
 	if link_stun_margin <= 0.0:
 		return
-	# 다음 타가 들어갈 때까지 붙잡아 둔다 — 다음 타의 판정 시각은 _windup_for가 안다(새 방식이면 몸에게 물어본다)
-	target.apply_hitstun(_windup_for(_swing_step + 1, _fighter) + link_stun_margin)
+	# 다음 타가 들어갈 때까지 붙잡아 둔다 — 다음 타의 판정 시각은 _windup_for가 안다(새 방식이면 몸에게 물어본다).
+	# 모션이 끝나야 다음 타가 나가므로(wait_for_swing_end) **남은 모션만큼 더** 붙잡는다 — 안 그러면 기다리는 사이 풀려난다
+	target.apply_hitstun(_anim_left + _windup_for(_swing_step + 1, _fighter) + link_stun_margin)
 
 ## 데미지에 비례한 거리만큼 상대를 밀어낸다.
 ## 경직 중 마찰(HITSTUN_FRICTION)로 멈추므로 "distance만큼 가서 멈추는 첫 속도"를 거꾸로 구한다: v = sqrt(2 x 마찰 x 거리).
@@ -584,7 +594,11 @@ func use(fighter: Fighter) -> void:
 		fighter.custom_data["keyboard_spin_charged"] = false
 		_start_spin_flurry(fighter)
 		return
-	# 스윙 판정이 아직 안 났으면 입력을 버린다 — 선입력 없음, 맞은 뒤 다시 눌러야 다음 타
+	# 모션이 아직 도는 중이면 기억만 해 두고 끝나는 순간 낸다(선입력). 빗맞으면 _resolve가 지운다
+	if wait_for_swing_end and (_swinging or _anim_left > 0.0):
+		_queued = true
+		return
+	# (옛 방식) 스윙 판정이 아직 안 났으면 입력을 버린다 — 맞은 뒤 다시 눌러야 다음 타
 	if _swinging:
 		return
 	if not can_use():
@@ -643,6 +657,13 @@ func _process(delta: float) -> void:
 				_resolve_building_hit()
 			else:
 				_resolve(false)
+	# 모션이 끝나는 순간 눌러 둔 다음 타를 낸다 — Fighter 길목(use_basic_attack)을 다시 타서 맞는 중·잡힘·방어 등은 거기서 걸러진다
+	if _anim_left > 0.0:
+		_anim_left = maxf(_anim_left - delta, 0.0)
+		if _anim_left <= 0.0 and _queued:
+			_queued = false
+			if is_instance_valid(_fighter) and not _fighter.is_in_hitstun():
+				_fighter.use_basic_attack()
 	# 맞고 나서 다음 타를 안 눌러 창이 지나면 콤보만 조용히 리셋(맞췄으니 쿨 없음)
 	if _chain_left > 0.0:
 		_chain_left = maxf(_chain_left - delta, 0.0)
@@ -656,7 +677,25 @@ func _begin_swing(fighter: Fighter, step: int) -> void:
 	_building_pending = false
 	_chain_left = 0.0
 	_swing_step = step
+	_queued = false
+	_anim_left = _swing_len_for(step, fighter) if wait_for_swing_end else 0.0
 	_fire(fighter, step)
+
+## 이 타의 휘두르는 모션 전체 길이(초) — AttackData → 평타 길이(swing_duration·마무리 역산) → 리그 기본 길이 순.
+## 드롭킥 마무리는 착지까지가 길어서 따로 기다리지 않는다(마지막 타라 뒤에 이어질 타도 없다)
+func _swing_len_for(step: int, fighter: Fighter) -> float:
+	var d: AttackData = _hit_data(step)
+	if d != null:
+		return d.anim_duration
+	if dropkick_finisher and _is_final(step):
+		return 0.0
+	var visual: Node = fighter.get_node_or_null("Visual") if is_instance_valid(fighter) else null
+	if visual == null:
+		return 0.0
+	var full: float = _final_swing_duration(step, visual)
+	if full <= 0.0 and "attack_duration" in visual:
+		full = float(visual.get("attack_duration"))
+	return maxf(full, 0.0)
 
 ## 스윙 판정을 마무리한다 — 맞으면 이어치기, 헛발이면 기본 쿨 + 1타 리셋
 func _resolve(hit: bool) -> void:
@@ -877,6 +916,7 @@ func report_external_hit(victim: Node) -> void:
 
 func _reset(cd: float) -> void:
 	_step = 0
+	_queued = false
 	_building_hits = 0
 	_last_pushback = 0.0
 	_chain_left = 0.0

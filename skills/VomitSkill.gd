@@ -25,6 +25,11 @@ extends Skill
 ## x는 바라보는 방향 기준이라 양수가 항상 "앞쪽"이다.
 ## 캐릭터 씬을 열어놓고 이 값을 만지면 미리보기가 그 자리에서 같이 움직인다
 @export var stack_visual_offsets: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
+## 토하기 전 **차지**(초) — 토 표정 + 꿀꺽 움찔 뒤에 나간다(2026-10-10, 혈사포처럼 "즉발 말고"). 그동안 걸을 수는 있고
+## 다른 스킬·평타는 막힌다. 나가는 순간의 자리·방향으로 쏜다. 0이면 예전처럼 바로
+@export var charge_time: float = 0.25
+## 차지 때 몸이 움찔하는 정도(BodyRig.play_squash) — 볼에 머금는 느낌
+@export var charge_squash: Vector2 = Vector2(1.1, 0.9)
 
 @export_group("스택별 크기·위치")
 ## 스택별 **크기 배수** (index = 술 스택 수). **x는 길이, y는 두께**를 곱하고 판정도 같이 커지고 작아진다.
@@ -56,6 +61,21 @@ func _execute(fighter: Fighter) -> void:
 		visual.set_drunk_head(false)
 
 	if beam_scene == null:
+		return
+	if charge_time <= 0.0:
+		_fire(fighter, stacks, length, height, damage)
+		return
+	if visual and visual.has_method("play_squash"):
+		visual.play_squash(charge_squash)
+	fighter.start_busy(charge_time + 0.05)
+	# 시전자 자식 타이머 — 차지 중에 캐릭터가 사라지면 같이 사라진다(Timers.after 규칙)
+	Timers.after(fighter, charge_time, _fire.bind(fighter, stacks, length, height, damage))
+
+## 기둥을 실제로 내보낸다 — 이 순간의 입 자리·바라보는 쪽으로
+func _fire(fighter: Fighter, stacks: int, length: float, height: float, damage: int) -> void:
+	if not is_instance_valid(fighter) or fighter.get_parent() == null:
+		return
+	if fighter.is_grabbed:
 		return
 	var beam: VomitBeam = beam_scene.instantiate()
 	fighter.get_parent().add_child(beam)

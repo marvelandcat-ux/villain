@@ -18,9 +18,14 @@ extends Hitbox
 
 ## 기둥이 다 뻗은 뒤 그대로 유지되는 시간(초)
 @export var active_duration: float = 0.3
-## 뻗어나오는 데 걸리는 시간(초). 이 동안 얇은 선에서 제 두께로 벌어진다
-@export var burst_time: float = 0.07
-## 사라지는 데 걸리는 시간(초)
+## 입에서 끝까지 뻗어 나가는 데 걸리는 시간(초). 판정도 같이 뻗는다(2026-10-10 — 예전엔 한 번에 다 생겼다)
+@export var extend_time: float = 0.12
+## 뻗는 동안 시작 두께(제 두께 대비) — 가늘게 나와서 굵어진다
+@export_range(0.05, 1.0, 0.05) var extend_start_thickness: float = 0.35
+## 유지되는 동안 두께가 꿀렁이는 폭(제 두께 대비)과 빠르기(라디안/초) — 혈사포처럼 살아 있는 기둥
+@export var wobble: float = 0.08
+@export var wobble_speed: float = 42.0
+## 사라지는 데 걸리는 시간(초). 이 동안 **가운데로 가늘어지며** 옅어진다
 @export var fade_duration: float = 0.15
 ## 맞은 상대가 밀려나는 힘. x는 정면 방향으로 자동 반전되고, y는 음수가 위쪽
 @export var knockback_force: Vector2 = Vector2(200.0, -120.0)
@@ -54,6 +59,16 @@ const DEFAULT_BODY_RECTS: Array[Rect2] = [
 static var _loaded_defaults: Array[Texture2D] = []
 
 var _facing: float = 1.0
+## 다 뻗었을 때의 값들 — 매 프레임 `_apply_shape()`가 뻗은 정도·두께만 바꿔 다시 놓는다
+var _full_length: float = 1.0
+var _clipped: float = 1.0
+var _height: float = 1.0
+var _body := Rect2(0, 0, 1, 1)
+var _sx: float = 1.0
+var _sy: float = 1.0
+var _vis_offset := Vector2.ZERO
+## 생긴 뒤 흐른 시간(초). 음수면 아직 안 움직인다(에디터 미리보기)
+var _age: float = -1.0
 
 @onready var _collision: CollisionShape2D = $Collision
 @onready var _visual: Sprite2D = $Visual
@@ -67,8 +82,10 @@ func setup(direction: float, length: float, height: float, beam_damage: int, spi
 	knockback = Vector2(knockback_force.x * _facing, knockback_force.y)
 
 	_build_beam(length, height, stacks, visual_offset)
-	_play_burst()
-	_run_lifetime()
+	monitoring = true
+	monitorable = true
+	_age = 0.0
+	_apply_shape(0.0, extend_start_thickness)
 
 ## 벽에 막히면 그 지점까지의 길이를 돌려준다. 캐릭터는 뚫고 지나가야 하므로 레이캐스트에서 전부 제외한다
 func _clip_to_wall(length: float) -> float:
@@ -83,37 +100,45 @@ func _clip_to_wall(length: float) -> float:
 ## 판정 사각형과 그림을 같은 자리에 만든다 — 보이는 기둥 = 맞는 기둥.
 ## 벽에 막히면 **그림을 눌러 줄이지 않고 잘라낸다** (고정 그림이라 누르면 찌그러진다)
 func _build_beam(length: float, height: float, stacks: int, visual_offset: Vector2 = Vector2.ZERO) -> void:
-	var clipped: float = _clip_to_wall(length)
-
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(clipped, height)
-	_collision.shape = rect
-	_collision.position = Vector2(_facing * clipped * 0.5, 0.0)
+	_full_length = length
+	_clipped = _clip_to_wall(length)
+	_height = height
+	_vis_offset = visual_offset
+	_collision.shape = RectangleShape2D.new()
 
 	var texture: Texture2D = _texture_for(stacks)
-	var body: Rect2 = _body_rect_for(stacks, texture)
+	_body = _body_rect_for(stacks, texture)
 	_visual.texture = texture
 	_visual.visible = texture != null
-	if texture == null:
-		return
-
-	# centered=false라 position이 그림의 왼쪽 위 모서리가 된다.
-	# 몸통 영역(body)의 왼쪽 끝이 입에, 세로 한가운데가 입 높이에 오도록 역산한다.
-	# 왼쪽을 볼 때는 scale.x가 음수라 그림이 뒤집혀 그려지는데, 같은 식으로 위치가 맞는다
-	var sx: float = _facing * length / maxf(body.size.x, 1.0)
-	var sy: float = height / maxf(body.size.y, 1.0)
 	_visual.centered = false
-	_visual.scale = Vector2(sx, sy)
-	# visual_offset은 **그림만** 밀어낸다 (판정은 그대로) — 스택별로 그림 여백이 달라서 미세 조정용이다.
-	# x는 바라보는 방향으로 뒤집어서 "앞으로/뒤로"가 항상 같은 뜻이 되게 한다
-	_visual.position = Vector2(
-		-body.position.x * sx + visual_offset.x * _facing,
-		-height * 0.5 - body.position.y * sy + visual_offset.y)
-
-	# 벽에 막힌 만큼 그림을 오른쪽에서 잘라낸다. 영역 시작을 (0,0)으로 둬야 위 좌표 계산이 그대로 맞는다
 	_visual.region_enabled = true
-	var tex_size: Vector2 = texture.get_size()
-	var cut: float = body.position.x + body.size.x * (clipped / maxf(length, 0.001))
+	# 몸통 영역(body)이 판정 사각형에 딱 맞는 배율. 왼쪽을 볼 때는 scale.x가 음수라 그림이 뒤집힌다
+	_sx = _facing * length / maxf(_body.size.x, 1.0)
+	_sy = height / maxf(_body.size.y, 1.0)
+	_apply_shape(1.0, 1.0)
+
+## 지금 모양을 놓는다 — reveal = 입에서 얼마나 뻗었나(0~1, 벽에 막힌 길이 기준), thick = 두께 배수(1 = 제 두께).
+## 판정은 뻗은 만큼만, 두께는 그대로(꿀렁임은 그림만). 그림은 **세로 한가운데를 축으로** 두꺼워지고 얇아진다 —
+## 예전엔 윗변이 고정된 채 늘어나 위에서 아래로 내려오는 것처럼 보였다(2026-10-10 사용자 지적)
+func _apply_shape(reveal: float, thick: float) -> void:
+	var shown: float = maxf(_clipped * clampf(reveal, 0.0, 1.0), 0.5)
+	var rect := _collision.shape as RectangleShape2D
+	if rect:
+		rect.size = Vector2(shown, _height)
+	_collision.position = Vector2(_facing * shown * 0.5, 0.0)
+
+	if _visual.texture == null:
+		return
+	var sy: float = _sy * maxf(thick, 0.0)
+	_visual.scale = Vector2(_sx, sy)
+	# centered=false라 position이 그림의 왼쪽 위 모서리 — 몸통 왼쪽 끝이 입에, 세로 한가운데가 입 높이에 오도록 역산한다.
+	# visual_offset은 **그림만** 밀어낸다 (판정은 그대로) — x는 바라보는 방향 기준이라 양수가 항상 앞쪽
+	_visual.position = Vector2(
+		-_body.position.x * _sx + _vis_offset.x * _facing,
+		-(_body.position.y + _body.size.y * 0.5) * sy + _vis_offset.y)
+	# 뻗은 만큼(그리고 벽에 막힌 만큼)만 보이게 오른쪽을 잘라낸다. 영역 시작을 (0,0)으로 둬야 위 좌표 계산이 그대로 맞는다
+	var tex_size: Vector2 = _visual.texture.get_size()
+	var cut: float = _body.position.x + _body.size.x * (shown / maxf(_full_length, 0.001))
 	_visual.region_rect = Rect2(0.0, 0.0, minf(cut, tex_size.x), tex_size.y)
 
 ## 스택에 맞는 그림. 인스펙터 배열 -> 코드 기본값 순으로 찾는다.
@@ -156,26 +181,32 @@ func _body_rect_for(stacks: int, texture: Texture2D) -> Rect2:
 		return Rect2(0.0, 0.0, 1.0, 1.0)
 	return Rect2(Vector2.ZERO, texture.get_size())
 
-## 판정은 처음부터 제 크기지만, 그림만 얇은 선에서 제 두께로 벌어지게 해서 "확 뻗는" 느낌을 준다
-func _play_burst() -> void:
-	var full_scale: Vector2 = _visual.scale
-	_visual.scale = Vector2(full_scale.x, full_scale.y * 0.15)
-	create_tween().tween_property(_visual, "scale", full_scale, burst_time).set_ease(Tween.EASE_OUT)
-
-## 에디터 미리보기용 — 판정도 타이머도 없이 기둥 모양만 만든다 (characters/SkillRangePreview.gd가 호출)
+## 에디터 미리보기용 — 판정도 시간도 없이 다 뻗은 기둥 모양만 만든다 (characters/SkillRangePreview.gd가 호출)
 func build_preview(direction: float, length: float, height: float, stacks: int = -1, visual_offset: Vector2 = Vector2.ZERO) -> void:
 	_facing = signf(direction) if direction != 0.0 else 1.0
 	_build_beam(length, height, stacks, visual_offset)
 
-func _run_lifetime() -> void:
-	monitoring = true
-	monitorable = true
-	var tween := create_tween()
-	tween.tween_interval(active_duration)
-	tween.tween_callback(_disable_hitbox)
-	tween.tween_property(_visual, "modulate:a", 0.0, fade_duration)
-	tween.tween_callback(queue_free)
-
-func _disable_hitbox() -> void:
-	monitoring = false
-	monitorable = false
+## 뻗기 → 꿀렁이며 유지 → 가운데로 가늘어지며 사라짐. 판정은 유지가 끝나는 순간 꺼진다
+func _process(delta: float) -> void:
+	super(delta)
+	if _age < 0.0 or Engine.is_editor_hint():
+		return
+	_age += minf(delta, 0.05)
+	if _age < extend_time:
+		var k: float = _age / maxf(extend_time, 0.001)
+		var r: float = 1.0 - pow(1.0 - k, 3.0)
+		_apply_shape(r, lerpf(extend_start_thickness, 1.0, r))
+		return
+	var t: float = _age - extend_time
+	if t < active_duration:
+		_apply_shape(1.0, 1.0 + wobble * sin(t * wobble_speed))
+		return
+	if monitoring:
+		monitoring = false
+		monitorable = false
+	var u: float = (t - active_duration) / maxf(fade_duration, 0.001)
+	if u >= 1.0:
+		queue_free()
+		return
+	_apply_shape(1.0, 1.0 - u * u)
+	_visual.modulate.a = 1.0 - u

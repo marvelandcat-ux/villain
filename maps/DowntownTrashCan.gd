@@ -7,7 +7,8 @@ extends Node2D
 ## **몸(판정, 2026-10-08 사용자 요청)**: `_ready()`에서 원웨이 발판 `StaticBody2D`를 하나 만들어 **뚜껑 위에 설 수 있다**
 ## (옆에서는 통과). 쓰레기가 터지는 순간 뚜껑 위에 서 있던 캐릭터는 **스프링처럼 위로 튕겨 나간다**(피해 없음,
 ## `cancel_landing_lag` — 착지 즉시 튕기는 기믹 규칙). 판정 크기는 `쓰래기 통 쓰래기 없는 버전.png` 실측
-## (불투명 몸통 x ±38 / y -5~+70, 뚜껑 윗면 약 -40 — **그림을 바꾸면 다시 잴 것**). 원점은 그림 가운데라 밑면이 +70
+## (불투명 몸통 x ±38 / y -5~+70, 뚜껑 판판한 윗면 약 -14 — **그림을 바꾸면 다시 잴 것**). 원점은 그림 가운데라 밑면이 +70.
+## 2026-10-10: 윗면이 -40이라 뚜껑보다 26px 위 허공에 서 있었다(사용자 지적) → 뚜껑 그림 실측 -14로 내림
 
 const PICKUP_SCRIPT := preload("res://maps/TrashPickup.gd")
 
@@ -40,9 +41,9 @@ const PICKUP_SCRIPT := preload("res://maps/TrashPickup.gd")
 @export_group("몸(판정)")
 ## 원웨이 발판을 만들지 — 끄면 예전처럼 그림만
 @export var solid: bool = true
-## 판정 상자 크기·가운데(이 노드 기준). 윗면 = center.y - size.y/2 = 뚜껑 윗면
-@export var collider_size: Vector2 = Vector2(76, 110)
-@export var collider_center: Vector2 = Vector2(0, 15)
+## 판정 상자 크기·가운데(통 그림 `Can` 자리 기준 — 그림을 노드에서 비켜 놓아도 따라간다). 윗면 = center.y - size.y/2 = 뚜껑 윗면
+@export var collider_size: Vector2 = Vector2(76, 84)
+@export var collider_center: Vector2 = Vector2(0, 28)
 ## 쓰레기가 터질 때 뚜껑 위 사람을 띄우는 속도(px/s). 중력 1150 기준 620이면 약 165px 뜬다
 @export var eject_velocity: float = 620.0
 ## 위에 서 있는지 볼 때 가로 여유(px) — 몸 반지름만큼
@@ -72,16 +73,21 @@ func _build_body() -> void:
 	var rect := RectangleShape2D.new()
 	rect.size = collider_size
 	cs.shape = rect
-	cs.position = collider_center
+	cs.position = _collider_origin()
 	cs.one_way_collision = true
 	# 뚜껑이 튀어 오를 때 발이 판정 안으로 파묻혀도 빠지지 않게 넉넉히
 	cs.one_way_collision_margin = 8.0
 	_body.add_child(cs)
 	add_child(_body)
 
+## 판정 상자 가운데(이 노드 기준) — 통 그림(`Can`)이 비켜 있으면 그만큼 같이 옮긴다(Can3은 (4, -4) 비켜 있다)
+func _collider_origin() -> Vector2:
+	var can: Node2D = get_node_or_null("Can")
+	return collider_center + (can.position if can else Vector2.ZERO)
+
 ## 뚜껑 윗면 월드 y
 func top_y() -> float:
-	return to_global(Vector2(0.0, collider_center.y - collider_size.y * 0.5)).y
+	return to_global(_collider_origin() - Vector2(0.0, collider_size.y * 0.5)).y
 
 ## 뚜껑을 튕기고 쓰레기를 count개 뱉는다. 뚜껑 위에 서 있던 사람은 같이 튕겨 나간다
 func burst(count: int) -> void:

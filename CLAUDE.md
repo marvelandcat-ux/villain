@@ -49,6 +49,7 @@
 
 - **📌 평타는 무조건 금쪽이 기준**(30x30 상자, range 40, 파고들기·푸시백 값 공통) — 캐릭터마다 바꾸지 말 것. **📌 3타 준비시간 0.223초 고정**
 - `attack_duration`을 바꾸면 `windup`(= x0.4)도. 회전·발차기 타는 리그 `spin_duration`/`kick_duration`을 `finisher_windup`과 같이
+- **다음 타는 앞 타 모션이 끝나야 나간다**(2026-10-10, `ComboMeleeAttack.wait_for_swing_end`): 모션 중 입력은 선입력으로 기억, 그만큼 상대 경직도 늘림(`_anim_left` + 다음 windup + `link_stun_margin`). 실측 3타 다 맞는 시각 0.48 → 0.73초, 8캐릭 모두 3타 확정·방어로 못 빠져나감
 - 확정 콤보: **넉백을 키우면 파고들기(`combo_lunge`)도 같이**
 - 회전 타격: 루트 `scale.x` 변경은 다음 프레임 `_apply_pose` 첫머리에서 되돌리기, 최소 0.04
 - 3타 날아가기 `launch_finisher()`: `FINISHER_*`는 배율 1 기준, `finisher_distance_scale`은 속도 배수(거리 ≈ 제곱). 벽 튕김 속도는 `move_and_slide()` **전에** 기억. **높이는 잃은 체력으로 보간**(2026-10-08): `FINISHER_PEAK_FULL` 150 → `FINISHER_PEAK_EMPTY` 350px, 솟는 속도 `FINISHER_UP_SCALE` √3은 상한이 항상 걸리게 하는 용도(실측 풀피 156 / 반피 256 / 빈사 347px). 체력 배율(속도)에 높이가 또 곱해지지 않는다. **날아가는 동안 받는 피해 절반**(`FINISHER_FLYING_DAMAGE_SCALE`, `take_damage` 맨 앞 올림)
