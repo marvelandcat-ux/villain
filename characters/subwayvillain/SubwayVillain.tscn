@@ -15,9 +15,9 @@
 [ext_resource type="Script" path="res://skills/XSlashFinisher.gd" id="32_xslash"]
 [ext_resource type="PackedScene" path="res://combat/XSlashTrail.tscn" id="33_xtrail"]
 [ext_resource type="PackedScene" path="res://combat/SlashMark.tscn" id="34_mark"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/개찰구.png" id="40_logo1"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아재반격스킬로고.png" id="41_logo2"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/스킬로고/지하철아저씨궁극기로고.png" id="42_logoult"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/개찰구.png" id="40_logo1"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/스킬로고/지하철아재반격스킬로고.png" id="41_logo2"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/스킬로고/지하철아저씨궁극기로고.png" id="42_logoult"]
 [ext_resource type="VideoStream" path="res://sprite/도감/영상/단소작렬.ogv" id="50_vid_combo"]
 [ext_resource type="VideoStream" path="res://sprite/도감/영상/개찰구소환.ogv" id="51_vid_gate"]
 [ext_resource type="VideoStream" path="res://sprite/도감/영상/단소반격.ogv" id="52_vid_counter"]
@@ -59,6 +59,7 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("20_combo")
+air_swing_enabled = true
 windup = 0.096
 swing_duration = 0.24
 finisher_windup = 0.223

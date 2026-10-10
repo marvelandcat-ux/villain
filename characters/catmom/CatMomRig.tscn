@@ -22,11 +22,16 @@
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunLeftPose.tscn" id="gym_run_left_pose"]
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunMidPose.tscn" id="gym_run_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/catmom/gym/CatMomRunRightPose.tscn" id="gym_run_right_pose"]
+[ext_resource type="Texture2D" uid="uid://bdks15vg6qmjq" path="res://sprite/고양이 아줌마/고양이 아줌마 머리 뒷 부분.png" id="back_head"]
+[ext_resource type="Texture2D" uid="uid://ovhba6kivco7" path="res://sprite/고양이 아줌마/고양이 아줌마 몸 뒷부분.png" id="back_body"]
 
 [node name="BodyRig" unique_id=1130472802 instance=ExtResource("1_rig")]
 head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
 head_turn_anchors = Array[Vector3]([Vector3(595, 622, 1094), Vector3(605, 661, 1068), Vector3(615, 676, 1018), Vector3(625, 685, 996), Vector3(624, 682, 959)])
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_back_texture = ExtResource("back_head")
+head_back_anchor = Vector3(624, 697, 959)
+body_back_texture = ExtResource("back_body")
 head_turn_on_face = true
 hurt_head_texture = ExtResource("83_hurt")
 hurt_head_scale = Vector2(0.04683, 0.04683)

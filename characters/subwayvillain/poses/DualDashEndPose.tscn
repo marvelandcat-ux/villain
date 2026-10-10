@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://785d2yesmc0d"]
 
 [ext_resource type="Script" uid="uid://yb1yin5ofp3" path="res://characters/PosePreview.gd" id="0_prev"]
-[ext_resource type="Texture2D" uid="uid://b8378ej70u3ka" path="res://sprite/지하철빌/발.png" id="1_foot"]
-[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="2_body"]
-[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="3_hand"]
-[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌/지하철빌런머리.png" id="4_head"]
-[ext_resource type="Texture2D" uid="uid://dii1b8b11t64l" path="res://sprite/지하철빌/검은리코더.png" id="5_recorder"]
-[ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌/단소.png" id="6_danso"]
+[ext_resource type="Texture2D" uid="uid://b8378ej70u3ka" path="res://sprite/지하철빌런/발.png" id="1_foot"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌런/지하철빌런몸.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌런/손.png" id="3_hand"]
+[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌런/지하철빌런머리.png" id="4_head"]
+[ext_resource type="Texture2D" uid="uid://dii1b8b11t64l" path="res://sprite/지하철빌런/검은리코더.png" id="5_recorder"]
+[ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌런/단소.png" id="6_danso"]
 
 [node name="DualDashEndPose" type="Node2D" unique_id=578336915]
 scale = Vector2(8, 8)

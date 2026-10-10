@@ -13,7 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://dgmxlcy63mtee" path="res://sprite/일진/일진 측면 2.png" id="88_turn2"]
 [ext_resource type="Texture2D" uid="uid://ba0ssc6e7lwnh" path="res://sprite/일진/일진 측면 3.png" id="87_turn3"]
 [ext_resource type="Texture2D" uid="uid://dj4fphseou17p" path="res://sprite/일진/정면일진.png" id="86_front"]
-[ext_resource type="Texture2D" path="res://sprite/일진/일진 몸 P2.png" id="60_p2body"]
+[ext_resource type="Texture2D" path="res://sprite/일진/P2/일진 몸 P2.png" id="60_p2body"]
 [ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinCurlDownPose.tscn" id="gym_curl_down_pose"]
 [ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinCurlMidPose.tscn" id="gym_curl_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/iljin/gym/IljinCurlUpPose.tscn" id="gym_curl_up_pose"]

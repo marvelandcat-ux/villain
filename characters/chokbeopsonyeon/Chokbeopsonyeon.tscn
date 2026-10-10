@@ -51,6 +51,7 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("7")
+air_swing_enabled = true
 range = 40.0
 windup = 0.14
 cooldown = 0.3

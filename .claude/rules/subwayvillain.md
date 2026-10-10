@@ -1,7 +1,7 @@
 ---
 paths:
   - "characters/subwayvillain/**"
-  - "sprite/지하철빌/**"
+  - "sprite/지하철빌런/**"
   - "skills/Turnstile*.gd"
   - "skills/Counter*.gd"
   - "skills/DualInstrumentUltimate.gd"

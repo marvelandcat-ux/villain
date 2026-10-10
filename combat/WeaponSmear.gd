@@ -12,9 +12,9 @@ const _COUNTER_FX := preload("res://combat/CounterHitFx.gd")
 ## 자리 하나가 남아 있는 시간(초) — 길수록 꼬리가 길다
 @export var life: float = 0.13
 ## 바깥 테두리 굵기(px)
-@export var outline_width: float = 2.0
+@export var outline_width: float = 3.0
 ## 띠 전체 진하기
-@export_range(0.0, 1.0, 0.05) var opacity: float = 0.9
+@export_range(0.0, 1.0, 0.05) var opacity: float = 1.0
 
 ## 손잡이 → 끝 순서의 색 줄무늬(무기 그림에서 뽑는다, BodyRig가 넣는다)
 var bands: PackedColorArray = PackedColorArray([Color.WHITE])

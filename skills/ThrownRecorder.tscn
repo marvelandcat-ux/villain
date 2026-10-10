@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://skills/ThrownRecorder.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/검은리코더.png" id="2_recorder"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/검은리코더.png" id="2_recorder"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_rec"]
 radius = 17.0

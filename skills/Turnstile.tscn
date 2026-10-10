@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://skills/Turnstile.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://i4se2md5jtvb" path="res://sprite/지하철빌/개찰구.png" id="2_closed"]
-[ext_resource type="Texture2D" uid="uid://m15jgg51yai6" path="res://sprite/지하철빌/개찰구2.png" id="3_open"]
+[ext_resource type="Texture2D" uid="uid://i4se2md5jtvb" path="res://sprite/지하철빌런/개찰구.png" id="2_closed"]
+[ext_resource type="Texture2D" uid="uid://m15jgg51yai6" path="res://sprite/지하철빌런/개찰구2.png" id="3_open"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_turnstile"]
 size = Vector2(40, 45)

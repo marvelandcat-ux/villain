@@ -683,14 +683,19 @@ var held_item_l_thrown: bool = false
 ## 평타 1·2·3타 때 무기 끝(맨손이면 치는 주먹, 발차기면 발)이 지나간 자리에 하얀 띠(combat/SwingTrail.gd)를 남긴다.
 ## ComboMeleeAttack이 휘두를 때 `play_swing_trail()`을 불러야 켜진다 — 스킬·카운터의 스윙엔 안 나온다
 @export var swing_trail: bool = true
-## 켜면 **무기를 든 평타**의 하얀 궤적 대신 무기 스미어(`combat/WeaponSmear.gd`)가 나온다 —
-## 무기가 지나간 자리를 속이 찬 초승달 띠로 칠하고, 색은 무기 그림에서 손잡이 → 끝 순서로 뽑는다(2026-10-10, 주정뱅이 소주병부터).
-## 맨손·발차기 타는 그대로 하얀 궤적. `swing_trail`도 켜져 있어야 한다(같은 길목을 쓴다)
-@export var weapon_smear: bool = false
+## 켜면 평타의 하얀 궤적 대신 스미어(`combat/WeaponSmear.gd`)가 나온다 — 지나간 자리를 속이 찬 초승달 띠로 칠하고,
+## 색은 **치는 조각 그림**에서 반대쪽 끝 → 끝 순서로 뽑는다: 무기 = 무기 그림 / 맨손 = 주먹 / 발차기 = 발(2026-10-10, 전 캐릭터 기본 켬).
+## `swing_trail`도 켜져 있어야 한다(같은 길목을 쓴다)
+@export var weapon_smear: bool = true
 ## 스미어 색 줄 수(손잡이 → 끝) — 많을수록 무기 무늬를 잘게 따른다
 @export var weapon_smear_bands: int = 6
 ## 스미어가 무기 반대쪽 끝에서 얼마나 떨어진 곳부터 칠해지는지(무기 길이 비율). 0 = 무기 전체(2026-10-10 사용자 "병의 모든 부분에서")
 @export_range(0.0, 0.8, 0.05) var weapon_smear_inner: float = 0.0
+## 띠 굵기 배수 — 1이면 치는 조각(무기·주먹·발) 길이만큼, 크면 몸 쪽으로 그만큼 더 넓게 칠한다(2026-10-10 사용자 "굵게")
+@export_range(1.0, 4.0, 0.1) var weapon_smear_width: float = 1.8
+## 띠 색 진하기 — 그림에서 뽑은 색의 채도에 곱하고(1보다 크면 진해짐) 밝기는 weapon_smear_value를 곱한다(2026-10-10 "진하게")
+@export_range(0.5, 3.0, 0.05) var weapon_smear_saturation: float = 1.6
+@export_range(0.3, 1.5, 0.05) var weapon_smear_value: float = 0.88
 
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
@@ -2190,29 +2195,34 @@ func _apply_spin_turn() -> void:
 
 ## 뒤집지 않고 돌기 — 머리(·몸통) 측면 그림을 옆 → 정면 → 옆으로 넘겼다 되돌린다(p 0~1). 몸 좌우는 그대로다.
 ## 뒷모습 그림이 없어 진짜 한 바퀴는 못 그린다 — 대신 카메라 쪽으로 홱 돌았다 돌아오는 게 "도는" 것으로 읽힌다
-## 뒤집지 않고 도는 동안 팔다리를 몸 가운데로 모은다 — 방향 전환(_pose_face_turn_limbs)과 같은 방식(위치만 좁힌다).
-## 정면·뒷모습일수록 많이 모이고 옆모습이면 그대로다. 무기 든 손은 air_swing_weapon_gather만큼만 —
-## 크게 휘두르는 순간이 정면·뒷모습 구간이라 다 모으면 휘두르기가 작아 보인다(2026-10-10 사용자: "이동할 때 좌우 바뀌는 것처럼")
-func _gather_turn_limbs(p: float) -> void:
-	var front: float
+## 뒤집지 않고 도는 동안 **팔다리가 몸 둘레를 한 바퀴 돈다**(2026-10-10 사용자: "축법소년 3타처럼 팔다리도 한 바퀴").
+## 옆모습 리그라 앞뒤(x)만 보이는데, 몸을 각도 θ만큼 돌리면 팔다리 자리는 x' = 앞뒤·cosθ − 옆·sinθ 로 움직인다.
+## 오른쪽(무기 손·오른발)은 카메라 쪽(옆 +), 왼쪽은 반대쪽(옆 −)으로 친다 — 정면(θ 90°)이면 팔이 몸 양옆으로 벌어지고,
+## 뒤로 돌면(θ 180°) 앞뒤가 뒤바뀐다. θ는 머리 그림과 맞춘다: 정면까지(앞 45%) 0→90°, 뒷모습 동안 90→270°, 마지막 20%에 270→360°.
+## 무기 든 손은 air_swing_weapon_gather 비율만큼만 돈다 — 후려치는 순간이 뒷모습 구간이라 다 돌리면 무기가 몸 뒤에서 휘둘러진다
+func _turn_angle(p: float) -> float:
 	if head_back_texture != null and head_back_anchor.z > 0.0:
 		if p < 0.45:
-			front = p / 0.45
-		elif p < 0.8:
-			front = 1.0
-		else:
-			front = 1.0 - (p - 0.8) / 0.2
-	else:
-		front = 1.0 - absf(2.0 * p - 1.0)
-	front = sin(clampf(front, 0.0, 1.0) * PI * 0.5)
-	var squeeze: float = 1.0 - face_turn_limb_gather * front
-	for part in [_hand_l, _foot_l, _foot_r]:
-		if part:
-			part.position.x *= squeeze
-	var weapon_squeeze: float = 1.0 - face_turn_limb_gather * air_swing_weapon_gather * front
-	for part in [_hand_r, _hand_r_hold]:
-		if part:
-			part.position.x *= weapon_squeeze
+			return p / 0.45 * PI * 0.5
+		if p < 0.8:
+			return PI * 0.5 + (p - 0.45) / 0.35 * PI
+		return PI * 1.5 + (p - 0.8) / 0.2 * PI * 0.5
+	# 뒷모습 그림이 없으면 옆 → 정면 → 옆(돌아온다)
+	return (1.0 - absf(2.0 * p - 1.0)) * PI * 0.5
+
+func _gather_turn_limbs(p: float) -> void:
+	var th: float = _turn_angle(p)
+	var c: float = cos(th)
+	var sn: float = sin(th)
+	var parts := [[_hand_l, -air_swing_orbit_hand_side, 1.0], [_foot_l, -air_swing_orbit_foot_side, 1.0],
+		[_foot_r, air_swing_orbit_foot_side, 1.0],
+		[_hand_r, air_swing_orbit_hand_side, air_swing_weapon_gather], [_hand_r_hold, air_swing_orbit_hand_side, air_swing_weapon_gather]]
+	for e in parts:
+		var part: Node2D = e[0]
+		if part == null:
+			continue
+		var x: float = part.position.x
+		part.position.x = lerpf(x, x * c - float(e[1]) * sn, float(e[2]))
 
 func _apply_turn_no_flip(p: float) -> void:
 	var front: int = _turn_textures().size()
@@ -2404,8 +2414,11 @@ const AIR_SWING_VARIANT := SLASH_VARIANT_BASE + 1000
 ## 돌 때 몸을 좌우로 **뒤집을지**. 끄면(기본) 뒤집지 않고 머리·몸통 측면 그림만 넘겨 "옆 → 정면 → 옆"으로 카메라 쪽을 한 번 보고 돌아온다
 ## (2026-10-10 사용자: "뒤집지 말고 측면 사진으로 자연스럽게"). 뒷모습 그림이 오면 진짜 한 바퀴로 바꿀 자리
 @export var air_swing_spin_flip: bool = false
-## 돌며 팔다리를 모을 때 **무기 든 손**은 이 비율만큼만 모은다(0 = 안 모음, 1 = 다른 팔다리와 같이). 휘두르기가 작아 보이지 않게
+## 돌며 팔다리가 몸 둘레를 돌 때 **무기 든 손**은 이 비율만큼만 돈다(0 = 안 돎, 1 = 다른 팔다리와 같이). 휘두르기가 몸 뒤로 숨지 않게
 @export_range(0.0, 1.0, 0.05) var air_swing_weapon_gather: float = 0.3
+## 돌 때 손·발이 몸 옆으로 벌어지는 폭(px, 리그 좌표) — 정면을 볼 때 손이 몸 양옆 이만큼에 온다
+@export var air_swing_orbit_hand_side: float = 18.0
+@export var air_swing_orbit_foot_side: float = 8.0
 ## 반대 손(왼손)이 올려칠 때 가는 자리(제자리 기준, +x = 앞)와 각도(도) — 감을 땐 이 반대쪽으로 반쯤 나간다
 @export var air_swing_off_hand: Vector2 = Vector2(-14, 14)
 @export var air_swing_off_hand_deg: float = 40.0
@@ -2752,13 +2765,16 @@ func _swing_trail_window() -> bool:
 	return progress >= ATTACK_STRIKE_START and progress <= end + 0.06
 
 ## 궤적이 따라갈 조각과 그 조각 안의 끝점(조각 로컬 좌표)을 고른다.
-## 발차기·드롭킥 = 오른발 가운데 / 무기를 든 손으로 치면 = 무기 그림에서 손잡이(손)에서 가장 먼 모서리 / 맨손 = 치는 주먹 가운데
+## 발차기·드롭킥 = 오른발 / 무기를 든 손으로 치면 = 무기 그림에서 손잡이(손)에서 가장 먼 모서리 / 맨손 = 치는 주먹.
+## 스미어(weapon_smear)면 발·주먹도 몸에서 가장 먼 모서리(주먹·발끝)를 끝점으로 — 띠가 그 조각 전체 폭으로 나온다
 func _pick_swing_trail_source() -> void:
 	_trail_src = null
 	var kick: bool = (attack_kick_hit >= 0 and _attack_variant == attack_kick_hit) or _dk_blend > 0.001
 	if kick and _foot_r:
 		_trail_src = _foot_r
 		_trail_tip = _foot_r.get_rect().get_center()
+		if weapon_smear:
+			_trail_tip = _far_corner_from_rig(_foot_r)
 		return
 	var hand: Sprite2D = _attack_hand()
 	if hand == _hand_r and _hand_r_hold and _hand_r_hold.visible:
@@ -2778,6 +2794,12 @@ func _pick_swing_trail_source() -> void:
 	if hand:
 		_trail_src = hand
 		_trail_tip = hand.get_rect().get_center()
+		if weapon_smear:
+			_trail_tip = _far_corner_from_rig(hand)
+
+## 맨손·발 스미어의 끝점 — 그 조각 보이는 영역의 모서리 중 몸(리그 원점)에서 가장 먼 곳(주먹·발끝). 조각 로컬 좌표
+func _far_corner_from_rig(part: Sprite2D) -> Vector2:
+	return _far_corner_from(part, part.get_global_transform().affine_inverse() * global_position)
 
 ## 무기 그림에서 **보이는 영역**의 네 모서리 중 손잡이(HandRHold 원점)에서 가장 먼 곳 — 무기 끝으로 쓴다(그림 로컬 좌표)
 func _far_corner_from_grip(item: Sprite2D) -> Vector2:
@@ -2821,15 +2843,15 @@ func _update_swing_trail() -> void:
 			_end_swing_trail()
 			return
 		var trail
-		_trail_is_smear = weapon_smear and _hand_r_hold != null and _trail_src.get_parent() == _hand_r_hold
+		_trail_is_smear = weapon_smear and _trail_src is Sprite2D and _trail_src.texture != null
 		if _trail_is_smear:
 			var item: Sprite2D = _trail_src
 			# 띠는 **무기 반대쪽 끝(끝점에서 가장 먼 모서리) ~ 끝점** 전체에서 나온다 — 병의 모든 부분이 지나간 자리(2026-10-10 사용자)
 			var base: Vector2 = _far_corner_from(item, _trail_tip)
-			_trail_inner = base.lerp(_trail_tip, weapon_smear_inner)
+			_trail_inner = _trail_tip.lerp(base.lerp(_trail_tip, weapon_smear_inner), weapon_smear_width)
 			trail = WEAPON_SMEAR_SCRIPT.new()
 			var colors: Array = _weapon_smear_colors(item, base, _trail_tip)
-			trail.bands = colors[0]
+			trail.bands = _deepen_smear_colors(colors[0])
 			trail.outline_color = colors[1]
 		else:
 			trail = SWING_TRAIL_SCRIPT.new()
@@ -2933,6 +2955,13 @@ func _weapon_smear_colors(item: Sprite2D, grip: Vector2, tip: Vector2) -> Array:
 	var result: Array = [bands, outline]
 	_smear_color_cache[key] = result
 	return result
+
+## 스미어 색을 진하게 — 채도는 weapon_smear_saturation배, 밝기는 weapon_smear_value배(캐시된 원본은 안 건드린다)
+func _deepen_smear_colors(src: PackedColorArray) -> PackedColorArray:
+	var out := PackedColorArray()
+	for c in src:
+		out.append(Color.from_hsv(c.h, clampf(c.s * weapon_smear_saturation, 0.0, 1.0), clampf(c.v * weapon_smear_value, 0.0, 1.0), c.a))
+	return out
 
 ## 지금 띠를 놓는다 — 띠는 남은 꼬리가 사라질 때까지 맵에 남았다가 스스로 지워진다
 func _end_swing_trail() -> void:

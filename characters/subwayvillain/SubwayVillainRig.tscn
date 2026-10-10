@@ -1,17 +1,17 @@
 [gd_scene format=3 uid="uid://dcb56b8rkjkix"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
-[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌/지하철빌런머리.png" id="2_head"]
-[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="3_body"]
-[ext_resource type="Texture2D" uid="uid://b8378ej70u3ka" path="res://sprite/지하철빌/발.png" id="4_foot"]
-[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="5_hand"]
-[ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌/단소.png" id="6_danso"]
-[ext_resource type="Texture2D" uid="uid://dii1b8b11t64l" path="res://sprite/지하철빌/검은리코더.png" id="7_recorder"]
+[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌런/지하철빌런머리.png" id="2_head"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌런/지하철빌런몸.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://b8378ej70u3ka" path="res://sprite/지하철빌런/발.png" id="4_foot"]
+[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌런/손.png" id="5_hand"]
+[ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌런/단소.png" id="6_danso"]
+[ext_resource type="Texture2D" uid="uid://dii1b8b11t64l" path="res://sprite/지하철빌런/검은리코더.png" id="7_recorder"]
 [ext_resource type="Script" path="res://characters/LensGlint.gd" id="90_glint"]
-[ext_resource type="Texture2D" uid="uid://bfqo4v0j70ero" path="res://sprite/지하철빌/지하철 아저 씨측면 1.png" id="89_turn1"]
-[ext_resource type="Texture2D" uid="uid://dp1kw8845ingg" path="res://sprite/지하철빌/지하철 아저씨 측면 2.png" id="88_turn2"]
-[ext_resource type="Texture2D" uid="uid://byjgbbxiy5mrd" path="res://sprite/지하철빌/지하철 아저씨 측면 3.png" id="87_turn3"]
-[ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌/지하철빌런정면.png" id="86_front"]
+[ext_resource type="Texture2D" uid="uid://bfqo4v0j70ero" path="res://sprite/지하철빌런/지하철 아저 씨측면 1.png" id="89_turn1"]
+[ext_resource type="Texture2D" uid="uid://dp1kw8845ingg" path="res://sprite/지하철빌런/지하철 아저씨 측면 2.png" id="88_turn2"]
+[ext_resource type="Texture2D" uid="uid://byjgbbxiy5mrd" path="res://sprite/지하철빌런/지하철 아저씨 측면 3.png" id="87_turn3"]
+[ext_resource type="Texture2D" uid="uid://cci575iay743t" path="res://sprite/지하철빌런/지하철빌런정면.png" id="86_front"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualGuardPose.tscn" id="10_guard"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualDashReadyPose.tscn" id="11_dashready"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualDashRunPose.tscn" id="12_dashrun"]
@@ -37,7 +37,7 @@
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3ReadyPose.tscn" id="33r"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3MidPose.tscn" id="33m"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/poses/DualHit3EndPose.tscn" id="33e"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸P2.png" id="60_p2body"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/P2/지하철빌런몸P2.png" id="60_p2body"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainCurlDownPose.tscn" id="gym_curl_down_pose"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainCurlMidPose.tscn" id="gym_curl_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainCurlUpPose.tscn" id="gym_curl_up_pose"]
@@ -47,8 +47,10 @@
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunLeftPose.tscn" id="gym_run_left_pose"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunMidPose.tscn" id="gym_run_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/subwayvillain/gym/SubwayVillainRunRightPose.tscn" id="gym_run_right_pose"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/올라잇지하철빌런.png" id="gym_face_rise"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/입벌린지하철.png" id="gym_face_fall"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/올라잇지하철빌런.png" id="gym_face_rise"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/입벌린지하철.png" id="gym_face_fall"]
+[ext_resource type="Texture2D" uid="uid://ddb63greuxaqw" path="res://sprite/지하철빌런/지하철아저씨 뒷부분.png" id="back_head"]
+[ext_resource type="Texture2D" uid="uid://cu048ojcq6lm3" path="res://sprite/지하철빌런/지하철등뒤-Photoroom.png" id="back_body"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
 curl_face_rise = ExtResource("gym_face_rise")
@@ -84,6 +86,9 @@ spin_duration = 0.5
 head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
 head_turn_anchors = Array[Vector3]([Vector3(619, 598, 1079), Vector3(581, 651, 1045), Vector3(582, 661, 1022), Vector3(597, 648, 1095), Vector3(627, 648, 1125)])
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
+head_back_texture = ExtResource("back_head")
+head_back_anchor = Vector3(630, 651, 1125)
+body_back_texture = ExtResource("back_body")
 head_turn_on_face = true
 dual_guard_pose = ExtResource("10_guard")
 dual_dash_ready_pose = ExtResource("11_dashready")

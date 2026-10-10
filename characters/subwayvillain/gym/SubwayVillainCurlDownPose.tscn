@@ -1,12 +1,12 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_b3tww"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/발.png" id="2_isjr1"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸.png" id="3_qebch"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/발.png" id="2_isjr1"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/지하철빌런몸.png" id="3_qebch"]
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_2yxtw"]
 [ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_xhb07"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/손.png" id="6_8jm8h"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런머리.png" id="7_151gm"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/손.png" id="6_8jm8h"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/지하철빌런머리.png" id="7_151gm"]
 
 [node name="GymCurlDownPose" type="Node2D" unique_id=1289925218]
 scale = Vector2(8, 8)

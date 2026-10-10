@@ -93,6 +93,9 @@ var _saved_limbs: Dictionary = {}
 var _suit_combo: Node = null
 var _saved_unarmed_thrust: bool = false
 var _saved_finisher_trail: bool = true
+## 합체 동안 꺼 둔 공중 큰 휘두르기(점프 공격) 원래 값 — 합체 점프 공격은 아직 안 만든다(2026-10-10 사용자)
+var _saved_air_swing: bool = false
+var _air_swing_saved: bool = false
 
 func can_use() -> bool:
 	return super() and _mode == Mode.NONE
@@ -229,6 +232,10 @@ func _attach_suit_combo(fighter: Fighter) -> void:
 	if "finisher_trail" in basic:
 		_saved_finisher_trail = basic.finisher_trail
 		basic.finisher_trail = false
+	if "air_swing_enabled" in basic:
+		_saved_air_swing = basic.air_swing_enabled
+		_air_swing_saved = true
+		basic.air_swing_enabled = false
 	_suit_combo = SUIT_COMBO_SCRIPT.new()
 	basic.add_child(_suit_combo)
 
@@ -240,6 +247,9 @@ func _detach_suit_combo(fighter: Fighter) -> void:
 	var basic: Node = fighter.basic_attack
 	if basic != null and is_instance_valid(basic) and "finisher_trail" in basic:
 		basic.finisher_trail = _saved_finisher_trail
+	if _air_swing_saved and basic != null and is_instance_valid(basic) and "air_swing_enabled" in basic:
+		basic.air_swing_enabled = _saved_air_swing
+	_air_swing_saved = false
 	if _suit_combo != null and is_instance_valid(_suit_combo):
 		_suit_combo.queue_free()
 	_suit_combo = null

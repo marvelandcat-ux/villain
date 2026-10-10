@@ -18,7 +18,7 @@
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 뒷머리.png" id="94_back"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/금쪽이 몸 측면 2.png" id="92_body_turn1"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/금쪾이 몸 측면3.png" id="91_body_turn2"]
-[ext_resource type="Texture2D" path="res://sprite/금쪽이/축법소년 몸P2.png" id="60_p2body"]
+[ext_resource type="Texture2D" path="res://sprite/금쪽이/P2/축법소년 몸P2.png" id="60_p2body"]
 [ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlDownPose.tscn" id="gym_curl_down_pose"]
 [ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlMidPose.tscn" id="gym_curl_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonCurlUpPose.tscn" id="gym_curl_up_pose"]
@@ -30,6 +30,7 @@
 [ext_resource type="PackedScene" path="res://characters/chokbeopsonyeon/gym/ChokbeopsonyeonRunRightPose.tscn" id="gym_run_right_pose"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/올라잇촉법소년.png" id="gym_face_rise"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/힘든 축법소년.png" id="gym_face_fall"]
+[ext_resource type="Texture2D" uid="uid://cuqvy6amqf0cu" path="res://sprite/금쪽이/축법소년 몸 뒷모습.png" id="back_body"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 curl_bar_in_front = true
@@ -65,6 +66,7 @@ attack_smear = true
 head_turn_textures = Array[Texture2D]([ExtResource("98_turn1"), ExtResource("97_turn2"), ExtResource("95_turn25"), ExtResource("96_turn3")])
 head_turn_anchors = Array[Vector3]([Vector3(767, 591, 762), Vector3(632, 785, 913), Vector3(637, 797, 884), Vector3(632, 767, 861), Vector3(625, 713, 928)])
 head_turn_faces_left = Array[bool]([false, true, true, true, false])
+body_back_texture = ExtResource("back_body")
 head_turn_on_face = true
 head_back_texture = ExtResource("94_back")
 head_back_anchor = Vector3(625, 747, 863)

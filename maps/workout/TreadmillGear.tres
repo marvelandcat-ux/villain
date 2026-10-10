@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://bjbq0y6vfix5x" path="res://sprite/악플러/몸/런닝머신10스택.png" id="5_akp"]
 [ext_resource type="Texture2D" uid="uid://cmocpu3pmdkhp" path="res://sprite/주정뱅이/몸/런닝머신10스택.png" id="6_drunk"]
 [ext_resource type="Texture2D" uid="uid://clrdfph8wchic" path="res://sprite/고양이 아줌마/런닝머신10스택.png" id="7_cat"]
-[ext_resource type="Texture2D" uid="uid://b764mhntg2br4" path="res://sprite/지하철빌/런닝머신10스택.png" id="8_subway"]
+[ext_resource type="Texture2D" uid="uid://b764mhntg2br4" path="res://sprite/지하철빌런/런닝머신10스택.png" id="8_subway"]
 [ext_resource type="Texture2D" uid="uid://dfiq3jtd36h1" path="res://sprite/일진/런닝머신10스택.png" id="9_iljin"]
 
 [resource]

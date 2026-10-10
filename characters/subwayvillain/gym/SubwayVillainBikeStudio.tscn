@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_rf8cl"]
 [ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_h0rav"]
 [ext_resource type="Texture2D" uid="uid://d5j57gv4txsc" path="res://sprite/맵/헬스장/자전거(4~7).png" id="3_q6epv"]
-[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌/지하철빌런몸.png" id="4_3kwb2"]
-[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌/손.png" id="5_os4pv"]
-[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌/지하철빌런머리.png" id="6_yqrmp"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌런/지하철빌런몸.png" id="4_3kwb2"]
+[ext_resource type="Texture2D" uid="uid://blvn8hj8h8h8h" path="res://sprite/지하철빌런/손.png" id="5_os4pv"]
+[ext_resource type="Texture2D" uid="uid://xquoga3ipxmx" path="res://sprite/지하철빌런/지하철빌런머리.png" id="6_yqrmp"]
 
 [node name="SubwayVillainBikeStudio" type="Node2D" unique_id=1059167814]
 position = Vector2(651, 302)

@@ -1,10 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://characters/PosePreview.gd" id="1_aoj6w"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/발.png" id="2_krojt"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸.png" id="3_6s3kb"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/손.png" id="4_52aik"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런머리.png" id="5_f6lsy"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/발.png" id="2_krojt"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/지하철빌런몸.png" id="3_6s3kb"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/손.png" id="4_52aik"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/지하철빌런머리.png" id="5_f6lsy"]
 
 [node name="GymRunMidPose" type="Node2D" unique_id=1337993661]
 scale = Vector2(8, 8)

@@ -20,7 +20,7 @@
 [ext_resource type="Texture2D" path="res://sprite/악플러/몸/분노 악플러 정면.png" id="80_rage_front"]
 [ext_resource type="Texture2D" path="res://sprite/악플러/몸/올라잇악플러.png" id="70_curl_rise"]
 [ext_resource type="Texture2D" path="res://sprite/악플러/몸/힘든 악플러.png" id="71_curl_fall"]
-[ext_resource type="Texture2D" path="res://sprite/악플러/몸/악플러몸통P2.png" id="60_p2body"]
+[ext_resource type="Texture2D" path="res://sprite/악플러/몸/몸/악플러몸통P2.png" id="60_p2body"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlDownPose.tscn" id="gym_curl_down_pose"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlMidPose.tscn" id="gym_curl_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoCurlUpPose.tscn" id="gym_curl_up_pose"]
@@ -36,6 +36,8 @@
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatUpPose.tscn" id="gym_squat_up_pose_gear"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatMidPose.tscn" id="gym_squat_mid_pose_gear"]
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatDownPose.tscn" id="gym_squat_down_pose_gear"]
+[ext_resource type="Texture2D" uid="uid://t1mmn721tvd0" path="res://sprite/악플러/몸/악플러 머리 뒷 모습.png" id="back_head"]
+[ext_resource type="Texture2D" uid="uid://cmejilbhglbt" path="res://sprite/악플러/몸/악플러 몸 뒷 모습.png" id="back_body"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
 curl_down_pose_gear = ExtResource("gym_curl_down_pose_gear")
@@ -71,6 +73,9 @@ glasses_hand_pos = Vector2(17, -25)
 head_turn_textures = Array[Texture2D]([ExtResource("89_turn1"), ExtResource("88_turn2"), ExtResource("87_turn3"), ExtResource("86_front")])
 head_turn_anchors = Array[Vector3]([Vector3(711, 566, 962), Vector3(710, 578, 945), Vector3(701, 591, 977), Vector3(701, 597, 1009), Vector3(627, 619, 912)])
 head_turn_faces_left = Array[bool]([false, true, true, true, false])
+head_back_texture = ExtResource("back_head")
+head_back_anchor = Vector3(628, 643, 912)
+body_back_texture = ExtResource("back_body")
 action_head_turn_textures = Array[Texture2D]([ExtResource("83_rage_turn1"), ExtResource("82_rage_turn2"), ExtResource("81_rage_turn3"), ExtResource("80_rage_front")])
 action_head_turn_anchors = Array[Vector3]([Vector3(729, 577, 966), Vector3(721, 589, 972), Vector3(702, 603, 1013), Vector3(704, 616, 1015), Vector3(635, 640, 1001)])
 action_head_turn_faces_left = Array[bool]([false, true, true, true, false])

@@ -986,6 +986,9 @@ func _fire(fighter: Fighter, step: int) -> void:
 ## 자식으로 달린 **부가 장치**(예: 리코더 던지기)에게 이 타를 맡을지 물어본다.
 ## 하나라도 true를 돌려주면 몸 판정을 안 켜고 그쪽 결과를 기다린다
 func _offer_strike(fighter: Fighter, step: int) -> bool:
+	# 공중 큰 휘두르기는 **몸으로만** 친다 — 부가 장치(리코더 던지기·X자 베기)는 땅 평타 전용
+	if _air_now:
+		return false
 	for child in get_children():
 		if child.has_method("on_combo_strike") and child.on_combo_strike(fighter, step, hitbox):
 			return true
@@ -993,12 +996,16 @@ func _offer_strike(fighter: Fighter, step: int) -> bool:
 
 ## 자식으로 달린 부가 장치에게 **그 타가 시작됐다**고 알린다(예비동작 시작, 판정 켜지기 전)
 func _announce_swing(fighter: Fighter, step: int) -> void:
+	if _air_now:
+		return
 	for child in get_children():
 		if child.has_method("on_combo_swing"):
 			child.on_combo_swing(fighter, step)
 
 ## 자식으로 달린 부가 장치에게 **그 타가 맞았다**고 알린다. victim은 맞은 쪽
 func _announce_hit(victim: Node) -> void:
+	if _air_now:
+		return
 	for child in get_children():
 		if child.has_method("on_combo_hit"):
 			child.on_combo_hit(_fighter, _swing_step, victim)

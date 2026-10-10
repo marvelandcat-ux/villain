@@ -21,7 +21,7 @@
 [ext_resource type="Texture2D" uid="uid://bbrnqeur4vlpk" path="res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png" id="86_front"]
 [ext_resource type="Texture2D" uid="uid://cdxbp4f2yppij" path="res://sprite/주정뱅이/몸/주정뱅이 몸 측면 2.png" id="85_body_turn1"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 몸 측면 3.png" id="84_body_turn2"]
-[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이몸P2.png" id="60_p2body"]
+[ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/P2/주정뱅이몸P2.png" id="60_p2body"]
 [ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiCurlDownPose.tscn" id="gym_curl_down_pose"]
 [ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiCurlMidPose.tscn" id="gym_curl_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiCurlUpPose.tscn" id="gym_curl_up_pose"]
