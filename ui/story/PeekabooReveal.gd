@@ -59,6 +59,10 @@ const CANVAS := Vector2(1672.0, 941.0)
 		_lay_out()
 
 @export_group("꺄악 비명")
+## **입 효과를 쓸지.** 꺼 두면(기본) 입을 그린 그대로 둔다 — 벌리지도, 떨지도 않는다.
+## 2026-10-10 사용자 지시로 껐다. 아래 `scream_*`·`mouth_*` 값은 그대로 남겨 뒀으니
+## 다시 켜고 싶으면 이것만 체크하면 된다
+@export var mouth_effect: bool = false
 ## 입을 벌리기 시작하는 때(초)
 @export var scream_at: float = 1.2
 ## 입이 다 벌어지는 데 걸리는 시간(초)
@@ -168,6 +172,9 @@ func _shiver(now: float) -> void:
 
 ## 입을 **쫙 벌리고** 소리 지르는 동안 파르르 떤다. 한 번 벌리면 장면이 끝날 때까지 벌린 채다
 func _scream(now: float) -> void:
+	if not mouth_effect:
+		_mouth.scale = Vector2.ONE
+		return
 	var t: float = now - scream_at
 	if t < 0.0:
 		_mouth.scale = Vector2.ONE

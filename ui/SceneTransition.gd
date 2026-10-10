@@ -81,3 +81,26 @@ func go_to_scene_from_black(path: String, fade_time: float = 1.0) -> void:
 	await tween.finished
 	_black.queue_free()
 	_black = null
+
+## 화면을 **까맣게 덮은 뒤** 씬을 바꾸고, 새 씬이 자리잡으면 막을 치운다
+## (2026-10-10 사용자 — 스토리 전투를 이기면 화면이 까매졌다가 다음 장면으로 넘어간다).
+##
+## ⚠️ 위 `go_to_scene_from_black`과 **방향이 반대다**. 그쪽은 이미 검은 채로 와서 밝아지고,
+## 이쪽은 밝은 화면을 검게 덮고 넘어간다. 넘어간 뒤 **여기서 밝히지 않는 이유**는
+## 다음 장면(`StoryFadeScene`)이 스스로 검게 시작해 제 `fade_in_time`으로 밝아지기 때문이다 —
+## 여기서도 밝히면 두 겹이 따로 놀아 한 번 번쩍인다
+func go_to_scene_through_black(path: String, fade_time: float = 0.6) -> void:
+	if _wipe != null or _black != null:
+		return
+	_black = ColorRect.new()
+	_black.color = Color(0, 0, 0, 0)
+	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_black)
+	var tween := create_tween()
+	tween.tween_property(_black, "color:a", 1.0, maxf(fade_time, 0.05)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await tween.finished
+	get_tree().change_scene_to_file(path)
+	await get_tree().process_frame   # 새 씬이 트리에 자리잡을 틈을 한 프레임 준다
+	_black.queue_free()
+	_black = null

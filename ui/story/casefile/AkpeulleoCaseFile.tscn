@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Texture2D" uid="uid://qj3itcdbvh7p" path="res://sprite/storymode/경찰서/사건파일양식.png" id="1_form"]
-[ext_resource type="Texture2D" uid="uid://d4bkmrohs0bs7" path="res://sprite/메인메뉴/일러스트/악플러/악플러일러원본.png" id="2_photo"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/악플러/사건파일1번 (2).png" id="2_photo"]
 [ext_resource type="Shader" path="res://ui/story/casefile/SepiaPhoto.gdshader" id="3_sepia"]
 [ext_resource type="FontFile" uid="uid://4gi0ju3g52u3" path="res://fonts/NanumGothic-Regular.ttf" id="4_font"]
 [ext_resource type="Script" path="res://ui/story/casefile/CaseFileSheet.gd" id="5_sheet"]

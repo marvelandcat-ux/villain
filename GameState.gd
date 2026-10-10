@@ -167,6 +167,9 @@ var story_enemy_hp_scale: float = 1.0
 var story_enemy_damage_scale: float = 1.0
 ## 스토리 상대 AI의 솜씨. 1.0 = 평소 대전 AI 그대로, 0.0 = 아주 둔함(반응 느리고 거의 안 막는다)
 var story_ai_skill: float = 1.0
+## 켜면 스토리 상대가 **주인공 궁극기가 켜져 있는 동안 계속 달아난다**(2026-10-10 사용자 —
+## 경찰이 경봉을 뽑으면 악플러가 도망간다). 장면의 `battle_enemy_flees_ultimate`가 넣어 준다
+var story_enemy_flees_ultimate: bool = false
 ## 스토리 전투에서 주인공 2번 스킬을 갈아 끼울 스킬 씬(비면 캐릭터 씬 그대로) — `StoryFadeScene.battle_p1_skill2`가 넣는다
 var story_p1_skill2: String = ""
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)

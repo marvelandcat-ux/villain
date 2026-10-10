@@ -11,8 +11,9 @@ extends CanvasLayer
 ## - **아직 한 번도 클리어하지 못한 에피소드는 이름 대신 자물쇠(`ui/LockIcon.gd`)가 걸린다**(사용자 지정).
 ##   클리어 기록은 `GameState.story_cleared`(user://settings.cfg에 저장)이고, 스토리 마지막 장면
 ##   (`StoryFadeScene.clears_story`)에 닿으면 기록된다
-## - **목록은 보여주기만 한다** — 여기서 다른 에피소드를 고르면 하던 대전이 날아가기 때문이다.
-##   골라서 넘어가게 하려면 각 칸을 Control 대신 Button으로 만들고 `GameState.start_story(id)`를 부르면 된다
+## - **한 번 깬 에피소드는 눌러서 다시 할 수 있다**(2026-10-10 사용자 요청). 자물쇠가 걸린 칸은 못 누른다.
+##   잘못 누를 수 있으니 바로 넘어가지 않고 `ConfirmPopup`으로 한 번 묻는다 —
+##   누르는 순간 하던 장면이 날아가기 때문에 되돌릴 길이 없다
 ## - **스토리 모드가 아니면 오른쪽 전체가 숨는다**(`GameState.game_mode`) — 일반 대전에선 왼쪽 메뉴만 나온다
 ## - **대전 중에는 오른쪽 에피소드 목록과 왼쪽 "일시정지" 제목을 감춘다**
 ##   (`show_story_list` / `show_title` = false, 2026-09-15 사용자 요청) — 싸우다 멈춘 사람에게
@@ -26,6 +27,10 @@ extends CanvasLayer
 const SLANT_TEXTURE := preload("res://sprite/UI/메뉴사선_임시.png")
 const LOCK_ICON := preload("res://ui/LockIcon.gd")
 const SETTINGS_SCENE := "res://ui/Settings.tscn"
+## 깬 에피소드를 다시 할 때 "정말…?"을 묻는 창 (메인 메뉴가 쓰는 것과 같은 것)
+const CONFIRM_SCENE := "res://ui/ConfirmPopup.tscn"
+## 흰 테두리 셰이더 — **왼쪽 메뉴 항목이 쓰는 그것과 같은 것**이라 선 두께·느낌이 저절로 맞는다
+const OUTLINE_SHADER := preload("res://ui/outline.gdshader")
 
 ## 왼쪽 큰 "일시정지" 제목을 보여줄지. **대전 중에는 꺼서 메뉴만 남긴다**
 @export var show_title: bool = true
@@ -59,6 +64,10 @@ const SETTINGS_SCENE := "res://ui/Settings.tscn"
 @export var story_color_locked: Color = Color(0.09, 0.07, 0.13, 0.5)
 ## 칸 글자 크기
 @export var story_font_size: int = 24
+## 깬 칸에 커서를 올렸을 때 **얼마나 커지는지**(1.06 = 6% 크게)와 테두리가 켜지는 속도.
+## 커지는 건 안쪽(그림·글자)뿐이고 **클릭 판정은 제자리**다 — 판정까지 커지면 경계에서 덜덜 떤다
+@export var story_hover_scale: float = 1.06
+@export var story_hover_speed: float = 14.0
 
 @export_group("등장 연출")
 ## 항목 하나가 제자리로 들어오는 시간(초)
@@ -86,6 +95,14 @@ var _mouse_mode: bool = false
 ## 위에 얹혀 열려 있는 설정 화면 (없으면 null).
 ## **Control이 아니라 Settings로 타입을 잡아야 한다** — Control에는 `closed` 시그널이 없어서 파싱 에러가 난다
 var _settings: Settings = null
+## 누를 수 있는(= 이미 깬) 스토리 칸들. 커서가 올라오면 살짝 커지고 흰 테두리가 켜진다
+var _story_rows: Array[Button] = []
+## 지금 커서가 올라가 있는 스토리 칸 (없으면 null)
+var _story_hovered: Button = null
+## 위에 얹혀 열려 있는 "정말 다시 하시겠습니까?" 창 (없으면 null)
+var _confirm: Node = null
+## 그 창에서 확인을 누르면 시작할 에피소드 id
+var _replay_id: String = ""
 
 ## 등장 연출: 차례로 들어올 것들. {node, rest_x(제자리 x), order(몇 번째로 들어올지), from(어느 쪽에서)}
 var _intro_items: Array[Dictionary] = []
@@ -231,6 +248,30 @@ func _process(delta: float) -> void:
 		if text:
 			var target: Color = menu_text_color_focus if focused else menu_text_color
 			text.add_theme_color_override("font_color", text.get_theme_color("font_color").lerp(target, t))
+	_animate_story_rows(delta)
+
+## 깬 스토리 칸 — 커서가 올라간 것만 **살짝 커지고 흰 테두리가 켜진다**(2026-10-10 사용자:
+## "다른 버튼 누르듯이"). 왼쪽 메뉴와 같은 테두리 셰이더를 쓰므로 선 느낌이 같다
+func _animate_story_rows(delta: float) -> void:
+	if _story_rows.is_empty():
+		return
+	var t: float = clampf(delta * story_hover_speed, 0.0, 1.0)
+	for row in _story_rows:
+		if not is_instance_valid(row):
+			continue
+		var inner: Control = row.get_node_or_null("Inner")
+		if inner == null:
+			continue
+		# 확인 창이 떠 있는 동안은 전부 가라앉혀 둔다 — 그 뒤에서 혼자 빛나면 눈에 거슬린다
+		var on: bool = _confirm == null and row == _story_hovered
+		var want: float = story_hover_scale if on else 1.0
+		inner.scale = inner.scale.lerp(Vector2(want, want), t)
+		var shape: TextureRect = inner.get_node_or_null("Shape")
+		if shape == null or shape.material == null:
+			continue
+		# 얼마나 커졌는지를 그대로 선 진하기로 쓴다 — 왼쪽 메뉴가 슬라이드 거리를 쓰는 것과 같은 방식
+		var grown: float = clampf((inner.scale.x - 1.0) / maxf(story_hover_scale - 1.0, 0.001), 0.0, 1.0)
+		shape.material.set_shader_parameter("line_alpha", grown)
 
 ## 오른쪽 전체 — 진행 중인 스토리 이름과 목록. 스토리 모드가 아니면 통째로 숨긴다
 func _build_story_panel() -> void:
@@ -246,6 +287,7 @@ func _build_story_panel() -> void:
 ## `GameState.STORY_EPISODES` 순서 그대로 칸을 만든다.
 ## **에피소드를 추가·삭제해도 여기는 안 고쳐도 된다** — 그 목록 한 줄만 고치면 칸이 따라 생긴다
 func _build_story_list() -> void:
+	_story_rows.clear()
 	for child in _story_list.get_children():
 		child.queue_free()
 	var y: float = 0.0
@@ -254,13 +296,38 @@ func _build_story_list() -> void:
 		var is_current: bool = id == GameState.current_story_id
 		# 진행 중인 에피소드는 아직 못 깼어도 자물쇠를 안 건다 — 이름이 이미 위 상자에 떠 있어서 가릴 이유가 없다
 		var is_locked: bool = not is_current and not GameState.is_story_cleared(id)
-		var row := Control.new()
+		# **깬 에피소드만 누를 수 있다** — 자물쇠가 걸린 칸은 예전처럼 보여주기만 하는 Control이다.
+		# 누를 수 있는 칸은 Button이라야 마우스·키보드가 모두 먹는다
+		var can_replay: bool = not is_locked and GameState.is_story_cleared(id) \
+			and GameState.story_episode(id).get("scene", "") != ""
+		var row: Control
+		if can_replay:
+			var button := Button.new()
+			button.flat = true
+			button.focus_mode = Control.FOCUS_NONE
+			button.pressed.connect(_on_story_row_pressed.bind(id, episode["name"]))
+			# 왼쪽 메뉴와 같은 방식으로 커서를 받는다 — 좌표를 직접 재면 CanvasLayer 변환에
+			# 걸려서 안 맞는다(2026-10-10 실측)
+			button.mouse_entered.connect(_on_story_row_hovered.bind(button))
+			button.mouse_exited.connect(_on_story_row_unhovered.bind(button))
+			row = button
+		else:
+			row = Control.new()
+			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.position = Vector2(0.0, y)
 		row.size = story_row_size
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_story_list.add_child(row)
 
+		# **커지는 건 이 안쪽뿐**이다. 가운데를 축으로 삼아야 양옆이 고르게 부푼다
+		var inner := Control.new()
+		inner.name = "Inner"
+		inner.size = story_row_size
+		inner.pivot_offset = story_row_size * 0.5
+		inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(inner)
+
 		var shape := TextureRect.new()
+		shape.name = "Shape"   # _animate_story_rows가 이 이름으로 찾는다
 		shape.texture = SLANT_TEXTURE
 		# 사선을 **왼쪽 끝**으로 보낸다 — 왼쪽 메뉴와 마주 보는 모양(사용자 러프)
 		shape.flip_h = true
@@ -270,14 +337,23 @@ func _build_story_list() -> void:
 		shape.size = story_row_size
 		# 흰 그림에 색을 입히는 방식이라 색은 전부 modulate로 정한다(메인 메뉴와 같다)
 		shape.modulate = story_color_current if is_current else (story_color_locked if is_locked else menu_color)
-		row.add_child(shape)
+		if can_replay:
+			# 누를 수 있는 칸에만 흰 테두리를 단다 — 꺼 둔 채로 붙이고 커서가 올라오면 켠다.
+			# **칸마다 복제**해야 한 칸을 비출 때 나머지가 같이 빛나지 않는다
+			var outline := ShaderMaterial.new()
+			outline.shader = OUTLINE_SHADER
+			outline.set_shader_parameter("line_color", menu_outline_color)
+			outline.set_shader_parameter("line_width", menu_outline_width)
+			outline.set_shader_parameter("line_alpha", 0.0)
+			shape.material = outline
+		inner.add_child(shape)
 
 		if is_locked:
 			# **이름 대신 자물쇠** — 클리어 전에는 어떤 이야기인지 안 보여준다(사용자 지정)
 			var lock: Control = LOCK_ICON.new()
 			lock.size = Vector2(story_row_size.y * 0.5, story_row_size.y * 0.5)
 			lock.position = Vector2(story_text_left, (story_row_size.y - lock.size.y) * 0.5)
-			row.add_child(lock)
+			inner.add_child(lock)
 		else:
 			var text := Label.new()
 			text.text = episode["name"]
@@ -287,10 +363,68 @@ func _build_story_list() -> void:
 			text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			text.add_theme_font_size_override("font_size", story_font_size)
 			text.add_theme_color_override("font_color", menu_text_color_focus if is_current else menu_text_color)
-			row.add_child(text)
+			inner.add_child(text)
+		if can_replay:
+			_story_rows.append(row)
 		y += story_row_size.y + story_row_gap
 
+func _on_story_row_hovered(row: Button) -> void:
+	_story_hovered = row
+
+func _on_story_row_unhovered(row: Button) -> void:
+	if _story_hovered == row:
+		_story_hovered = null
+
+## 깬 에피소드 칸을 눌렀다 — **바로 넘어가지 않고 한 번 묻는다**(잘못 눌렀을 수 있다).
+## 확인을 누르면 하던 장면은 버리고 그 에피소드를 처음부터 시작한다
+func _on_story_row_pressed(id: String, name: String) -> void:
+	if _confirm != null:
+		return   # 이미 묻는 중
+	var scene: PackedScene = load(CONFIRM_SCENE)
+	if scene == null:
+		push_warning("PauseMenu: 확인 창을 못 찾았다 — %s" % CONFIRM_SCENE)
+		return
+	_replay_id = id
+	_confirm = scene.instantiate()
+	# 게임이 멈춰 있어도(`paused = true`) 열리고 눌려야 한다 — 설정 창과 같은 이유
+	_confirm.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_confirm)
+	_confirm.confirmed.connect(_on_replay_confirmed)
+	_confirm.cancelled.connect(_on_replay_cancelled)
+	_confirm.open("정말 %s%s 다시 하시겠습니까?" % [name, _object_particle(name)])
+
+## 이름 끝 글자의 **받침 유무**로 "을/를"을 고른다 — "첫 임무를", "악플러를"처럼 읽히게
+func _object_particle(text: String) -> String:
+	if text.is_empty():
+		return "을(를)"
+	var code: int = text.unicode_at(text.length() - 1)
+	if code < 0xAC00 or code > 0xD7A3:
+		return "을(를)"   # 한글이 아니면(숫자·영문) 고를 수가 없다
+	return "을" if (code - 0xAC00) % 28 != 0 else "를"
+
+func _on_replay_confirmed() -> void:
+	var id: String = _replay_id
+	_clear_confirm()
+	get_tree().paused = false
+	if not GameState.start_story(id):
+		push_warning("PauseMenu: 에피소드 장면을 못 찾았다 — %s" % id)
+		return
+	queue_free()
+
+func _on_replay_cancelled() -> void:
+	_clear_confirm()
+
+## 창을 치운다 — `ConfirmPopup`은 스스로 숨기만 하고 지워지지 않아서,
+## 안 치우면 취소할 때마다 숨은 창이 하나씩 쌓인다
+func _clear_confirm() -> void:
+	_replay_id = ""
+	if is_instance_valid(_confirm):
+		_confirm.queue_free()
+	_confirm = null
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _confirm != null:
+		return   # 확인 창이 열려 있으면 ESC는 그쪽이 받는다
 	if _settings != null:
 		return   # 설정이 열려 있으면 ESC는 설정이 받는다 (여기서도 받으면 둘이 한꺼번에 닫힌다)
 	if event.is_action_pressed("ui_cancel"):

@@ -1,0 +1,109 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/로고바꾼경찰서.png" id="2_room"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰초기일러 (2).png" id="3_hero"]
+[ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4_box"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/악플러/불안악플러.png" id="5_guy"]
+[ext_resource type="PackedScene" path="res://ui/story/casefile/AkpeulleoCaseFile.tscn" id="6_file"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/사건해결도장.png" id="7_stamp"]
+
+[node name="StoryScene22" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.55
+clears_story = true
+dialogue = NodePath("DialogueBox")
+reveal = Array[NodePath]([NodePath("DialogueBox")])
+hide_on_start = Array[NodePath]([NodePath("Room/Hero"), NodePath("Room/Villain"), NodePath("CaseFile"), NodePath("CaseFile/Paper/Sheet/Stamp")])
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Room" type="Node2D" parent="."]
+
+[node name="Bg" type="Sprite2D" parent="Room"]
+scale = Vector2(0.883978, 0.883978)
+texture = ExtResource("2_room")
+centered = false
+
+[node name="Hero" type="Sprite2D" parent="Room"]
+position = Vector2(354.4, 33)
+scale = Vector2(0.613, 0.613)
+texture = ExtResource("3_hero")
+centered = false
+
+[node name="Villain" type="Sprite2D" parent="Room"]
+position = Vector2(417.4, 123.6)
+scale = Vector2(0.4075, 0.4075)
+texture = ExtResource("5_guy")
+centered = false
+
+[node name="CaseFile" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="CaseFile"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Paper" type="Control" parent="CaseFile"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sheet" parent="CaseFile/Paper" instance=ExtResource("6_file")]
+layout_mode = 0
+offset_top = 30.5
+offset_right = 1748.0
+offset_bottom = 930.5
+scale = Vector2(0.73226, 0.73226)
+
+[node name="Stamp" type="Sprite2D" parent="CaseFile/Paper/Sheet"]
+position = Vector2(1446.2, 638.4)
+rotation = -0.314159
+scale = Vector2(0.3004, 0.3004)
+texture = ExtResource("7_stamp")
+
+[node name="DialogueBox" parent="." instance=ExtResource("4_box")]
+layout_mode = 1
+speaker = "주인공"
+lines = PackedStringArray("@enter Room/Hero 0.35", "당신 때문에 인터넷에서 상처를 받았다는 분들이 아주 많습니다.", "@hide Room/Hero 0.25", "@enter Room/Villain 0.35", "악플러|죄송합니다....", "@hide Room/Villain 0.25", "@enter Room/Hero 0.35", "주인공|사과 해서 끝날 문제가 아닙니다.", "주인공|형법 제311조 모욕죄에 따라 1년 이하의 징역이나 금고, 또는 200만 원 이하의 벌금에 처해질 수 있습니다.", "주인공|게다가 피해자가 한둘이 아니죠. 건건이 따로 쌓입니다.", "@hide Room/Hero 0.25", "@enter Room/Villain 0.35", "악플러|알겠습니다....", "@hide Room/Villain 0.25", "@show CaseFile 0.4", "@close", "@waitkey", "@stamp CaseFile/Paper/Sheet/Stamp", "@pause 0.8")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

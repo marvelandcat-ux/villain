@@ -26,7 +26,10 @@ battle_p1 = "res://characters/police/Police.tscn"
 battle_p2 = "res://characters/akpeulleo/Akpeulleo.tscn"
 battle_rounds = 2
 battle_time_limit = 120
+battle_enemy_hp_scale = 2.0
+battle_enemy_damage_scale = 0.5
 battle_ai_skill = 0.6
+battle_enemy_flees_ultimate = true
 battle_p1_skill2 = "res://skills/FlashlightSkill.tscn"
 battle_win_scene = "res://ui/story/StoryScene18.tscn"
 

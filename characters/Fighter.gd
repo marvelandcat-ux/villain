@@ -498,7 +498,32 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		if _finisher_window > 0.0:
 			_rebound_finisher(knockback.x, vy_before_hit)
 	if current_hp <= 0:
+		# **쓰러지면 걸려 있던 디버프를 전부 턴다**(2026-10-10 사용자: "죽었는데 디버프가 안 사라짐").
+		# 쓰레기 모으기 맵은 쓰러져도 부활하는데, 그냥 두면 둔화·공포·잠금이 **다음 목숨까지 따라왔다**
+		clear_debuffs()
 		died.emit()
+
+## **걸려 있는 디버프를 전부 걷는다.** 쓰러질 때와, 밖에서 상태를 되돌릴 때 쓴다.
+##
+## ⚠️ **디버프만 턴다 — 버프는 그대로 둔다.** 배수는 디버프면 1보다 작고 버프면 1보다 크므로
+## 1 미만인 것만 지운다. 안 그러면 지하철 아저씨 궁처럼 **자기한테 건 강화**까지 같이 날아간다.
+## 도트 피해(`apply_dot`)는 이미 예약된 타이머라 여기서 못 멈춘다
+func clear_debuffs() -> void:
+	is_feared = false
+	_blocked_attack_left = 0.0
+	_ultimate_seals.clear()
+	for property in _modifiers.keys():
+		var kept: Dictionary = {}
+		for id in _modifiers[property]:
+			if _modifiers[property][id] >= 1.0:
+				kept[id] = _modifiers[property][id]
+		_modifiers[property] = kept
+		_recompute_modifier(property)
+	# 디버프가 입힌 색과 머리 위 아이콘도 같이 치운다 — 안 그러면 몸은 멀쩡한데 파랗게 남는다
+	for id in ["fear", "jump_debuff", "slow"]:
+		clear_tint(id)
+	for kind in _status_vfx.keys():
+		hide_status_vfx(kind)
 
 ## 지금까지 연속으로 맞은 콤보 수 (데미지 팝업이 "N HIT" 표시에 쓴다)
 func get_combo_count() -> int:

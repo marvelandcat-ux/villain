@@ -19,6 +19,9 @@ extends Node
 ## 쓸 스킬이 없을 때(원거리 캐릭터만) 뒤로 빠지기 시작할 확률·시간
 @export var retreat_start_chance: float = 0.01
 @export var retreat_duration: float = 0.5
+## **상대가 궁극기를 켜 둔 동안 내내 달아난다**(2026-10-10 사용자 — 경찰이 경봉을 뽑으면 악플러가 도망간다).
+## 꺼 두면(기본) 평소대로 맞붙는다. 스토리에서는 장면의 `battle_enemy_flees_ultimate`가 켜 준다
+@export var flees_from_ultimate: bool = false
 @export var target: Fighter
 
 @export_group("반응")
@@ -846,11 +849,24 @@ func _target_can_attack() -> bool:
 	var ba: Skill = target.basic_attack
 	return ba != null and ba.can_use() and not target.is_basic_attack_locked() and not target.is_busy()
 
+## 상대 궁이 지금 돌고 있는지. `Skill.active_ratio()`는 **안 돌 때 -1**을 주기로 돼 있어서
+## (경찰 경봉·지하철 쌍악기·층간소음 영역이 모두 이 규칙을 지킨다) 궁 종류를 안 가리고 통한다
+func _target_ultimate_on() -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	var ult: Skill = target.skill_ultimate
+	return ult != null and ult.active_ratio() > 0.0
+
 func _decide_movement(delta: float) -> void:
 	var dx: float = target.global_position.x - fighter.global_position.x
 	var dist: float = absf(dx)
 	var dir: float = signf(dx) if not is_zero_approx(dx) else fighter.facing
 	var dy: float = absf(target.global_position.y - fighter.global_position.y)
+
+	# 상대 궁이 켜져 있는 동안은 **계속** 도망 시계를 다시 채운다 — 한 번 채우고 마는 게 아니라
+	# 궁이 꺼질 때까지 등을 돌리고 있어야 "쫓기는" 그림이 된다
+	if flees_from_ultimate and _target_ultimate_on():
+		_retreat_timer = maxf(_retreat_timer, 0.2)
 
 	if _retreat_timer > 0.0:
 		_retreat_timer -= delta

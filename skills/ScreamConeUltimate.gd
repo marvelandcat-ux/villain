@@ -46,6 +46,11 @@ func _on_cone_hit(area: Area2D, screamer: Fighter) -> void:
 	var target := area.fighter as Fighter
 	if target == null:
 		return
-	target.apply_temp_multiplier("jump_multiplier", jump_multiplier, debuff_duration, true)   # 궁극기는 방어를 뚫는다(피해만 막힌다)
+	# **막으면 디버프도 안 걸린다**(2026-10-10 사용자 지시). 다른 궁은 "막아도 한 대는 남는다"고
+	# 방어를 뚫지만, 이 궁만은 예외로 뺐다 — 부채꼴이 넓고 8초짜리라 막아도 걸리면 손쓸 데가 없었다.
+	# `apply_temp_multiplier`가 막히면 false를 안 돌려주므로 **여기서 직접 물어본 뒤** 색도 같이 건너뛴다
+	if target.blocks_debuff(false):
+		return
+	target.apply_temp_multiplier("jump_multiplier", jump_multiplier, debuff_duration)
 	# 다리 풀린 느낌으로 보라색으로 물듦
 	target.set_tint("jump_debuff", Color(0.75, 0.6, 0.85), debuff_duration)
