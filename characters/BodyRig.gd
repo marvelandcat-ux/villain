@@ -640,6 +640,11 @@ var held_item_l_thrown: bool = false
 @export var action_head_turn_textures: Array[Texture2D] = []
 @export var action_head_turn_anchors: Array[Vector3] = []
 @export var action_head_turn_faces_left: Array[bool] = []
+## **술 머금은 얼굴**(drunk_head_texture)일 때 대신 쓸 머리 돌리기 세트 — 액션 세트와 같은 모양이고 **0번은 drunk_head_texture**다(2026-10-10 주정뱅이).
+## 비워 두면 술 머금은 동안엔 머리를 안 돌린다(예전과 같음). 액션 표정이 켜져 있으면 액션 세트가 먼저다
+@export var drunk_head_turn_textures: Array[Texture2D] = []
+@export var drunk_head_turn_anchors: Array[Vector3] = []
+@export var drunk_head_turn_faces_left: Array[bool] = []
 ## 머리가 도는 **도중에만** 몸통에 끼울 그림들 — 평소와 머리가 정면일 때는 Body 원래 그림(정면 몸통) 그대로고,
 ## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
 ## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
@@ -684,8 +689,8 @@ var held_item_l_thrown: bool = false
 @export var weapon_smear: bool = false
 ## 스미어 색 줄 수(손잡이 → 끝) — 많을수록 무기 무늬를 잘게 따른다
 @export var weapon_smear_bands: int = 6
-## 스미어가 손잡이에서 얼마나 떨어진 곳부터 칠해지는지(무기 길이 비율) — 손을 덮지 않게
-@export_range(0.0, 0.8, 0.05) var weapon_smear_inner: float = 0.12
+## 스미어가 무기 반대쪽 끝에서 얼마나 떨어진 곳부터 칠해지는지(무기 길이 비율). 0 = 무기 전체(2026-10-10 사용자 "병의 모든 부분에서")
+@export_range(0.0, 0.8, 0.05) var weapon_smear_inner: float = 0.0
 
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
@@ -734,6 +739,8 @@ var held_item_l_thrown: bool = false
 @export var head_back_texture: Texture2D
 ## 뒤통수 그림의 머리 공 (중심 x, 중심 y, 지름) — head_turn_anchors와 같은 방법으로 잰 그림 픽셀
 @export var head_back_anchor: Vector3 = Vector3.ZERO
+## 몸통 뒷모습 — 뒤통수(head_back_texture)를 보일 때 같이 끼운다. 캔버스가 달라도 불투명 높이·바닥 가운데를 원래 몸통에 맞춘다(2026-10-10 주정뱅이)
+@export var body_back_texture: Texture2D
 ## 뒤통수를 보여주는 구간 반폭(한 바퀴 대비 비율) — spin_back_flip 앞뒤로 이만큼. **spin_back_flip + 이 값이 spin_strike보다 작아야** 때릴 때 얼굴(옆모습)이 보인다
 @export_range(0.01, 0.2, 0.01) var spin_back_show: float = 0.07
 
@@ -2181,11 +2188,72 @@ func _apply_spin_turn() -> void:
 	scale.x = _spin_base_x * turn
 	_spin_applied = true
 
+## 뒤집지 않고 돌기 — 머리(·몸통) 측면 그림을 옆 → 정면 → 옆으로 넘겼다 되돌린다(p 0~1). 몸 좌우는 그대로다.
+## 뒷모습 그림이 없어 진짜 한 바퀴는 못 그린다 — 대신 카메라 쪽으로 홱 돌았다 돌아오는 게 "도는" 것으로 읽힌다
+## 뒤집지 않고 도는 동안 팔다리를 몸 가운데로 모은다 — 방향 전환(_pose_face_turn_limbs)과 같은 방식(위치만 좁힌다).
+## 정면·뒷모습일수록 많이 모이고 옆모습이면 그대로다. 무기 든 손은 air_swing_weapon_gather만큼만 —
+## 크게 휘두르는 순간이 정면·뒷모습 구간이라 다 모으면 휘두르기가 작아 보인다(2026-10-10 사용자: "이동할 때 좌우 바뀌는 것처럼")
+func _gather_turn_limbs(p: float) -> void:
+	var front: float
+	if head_back_texture != null and head_back_anchor.z > 0.0:
+		if p < 0.45:
+			front = p / 0.45
+		elif p < 0.8:
+			front = 1.0
+		else:
+			front = 1.0 - (p - 0.8) / 0.2
+	else:
+		front = 1.0 - absf(2.0 * p - 1.0)
+	front = sin(clampf(front, 0.0, 1.0) * PI * 0.5)
+	var squeeze: float = 1.0 - face_turn_limb_gather * front
+	for part in [_hand_l, _foot_l, _foot_r]:
+		if part:
+			part.position.x *= squeeze
+	var weapon_squeeze: float = 1.0 - face_turn_limb_gather * air_swing_weapon_gather * front
+	for part in [_hand_r, _hand_r_hold]:
+		if part:
+			part.position.x *= weapon_squeeze
+
+func _apply_turn_no_flip(p: float) -> void:
+	var front: int = _turn_textures().size()
+	if front <= 0:
+		return
+	p = clampf(p, 0.0, 1.0)
+	_gather_turn_limbs(p)
+	# **뒷모습 그림이 있으면 진짜 한 바퀴**: 옆 → 비스듬히 → 정면(앞 45%) → 뒷모습(가운데 35%) → 옆(마지막 20%).
+	# 정면에서 뒷모습으로 바로 넘어간다 — 반대쪽 옆모습 그림이 없어서(뒤집지 않기로 했다, 2026-10-10)
+	if head_back_texture != null and head_back_anchor.z > 0.0:
+		if p < 0.45:
+			var step_f: int = clampi(roundi(p / 0.45 * front), 0, front)
+			if step_f == 0:
+				_clear_head_frame()
+			else:
+				_set_head_frame(step_f, 1.0)
+		elif p < 0.8:
+			_set_head_image(head_back_texture, head_back_anchor, false, 1.0)
+			if body_back_texture != null:
+				_set_body_image(body_back_texture)
+			else:
+				_set_body_frame(0, 1.0)
+		else:
+			_clear_head_frame()
+		return
+	var tri: float = 1.0 - absf(2.0 * p - 1.0)
+	var step: int = clampi(roundi(tri * front), 0, front)
+	if step == 0:
+		_clear_head_frame()
+	else:
+		_set_head_frame(step, 1.0)
+
 ## 머리 그림으로 한 바퀴 돌기(p = 한 바퀴 진행도 0~1).
 ## 0 ~ 0.5: 머리가 측면1 -> ... -> 정면 -> ... -> 옆모습(방향 전환과 같은 길), 0.25(머리 정면)에 몸이 뒤집힌다
 ## 0.5 ~ : 머리는 옆모습 그대로(뒤통수 그림이 없다), spin_back_flip에 몸이 다시 앞으로 뒤집힌다
 ## 몸 뒤집기는 가로 부호만 바꾸고 다음 프레임 첫머리에서 되돌린다(얇게 누르던 예전 방식과 같은 장치)
 func _apply_spin_head_turn(p: float) -> void:
+	# 공중 큰 휘두르기는 몸을 안 뒤집고 측면 그림만 넘긴다(air_swing_spin_flip이 꺼져 있으면)
+	if _attack_variant == AIR_SWING_VARIANT and not air_swing_spin_flip:
+		_apply_turn_no_flip(p)
+		return
 	var back_flip: float = clampf(spin_back_flip, 0.5, 0.99)
 	var mirrored: bool = p >= 0.25 and p < back_flip
 	if p < 0.5:
@@ -2333,6 +2401,11 @@ const AIR_SWING_VARIANT := SLASH_VARIANT_BASE + 1000
 @export var air_swing_lean_deg: float = -14.0
 ## 휘두르는 동안 몸이 한 바퀴 도는지(회전 타격 `spin_end`·`spin_back_flip`을 그대로 쓴다)
 @export var air_swing_spin: bool = true
+## 돌 때 몸을 좌우로 **뒤집을지**. 끄면(기본) 뒤집지 않고 머리·몸통 측면 그림만 넘겨 "옆 → 정면 → 옆"으로 카메라 쪽을 한 번 보고 돌아온다
+## (2026-10-10 사용자: "뒤집지 말고 측면 사진으로 자연스럽게"). 뒷모습 그림이 오면 진짜 한 바퀴로 바꿀 자리
+@export var air_swing_spin_flip: bool = false
+## 돌며 팔다리를 모을 때 **무기 든 손**은 이 비율만큼만 모은다(0 = 안 모음, 1 = 다른 팔다리와 같이). 휘두르기가 작아 보이지 않게
+@export_range(0.0, 1.0, 0.05) var air_swing_weapon_gather: float = 0.3
 ## 반대 손(왼손)이 올려칠 때 가는 자리(제자리 기준, +x = 앞)와 각도(도) — 감을 땐 이 반대쪽으로 반쯤 나간다
 @export var air_swing_off_hand: Vector2 = Vector2(-14, 14)
 @export var air_swing_off_hand_deg: float = 40.0
@@ -2708,6 +2781,10 @@ func _pick_swing_trail_source() -> void:
 
 ## 무기 그림에서 **보이는 영역**의 네 모서리 중 손잡이(HandRHold 원점)에서 가장 먼 곳 — 무기 끝으로 쓴다(그림 로컬 좌표)
 func _far_corner_from_grip(item: Sprite2D) -> Vector2:
+	return _far_corner_from(item, item.transform.affine_inverse() * Vector2.ZERO)
+
+## 무기 그림 보이는 영역의 네 모서리 중 from(그림 로컬 좌표)에서 가장 먼 곳
+func _far_corner_from(item: Sprite2D, from: Vector2) -> Vector2:
 	var rect: Rect2 = item.get_rect()
 	if not item.region_enabled:
 		var opaque: Rect2 = _opaque_rect_of(item.texture)
@@ -2715,10 +2792,9 @@ func _far_corner_from_grip(item: Sprite2D) -> Vector2:
 		var x: float = tex_size.x - opaque.end.x if item.flip_h else opaque.position.x
 		var y: float = tex_size.y - opaque.end.y if item.flip_v else opaque.position.y
 		rect = Rect2(rect.position + Vector2(x, y), opaque.size)
-	var grip: Vector2 = item.transform.affine_inverse() * Vector2.ZERO
 	var best := rect.position
 	for c in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
-		if c.distance_squared_to(grip) > best.distance_squared_to(grip):
+		if c.distance_squared_to(from) > best.distance_squared_to(from):
 			best = c
 	return best
 
@@ -2748,10 +2824,11 @@ func _update_swing_trail() -> void:
 		_trail_is_smear = weapon_smear and _hand_r_hold != null and _trail_src.get_parent() == _hand_r_hold
 		if _trail_is_smear:
 			var item: Sprite2D = _trail_src
-			var grip: Vector2 = item.transform.affine_inverse() * Vector2.ZERO
-			_trail_inner = grip.lerp(_trail_tip, weapon_smear_inner)
+			# 띠는 **무기 반대쪽 끝(끝점에서 가장 먼 모서리) ~ 끝점** 전체에서 나온다 — 병의 모든 부분이 지나간 자리(2026-10-10 사용자)
+			var base: Vector2 = _far_corner_from(item, _trail_tip)
+			_trail_inner = base.lerp(_trail_tip, weapon_smear_inner)
 			trail = WEAPON_SMEAR_SCRIPT.new()
-			var colors: Array = _weapon_smear_colors(item, grip, _trail_tip)
+			var colors: Array = _weapon_smear_colors(item, base, _trail_tip)
 			trail.bands = colors[0]
 			trail.outline_color = colors[1]
 		else:
@@ -4561,22 +4638,41 @@ func _has_action_turn_set() -> bool:
 func _use_action_turn_set() -> bool:
 	return _action_face_on and _has_action_turn_set()
 
+## 술 머금은 얼굴 전용 머리 돌리기 세트가 다 채워져 있는지
+func _has_drunk_turn_set() -> bool:
+	var count: int = drunk_head_turn_textures.size()
+	return drunk_head_texture != null and count >= 1 and drunk_head_turn_anchors.size() >= count + 1 and drunk_head_turn_faces_left.size() >= count + 1
+
+## 지금 술 머금은 세트를 쓸 때인지 — 술 머금은 얼굴이고, 액션 세트가 안 쓰이고, 세트가 있으면
+func _use_drunk_turn_set() -> bool:
+	return _drunk_head_on and not _use_action_turn_set() and _has_drunk_turn_set()
+
 func _turn_textures() -> Array[Texture2D]:
-	return action_head_turn_textures if _use_action_turn_set() else head_turn_textures
+	if _use_action_turn_set():
+		return action_head_turn_textures
+	return drunk_head_turn_textures if _use_drunk_turn_set() else head_turn_textures
 
 func _turn_anchors() -> Array[Vector3]:
-	return action_head_turn_anchors if _use_action_turn_set() else head_turn_anchors
+	if _use_action_turn_set():
+		return action_head_turn_anchors
+	return drunk_head_turn_anchors if _use_drunk_turn_set() else head_turn_anchors
 
 func _turn_faces_left() -> Array[bool]:
-	return action_head_turn_faces_left if _use_action_turn_set() else head_turn_faces_left
+	if _use_action_turn_set():
+		return action_head_turn_faces_left
+	return drunk_head_turn_faces_left if _use_drunk_turn_set() else head_turn_faces_left
 
 ## 돌기 전 옆모습(0번) 그림과 그 배율 — 액션 표정 세트면 액션 표정 그림
 func _turn_rest_texture() -> Texture2D:
-	return action_head_texture if _use_action_turn_set() else _head_rest_texture
+	if _use_action_turn_set():
+		return action_head_texture
+	return drunk_head_texture if _use_drunk_turn_set() else _head_rest_texture
 
 func _turn_rest_scale() -> Vector2:
 	if _use_action_turn_set() and action_head_scale != Vector2.ZERO:
 		return action_head_scale
+	if _use_drunk_turn_set() and drunk_head_scale != Vector2.ZERO:
+		return drunk_head_scale
 	return _head_rest_scale
 
 ## 평소 얼굴이거나 머리 돌리기용 그림(측면·정면·뒤통수)인지 — 이 밖의 그림이면 다른 표정이 들어온 것이다.
@@ -4585,6 +4681,8 @@ func _is_turn_texture(tex: Texture2D) -> bool:
 	if tex == null:
 		return false
 	if tex == _head_rest_texture or head_turn_textures.has(tex) or tex == head_back_texture:
+		return true
+	if _has_drunk_turn_set() and (tex == drunk_head_texture or drunk_head_turn_textures.has(tex)):
 		return true
 	return _has_action_turn_set() and (tex == action_head_texture or action_head_turn_textures.has(tex))
 
@@ -4630,6 +4728,21 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 	_body.texture = tex
 	_body.scale = Vector2(sx * k * flip, sy * k)
 	_body.position += Vector2((rest_anchor.x - here.x * k * flip) * sx, (rest_anchor.y - here.y * k) * sy)
+	_turn_applied = true
+
+## 아무 몸통 그림이나 원래 몸통 자리에 끼운다 — 불투명 높이를 원래 몸통에 맞추고 바닥 가운데를 맞춘다(뒤집지 않음).
+## _set_body_frame과 같은 계산이다(뒷모습처럼 돌리기 세트 밖의 그림용)
+func _set_body_image(tex: Texture2D) -> void:
+	if _body == null or tex == null or _body_rest_texture == null:
+		return
+	var sx: float = absf(_body_rest_scale.x)
+	var sy: float = _body_rest_scale.y
+	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
+	var here: Vector2 = _body_anchor_of(tex)
+	var k: float = _body_height_of(_body_rest_texture) / maxf(_body_height_of(tex), 1.0)
+	_body.texture = tex
+	_body.scale = Vector2(sx * k, sy * k)
+	_body.position += Vector2((rest_anchor.x - here.x * k) * sx, (rest_anchor.y - here.y * k) * sy)
 	_turn_applied = true
 
 ## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다

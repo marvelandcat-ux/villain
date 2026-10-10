@@ -62,6 +62,18 @@ const WARP_DEPTH := 2.2
 const WARP_Z := 3500
 const WARP_SHADER: Shader = preload("res://combat/CounterHitWarp.gdshader")
 const ZOOM_TRACK := 18.0
+## 트레일 — 카운터 때 휘두르기 궤적(SwingTrail·WeaponSmear)을 **실제 시간 TRAIL_TIME초 동안** 남긴다(2026-10-10 사용자:
+## "카운터는 휘두르는 트레일이 느리게 보여서 타격감을 높이려고 만든 것", "지속 대략 1.5초").
+## 카운터가 터진 순간부터 TRAIL_TIME 동안 생긴 궤적 점은 각자 실제 시간 TRAIL_TIME초를 산다(슬로가 1초에 끝나도 그대로).
+## 그리고 흐림이 깔려 있는 동안 궤적은 **흐림 위**(FOCUS_Z)로 올라가 또렷하다 — 흐린 건 배경뿐
+const TRAIL_TIME := 1.5
+## 궤적을 길게 남기는 창이 끝나는 실제 시각(마이크로초) / 흐림이 깔려 있어 궤적을 위로 올려야 하는지
+static var _trail_until_us: int = 0
+static var focus_active: bool = false
+
+## 지금 궤적을 실제 시간으로 길게 남길 때인가
+static func trail_active() -> bool:
+	return Time.get_ticks_usec() < _trail_until_us
 
 var _mat: ShaderMaterial
 var _half: Vector2 = Vector2(640.0, 360.0) * OVERSIZE
@@ -123,6 +135,7 @@ func play(victim: Node2D, attacker: Node2D = null) -> void:
 	_start_us = Time.get_ticks_usec()
 	_running = true
 	_start_freeze()
+	_trail_until_us = Time.get_ticks_usec() + int(TRAIL_TIME * 1000000.0)
 	_focus_fighters()
 	_show_text(victim.global_position + TEXT_OFFSET)
 	_zoom_in(victim, attacker)
@@ -292,6 +305,7 @@ func _update_blur(t: float) -> void:
 
 ## 캐릭터를 흐림 판 위로 올린다. 이미 올려 둔 캐릭터는 원래 값을 덮어쓰지 않는다
 func _focus_fighters() -> void:
+	focus_active = true
 	for f in get_tree().get_nodes_in_group("fighters"):
 		if not (f is CanvasItem) or not is_instance_valid(f) or _focused.has(f):
 			continue
@@ -301,6 +315,7 @@ func _focus_fighters() -> void:
 
 ## 원래 z로 되돌린다. 그 사이 다른 스크립트가 z를 바꿨으면(우리 값이 아니면) 그쪽을 존중한다
 func _unfocus_fighters() -> void:
+	focus_active = false
 	for f in _focused:
 		if not is_instance_valid(f):
 			continue
@@ -380,6 +395,8 @@ func _finish() -> void:
 
 func _exit_tree() -> void:
 	# 연출 도중 라운드가 바뀌거나 나가도 시간이 멈춘 채·캐릭터가 위로 뜬 채 남지 않게
+	_trail_until_us = 0
+	focus_active = false
 	_release_freeze()
 	_unfocus_fighters()
 	if _warp != null and is_instance_valid(_warp):

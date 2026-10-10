@@ -1,6 +1,12 @@
 [gd_scene format=3 uid="uid://5whlo20oxk51"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
+[ext_resource type="Texture2D" uid="uid://bao6aosqwcico" path="res://sprite/주정뱅이/몸/주정뱅이 뒷모습.png" id="back_head"]
+[ext_resource type="Texture2D" uid="uid://cei6wnb5pf7ri" path="res://sprite/주정뱅이/몸/주정뱅이 머리 술 먹금은 측면 1.png" id="drunk_t1"]
+[ext_resource type="Texture2D" uid="uid://def633i7hn1us" path="res://sprite/주정뱅이/몸/주정뱅이 머리 술 먹금은 측면 2.png" id="drunk_t2"]
+[ext_resource type="Texture2D" uid="uid://d1a6vtgqwbfu7" path="res://sprite/주정뱅이/몸/주정뱅이 머리 술 먹금은 측면 3.png" id="drunk_t3"]
+[ext_resource type="Texture2D" uid="uid://cfut70mled0y6" path="res://sprite/주정뱅이/몸/주정뱅이 머리 술머금은 정면.png" id="drunk_front"]
+[ext_resource type="Texture2D" uid="uid://5itllndbwb51" path="res://sprite/주정뱅이/몸/주정뱅이 몸 뒷모습.png" id="back_body"]
 [ext_resource type="Texture2D" uid="uid://d4bm8ck4awusj" path="res://sprite/주정뱅이/소주병.png" id="2_bottle"]
 [ext_resource type="Texture2D" uid="uid://b7b7wtl07ydjq" path="res://sprite/주정뱅이/몸/주정뱅이몸.png" id="3_body"]
 [ext_resource type="Texture2D" uid="uid://by8oyj14il3o2" path="res://sprite/주정뱅이/몸/주정뱅이발.png" id="4_foot"]
@@ -49,6 +55,12 @@ head_turn_anchors = Array[Vector3]([Vector3(717, 559, 908), Vector3(745, 590, 96
 head_turn_faces_left = Array[bool]([false, false, false, false, false])
 head_turn_on_face = true
 body_turn_textures = Array[Texture2D]([ExtResource("85_body_turn1"), ExtResource("84_body_turn2")])
+head_back_texture = ExtResource("back_head")
+head_back_anchor = Vector3(629, 640, 989)
+body_back_texture = ExtResource("back_body")
+drunk_head_turn_textures = Array[Texture2D]([ExtResource("drunk_t1"), ExtResource("drunk_t2"), ExtResource("drunk_t3"), ExtResource("drunk_front")])
+drunk_head_turn_anchors = Array[Vector3]([Vector3(618, 546, 827), Vector3(381, 338, 533), Vector3(381, 351, 542), Vector3(399, 350, 550), Vector3(626, 625, 979)])
+drunk_head_turn_faces_left = Array[bool]([false, false, false, false, false])
 body_turn_match_height = true
 body_turn_faces_left = Array[bool]([true, false])
 vomit_head_texture = ExtResource("6_vomit")

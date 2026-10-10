@@ -58,7 +58,7 @@
 - 점프·중력은 **static var**(영구는 `DEFAULT_*`). **점프·중력을 바꾸면 맵 발판 높이(놀이터·지하철 의자·공사현장·헬스장) 재확인**
 - 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 필수
 - 방어: 디버프 차단은 `blocks_debuff(from_ultimate)` 한 곳(궁만 관통). 막힘 판정은 `Hitbox._try_hit()`에서 한 번만. 가드/대시 off는 `can_guard()`/`can_dash()` 맨 앞
-- **카운터 히트 연출 `combat/CounterHitFx.gd`**(2026-10-10): **0.4배 슬로 1초**(예전 0.15초 멈춤, 남의 슬로·KO 슬로가 걸려 있으면 안 건드림) + 흐림 0.98초 + "COUNTER"(맞은 쪽 머리를 매 프레임 따라감) + **줌 1.35배 + 옆으로 돌아 보는 원근 10도**(길티기어식, 1초 — 전부 1초 안에 끝남). 원근은 화면을 빙 돌리는 게 아니라 다 그린 화면을 사다리꼴로 휘는 셰이더 `CounterHitWarp.gdshader`(z 3500, 색보정 위·레터박스 아래, 캐릭터까지 휨, HUD는 안 휨) — **맞은 사람 자리는 제자리**(fit·shift를 같이 풀어 가장자리 빈 곳도 안 읽음). 판은 내 형제 노드(내 modulate·visible을 안 물려받게)
+- **카운터 히트 연출 `combat/CounterHitFx.gd`**(2026-10-10): **0.4배 슬로 1초**(예전 0.15초 멈춤, 남의 슬로·KO 슬로가 걸려 있으면 안 건드림) + 흐림 0.98초(세기 `blur_px` 1.1 — 2026-10-10 50%로) + "COUNTER"(맞은 쪽 머리를 매 프레임 따라감) + **줌 1.35배 + 옆으로 돌아 보는 원근 10도**(길티기어식, 1초 — 전부 1초 안에 끝남). **휘두르기 궤적(SwingTrail·WeaponSmear)은 카운터부터 실제 시간 `TRAIL_TIME`(1.5초) 동안 생긴 점이 각자 1.5초를 살고, 흐림이 깔린 동안 흐림 위(FOCUS_Z)로 올라가 또렷하다**(`trail_active()`·`focus_active`) — 카운터의 목적이 "느린 트레일로 타격감", "흐린 건 오직 배경"(사용자). 원근은 화면을 빙 돌리는 게 아니라 다 그린 화면을 사다리꼴로 휘는 셰이더 `CounterHitWarp.gdshader`(z 3500, 색보정 위·레터박스 아래, 캐릭터까지 휨, HUD는 안 휨) — **맞은 사람 자리는 제자리**(fit·shift를 같이 풀어 가장자리 빈 곳도 안 읽음). 판은 내 형제 노드(내 modulate·visible을 안 물려받게)
 - **막혔을 때 표시는 `combat/GuardImpact.gd` 하나**(2026-10-10, "BLOCK" 글자·파란 불꽃 대체): `Hitbox._spawn_guard_impact()`가 때린 쪽 몸 가장자리에서 터뜨림. 보호막(`GuardShield`)은 그대로
 - **발판 내려가기**: 레이어 끄지 말고 발판에 collision exception(바디 전체에 걸림 → 한 바디에 막힘 충돌 섞지 말 것). 올라갈 발판은 `one_way_collision`
 - 히트스톱은 꺼져 있음. 켜면 복귀 타이머 `ignore_time_scale = true`. `Engine.time_scale` 바꾼 스킬은 `_exit_tree`에서 복구

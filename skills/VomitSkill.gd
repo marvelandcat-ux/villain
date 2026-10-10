@@ -26,8 +26,8 @@ extends Skill
 ## 캐릭터 씬을 열어놓고 이 값을 만지면 미리보기가 그 자리에서 같이 움직인다
 @export var stack_visual_offsets: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
 ## 토하기 전 **차지**(초) — 토 표정 + 꿀꺽 움찔 뒤에 나간다(2026-10-10, 혈사포처럼 "즉발 말고"). 그동안 걸을 수는 있고
-## 다른 스킬·평타는 막힌다. 나가는 순간의 자리·방향으로 쏜다. 0이면 예전처럼 바로
-@export var charge_time: float = 0.25
+## 다른 스킬·평타는 막힌다. 나가는 순간의 자리·방향으로 쏜다. 0이면 바로(2026-10-10 사용자 "딜레이 없이 바로" — 지금 0)
+@export var charge_time: float = 0.0
 ## 차지 때 몸이 움찔하는 정도(BodyRig.play_squash) — 볼에 머금는 느낌
 @export var charge_squash: Vector2 = Vector2(1.1, 0.9)
 

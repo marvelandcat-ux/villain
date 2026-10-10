@@ -7,8 +7,8 @@ render_mode unshaded;
 // unshaded인 이유는 ScreenGrade와 같다: 읽어 온 화면은 이미 CanvasModulate·조명을 받은 결과라 또 받으면 두 번 어두워진다.
 // 세기는 그리는 노드의 modulate 알파(COLOR.a) — 0이면 원본 그대로, 1이면 다 흐림
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
-// 몇 픽셀만큼 번지게 할지 — 화면 높이 720 기준 픽셀이라 창 크기가 달라도 흐린 정도가 같다. "약간"이라 작게 둔다
-uniform float blur_px : hint_range(0.0, 8.0) = 2.2;
+// 몇 픽셀만큼 번지게 할지 — 화면 높이 720 기준 픽셀이라 창 크기가 달라도 흐린 정도가 같다. 2026-10-10 사용자 요청으로 50%(2.2 → 1.1)
+uniform float blur_px : hint_range(0.0, 8.0) = 1.1;
 // 흐린 배경을 살짝 어둡게 — 캐릭터가 더 떠 보인다. 0이면 안 어둡게
 uniform float darken : hint_range(0.0, 0.6) = 0.12;
 

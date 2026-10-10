@@ -6,6 +6,9 @@ extends Node2D
 ## 자리마다 life초가 지나면 사라져서 띠가 꼬리부터 줄어든다. BodyRig가 `add_point()`로 자리를 넣고, 다 휘둘렀으면 `finish()`
 ## **맵에 붙일 것**(캐릭터 자식이면 좌우 반전에 뒤집힌다)
 
+## 카운터 히트 연출 — 궤적을 길게 남길 때인지·흐림 위로 올릴 때인지를 여기서 읽는다(class_name이 없어 preload)
+const _COUNTER_FX := preload("res://combat/CounterHitFx.gd")
+
 ## 띠 색 (가장 진한 앞쪽 끝)
 @export var trail_color: Color = Color(1.0, 1.0, 1.0, 0.95)
 ## 앞쪽 끝 굵기(px)
@@ -49,7 +52,13 @@ func _ready() -> void:
 	material = mat
 
 func _process(delta: float) -> void:
-	_time += minf(delta, 0.05)
+	# 카운터 히트 창이면 **실제 시간**으로 늙되 한 점이 TRAIL_TIME(1.5초)을 살게 늘린다 — 슬로(0.4배)가 1초에 끝나도 그대로
+	if _COUNTER_FX.trail_active():
+		var real_dt: float = minf(delta / maxf(Engine.time_scale, 0.01), 0.05)
+		_time += real_dt * life / _COUNTER_FX.TRAIL_TIME
+	else:
+		_time += minf(delta, 0.05)
+	_raise_above_blur(_COUNTER_FX.focus_active)
 	if not _finished and _time - _last_add > 0.5:
 		_finished = true
 	# 오래된 자리부터 지운다
@@ -111,3 +120,20 @@ func _draw() -> void:
 			PackedVector2Array([core_left[i], core_left[i + 1], core_right[i + 1], core_right[i]]),
 			PackedColorArray([core_cols[i], core_cols[i + 1], core_cols[i + 1], core_cols[i]]),
 			PackedVector2Array())
+
+## 카운터 흐림이 깔린 동안 흐림 판(CounterHitFx.BLUR_Z) **위로** 올린다 — 캐릭터와 같은 z(FOCUS_Z)라
+## 트리 순서대로 캐릭터 바로 뒤에 그려진다. 흐림이 걷히면 원래 z로
+var _raised: bool = false
+var _saved_z: Array = []
+func _raise_above_blur(on: bool) -> void:
+	if on == _raised:
+		return
+	_raised = on
+	if on:
+		# 흐림이 깔린 뒤에 생긴 궤적은 이미 올라간 캐릭터 z(FOCUS_Z)를 물려받았다 — 그걸 원래 값으로 기억하면 흐림이 걷혀도 캐릭터 위에 남는다
+		_saved_z = [0, true] if (z_index == _COUNTER_FX.FOCUS_Z and not z_as_relative) else [z_index, z_as_relative]
+		z_as_relative = false
+		z_index = _COUNTER_FX.FOCUS_Z
+	elif _saved_z.size() == 2:
+		z_index = _saved_z[0]
+		z_as_relative = _saved_z[1]

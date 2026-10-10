@@ -94,6 +94,9 @@ var _external_hit: bool = false
 ## 반원 판정 반지름(px)과 그 중심(캐릭터 원점 기준, x는 바라보는 쪽 자동 반전)
 @export var air_swing_radius: float = 85.0
 @export var air_swing_center: Vector2 = Vector2(0, -12)
+## 켜면 **땅 평타 마무리 타(3타)도** 공중 큰 휘두르기 모션(한 바퀴 돌며 크게 올려치기)으로 친다 — 판정·시각·날리기는 평소 3타 그대로,
+## 모션만 바뀐다(2026-10-10 사용자: 주정뱅이 3타를 점프 공격처럼). 판정 모양(반원)은 공중에서만
+@export var final_air_motion: bool = false
 @export_group("")
 ## 헛발질(빗맞음)했을 때만 도는 쿨타임(초). 음수면 기본 cooldown을 그대로 쓴다.
 ## 3타 마무리 쿨은 cooldown이라, 이 값으로 "못 맞췄을 때만" 더 크게 벌칙을 줄 수 있다
@@ -837,6 +840,14 @@ func _fire(fighter: Fighter, step: int) -> void:
 	var visual := fighter.get_node_or_null("Visual")
 	if visual and _air_now and visual.has_method("play_air_swing"):
 		visual.play_air_swing(air_swing_duration)
+		if visual.has_method("play_swing_trail"):
+			visual.play_swing_trail()
+	elif visual and final_air_motion and _is_final(step) and d == null and visual.has_method("play_air_swing"):
+		# 마무리 타를 공중 큰 휘두르기 **모션**으로(한 바퀴 돌며 올려치기). 길이는 평소 마무리 길이라 판정 시각(0.223)은 그대로다
+		var fin_len: float = _final_swing_duration(step, visual)
+		if fin_len <= 0.0:
+			fin_len = float(visual.get("attack_duration"))
+		visual.play_air_swing(fin_len)
 		if visual.has_method("play_swing_trail"):
 			visual.play_swing_trail()
 	elif visual and visual.has_method("play_attack_swing"):

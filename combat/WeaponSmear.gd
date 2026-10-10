@@ -6,6 +6,9 @@ extends Node2D
 ## 바깥(끝이 지나간 선)은 무기 윤곽선 색으로 두른다. 오래된 자리일수록 띠가 끝 쪽으로 오그라들어 꼬리가 뾰족해진다.
 ## BodyRig가 `add_sample()`로 자리를 넣고 다 휘둘렀으면 `finish()`. **맵에 붙일 것**(SwingTrail과 같은 이유)
 
+## 카운터 히트 연출 — 궤적을 길게 남길 때인지·흐림 위로 올릴 때인지를 여기서 읽는다(class_name이 없어 preload)
+const _COUNTER_FX := preload("res://combat/CounterHitFx.gd")
+
 ## 자리 하나가 남아 있는 시간(초) — 길수록 꼬리가 길다
 @export var life: float = 0.13
 ## 바깥 테두리 굵기(px)
@@ -43,7 +46,13 @@ func _ready() -> void:
 	global_position = Vector2.ZERO
 
 func _process(delta: float) -> void:
-	_time += minf(delta, 0.05)
+	# 카운터 히트 창이면 **실제 시간**으로 늙되 한 점이 TRAIL_TIME(1.5초)을 살게 늘린다 — 슬로(0.4배)가 1초에 끝나도 그대로
+	if _COUNTER_FX.trail_active():
+		var real_dt: float = minf(delta / maxf(Engine.time_scale, 0.01), 0.05)
+		_time += real_dt * life / _COUNTER_FX.TRAIL_TIME
+	else:
+		_time += minf(delta, 0.05)
+	_raise_above_blur(_COUNTER_FX.focus_active)
 	if not _finished and _time - _last_add > 0.5:
 		_finished = true
 	while not _times.is_empty() and _time - _times[0] >= life:
@@ -101,3 +110,20 @@ func _draw() -> void:
 		c.a *= alpha[i] * float(i) / float(n - 1)
 		cols[i] = c
 	draw_polyline_colors(tip_l, cols, outline_width, true)
+
+## 카운터 흐림이 깔린 동안 흐림 판(CounterHitFx.BLUR_Z) **위로** 올린다 — 캐릭터와 같은 z(FOCUS_Z)라
+## 트리 순서대로 캐릭터 바로 뒤에 그려진다. 흐림이 걷히면 원래 z로
+var _raised: bool = false
+var _saved_z: Array = []
+func _raise_above_blur(on: bool) -> void:
+	if on == _raised:
+		return
+	_raised = on
+	if on:
+		# 흐림이 깔린 뒤에 생긴 궤적은 이미 올라간 캐릭터 z(FOCUS_Z)를 물려받았다 — 그걸 원래 값으로 기억하면 흐림이 걷혀도 캐릭터 위에 남는다
+		_saved_z = [0, true] if (z_index == _COUNTER_FX.FOCUS_Z and not z_as_relative) else [z_index, z_as_relative]
+		z_as_relative = false
+		z_index = _COUNTER_FX.FOCUS_Z
+	elif _saved_z.size() == 2:
+		z_index = _saved_z[0]
+		z_as_relative = _saved_z[1]
