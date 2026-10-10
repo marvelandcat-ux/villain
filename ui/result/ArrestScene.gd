@@ -17,6 +17,10 @@ signal finished
 const ResultSfx = preload("res://ui/result/ResultSfx.gd")
 const RopeScript = preload("res://ui/result/ArrestRope.gd")
 const POLICE_RIG := "res://characters/police/PoliceRig.tscn"
+const DEFAULT_BACKDROP := "res://ui/result/backdrops/PoliceStation.tres"
+const BACKDROP_DIR := "res://ui/result/backdrops/"
+const MobScript = preload("res://ui/result/MobCrowd.gd")
+const GuideScript = preload("res://ui/result/PerspectiveGuide.gd")
 const BASE_SIZE := Vector2(1280, 720)
 
 # --- 박자(실제 초, play() 기준) ---
@@ -49,7 +53,7 @@ const FINISH_AT := 3.0
 @export var first_feet: Vector2 = Vector2(738, 622)
 @export var second_feet: Vector2 = Vector2(918, 607)
 ## 구경꾼 자리 — 앞(아래)에 있는 것일수록 크게 나온다. 개수가 곧 최대 인원
-@export var crowd_feet: Array[Vector2] = [Vector2(1002, 556), Vector2(1068, 547), Vector2(1135, 558), Vector2(1200, 548)]
+@export var crowd_feet: Array[Vector2] = [Vector2(1035, 575), Vector2(1102, 566), Vector2(1170, 578), Vector2(1238, 569)]
 ## 경찰만 조금 더 크게(어른) — 1이면 다른 사람과 같은 키
 @export var police_height_scale: float = 1.05
 ## 행렬이 왼쪽(경찰차 쪽)으로 걸어가는 거리(월드)
@@ -59,11 +63,31 @@ const FINISH_AT := 3.0
 ## 끌려가는 걸음이라 보폭을 줄인다(리그 기본 11)
 @export var walk_foot_stride: float = 7.0
 
-@export_group("경찰서 건물")
-## 건물 그림 왼쪽 아래 모서리가 닿는 화면 자리(밀고 들어가기 전)
-@export var building_left_x: float = 760.0
-@export var building_base_y: float = 492.0
-@export var building_scale: float = 0.4
+@export_group("건물 배경")
+## 인물들이 **이 건물 문에서 막 끌려 나온** 것처럼 보이게, 그림 속 문을 기준점으로 원근에 맞춰 놓는다(ArrestBackdropConfig.gd).
+## **맵마다 그 맵 건물이 선다**: 대전에서 고른 맵 씬 이름과 같은 `ui/result/backdrops/<맵 이름>.tres`(예: Gym.tres)를 쓴다.
+## 그 파일이 없거나 그림(texture)이 비어 있으면 이 기본 건물 — 비우면 경찰서(DEFAULT_BACKDROP)
+@export var default_backdrop: Resource
+## 건물이 땅에 닿는 화면 높이(밀고 들어가기 전). 지평선(horizon_y)에 가까울수록 건물이 멀어져 작아진다
+@export var facade_base_y: float = 548.0
+## 출입문 가운데가 올 화면 x — 행렬 바로 뒤라 "문에서 막 나온" 것처럼 보인다
+@export var door_screen_x: float = 820.0
+
+@export_group("원근 가이드")
+## 켜면 지평선·소실점·문 자리·캐릭터 키를 겹쳐 그린다 — 배경 그림을 맞출 때 쓴다(건물은 반투명이 된다)
+@export var show_perspective_guide: bool = false
+
+@export_group("구경꾼 무리")
+## 얼굴 없는 구경꾼(MobCrowd) 발 위치(화면, 밀고 들어가기 전). back = 로스터 구경꾼(crowd_feet)보다 먼 줄, front = 가까운 줄
+@export var mob_back_feet: Array[Vector2] = [
+	Vector2(575, 553), Vector2(630, 556), Vector2(685, 552), Vector2(930, 551), Vector2(975, 553), Vector2(1020, 552), Vector2(1065, 554), Vector2(1110, 551),
+	Vector2(1155, 553), Vector2(1200, 552), Vector2(1245, 554), Vector2(1290, 551), Vector2(1335, 553), Vector2(1380, 552), Vector2(1425, 554), Vector2(1470, 551),
+	Vector2(952, 557), Vector2(997, 559), Vector2(1042, 558), Vector2(1087, 560), Vector2(1132, 557), Vector2(1177, 559), Vector2(1222, 558), Vector2(1267, 560),
+	Vector2(1312, 557), Vector2(1357, 559), Vector2(1402, 558), Vector2(1447, 560), Vector2(1492, 557),
+]
+@export var mob_front_feet: Array[Vector2] = [Vector2(1300, 588), Vector2(1368, 594), Vector2(1436, 589), Vector2(1504, 595)]
+## 얼굴 없는 구경꾼 밝기(1 = 하얀 바탕 그대로). 너무 튄다고 해서 낮췄다(2026-10-10 사용자: "너무 밝아")
+@export_range(0.3, 1.0, 0.01) var mob_shade: float = 0.78
 
 @export_group("밧줄")
 ## 밧줄 굵기(월드) / 처짐(두 점 거리 대비)
@@ -108,6 +132,14 @@ var _events: Array = []
 var _next_event: int = 0
 var _building_world: Vector3 = Vector3.ZERO
 var _building_height: float = 956.0
+var _building_scale: float = 0.4
+## 그림 가장자리를 하늘로 녹이는 재질(씬에 붙어 있던 것) — 끄는 그림이면 떼었다가 다시 붙인다
+var _edge_material: Material = null
+var _mob_back: Node2D = null
+var _mob_front: Node2D = null
+var _guide: Node2D = null
+## 경광등 박자 시계 — 사이렌이 울리면 소리가 들리는 지점에 맞추고, 없거나 꺼지면 이어서 센다
+var _siren_clock: float = 0.0
 
 func _ready() -> void:
 	layer = 25
@@ -117,10 +149,13 @@ func _ready() -> void:
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade.color = Color(0, 0, 0, 1)
 	_last_usec = Time.get_ticks_usec()
-	if _building.region_enabled:
-		_building_height = _building.region_rect.size.y
-	var base_z: float = _depth_of(building_base_y)
-	_building_world = Vector3((building_left_x - vanish_x) * base_z / focal, 0.0, base_z)
+	_edge_material = _building.material
+	_apply_backdrop(default_backdrop if default_backdrop != null else load(DEFAULT_BACKDROP))
+	_build_mobs()
+	if show_perspective_guide:
+		_guide = Node2D.new()
+		_guide.set_script(GuideScript)
+		_stage.add_child(_guide)
 	get_viewport().size_changed.connect(_fit_to_screen)
 	_fit_to_screen()
 	_update_scene()
@@ -162,6 +197,11 @@ func play(info: Dictionary) -> void:
 	_info = info
 	_playing = true
 	_time = 0.0
+	# 싸운 맵의 건물 그림이 있으면 그걸로 — 그 건물 문에서 끌려 나온 셈이다(그림이 비어 있으면 기본 건물 그대로)
+	var map_path: String = str(info.get("map_path", ""))
+	var map_config: String = BACKDROP_DIR + map_path.get_file().get_basename() + ".tres"
+	if map_path != "" and ResourceLoader.exists(map_config):
+		_apply_backdrop(load(map_config))
 	_build_cast()
 	_events = [
 		[LOOKBACK_AT, _police_look_back],
@@ -185,6 +225,11 @@ func _process(_delta: float) -> void:
 	_last_usec = now
 	_frame_dt = dt
 	_clock += dt
+	# 경광등은 사이렌에 맞춘다 — 지금 **들리는** 지점(출력 지연까지 뺀 값)을 잰다. 소리가 없거나 꺼지면 같은 박자로 이어서 센다
+	if is_instance_valid(_siren) and _siren.playing:
+		_siren_clock = _siren.get_playback_position() + AudioServer.get_time_since_last_mix() - AudioServer.get_output_latency()
+	else:
+		_siren_clock += dt
 	if _playing:
 		_time += dt
 		while _next_event < _events.size() and _time >= float(_events[_next_event][0]):
@@ -200,6 +245,7 @@ func _fit_to_screen() -> void:
 	var rect: Rect2 = get_viewport().get_visible_rect()
 	_stage.position = rect.position + (rect.size - BASE_SIZE) * 0.5
 	_backdrop.set("view_rect", Rect2(rect.position - _stage.position, rect.size))
+	_update_guide()
 
 func _build_cast() -> void:
 	var is_draw: bool = bool(_info.get("is_draw", false))
@@ -377,6 +423,18 @@ func _update_scene() -> void:
 	_car.set("focal", focal)
 	_car.set("dolly", _dolly)
 	_car.set("time", _clock)
+	var tone: Vector2 = ResultSfx.siren_tone_at(maxf(_siren_clock, 0.0))
+	_car.set("siren_tone", int(tone.x))
+	_car.set("tone_time", tone.y)
+	for mob in [_mob_back, _mob_front]:
+		if mob == null:
+			continue
+		mob.set("vanish_x", vanish_x)
+		mob.set("horizon_y", horizon_y)
+		mob.set("camera_height", camera_height)
+		mob.set("focal", focal)
+		mob.set("dolly", _dolly)
+		mob.set("time", _clock)
 
 func _update_actor(actor: Dictionary, walking: bool, walked: float, tug_s: float) -> void:
 	var role: StringName = actor["role"]
@@ -494,7 +552,7 @@ func _cuff_point(actor: Dictionary) -> Vector2:
 
 func _update_building() -> void:
 	var z: float = _building_world.z
-	var k: float = building_scale * z / maxf(z - _dolly, 0.05)
+	var k: float = _building_scale * z / maxf(z - _dolly, 0.05)
 	_building.scale = Vector2(k, k)
 	_building.position = _project(_building_world) - Vector2(0.0, _building_height * k)
 
@@ -550,6 +608,88 @@ func _finish() -> void:
 	# 장면이 다 떴으니 미리 읽어 둔 리그에서 손을 놓는다(승리·패배 화면 7초 + 이 장면 3초 뒤라 읽기는 다 끝나 있다 — 기다리지 않는다)
 	release_warm()
 	finished.emit()
+
+# ---------------------------------------------------------------- 건물 배경 · 구경꾼 무리 · 가이드
+
+## 건물 그림을 고르고 **문을 기준으로** 원근에 맞춰 놓는다(ArrestBackdropConfig.gd 참고).
+## 그림 밑변(땅선)이 화면 facade_base_y에, 문 가운데가 door_screen_x에 오고, 그 깊이에서 문 높이가 캐릭터 키 x door_height가 되게 배율을 정한다.
+## 문 자리를 안 적은 그림은 "원근 가이드 위에 화면 그대로 그린 그림"으로 보고 1280x720 화면에 1:1로 깐다
+func _apply_backdrop(config: Resource) -> void:
+	if config == null or config.get("texture") == null:
+		return
+	var tex: Texture2D = config.get("texture")
+	var size: Vector2 = tex.get_size()
+	var door: Rect2 = config.get("door_rect")
+	var ground: float = float(config.get("ground_px"))
+	if ground <= 0.0:
+		# 문 자리 없이 원근 가이드 위에 그린 그림이면 땅선도 가이드의 초록 선(facade_base_y)이다
+		ground = facade_base_y * size.x / BASE_SIZE.x if door.size.y <= 0.0 else size.y
+	_building.texture = tex
+	_building.region_enabled = true
+	_building.region_rect = Rect2(0.0, 0.0, size.x, ground)
+	_building_height = ground
+	var base_y: float = facade_base_y
+	var left_x: float = 0.0
+	if door.size.y > 0.0:
+		var z: float = _depth_of(base_y)
+		_building_scale = float(config.get("door_height")) * focal / z / door.size.y
+		left_x = door_screen_x - (door.position.x + door.size.x * 0.5) * _building_scale
+		var horizon_px: float = float(config.get("horizon_px"))
+		if horizon_px >= 0.0:
+			var drawn_horizon: float = base_y - (ground - horizon_px) * _building_scale
+			if absf(drawn_horizon - horizon_y) > 25.0:
+				push_warning("ArrestScene: 배경 그림 눈높이가 장면 지평선과 %dpx 어긋난다 — 원근가이드.png에 맞춰 그림을 고칠 것" % int(drawn_horizon - horizon_y))
+	else:
+		_building_scale = BASE_SIZE.x / size.x
+		base_y = ground * _building_scale
+	var base_z: float = _depth_of(base_y)
+	_building_world = Vector3((left_x - vanish_x) * base_z / focal, 0.0, base_z)
+	_building.material = _edge_material if bool(config.get("edge_fade")) else null
+	for flag in _building.get_children():
+		if flag is CanvasItem:
+			(flag as CanvasItem).visible = bool(config.get("show_flags"))
+	_building.self_modulate.a = 0.45 if show_perspective_guide else 1.0
+	_update_building()
+
+## 얼굴 없는 구경꾼 무리 — 로스터 구경꾼보다 먼 줄은 그 뒤에, 가까운 줄은 그 앞에 그려지게 두 겹으로 나눈다
+func _build_mobs() -> void:
+	_mob_back = _make_mob_layer(mob_back_feet, 11)
+	_stage.move_child(_mob_back, _crowd_layer.get_index())
+	_mob_front = _make_mob_layer(mob_front_feet, 23)
+	_stage.move_child(_mob_front, _line_layer.get_index())
+
+func _make_mob_layer(feet_list: Array[Vector2], seed_value: int) -> Node2D:
+	var layer_node := Node2D.new()
+	layer_node.set_script(MobScript)
+	_stage.add_child(layer_node)
+	var worlds: Array = []
+	for feet in feet_list:
+		worlds.append(_ground_to_world(feet))
+	layer_node.set("shade", mob_shade)
+	layer_node.call("setup", worlds, seed_value)
+	return layer_node
+
+## 가이드에 지금 카메라·문 자리·키 막대 자리를 넣는다
+func _update_guide() -> void:
+	if _guide == null:
+		return
+	_guide.set("vanish_x", vanish_x)
+	_guide.set("horizon_y", horizon_y)
+	_guide.set("camera_height", camera_height)
+	_guide.set("focal", focal)
+	_guide.set("facade_base_y", facade_base_y)
+	_guide.set("door_screen_x", door_screen_x)
+	var config: Resource = default_backdrop if default_backdrop != null else load(DEFAULT_BACKDROP)
+	_guide.set("door_height", float(config.get("door_height")) if config != null else 1.35)
+	var rect: Rect2 = get_viewport().get_visible_rect()
+	_guide.set("view_rect", Rect2(rect.position - _stage.position, rect.size))
+	var markers: Array = [["경찰", police_feet], ["패자", first_feet], ["승자", second_feet]]
+	if not crowd_feet.is_empty():
+		markers.append(["구경꾼", crowd_feet[0]])
+	if not mob_back_feet.is_empty():
+		markers.append(["먼 구경꾼", mob_back_feet[mob_back_feet.size() - 1]])
+	_guide.set("markers", markers)
+	_guide.queue_redraw()
 
 # ---------------------------------------------------------------- 원근 계산
 

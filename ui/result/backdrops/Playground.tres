@@ -1,0 +1,14 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://ui/result/ArrestBackdropConfig.gd" id="1_config"]
+[ext_resource type="Texture2D" uid="uid://bqrmsyf51tfsh" path="res://ui/result/backdrops/놀이터_입구.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_config")
+texture = ExtResource("2_tex")
+door_rect = Rect2(658, 744, 215, 136)
+ground_px = 880.0
+door_height = 1.35
+horizon_px = -1.0
+show_flags = false
+edge_fade = true

@@ -28,6 +28,35 @@ const RAIN := "rain"
 ## 연행 장면 사이렌
 const SIREN := "siren"
 
+## 사이렌(siren.ogg)의 **높은음이 시작되는 때**(초, 소리 처음 기준). 낮은음은 그 0.5초 뒤에 시작한다.
+## 경광등을 소리에 맞춰 깜빡이려고 2026-10-08에 실제 파형에서 음높이를 재서 적었다(높은음 약 1312Hz / 낮은음 약 732Hz).
+## 녹음된 진짜 사이렌이라 간격이 1.05~1.1초로 조금씩 흔들려서 고정 주기 대신 표를 쓴다.
+## ⚠️ **siren 파일을 바꾸면 다시 재야 한다**
+const SIREN_HIGH_STARTS := [0.032, 1.132, 2.219, 3.307, 4.394, 5.494, 6.582, 7.682, 8.769]
+## 높은음 길이 / 표 뒤로 이어 갈 때의 한 바퀴(높은음+낮은음)
+const SIREN_HIGH_LEN := 0.5
+const SIREN_PERIOD := 1.092
+
+## 사이렌 소리 t초 지점이 높은음인지 낮은음인지 → Vector2(1 = 높은음 / -1 = 낮은음, 그 음이 시작되고 흐른 초).
+## 표가 끝난 뒤는 같은 박자로 이어 간다 — 소리가 꺼진 뒤에도 불빛이 같은 박자로 계속 돈다
+static func siren_tone_at(t: float) -> Vector2:
+	var starts: Array = SIREN_HIGH_STARTS
+	var last: float = float(starts[starts.size() - 1])
+	var base: float
+	if t >= last:
+		base = last + floorf((t - last) / SIREN_PERIOD) * SIREN_PERIOD
+	elif t < float(starts[0]):
+		return Vector2(-1.0, t + SIREN_PERIOD - SIREN_HIGH_LEN - float(starts[0]))
+	else:
+		base = float(starts[0])
+		for s in starts:
+			if float(s) <= t:
+				base = float(s)
+	var local: float = t - base
+	if local < SIREN_HIGH_LEN:
+		return Vector2(1.0, local)
+	return Vector2(-1.0, local - SIREN_HIGH_LEN)
+
 ## 이름에 맞는 소리 파일을 찾는다. 없으면 null
 static func stream(sound: String) -> AudioStream:
 	for ext in EXTENSIONS:

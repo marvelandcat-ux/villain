@@ -64,6 +64,19 @@ func add_disc(center: Vector2, radius: float, color: Color, sides: int = 0) -> v
 		indices.append(base + 1 + k)
 		indices.append(base + 1 + (k + 1) % seg)
 
+## 볼록한 도형 하나를 꽉 채운다(첫 점에서 부채꼴로 삼각형을 쌓는다 — 오목하면 삐져나온다)
+func add_fill(pts: PackedVector2Array, color: Color) -> void:
+	if pts.size() < 3:
+		return
+	var base: int = points.size()
+	for v in pts:
+		points.append(v)
+		colors.append(color)
+	for k in range(1, pts.size() - 1):
+		indices.append(base)
+		indices.append(base + k)
+		indices.append(base + k + 1)
+
 func is_empty() -> bool:
 	return indices.is_empty()
 

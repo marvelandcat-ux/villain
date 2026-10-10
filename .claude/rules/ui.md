@@ -40,6 +40,12 @@ paths:
 - ⚠️ **템포**: 연행은 6초 → 3초로 줄였다("게임 템포가 느려졌다", 사용자). 늘리지 말 것. 박자는 `ArrestScene.gd` 상단 상수
 - 멈춤 방지: 최종 KO 때 `Stage._preload_match_ending()`이 승리 화면·두 리그를, 승리 화면 동안 `ArrestScene.warm_up()`이 경찰·구경꾼 리그를 스레드로 미리 읽는다(헤드리스에선 끔 — 가짜 렌더러 에러)
 - 연출 중엔 일시정지 막음(`_ending_active`/`_knockout_playing`), 영역 궁은 연출 시작 때 `break_domain()`
+- **연행 배경 = 싸운 곳 건물 정면 + 출입문**(인물들이 그 문에서 끌려 나온 셈, 2026-10-08 사용자 레퍼런스). 그림 한 장 = `ArrestBackdropConfig.gd` .tres(그림 + **그림 속 문 사각형** `door_rect` + 땅선 `ground_px`). 장면이 문을 크기 기준점으로 놓는다: 땅선 → `facade_base_y`, 문 가운데 → `door_screen_x`, 문 높이 = 캐릭터 키 x `door_height`(1.35). **맵마다 한 장** — 맵 씬 이름과 같은 `ui/result/backdrops/<맵>.tres`(헬스장 = Gym.tres, Stage가 info `map_path`로 넘김). 맵 5개 자리는 그림 없이 만들어 둠 → 그림을 끌어다 놓고 `door_rect`만 적으면 끝. 그림이 비면 `PoliceStation.tres`
+  - 새 그림은 `ui/result/backdrops/원근가이드.png`(2560x1440 = 화면 1280x720의 2배) 위에 그릴 것 — 지평선(눈높이) y 470·소실점 x 760·땅선·문 자리·깊이별 캐릭터 키가 그려져 있다. 장면에서 `show_perspective_guide`를 켜면 같은 가이드가 겹쳐 보인다. **카메라 값(horizon_y·vanish_x·camera_height·focal)이나 facade_base_y를 바꾸면 가이드를 다시 찍을 것**
+  - 맵 5장(2026-10-09, 이미지 생성 — 경찰서 구도에 맞춘 프롬프트): `backdrops/헬스장_건물`·`놀이터_입구`·`지하철역_입구`·`악플러의집_건물`·`번화가_건물.png`. 흰 하늘은 테두리 flood fill + 경계 2px 흰색→알파로 지웠다. **`door_rect` = 문짝만**(위 유리창·간판·문틀 제외 — 경찰서와 같은 기준), `ground_px` = 맨 아래 계단 밑선. 놀이터는 울타리 입구(안쪽 기둥 사이 ~ 아치 간판 밑면). 놀이터·번화가는 2026-10-10에 다시 뽑았다 — 첫 판은 놀이터가 위에서 내려다본 각도, 번화가는 문이 커서(배율 0.93) 왼쪽에 하늘이 비었다. 새로 뽑을 땐 프롬프트에 **"EYE LEVEL, NOT from above"·문 위아래 좌표(y 770~915)·"건물이 캔버스 좌우 끝을 넘어간다"** 를 못 박을 것
+  - 구도: 지금은 **B(건물 바로 뒤, 레퍼런스식)** — facade_base_y 548, 로스터 구경꾼 y 566~578. 예전 A(건물 멀리, 하늘 보임)로 돌리려면 facade_base_y 508 + crowd_feet y 547~558 + mob_back_feet y 522~540
+- **경광등은 사이렌에 맞춘다**: 높은음 = 빨강, 낮은음 = 파랑, 음이 바뀔 때 두 번 번쩍(`PoliceCarSide.siren_tone`/`tone_time`). 박자는 실제 파형에서 잰 표 `ResultSfx.SIREN_HIGH_STARTS`(녹음이라 1.05~1.1초로 흔들려 고정 주기 X). ⚠️ **siren 파일을 바꾸면 다시 잴 것** — Godot `--write-movie x.png`로 WAV를 뽑아 음높이(약 1312/732Hz)를 추적했다. 소리가 꺼진 뒤엔 같은 박자로 이어 센다
+- **얼굴 없는 구경꾼** `MobCrowd.gd`(흰 바탕 + 검은 테두리, 게임 체형, 얼굴 없음, 수십 명을 LineMesh 한 번에): 로스터 구경꾼보다 먼 줄 `mob_back_feet`(Crowd 뒤) / 가까운 줄 `mob_front_feet`(Crowd 앞). 같은 seed라 매번 같은 무리. 멀수록 haze로 흐려짐. 밝기는 `ArrestScene.mob_shade`(기본 0.78 — 하얀 바탕이 너무 튄다고 해서 낮춤, 2026-10-10)
 - TODO: 옆모습 경찰차 그림(지금 `PoliceCarSide.gd` 코드 그림), 승리/패배 표정이 없는 리그(주정뱅이·지하철·캣맘·황근출·인베이전·경찰 등)는 `action_head_texture`/`hurt_head_texture`를 꽂으면 바로 쓰임. 클로즈업(8~9배)에선 손 그림이 털뭉치 고리로 보임
 
 ## 궁극기 컷인 `ui/UltimateCutIn.tscn`

@@ -486,6 +486,8 @@ func _match_ending_info(p1_won: bool, is_draw: bool) -> Dictionary:
 		"winner_p2_color": same_pick and not winner_is_p1,
 		"loser_p2_color": same_pick and winner_is_p1,
 		"is_draw": is_draw,
+		# 연행 장면 뒤에 이 맵 건물(싸운 곳)을 세운다 — ArrestScene.map_backdrops
+		"map_path": scene_file_path,
 	}
 
 ## 선수 몸(`Visual`)이 어느 리그 씬인지. 못 읽으면 로스터의 리그 목록에서 이름으로 찾는다

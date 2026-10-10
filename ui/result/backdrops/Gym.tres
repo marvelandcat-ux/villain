@@ -1,0 +1,14 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://ui/result/ArrestBackdropConfig.gd" id="1_config"]
+[ext_resource type="Texture2D" uid="uid://u7h1k0y0k88m" path="res://ui/result/backdrops/헬스장_건물.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_config")
+texture = ExtResource("2_tex")
+door_rect = Rect2(672, 746, 193, 154)
+ground_px = 949.0
+door_height = 1.35
+horizon_px = -1.0
+show_flags = false
+edge_fade = true
