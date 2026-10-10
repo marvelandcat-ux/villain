@@ -28,6 +28,7 @@ const HIDDEN_TILE_STEP := 100.0
 ## P1/P2 차례에 따라 바뀌는 배경 그림
 const P1_BACKGROUND := "res://sprite/대전모드/배경.png"
 const P2_BACKGROUND := "res://sprite/대전모드/배경2.png"
+const MAP_SELECT_SCENE := "res://ui/MapSelect.tscn"
 
 ## 대전 모드(pvp) 전용 화면이다. P1(플레이어) 캐릭터를 먼저 고르고, 이어서 P2 캐릭터를 고르면 맵 선택 화면으로 넘어간다.
 ## (예전엔 옛 스토리 모드도 이 화면을 같이 썼는데, 2026-09-12 스토리 모드를 새로 짜면서 그 분기를 걷어냈다)
@@ -54,6 +55,12 @@ var _picking_p1: bool = true
 var _pending_character: String = ""
 var _thumb_buttons: Dictionary = {}  # {character_name: Button} — 선택 강조 표시용
 var _is_spinning: bool = false
+## 리그 씬 캐시 {이름: PackedScene}. 리그는 처음 load()할 때 0.1~0.7초씩 멈춰서(2026-10-09 실측, 금쪽이 680ms)
+## 화면이 열리자마자 전부 백그라운드로 불러 두고, 고를 땐 여기서 꺼내 쓴다
+var _rig_scenes: Dictionary = {}
+## 배경 두 장도 미리 들고 있는다 — 확정할 때 load()로 멈추지 않게
+var _p1_bg: Texture2D
+var _p2_bg: Texture2D
 ## 지금 P1/P2 미리보기 상자에 떠 있는 리그 인스턴스 — 캐릭터가 바뀌면 이걸 지우고 새로 만든다
 var _p1_rig: Node2D = null
 var _p2_rig: Node2D = null
@@ -83,7 +90,31 @@ func _ready() -> void:
 
 	_build_hidden_tiles()
 	_status_label.text = "P1(플레이어) 캐릭터를 선택하세요"
-	background.texture = load(P1_BACKGROUND)
+	_p1_bg = load(P1_BACKGROUND)
+	_p2_bg = load(P2_BACKGROUND)
+	background.texture = _p1_bg
+	_preload_in_background()
+
+## 리그 전부와 다음 화면(맵 선택)을 백그라운드 스레드로 불러 두기 시작한다
+func _preload_in_background() -> void:
+	for character_name in GameState.CHARACTER_RIGS:
+		ResourceLoader.load_threaded_request(GameState.CHARACTER_RIGS[character_name])
+	ResourceLoader.load_threaded_request(MAP_SELECT_SCENE)
+
+## 리그 씬을 꺼낸다 — 백그라운드 로딩이 아직 안 끝났으면 그것만 기다린다(처음부터 load()하는 것보다 빠르다)
+func _rig_scene(character_name: String) -> PackedScene:
+	if _rig_scenes.has(character_name):
+		return _rig_scenes[character_name]
+	if not GameState.has_character_rig(character_name):
+		return null
+	var path: String = GameState.CHARACTER_RIGS[character_name]
+	var scene: PackedScene = null
+	if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		scene = ResourceLoader.load_threaded_get(path)
+	if scene == null:
+		scene = load(path)
+	_rig_scenes[character_name] = scene
+	return scene
 
 ## 숨겨진 캐릭터 칸을 미리 전부 만들어 숨겨 둔다 — 실제로 보이는 건 커맨드로 푼 것뿐이고,
 ## 자리는 몇 개가 풀렸느냐에 따라 _layout_hidden_tiles()가 그때그때 가운데로 다시 잡는다
@@ -219,9 +250,9 @@ func _show_preview(character_name: String) -> void:
 func _apply_rig_preview(box: Control, old_rig: Node2D, character_name: String, facing: float) -> Node2D:
 	if is_instance_valid(old_rig):
 		old_rig.queue_free()
-	if not GameState.has_character_rig(character_name):
+	var scene: PackedScene = _rig_scene(character_name)
+	if scene == null:
 		return null
-	var scene: PackedScene = GameState.character_rig_scene(character_name)
 	var rig: Node2D = scene.instantiate()
 	box.add_child(rig)
 	box.move_child(rig, 0)  # 이름표(P#PreviewLabel)보다 먼저 그려서 이름표가 캐릭터 위에 뜨게 한다
@@ -285,12 +316,18 @@ func _on_confirm_pressed() -> void:
 		_pending_character = ""
 		_confirm_button.disabled = true
 		_update_highlight()
-		background.texture = load(P2_BACKGROUND)
+		background.texture = _p2_bg
 	else:
 		GameState.p2_character_path = path
 		# 파동이 다 보이도록 잠깐 기다렸다가 맵 선택 화면으로 넘어간다
 		await _wait(SelectionRipple.total_duration())
-		get_tree().change_scene_to_file("res://ui/MapSelect.tscn")
+		var map_select: PackedScene = null
+		if ResourceLoader.load_threaded_get_status(MAP_SELECT_SCENE) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			map_select = ResourceLoader.load_threaded_get(MAP_SELECT_SCENE)
+		if map_select:
+			get_tree().change_scene_to_packed(map_select)
+		else:
+			get_tree().change_scene_to_file(MAP_SELECT_SCENE)
 
 ## 아직 확정 안 한 임시 선택 하나만 밝게, 나머지는 어둡게 해서 지금 뭘 고르는 중인지 눈으로 보이게 한다
 func _update_highlight() -> void:

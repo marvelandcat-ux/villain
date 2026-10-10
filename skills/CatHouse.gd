@@ -57,6 +57,8 @@ func _ready() -> void:
 	current_hp = max_hp
 	# AI가 부수러 오는 목표(cat_houses), 길을 막으면 뛰어넘는 방해물(ai_jump_over)
 	add_to_group("cat_houses")
+	# 소환물 분류: 건물 — 평타가 1타만 반복된다(`ComboMeleeAttack.SUMMON_BUILDING_GROUP`)
+	add_to_group(&"summon_building")
 	add_to_group("ai_jump_over")
 
 ## 짓는 정도(0~1)를 정한다 — 아래부터 차오른다

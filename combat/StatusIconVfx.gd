@@ -2,7 +2,7 @@ class_name StatusIconVfx
 extends Node2D
 
 ## 버프·디버프가 걸린 동안 몸 근처에서 아이콘이 계속 생겨 위(버프) 또는 아래(디버프)로 흘러가며 흐려지는 이펙트 (순수 장식).
-## 슬로우 = 파란 물방울이 내려감 / 공격력 증가 = 빨간 칼이 올라감. 종류별 그림·방향은 아래 `KINDS` 한 곳에서 정한다.
+## 슬로우 = 파란 달팽이 / 점프력 감소 = 보라 발에 X(둘 다 내려감) / 공격력 증가 = 빨간 칼이 올라감. 종류별 그림·방향은 아래 `KINDS` 한 곳에서 정한다.
 ## 아이콘과 함께 같은 방향으로 흐르는 **세로 스피드 라인**(그 버프 색)도 몸 둘레에 긋는다 — 줄은 캐릭터 **뒤**에 그려 몸을 안 가린다.
 ##
 ## 직접 만들지 말고 `Fighter.show_status_vfx(종류, 시간)` / `hide_status_vfx(종류)`로 켜고 끈다 —
@@ -14,22 +14,29 @@ extends Node2D
 ## interval = 다음 아이콘까지(초) 최소~최대, line_color = 스피드 라인 색(버프 색)
 const KINDS: Dictionary = {
 	&"slow": {
-		"texture": preload("res://sprite/VFX/슬로우 물방울.png"),
-		"rect": Rect2(374, 298, 498, 698),
-		"size": 12.0, "dir": 1.0, "travel": 30.0, "life": 0.85,
+		"texture": preload("res://sprite/VFX/이속 디버프.png"),
+		"rect": Rect2(311, 198, 993, 683),
+		"size": 18.0, "dir": 1.0, "travel": 30.0, "life": 0.85,
 		"interval": Vector2(0.22, 0.38),
-		"line_color": Color(0.35, 0.62, 1.0, 0.75),
+		"line_color": Color(0.25, 0.6, 1.0, 0.8),
+	},
+	&"jump_down": {
+		"texture": preload("res://sprite/VFX/점프 디버프.png"),
+		"rect": Rect2(264, 93, 1055, 799),
+		"size": 18.0, "dir": 1.0, "travel": 30.0, "life": 0.85,
+		"interval": Vector2(0.26, 0.42),
+		"line_color": Color(0.58, 0.32, 1.0, 0.8),
 	},
 	&"attack_up": {
 		"texture": preload("res://sprite/VFX/칼.png"),
-		"rect": Rect2(260, 290, 804, 744),
+		"rect": Rect2(258, 285, 810, 752),
 		"size": 16.0, "dir": -1.0, "travel": 34.0, "life": 0.9,
 		"interval": Vector2(0.3, 0.48),
-		"line_color": Color(1.0, 0.22, 0.16, 0.75),
+		"line_color": Color(1.0, 0.12, 0.08, 0.8),
 	},
 }
 
-## 아이콘이 생기는 범위(캐릭터 원점 = 몸 가운데 기준, px) — 가로 ±, 세로 위~아래
+## 아이콘이 생기는 범위(캐릭터 원점 = 몸 가운데 기준, px) — 가로 ±, 세로 위~아래. 내려가는 종류는 travel만큼 더 위에서 생긴다(_spawn_icon)
 const SPAWN_HALF_WIDTH: float = 26.0
 const SPAWN_Y: Vector2 = Vector2(-44.0, 14.0)
 
@@ -170,6 +177,10 @@ func _spawn_icon() -> void:
 	s.offset = tex.get_size() * 0.5 - rect.get_center()
 	add_child(s)
 	s.position = Vector2(randf_range(-SPAWN_HALF_WIDTH, SPAWN_HALF_WIDTH), randf_range(SPAWN_Y.x, SPAWN_Y.y))
+	# 내려가는 아이콘(디버프)은 흘러갈 거리만큼 위에서 생긴다 — 그래야 올라가는 칼(버프)과
+	# **같은 구간(가슴~머리 위)** 을 지나간다. 안 그러면 다리 쪽에만 보인다(2026-10-07 사용자 요청)
+	if float(_cfg["dir"]) > 0.0:
+		s.position.y -= float(_cfg["travel"])
 	var full: float = float(_cfg["size"]) / maxf(rect.size.y, rect.size.x) * randf_range(0.85, 1.15)
 	s.scale = Vector2.ONE * full * 0.4
 	s.modulate.a = 0.0

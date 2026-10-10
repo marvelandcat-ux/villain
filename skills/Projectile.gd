@@ -135,6 +135,9 @@ func _on_area_entered(area: Area2D) -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	# 벽 등 물리 바디에 부딪히면 데미지 없이 사라진다.
+	# 원웨이뿐인 바디(발판·전선)는 뚫고 지나간다 — 금쪽이 비비탄이 전선 한 가닥에 막히면 이상하다(2026-10-08)
+	if PhysicsQuery.is_one_way_only(body):
+		return
 	# 쏜 사람 본인의 몸(CharacterBody2D)은 무시 — 안 그러면 느린 투사체가 몸을 빠져나가기 전에
 	# 자기 몸에 부딪혀 그대로 사라진다(0스택 토하기처럼 느린 경우 실제로 발생)
 	if body == source_fighter:

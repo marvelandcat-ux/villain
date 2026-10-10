@@ -20,6 +20,8 @@ const KIND_WHITE := 2
 const MODIFIER_ID := "cat_suit"
 
 @export_group("검은 고양이 (똥 유탄)")
+## 검은 고양이 궁 컷인(만화 세 칸). 주황·흰은 아직 없어서 이름만 뜨는 임시 화면이 나온다
+@export var black_cutin_scene: PackedScene = preload("res://ui/cutin/CatMomBlackCutIn.tscn")
 @export var black_shots: int = 5
 ## 발사 간격(초) — 기본공격 쿨로 쓴다
 @export var black_shot_interval: float = 0.5
@@ -97,6 +99,12 @@ func can_use() -> bool:
 
 func _kind_of(fighter: Fighter) -> int:
 	return int(fighter.custom_data.get("cat_kind", 0))
+
+## 궁 컷인 장면 — 고른 고양이에 따라 갈린다(UltimateCutIn이 부른다). null이면 스탯의 기본값(없으면 임시 화면)
+func cutin_scene_for(fighter: Fighter) -> PackedScene:
+	if _kind_of(fighter) == KIND_BLACK:
+		return black_cutin_scene
+	return null
 
 func _execute(fighter: Fighter) -> void:
 	_fighter = fighter

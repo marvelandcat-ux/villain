@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://b6e8sfh3mfvv3" path="res://maps/workout/TreadmillGearStudio.gd" id="1_qy6u4"]
 [ext_resource type="Resource" uid="uid://glbweta4qgik" path="res://maps/workout/TreadmillGear.tres" id="2_iulsw"]
 [ext_resource type="Texture2D" uid="uid://c3u0e1scb08ek" path="res://sprite/맵/헬스장/헬스장바퀴.png" id="3_167o6"]
-[ext_resource type="Texture2D" uid="uid://bgjh3mm7rk8ly" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="4_v4jwh"]
+[ext_resource type="Texture2D" uid="uid://d0aqgl2hi8cd5" path="res://sprite/고양이 아줌마/고양이 아줌마 몸.png" id="4_v4jwh"]
 [ext_resource type="Texture2D" uid="uid://b8lm83glonls" path="res://sprite/고양이 아줌마/손.png" id="5_kl5t2"]
 [ext_resource type="Texture2D" uid="uid://g2b2q88ckkhw" path="res://sprite/고양이 아줌마/캣맘머리.png" id="6_mrrc4"]
 

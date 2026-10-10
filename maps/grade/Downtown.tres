@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ScreenGradeStyle" format=3 uid="uid://qvjtdgm3hbld"]
+
+[ext_resource type="Script" uid="uid://uceil1omb1w5" path="res://maps/ScreenGradeStyle.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tint = Color(0.8, 0.78, 1, 1)
+tint_strength = 0.4
+contrast = 1.12
+saturation = 1.18
+brightness = 0.0

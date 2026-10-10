@@ -17,16 +17,6 @@ func set_bag_size(mult: float) -> void:
 			child.shape = circle
 
 func _on_body_entered(body: Node2D) -> void:
-	if _is_one_way_only(body):
+	if PhysicsQuery.is_one_way_only(body):
 		return
 	super._on_body_entered(body)
-
-## 이 바디의 판정이 전부 원웨이(발판·전선)인지
-func _is_one_way_only(body: Node2D) -> bool:
-	var found: bool = false
-	for child in body.get_children():
-		if child is CollisionShape2D:
-			if not child.one_way_collision:
-				return false
-			found = true
-	return found

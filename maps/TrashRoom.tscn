@@ -8,7 +8,7 @@
 [ext_resource type="Script" uid="uid://4xe20o1gmluv" path="res://maps/CeilingLamp.gd" id="ceiling_lamp"]
 [ext_resource type="Texture2D" uid="uid://6532hhm605ny" path="res://sprite/맵/악플러집/악플러집 문.png" id="door"]
 [ext_resource type="Shader" uid="uid://dt3hqi5ytrbfu" path="res://maps/far_blur.gdshader" id="far_blur"]
-[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="hud"]
+[ext_resource type="PackedScene" uid="uid://c771ts7lj4fis" path="res://ui/CombatHUD.tscn" id="hud"]
 [ext_resource type="Script" uid="uid://cx14fi17i7bgp" path="res://maps/MomDoorGimmick.gd" id="mom_gimmick"]
 [ext_resource type="PackedScene" path="res://maps/AkpeulleoMom.tscn" id="mom_scene"]
 [ext_resource type="Script" uid="uid://xjrcbt1mgvt0" path="res://maps/ParallaxFollow.gd" id="parallax"]
@@ -20,15 +20,16 @@
 [ext_resource type="Texture2D" uid="uid://3vd1efprdaur" path="res://sprite/맵/악플러집/악플러 쓰래기들.png" id="trash"]
 [ext_resource type="Texture2D" uid="uid://iuka46o34jqt" path="res://sprite/맵/악플러집/악플러집 벽.png" id="wall"]
 [ext_resource type="Texture2D" uid="uid://dnfy7l1d0kna8" path="res://sprite/맵/악플러집/악플러 창문.png" id="window"]
+[ext_resource type="Resource" path="res://maps/grade/TrashRoom.tres" id="grade"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_far_bg"]
 shader = ExtResource("far_blur")
-shader_parameter/blur_px = 0.1
-shader_parameter/dim = 0.12
+shader_parameter/blur_px = 0.4
+shader_parameter/dim = 0.05
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_far_win"]
 shader = ExtResource("far_blur")
-shader_parameter/blur_px = 0.45
+shader_parameter/blur_px = 0.4
 shader_parameter/dim = 0.05
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]
@@ -124,7 +125,10 @@ size = Vector2(24.255947, 8.437488)
 
 [node name="TrashRoom" type="Node2D" unique_id=1655989136]
 script = ExtResource("stage")
+screen_grade = ExtResource("grade")
 hud_panels_top = true
+debug_story_skip_key = true
+story_match_ending = true
 
 [node name="Blackout" type="CanvasModulate" parent="." unique_id=1931403820]
 script = ExtResource("blackout")
@@ -135,7 +139,7 @@ light_target_path = NodePath("../MonitorLight")
 z_index = -10
 material = SubResource("ShaderMaterial_far_bg")
 script = ExtResource("parallax")
-factor = Vector2(0.85, 0.85)
+factor = Vector2(1, 1)
 reference = Vector2(290, -128)
 
 [node name="Wall" type="Sprite2D" parent="DecoBackground" unique_id=1676114983]
@@ -147,7 +151,7 @@ texture = ExtResource("bg")
 z_index = -10
 material = SubResource("ShaderMaterial_far_win")
 script = ExtResource("parallax")
-factor = Vector2(0.93, 0.93)
+factor = Vector2(1, 1)
 reference = Vector2(290, -128)
 
 [node name="DecoWindow" type="Sprite2D" parent="DecoWindows" unique_id=430483009]

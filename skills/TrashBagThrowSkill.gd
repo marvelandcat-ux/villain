@@ -1,48 +1,54 @@
 class_name TrashBagThrowSkill
 extends Skill
 
-## 번화가 맵 스킬(2026-10-08) — 주운 쓰레기 스택을 **전부** 봉투에 담아 포물선으로 던진다.
-## 스택이 많을수록 봉투가 커지고 피해·넉백도 커진다. 스택이 0이면 못 던진다(쿨도 안 돈다).
-## 스택은 `fighter.custom_data["trash_stack"]`에 있고, 쓰레기 조각(`maps/TrashPickup.gd`)이 `add_trash()`로 더한다.
-## 머리 위에 지금 스택을 띄운다 — **지금은 임시로 숫자**(사용자: 나중에 아이콘으로 바꿀 것)
+## 번화가 맵 스킬 — **쓰레기 줍기**(2026-10-09 사용자: "던지는 건 없애고 줍는 스킬로"). 예전엔 봉투 던지기였다(파일명·class_name은 참조 때문에 그대로).
+## 누르면 몸 주변 `pickup_radius` 안의 바닥 쓰레기를 **전부** 빨아들인다. 닿기만 해서는 안 주워진다(`auto_pickup` 끔) — 그래야 스킬을 쓸 이유가 생긴다.
+## 스택은 `fighter.custom_data["trash_stack"]`에 있고, 쓰레기 모으기 모드에선 이게 곧 점수다(Stage).
+## 머리 위에 지금 스택을 뱃지로 띄운다
 
 const STACK_KEY := "trash_stack"
-const BAG_SCENE := preload("res://skills/ThrownTrashBag.tscn")
 
-## 최대 스택 — 꽉 차면 쓰레기를 줍지 않는다
+## 최대 스택 — 꽉 차면 쓰레기를 줍지 않는다(쓰레기 모으기 모드는 Stage가 9999로 올린다)
 @export var max_stack: int = 10
-## 피해 = base_damage + damage_per_stack x 스택
-@export var base_damage: int = 3
-@export var damage_per_stack: int = 2
-## 봉투 크기 = 1 + size_per_stack x (스택 - 1)
-@export var size_per_stack: float = 0.15
-## 넉백 = knockback_base + knockback_per_stack x 스택 (x는 던진 방향으로 뒤집힌다)
-@export var knockback_base: Vector2 = Vector2(120, -60)
-@export var knockback_per_stack: Vector2 = Vector2(30, -15)
-## 던지는 가로 속도 / 처음 위로 뜨는 속도(px/s) / 봉투에 걸리는 중력(px/s²) — 포물선
-@export var throw_speed: float = 760.0
-@export var throw_lift: float = 300.0
-@export var bag_gravity: float = 1000.0
-## 아무것도 안 맞아도 이 시간(초) 뒤 사라진다
-@export var bag_lifetime: float = 3.0
-## 던지는 동작 길이(초) — 봉투는 `BodyRig.throw_release_ratio` 지점에서 손을 떠난다
-@export var motion_duration: float = 0.4
-## 던지는 동작이 없는 리그에서 쓸 예비동작 시간(초)
-@export var fallback_windup: float = 0.14
-## 손에 쥐여줄 봉투 그림·배율
-@export var hand_bag_texture: Texture2D = preload("res://sprite/맵/번화가/쓰래기 봉투.png")
-@export var hand_bag_scale: float = 0.022
-## 봉투가 손을 떠나는 자리(캐릭터 원점 기준, x는 바라보는 쪽으로 뒤집힌다)
-@export var hand_offset: Vector2 = Vector2(40, -28)
+## 줍는 범위(캐릭터 중심에서 px)
+@export var pickup_radius: float = 110.0
+## 닿기만 해도 줍는지 — 끄면 이 스킬로만 줍는다(`TrashPickup._check_pickup`이 본다)
+@export var auto_pickup: bool = false
+## 줍는 동작(대충 — 몸을 한 번 눌렀다 편다) 동안 발이 묶이는 시간(초)
+@export var pickup_motion_time: float = 0.25
 
 @export_group("스택 표시")
 ## 캐릭터 원점 기준 표시 자리(머리 위)
-@export var label_offset: Vector2 = Vector2(0, -88)
+@export var label_offset: Vector2 = Vector2(0, -92)
+## 스택 1~10 뱃지 그림(`sprite/맵/번화가/쓰래기 아이콘/쓰래기 아이콘 N.png`, 1254 캔버스). 비어 있으면 예전처럼 숫자로 띄운다
+@export var stack_icons: Array[Texture2D] = []
+## **숫자 없는 뱃지**(`쓰래기 아이콘 픨.png`) — 넣으면 `stack_icons` 대신 이 그림 위에 **숫자를 코드로 쓴다**(2026-10-09 사용자:
+## "그림을 여러 장 그리기 힘들어서"). 쓰레기 모으기 모드는 10개를 넘으므로 이걸 쓴다. 숫자 모양은 1~10 그림처럼 노란 굵은 글씨 + 검은 테두리
+@export var blank_icon: Texture2D = null
+## 숫자 자리(뱃지 가운데 기준, 뱃지 크기 비율) — 그림 1~10의 숫자가 왼쪽 가운데에 있다(원본 1250 캔버스 기준 숫자 중심 ≈ (460, 650))
+@export var number_center: Vector2 = Vector2(-0.14, 0.03)
+## 한 자리 숫자 글자 크기(뱃지 크기 비율). 두 자리·세 자리는 줄인다
+@export var number_size: float = 0.5
+@export var number_color: Color = Color(1.0, 0.96, 0.0)
+@export var number_outline_color: Color = Color(0.04, 0.04, 0.04)
+## 뱃지가 화면에서 차지할 크기(px, 긴 변)
+@export var icon_px: float = 46.0
+## 주울 때 뱃지가 **펌핑**(커졌다 되돌아옴)하는 배수와 시간(초)
+@export var icon_pump_scale: float = 1.4
+@export var icon_pump_time: float = 0.22
+## 숫자로 띄울 때(뱃지 그림이 없을 때)
 @export var label_font_size: int = 22
 @export var label_color: Color = Color(1.0, 0.86, 0.2)
 @export_group("")
 
 var _label: Label
+## 뱃지 묶음(그림 + 숫자) — 펌핑은 이 묶음의 scale을 1에서 키웠다 되돌린다
+var _badge_root: Node2D
+var _badge: Sprite2D
+var _number: Label
+var _pump_tween: Tween
+
+const NUMBER_FONT := preload("res://fonts/Jua-Regular.ttf")
 
 func _ready() -> void:
 	super()
@@ -69,68 +75,75 @@ func add_trash(n: int) -> bool:
 		return false
 	fighter.custom_data[STACK_KEY] = mini(stack + n, max_stack)
 	_refresh_label()
+	_pump_badge()
 	return true
 
-func _execute(fighter: Fighter) -> void:
-	var stack: int = get_trash_stack()
-	if stack <= 0:
-		# 담을 쓰레기가 없다 — 쿨만 날리지 않게 돌려준다
-		cooldown_left = 0.0
+## 쓰레기를 n개 뺀다(쓰레기 모으기 모드에서 죽을 때 떨어뜨리는 몫)
+func remove_trash(n: int) -> void:
+	var fighter := get_parent() as Fighter
+	if fighter == null:
 		return
-	fighter.custom_data[STACK_KEY] = 0
+	fighter.custom_data[STACK_KEY] = maxi(get_trash_stack() - n, 0)
 	_refresh_label()
-	var visual: Node2D = fighter.get_node_or_null("Visual")
-	var wait: float = fallback_windup
-	var item_scale: float = hand_bag_scale * _size_for(stack)
-	if visual and visual.has_method("play_throw_motion"):
-		visual.play_throw_motion(motion_duration)
-		wait = motion_duration * float(visual.throw_release_ratio)
-		if visual.has_method("set_throw_item"):
-			visual.set_throw_item(hand_bag_texture, item_scale)
-	var direction: float = fighter.facing
-	Timers.after(self, maxf(wait, 0.01), func() -> void:
-		if not is_instance_valid(fighter):
-			return
-		if visual and is_instance_valid(visual) and visual.has_method("clear_throw_item"):
-			visual.clear_throw_item()
-		_throw(fighter, direction, stack))
 
-func _throw(fighter: Fighter, direction: float, stack: int) -> void:
-	var parent: Node = fighter.get_parent()
-	if parent == null:
-		return
-	var bag = BAG_SCENE.instantiate()
-	bag.fall_gravity = bag_gravity
-	bag.lifetime = bag_lifetime
-	parent.add_child(bag)
-	bag.set_bag_size(_size_for(stack))
-	bag.global_position = fighter.global_position + Vector2(hand_offset.x * direction, hand_offset.y)
-	bag.launch(direction, throw_speed, throw_lift, fighter.compute_damage(base_damage + damage_per_stack * stack), fighter)
-	# launch()가 돌 기준 넉백을 넣으므로 스택에 맞춰 덮어쓴다
-	var kb: Vector2 = knockback_base + knockback_per_stack * stack
-	bag.knockback = Vector2(kb.x * (1.0 if direction >= 0.0 else -1.0), kb.y)
+func _execute(fighter: Fighter) -> void:
+	# 동작은 대충 — 몸을 한 번 눌렀다 펴고, 그동안 잠깐 멈춘다
+	var visual: Node = fighter.get_node_or_null("Visual")
+	if visual and visual.has_method("play_squash"):
+		visual.play_squash(Vector2(1.15, 0.8))   # 허리 굽혀 줍는 느낌
+	fighter.velocity.x = 0.0
+	fighter.apply_hitstun(pickup_motion_time)
+	for piece in _pieces_in_range(fighter):
+		if not piece.collect_by(fighter):
+			break   # 꽉 찼다
 
-func _size_for(stack: int) -> float:
-	return 1.0 + size_per_stack * float(maxi(stack - 1, 0))
+## 범위 안에서 주울 수 있는 쓰레기 조각들
+func _pieces_in_range(fighter: Fighter) -> Array:
+	var out: Array = []
+	for node in get_tree().get_nodes_in_group("trash_pickups"):
+		if node.has_method("can_collect") and node.can_collect() \
+				and node.global_position.distance_to(fighter.global_position) <= pickup_radius:
+			out.append(node)
+	return out
 
-## 던지는 동작을 스킬이 직접 재생하므로 Fighter의 기본 스윙은 덧대지 않는다
+## 줍는 동작을 스킬이 직접 보여 주므로 Fighter의 기본 스윙은 덧대지 않는다
 func handles_own_visual() -> bool:
 	return true
 
-## AI: 3개 이상 모였고 상대가 앞쪽 비슷한 높이에 있으면 던진다
-func ai_wants_use(fighter: Fighter, target: Node2D) -> bool:
-	if get_trash_stack() < 3 or target == null or not is_instance_valid(target):
-		return false
-	var dx: float = target.global_position.x - fighter.global_position.x
-	var dy: float = target.global_position.y - fighter.global_position.y
-	return absf(dx) < 520.0 and absf(dy) < 140.0 and dx * fighter.facing > 0.0
+## AI: 범위 안에 쓰레기가 있으면 줍는다
+func ai_wants_use(fighter: Fighter, _target: Node2D) -> bool:
+	return get_trash_stack() < max_stack and not _pieces_in_range(fighter).is_empty()
 
-# --- 머리 위 스택 표시(임시 숫자) ---
+# --- 머리 위 스택 표시 ---
+## 뱃지 그림(`stack_icons`)이 있으면 스택 N번째 그림을 머리 위에 띄우고, 주울 때마다 펌핑한다(2026-10-08 사용자 요청).
+## 그림이 없으면 예전 임시 숫자. 둘 다 `top_level`이라 회전 타격 때 캐릭터 루트 scale.x가 잠깐 줄어도 안 찌그러진다
 
 func _make_label() -> void:
+	if blank_icon != null or not stack_icons.is_empty():
+		_badge_root = Node2D.new()
+		_badge_root.name = "TrashStackBadge"
+		_badge_root.top_level = true
+		_badge_root.z_index = 20
+		_badge_root.visible = false
+		add_child(_badge_root)
+		_badge = Sprite2D.new()
+		_badge_root.add_child(_badge)
+		if blank_icon != null:
+			_number = Label.new()
+			_number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			_number.size = Vector2(icon_px, icon_px)
+			_number.position = number_center * icon_px - _number.size * 0.5
+			var settings := LabelSettings.new()
+			settings.font = NUMBER_FONT
+			settings.font_color = number_color
+			settings.outline_color = number_outline_color
+			_number.label_settings = settings
+			_badge_root.add_child(_number)
+		return
 	_label = Label.new()
 	_label.name = "TrashStackLabel"
-	# 회전 타격 때 캐릭터 루트 scale.x가 잠깐 줄어도 글자가 찌그러지지 않게 따로 논다
 	_label.top_level = true
 	_label.z_index = 20
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -145,19 +158,55 @@ func _make_label() -> void:
 	_label.visible = false
 	add_child(_label)
 
+## 스택이 바뀌었을 때 — 그림을 스택 번호 것으로 갈고(넘치면 마지막 그림), 0이면 숨긴다
 func _refresh_label() -> void:
-	if _label == null:
-		return
 	var stack: int = get_trash_stack()
-	_label.visible = stack > 0
-	# 주아체에 × 글리프가 없어서 영문 x를 쓴다
-	_label.text = "x%d" % stack
+	if _badge_root != null:
+		_badge_root.visible = stack > 0
+		if stack > 0:
+			var tex: Texture2D = blank_icon if blank_icon != null \
+				else stack_icons[clampi(stack, 1, stack_icons.size()) - 1]
+			if tex != null and _badge.texture != tex:
+				_badge.texture = tex
+				var longest: float = maxf(tex.get_size().x, tex.get_size().y)
+				_badge.scale = Vector2.ONE * icon_px / maxf(longest, 1.0)
+			if _number != null:
+				_set_number(stack)
+	elif _label != null:
+		_label.visible = stack > 0
+		# 주아체에 × 글리프가 없어서 영문 x를 쓴다
+		_label.text = "x%d" % stack
 	_place_label()
 
-func _place_label() -> void:
-	if _label == null or not _label.visible:
+## 주운 순간 뱃지가 커졌다 되돌아온다(펌핑). 연달아 주우면 처음부터 다시
+func _pump_badge() -> void:
+	if _badge_root == null or not _badge_root.visible:
 		return
+	if _pump_tween and _pump_tween.is_valid():
+		_pump_tween.kill()
+	_badge_root.scale = Vector2.ONE * icon_pump_scale
+	_pump_tween = create_tween()
+	_pump_tween.tween_property(_badge_root, "scale", Vector2.ONE, icon_pump_time) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## 숫자 쓰기 — 자릿수가 늘면 글자를 줄여 뱃지 안에 들어가게 한다(두 자리부터는 숫자를 가운데로 조금 당긴다)
+func _set_number(value: int) -> void:
+	var text: String = str(value)
+	_number.text = text
+	var shrink: float = [1.0, 1.0, 0.72, 0.55][mini(text.length(), 3)]
+	var font_px: int = maxi(int(round(icon_px * number_size * shrink)), 8)
+	_number.label_settings.font_size = font_px
+	_number.label_settings.outline_size = maxi(int(round(font_px * 0.28)), 2)
+	var center: Vector2 = number_center * icon_px
+	if text.length() >= 2:
+		center.x *= 0.6
+	_number.position = center - _number.size * 0.5
+
+func _place_label() -> void:
 	var fighter := get_parent() as Fighter
 	if fighter == null:
 		return
-	_label.global_position = fighter.global_position + label_offset - _label.size * 0.5
+	if _badge_root != null and _badge_root.visible:
+		_badge_root.global_position = fighter.global_position + label_offset
+	elif _label != null and _label.visible:
+		_label.global_position = fighter.global_position + label_offset - _label.size * 0.5

@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" uid="uid://j7yrxha1hr57" path="res://sprite/맵/놀이터/놀이터바닥_모래띠제거.png" id="22"]
 [ext_resource type="Texture2D" uid="uid://ba8b0k3m3q5ob" path="res://sprite/맵/놀이터/잔디.png" id="23"]
 [ext_resource type="Texture2D" uid="uid://fs2h2p05qxmm" path="res://sprite/맵/놀이터/미끄럼틀-넓은버전.png" id="24"]
+[ext_resource type="Resource" path="res://maps/grade/Playground.tres" id="grade"]
 
 [sub_resource type="RectangleShape2D" id="Shape_PavilionLeftRoof"]
 size = Vector2(219.25, 15)
@@ -53,6 +54,7 @@ size = Vector2(40, 1600)
 [node name="Playground" type="Node2D" unique_id=287704265]
 texture_filter = 4
 script = ExtResource("1")
+screen_grade = ExtResource("grade")
 stage_width = 1920
 hud_panels_top = true
 

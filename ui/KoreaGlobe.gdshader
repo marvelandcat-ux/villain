@@ -9,13 +9,15 @@ uniform sampler2D ocean_tex : source_color, repeat_enable, filter_linear_mipmap;
 uniform sampler2D land_tex : source_color, repeat_disable, filter_linear_mipmap;
 // 땅 그림이 지구 전체 그림(바다 그림) 안에서 차지하는 자리(u0, v0, 가로, 세로) — 펼쳐 확대해도 안 깨지게 한반도만 고해상도로 따로 그렸다.
 // ⚠️ tools/make_korea_globe.py를 돌리면 찍히는 land_rect 값과 같아야 한다
-uniform vec4 land_rect = vec4(0.3828125, 0.20703125, 0.263671875, 0.615234375);
+uniform vec4 land_rect = vec4(0.37109375, 0.177734375, 0.2900390625, 0.6767578125);
 // 이 사각형(ColorRect)의 크기와, 그 안에서 지구본 중심(px)·반지름(px)
 uniform vec2 rect_size = vec2(1280.0, 720.0);
 uniform vec2 center = vec2(640.0, 330.0);
 uniform float radius = 230.0;
 // 그림을 가로로 얼마나 밀었는지(u) — 늘리면 지구본이 돈다. 0이면 한반도(u 0.5)가 정면
 uniform float spin = 0.0;
+// 바다만 흐르게 하는 밀림(그림 좌표 u·v). 평면 지도 모드(2026-10-08)에서 땅은 고정하고 바다 질감만 천천히 흐른다
+uniform vec2 ocean_scroll = vec2(0.0);
 // 지구본 축 기울기(라디안) — 펼칠수록 0으로
 uniform float tilt = -0.3;
 uniform float flatten : hint_range(0.0, 1.0) = 0.0;
@@ -68,7 +70,7 @@ vec2 surface_uv(vec2 p) {
 void fragment() {
 	vec2 p = UV * rect_size - center;
 	vec2 uv = surface_uv(p);
-	vec4 surface = texture(ocean_tex, uv + vec2(spin, 0.0));
+	vec4 surface = texture(ocean_tex, uv + vec2(spin, 0.0) + ocean_scroll);
 	vec2 world = vec2(fract(uv.x + spin), uv.y);
 	vec2 luv = (world - land_rect.xy) / land_rect.zw;
 	// 땅 그림 바깥은 바다(가장자리 픽셀이 늘어나 보이지 않게 직접 가린다). 미분은 fract 이음매가 없는 uv로 잡는다
@@ -76,11 +78,14 @@ void fragment() {
 	land.a *= step(0.0, luv.x) * step(luv.x, 1.0) * step(0.0, luv.y) * step(luv.y, 1.0);
 	surface.rgb = mix(surface.rgb, land.rgb, land.a);
 
-	// 보이는 모양 = 커지는 공 ∩ 펼친 지도 틀(둥근 모서리 사각형). 공이 틀보다 커지면 틀에 잘려 지도가 된다
+	// 보이는 모양 = 커지는 공 ∩ 지도 틀(둥근 모서리 사각형). 공이 틀보다 커지면 틀에 잘려 지도가 된다.
+	// ⚠️ 틀은 **펼치는 동안에만** flat_half로 줄어든다 — 공일 때(flatten 0)는 공보다 넉넉히 커서 공이 안 잘린다
+	//    (반지름을 flat_half.y보다 키웠더니 위아래가 수평으로 잘렸다, 2026-10-08)
 	float c = bend();
 	float ball_r = c < 0.001 ? 1e6 : scale_px() / c;
 	float db = length(p) / ball_r;
-	vec2 a = abs(p) / flat_half;
+	vec2 frame_half = mix(vec2(max(radius, flat_half.x), max(radius, flat_half.y)) * 1.25, flat_half, flatten);
+	vec2 a = abs(p) / frame_half;
 	float df = pow(pow(a.x, 12.0) + pow(a.y, 12.0), 1.0 / 12.0);
 	float inside = (1.0 - smoothstep(1.0 - fwidth(db) * 1.5, 1.0, db)) * (1.0 - smoothstep(1.0 - fwidth(df) * 1.5, 1.0, df));
 
@@ -94,7 +99,7 @@ void fragment() {
 	float rim = smoothstep(0.75, 1.0, length(s)) * 0.25 * round_left;
 	surface.rgb = mix(surface.rgb, glow_color.rgb, rim);
 
-	float edge = max(length(p) - ball_r, (df - 1.0) * flat_half.y);
+	float edge = max(length(p) - ball_r, (df - 1.0) * frame_half.y);
 	float glow = glow_color.a * exp(-max(edge, 0.0) / glow_width * 2.5) * round_left;
 	vec4 halo = vec4(glow_color.rgb, glow);
 

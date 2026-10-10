@@ -1,0 +1,45 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://ui/story/PeekabooReveal.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cv88xir6bmsh6" path="res://sprite/storymode/악플러/악플러없는방.png" id="2_room"]
+[ext_resource type="Texture2D" uid="uid://cmouigp6qiwln" path="res://sprite/storymode/악플러/들킨악플러_레이어나눈버전_0003_Layer-3.png" id="3_head"]
+[ext_resource type="Texture2D" uid="uid://iicid72yihwu" path="res://sprite/storymode/악플러/들킨악플러_레이어나눈버전_0002_Layer-2.png" id="4_lower"]
+[ext_resource type="Texture2D" uid="uid://yprxmlk35x6l" path="res://sprite/storymode/악플러/들킨악플러_레이어나눈버전_0001_입.png" id="5_mouth"]
+[ext_resource type="Texture2D" uid="uid://bp84a0nx1861h" path="res://sprite/storymode/악플러/들킨악플러_레이어나눈버전_0000_떨리는몸.png" id="6_body"]
+[ext_resource type="Texture2D" uid="uid://culg7ag8pdylg" path="res://sprite/storymode/악플러/까꿍검은비닐봉지.png" id="7_bag"]
+[ext_resource type="Texture2D" uid="uid://j1pp8umj2w0i" path="res://sprite/storymode/악플러/경찰까꿍손.png" id="8_hand"]
+
+[node name="PeekabooReveal" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Room" type="Sprite2D" parent="."]
+texture = ExtResource("2_room")
+centered = false
+
+[node name="Guy" type="Node2D" parent="."]
+
+[node name="Head" type="Sprite2D" parent="Guy"]
+texture = ExtResource("3_head")
+centered = false
+
+[node name="Lower" type="Sprite2D" parent="Guy"]
+texture = ExtResource("4_lower")
+centered = false
+
+[node name="MouthPivot" type="Node2D" parent="Guy"]
+
+[node name="Mouth" type="Sprite2D" parent="Guy/MouthPivot"]
+texture = ExtResource("5_mouth")
+centered = false
+
+[node name="Body" type="Sprite2D" parent="Guy"]
+texture = ExtResource("6_body")
+centered = false
+
+[node name="Bag" type="Sprite2D" parent="."]
+texture = ExtResource("7_bag")
+centered = false
+
+[node name="Hand" type="Sprite2D" parent="."]
+texture = ExtResource("8_hand")
+centered = false

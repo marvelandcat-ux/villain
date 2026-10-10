@@ -235,6 +235,11 @@ const DEFAULT_PUNCH_SOUND := "res://Sound/펀치피격.wav"
 
 ## 뛰어오른 직후 이만큼(초)은 바닥 판정을 보지 않는다 — 그 프레임엔 아직 발이 땅에 붙어 있어서
 ## 바로 검사하면 뛰자마자 착지한 것으로 친다
+## 소환물 분류 그룹 — **건물**(고양이 집 등)은 평타가 1타만 반복된다, **생물체**(고양이·일진 패거리 등)는 캐릭터와 똑같이 1→2→3타
+const SUMMON_BUILDING_GROUP := &"summon_building"
+const SUMMON_CREATURE_GROUP := &"summon_creature"
+## 건물을 이만큼 치면 콤보를 다 친 것으로 보고 마무리 쿨이 돈다(1타 x 3번)
+const BUILDING_HIT_LIMIT := 3
 const DROPKICK_GROUND_GRACE := 0.1
 ## 어떤 이유로든 착지를 못 잡았을 때(맵 밖으로 떨어지는 중 등) 강제로 끝내는 시간(초)
 const DROPKICK_MAX_AIR := 1.5
@@ -249,6 +254,10 @@ var _resolved: bool = false
 var _swing_step: int = 0
 ## 맞은 뒤 다음 입력을 기다리는 여유 시간
 var _chain_left: float = 0.0
+## 이번 스윙이 건물만 맞혔는지 — 판정 창이 끝날 때 "건물 명중"으로 정리한다(그 사이 적이 맞으면 적이 우선)
+var _building_pending: bool = false
+## 이어서 건물을 친 횟수 — BUILDING_HIT_LIMIT에 닿으면 마무리 쿨
+var _building_hits: int = 0
 ## 켜둔 히트박스를 끄기까지 남은 시간
 var _active_left: float = 0.0
 var _fighter: Fighter = null
@@ -398,6 +407,12 @@ func _on_hitbox_connected(victim: Node) -> void:
 		_hold_in_flurry(victim)
 		return
 	if _swinging and not _resolved:
+		# 건물은 콤보를 올리지 않는다 — 판정 창 끝에 "건물 명중"으로 정리한다(같은 스윙에 적이 닿으면 아래 길로 덮인다)
+		if victim.is_in_group(SUMMON_BUILDING_GROUP):
+			if not _building_pending:
+				_building_pending = true
+				_announce_hit(victim)
+			return
 		# **_resolve보다 먼저 부른다** — (예전엔 _resolve가 다음 타를 바로 시작하며
 		# _swing_step을 바꿨다) 뒤에 부르면 "몇 번째 타였는지"를 잘못 보게 된다
 		_hold_for_next_hit(victim)
@@ -624,17 +639,21 @@ func _process(delta: float) -> void:
 			hitbox.global_position = _fighter.global_position + Vector2(range * _fighter.facing, 0.0)
 		_active_left = maxf(_active_left - delta, 0.0)
 		if _active_left <= 0.0 and _swinging and not _resolved:
-			_resolve(false)
+			if _building_pending:
+				_resolve_building_hit()
+			else:
+				_resolve(false)
 	# 맞고 나서 다음 타를 안 눌러 창이 지나면 콤보만 조용히 리셋(맞췄으니 쿨 없음)
 	if _chain_left > 0.0:
 		_chain_left = maxf(_chain_left - delta, 0.0)
-		if _chain_left <= 0.0 and _step > 0 and not _swinging:
+		if _chain_left <= 0.0 and (_step > 0 or _building_hits > 0) and not _swinging:
 			_reset(0.0)
 
 ## 한 타를 시작한다
 func _begin_swing(fighter: Fighter, step: int) -> void:
 	_swinging = true
 	_resolved = false
+	_building_pending = false
 	_chain_left = 0.0
 	_swing_step = step
 	_fire(fighter, step)
@@ -653,6 +672,7 @@ func _resolve(hit: bool) -> void:
 	hitbox.set_deferred("monitoring", false)
 	hitbox.set_deferred("monitorable", false)
 	if hit:
+		_building_hits = 0
 		# 경관봉 2타(올려치기)가 맞으면 상대가 떠 있다 — 바로 난무 받는 시간으로 넘어간다
 		if _armed_mode() and _swing_step == ARMED_LIFT_STEP:
 			_start_armed_flurry(_fighter)
@@ -666,6 +686,19 @@ func _resolve(hit: bool) -> void:
 	else:
 		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋
 		_reset(_effective_miss_cooldown())
+
+## 건물만 맞힌 스윙을 정리한다 — 몇 번째 타였든 **다음 타도 1타**. BUILDING_HIT_LIMIT번째면 마무리 쿨(2026-10-07 사용자 요청).
+## 중간에 적(캐릭터·생물체)을 맞히면 _resolve(true)가 횟수를 지우고, 그 타가 다시 1타부터 센다
+func _resolve_building_hit() -> void:
+	var count: int = _building_hits + 1
+	_resolve(false)   # 판정 끄기·상태 정리는 같다 — 쿨·횟수는 아래에서 덮어쓴다(_reset이 횟수를 지운다)
+	_building_hits = count
+	if _building_hits >= BUILDING_HIT_LIMIT:
+		_reset(effective_cooldown())
+	else:
+		_step = 0
+		cooldown_left = 0.0
+		_chain_left = chain_window
 
 ## 헛발질했을 때 실제로 돌 쿨타임.
 ## **쿨타임 덮어쓰기(악플러 열등감)가 걸려 있으면 헛쳐도 그 값으로 묶인다** — 안 그러면
@@ -844,6 +877,7 @@ func report_external_hit(victim: Node) -> void:
 
 func _reset(cd: float) -> void:
 	_step = 0
+	_building_hits = 0
 	_last_pushback = 0.0
 	_chain_left = 0.0
 	cooldown_left = cd

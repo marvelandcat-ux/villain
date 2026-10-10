@@ -9,7 +9,7 @@
 
 - **캐릭터 전용 `.gd` 금지** — 모든 캐릭터 루트는 `characters/Fighter.gd`, 차이는 스탯 `.tres` + 스킬 노드(`BasicAttack`/`Skill1`/`Skill2`/`SkillUltimate`). 빈 `skills/Skill.gd` = 의도된 미구현
 - **버프·디버프 직접 대입 금지** → `set_modifier`/`clear_modifier`(id별 곱), 임시 `apply_temp_multiplier`. 색조도 `set_tint`/`clear_tint`. `damage_reduction`은 `set_modifier`로 쓰지 말 것(`damage_taken_multiplier` 사용)
-- **VFX는 길목에 붙어 있다 — 스킬에서 따로 띄우지 말 것**: 회복은 `heal()`(→ `combat/HealBurst.gd`, 리셋용 채우기는 `heal(n, false)`), 슬로우는 `apply_temp_multiplier("move_speed_multiplier", <1)`(→ 물방울). `current_hp` 직접 대입이나 `set_modifier`로 건 슬로우(맵 기믹·자기 패널티)엔 안 나옴. **흘러가는 아이콘(버프·디버프 표시)은 `Fighter.show_status_vfx(종류, 시간)`/`hide_status_vfx(종류)`**(→ `combat/StatusIconVfx.gd`, 종류·그림·방향은 그 파일 `KINDS`, 그림 바꾸면 `rect` 재측정). 공격력 버프(`&"attack_up"`)는 길목이 없어 **켠 스킬이 끌 때 hide 짝 필수**(열등감·경봉·쌍악기·주황 고양이)
+- **VFX는 길목에 붙어 있다 — 스킬에서 따로 띄우지 말 것**: 회복은 `heal()`(→ `combat/HealBurst.gd`, 리셋용 채우기는 `heal(n, false)`), 슬로우·점프력 감소는 `apply_temp_multiplier("move_speed_multiplier"/"jump_multiplier", <1)`(→ 달팽이 / 발). `current_hp` 직접 대입이나 `set_modifier`로 건 슬로우(맵 기믹·자기 패널티)엔 안 나옴. **흘러가는 아이콘(버프·디버프 표시)은 `Fighter.show_status_vfx(종류, 시간)`/`hide_status_vfx(종류)`**(→ `combat/StatusIconVfx.gd`, 종류·그림·방향은 그 파일 `KINDS`, 그림 바꾸면 `rect` 재측정). 공격력 버프(`&"attack_up"`)는 길목이 없어 **켠 스킬이 끌 때 hide 짝 필수**(열등감·경봉·쌍악기·주황 고양이)
 - **공용 헬퍼 — 다시 짜지 말 것:** `PhysicsQuery.raycast_ignoring_fighters`/`ground_y_below`, `Timers.after`(`real_time`)/`self_destruct`, `Fighter.find_fighter_in_box`, `CrashBurst.spawn`(설정은 add_child 전)
 - 스킬: `Skill` 상속 후 `_execute(fighter)`만. `_ready()` 오버라이드 시 `super()`. **쿨은 전부 `effective_cooldown()` 경유**. 스킬2 교체 `swap_skill_2()`, 궁 봉인 `seal_ultimate(id)`. 궁 쿨은 컷인 뒤 `fire_ultimate_now()`부터
 - 라운드마다 `reload_current_scene()`(승수만 `GameState`)
@@ -22,6 +22,7 @@
 - 잡기: `can_be_grabbed()` → **`cancel_finisher_flight()` 먼저** → `is_grabbed`로 위치 직접 이동
 - **슈퍼아머는 개수로 셈 — add/remove 짝 필수**. `blocks_debuff()`에 섞지 말 것
 - 캐릭터끼리 몸 충돌 없음(양방향 `add_collision_exception_with`, 레이어는 안 건드림). **소환물·설치물도 z 0 + 같은 방식**(음수 z면 맵 그림 뒤로 숨음)
+- **맞는 소환물은 두 분류 중 하나의 그룹에 넣을 것**(2026-10-07): `summon_building`(고양이 집) = 평타가 **몇 타였든 다음도 1타**, 1타 x 3번이면 마무리 쿨, 중간에 적을 치면 그 타부터 다시 1타 / `summon_creature`(고양이·일진 패거리) = 캐릭터와 똑같이 1→2→3타, `is_grabbed`를 갖춰 고양이 옷 3타에 잡혀 내던져진다(잡힌 동안 스스로 안 움직임). 규칙은 `ComboMeleeAttack`(`_resolve_building_hit`)·`CatSuitCombo`
 
 ### 함정 (실제로 겪음)
 
@@ -39,6 +40,7 @@
 - `duplicate()`는 신호까지 복사 → 판정 복제는 `DUPLICATE_SCRIPTS | DUPLICATE_GROUPS`. **잔상은 복제 후 스크립트를 뗄 것**
 - 명중 콜백 안에서 판정 모양 변경은 `set_deferred`
 - 셰이더: **`COLOR` 덮어쓸 땐 원래 `COLOR`를 곱할 것**. CanvasGroup 어둡게는 `self_modulate`. Polygon2D는 `vertex_colors`가 있으면 `color` 무시
+- **CanvasGroup(흐림 셰이더) 자식에 `z_index`를 주면 그룹 밖에서 그려져 흐림이 안 먹는다** → 앞뒤는 트리 순서로(번화가 골목 2·3층, 2026-10-09)
 - 이펙트(먼지·바람·자국)는 **맵에 붙일 것**(캐릭터 자식이면 반전에 뒤집힘). 피격 움찔은 그림만(물리로 띄우면 확정 콤보 깨짐)
 - 무언가 사라지면 `git stash list`부터(GitHub Desktop이 치운 적 있음)
 - PowerShell 변수는 대소문자 무시. Bash heredoc 속 python의 `\` 줄끝 주의
@@ -49,11 +51,12 @@
 - `attack_duration`을 바꾸면 `windup`(= x0.4)도. 회전·발차기 타는 리그 `spin_duration`/`kick_duration`을 `finisher_windup`과 같이
 - 확정 콤보: **넉백을 키우면 파고들기(`combo_lunge`)도 같이**
 - 회전 타격: 루트 `scale.x` 변경은 다음 프레임 `_apply_pose` 첫머리에서 되돌리기, 최소 0.04
-- 3타 날아가기 `launch_finisher()`: `FINISHER_*`는 배율 1 기준, `finisher_distance_scale`은 속도 배수(거리 ≈ 제곱). 벽 튕김 속도는 `move_and_slide()` **전에** 기억
+- 3타 날아가기 `launch_finisher()`: `FINISHER_*`는 배율 1 기준, `finisher_distance_scale`은 속도 배수(거리 ≈ 제곱). 벽 튕김 속도는 `move_and_slide()` **전에** 기억. **높이는 잃은 체력으로 보간**(2026-10-08): `FINISHER_PEAK_FULL` 150 → `FINISHER_PEAK_EMPTY` 350px, 솟는 속도 `FINISHER_UP_SCALE` √3은 상한이 항상 걸리게 하는 용도(실측 풀피 156 / 반피 256 / 빈사 347px). 체력 배율(속도)에 높이가 또 곱해지지 않는다. **날아가는 동안 받는 피해 절반**(`FINISHER_FLYING_DAMAGE_SCALE`, `take_damage` 맨 앞 올림)
 - 클래시 `SkillClashManager`: 스킬1·2·궁만. 테스트에서 스킬은 클래시 대기창 뒤에 나감
 - 점프·중력은 **static var**(영구는 `DEFAULT_*`). **점프·중력을 바꾸면 맵 발판 높이(놀이터·지하철 의자·공사현장·헬스장) 재확인**
 - 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 필수
 - 방어: 디버프 차단은 `blocks_debuff(from_ultimate)` 한 곳(궁만 관통). 막힘 판정은 `Hitbox._try_hit()`에서 한 번만. 가드/대시 off는 `can_guard()`/`can_dash()` 맨 앞
+- **막혔을 때 표시는 `combat/GuardImpact.gd` 하나**(2026-10-10, "BLOCK" 글자·파란 불꽃 대체): `Hitbox._spawn_guard_impact()`가 때린 쪽 몸 가장자리에서 터뜨림. 보호막(`GuardShield`)은 그대로
 - **발판 내려가기**: 레이어 끄지 말고 발판에 collision exception(바디 전체에 걸림 → 한 바디에 막힘 충돌 섞지 말 것). 올라갈 발판은 `one_way_collision`
 - 히트스톱은 꺼져 있음. 켜면 복귀 타이머 `ignore_time_scale = true`. `Engine.time_scale` 바꾼 스킬은 `_exit_tree`에서 복구
 
@@ -74,6 +77,7 @@
 - 머리 돌리기 앵커 = **머리 공의 중심x·y·지름**(알파 1/4 축소 → 높이 22% 열림 연산 → 무게중심·`2sqrt(넓이/pi)`, 프로펠러·턱 제외)
 - ⚠️ 머리/몸통 파일명이 비슷 — **덮어쓰기 전 내용 확인**
 - 표정 우선순위: 피격 > 토하기/액션 > 취함 > 지침 > 맨정신. `_update_hp_face()`는 `take_damage`/`heal`/`ring_out` 세 곳
+- **캐릭터 조명(위에서 오는 빛)** `set_rim_light(params: Dictionary)`/`clear_rim_light()`(2026-10-08) — ⚠️ **2026-10-09 사용자 요청으로 번화가에서 노드를 뺐다. 지금 쓰는 맵 없음**(코드·셰이더는 남김, 다시 쓰려면 맵에 `RimLight` 노드만 넣으면 됨): 맵의 `maps/RimLight.gd` 노드가 매 프레임 uniform 값을 넣어 줌. 셰이더 `characters/RimLight.gdshader` = 윗가장자리 림 + 아랫가장자리 그늘 + 파츠 안 위아래 명암(사용자: "맨 위에서 빛, 지붕 아래 명암, 모든 윤곽선에 두르지 말 것"). 안쪽 테두리, 두께는 화면 px, 방향은 MODEL_MATRIX 역변환. ⚠️ 셰이더 함수 안에서는 `UV`/`TEXTURE`를 못 써서 인자로 넘긴다. **리그 재질 하나를 Sprite2D 파츠가 같이 씀 — material이 비어 있는 파츠에만 붙이고 내 재질일 때만 뗌**(빨간 테두리·황금 손이 material을 바꿨다 null로 되돌리는 것과 공존). 파츠 셰이더를 새로 만들면 같은 규칙으로
 
 ### 그림 파일 교체
 
@@ -85,14 +89,16 @@
 
 ## 조작 / AI
 
-- P1: A/D·W 점프·S 아래·F 평타·G/H 스킬·R 궁·E 맵 스킬 / P2: ←→·↑·↓·L·;·'·]·[. 대시 = 이동키 두 번, 발판 내려가기 = 아래키 두 번(원웨이 발판 위에서만), **방어 = 평타+스킬1 동시**(`GUARD_CHORD_WINDOW` 0.06초 동안 짝을 기다려서 혼자 누른 평타·스킬1은 그만큼 늦게 나감). ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION` 올릴 것**
+- P1: A/D·W 점프·S 아래·F 평타·G/H 스킬·R 궁·E 맵 스킬 / P2: ←→·↑·↓·L·;·'·]·[. 대시 = 이동키 두 번, 발판 내려가기 = 아래키 한 번(원웨이 발판 위에서만, 2026-10-08), **방어 = 평타+스킬1 동시**(`GUARD_CHORD_WINDOW` 0.06초 동안 짝을 기다려서 혼자 누른 평타·스킬1은 그만큼 늦게 나감). ⚠️ **기본 배치를 바꾸면 `GameState.KEYBIND_VERSION` 올릴 것**
 - ⚠️ `move()`/`dash()`가 `facing`도 바꿈 → 후퇴 직후 되돌릴 것
 - AI 발판 길찾기 그룹: `"ai_jump_over"`, `"ai_danger_zone"` → `"ai_safe_spot"`. 기믹 위험 판정은 `can_process()`인 것만
 
 ## 맵 / UI
 
 - 새 맵 필수: 바닥·벽(또는 링아웃)·`PlayerSpawn1/2`·`Camera2D`(`CameraRig.gd`)·`CombatHUD`, 목록 `GameState.MAPS`. **`Deco*` 노드는 맵 선택 미리보기 제외**. 맵 스킬은 클래시 안 탐
+- **번화가 = 쓰레기 모으기 규칙**(2026-10-09, `Stage.trash_collect_mode`): 체력 0 → 쓰레기 절반(올림) 뿌리고 튕겨 나감 → 스폰 자리에서 깜박이며 2초 → 부활. 시간 끝에 쓰레기 많은 쪽 승, 같으면 무승부. 개수는 맵 스킬 `TrashBagThrowSkill`(한도 9999) — **이름과 달리 이제 "쓰레기 줍기"**(던지기 삭제, 범위 110px 안을 한 번에, 닿아서는 안 주움 `auto_pickup`), 뱃지는 빈 그림 `blank_icon` + 코드 숫자
 - `Fade`는 씬의 **맨 마지막 자식**. 기준 해상도 1280x720
+- 맵 전체 색보정 `maps/ScreenGrade.gd`(월드 z 3000, HUD 안 물듦) — 맵별 `.tres`는 `maps/grade/`, 자세한 건 `.claude/rules/maps.md`
 - 폰트 주아체는 ⚠️ **기호 글리프가 거의 없음**(`◀ ▶ ● ○ · × ↑ ↓` → 코드로 그릴 것)
 
 ## 코드 스타일
@@ -548,7 +554,7 @@ F6으로 띄우면 **게임과 같은 화면**에 헬스장이 나오고, 키보
 ### 궁극기 컷인 `ui/UltimateCutIn.tscn`
 
 - 기획 확정: 1.5초(장면 `cutin_duration` 우선), **연출 중 시간 정지**, 스킵 없음, 확정타 아님. `use_ultimate()` → 연출 → `fire_ultimate_now()`
-- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철. **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
+- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철·고양이 아주머니(검은 고양이만). **궁 스킬에 `cutin_scene_for(fighter)`가 있으면 스탯보다 우선**(같은 캐릭터라도 궁이 갈릴 때). **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
 - 지하철 컷인: ⚠️ `Metro!.png` 무늬가 기울어 칸마다 `rotation = -0.0158` + `skew = 0.0158`(그림 바꾸면 재측정), 이동은 x만. 칸 수·틈을 바꾸면 `train_from_x`/`train_to_x`도. 선글라스 반짝은 `LensGlint.always_show`
 - 금쪽이 컷인: 원래 머리 복원 → `set_action_face(true)` 순서. 경찰: 얼굴 두 장 크기·위치 같아야 함
 
@@ -656,6 +662,7 @@ res://
 
 - 기획 미정은 임시값 + TODO
 - `invalid UID` 경고 → 씬 uid를 `.import`의 uid로
-- **코드 수정 후 헤드리스 확인 안 함(사용자 요청)** — "실행해서 확인해줘"일 때만
-- Godot 실행 파일: `Godot*4.7*win64*console*.exe` 검색
+- **결과가 확실하지 않으면 실행해서 확인할 것**(2026-10-09 사용자 — 예전 "확인 안 함" 규칙을 바꿈). 특히 **화면에 보이는 것**(배치·그림·흐림)은 창 모드로 띄워 `get_viewport().get_texture().get_image().save_png()` 스크린샷을 찍어 직접 본 뒤 보고. 뻔한 수정은 생략해도 됨
+- Godot 실행 파일: `C:\Program Files (x86)\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`(Steam판 4.7.2, console판 없음)
+- **에디터 자동 다시 불러오기 플러그인 `addons/auto_reload_scenes`**(2026-10-09): 열린 씬의 `.tscn`이나 그 씬이 쓰는 `@tool` 스크립트가 밖에서 바뀌면 1초 안에 묻지 않고 다시 불러온다(Godot엔 씬 자동 반영 설정이 없고, "디스크가 더 최신" 창에서 **다시 저장**을 누르면 밖에서 고친 게 덮어써졌다). ⚠️ 그 씬의 저장 안 한 에디터 변경은 사라진다
 - 헤드리스 테스트: 쓰이는 씬을 띄울 것(`--quit-after`만으론 파싱 에러 못 잡음). `extends SceneTree --script` 금지 → `extends Node` 임시 `.tscn`. 시간 기반은 `--fixed-fps 60`. `apply_physics()` 중복 호출 금지, 순간이동 직후 착지 랙 대기

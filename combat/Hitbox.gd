@@ -18,12 +18,12 @@ signal connected(victim: Node)
 ## 명중 시 이 장면을 명중 지점에 스폰한다 (주정뱅이 술병 깨진 유리 파편 등). 비어 있으면 아무것도 안 한다.
 ## 스폰된 노드에 setup(pos) 메서드가 있으면 그걸로 위치를 넘기고, 없으면 global_position만 맞춘다
 @export var debris_scene: PackedScene
-## 명중 시 타격 스파크(HitSpark)를 띄울지. 끄면 방어에 막혔을 때의 파란 스파크만 남는다 —
-## 막힌 건 "BLOCK" 글자와 함께 보여야 막았다는 게 읽혀서 그대로 둔다(2026-09-25, 금쪽이 기본공격에서 끔)
+## 명중 시 타격 스파크(HitSpark)를 띄울지. 꺼도 방어에 막혔을 때의 `GuardImpact`는 그대로 뜬다 —
+## 막힌 건 보여야 막았다는 게 읽혀서 그대로 둔다(2026-09-25, 금쪽이 기본공격에서 끔)
 @export var hit_spark: bool = true
 ## 켜면 명중 효과가 **둔기(퍽!)** 로 바뀐다 — 날붙이용 `HitSpark`(가늘게 찢어지는 섬광) 대신
 ## `combat/BluntImpact.gd`(두꺼운 충격 고리 + 뭉툭한 쐐기 + 먼지)가 뜬다.
-## 막혔을 때의 파란 스파크는 그대로 `HitSpark`를 쓴다 — "막았다"는 신호는 캐릭터마다 같아야 한다
+## 막혔을 때는 둔기든 아니든 `GuardImpact`가 뜬다 — "막았다"는 신호는 캐릭터마다 같아야 한다
 @export var blunt_impact: bool = false
 ## 명중 시 카메라를 흔드는 세기 = damage × 이 값 (0이면 안 흔든다). 데미지가 클수록 크게·오래 흔들린다
 @export var shake_per_damage: float = 0.04
@@ -57,6 +57,8 @@ const HITSTOP_SCALE: float = 0.0001
 const SPARK_POWER_DAMAGE: float = 7.0
 ## 효과음 헬퍼(새 class_name이라 이름 대신 preload로 부른다)
 const _SFX := preload("res://combat/Sfx.gd")
+## 방어에 막힌 이펙트(새 class_name이라 이름 대신 preload로 부른다)
+const _GUARD_IMPACT := preload("res://combat/GuardImpact.gd")
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -136,16 +138,15 @@ func _try_hit(area: Area2D) -> bool:
 	if blocked:
 		_notify_blocked_by_guard()
 	_apply_hitstop()
-	if hit_spark or blocked:
-		_spawn_spark(area.global_position, kb, blocked)
+	if blocked:
+		_spawn_guard_impact(area, kb)
+	elif hit_spark:
+		_spawn_spark(area.global_position, kb)
 	if debris_scene != null and debris_enabled:
 		_spawn_debris(area.global_position, kb)
 	_shake_camera()
 	var victim: Node = area.fighter
-	if blocked:
-		# 막았으면 HP가 하나도 안 깎였으므로 숫자 대신 "BLOCK"을 띄운다
-		_spawn_block_popup(area.global_position)
-	else:
+	if not blocked:
 		# 피격 지점에 데미지 숫자(+콤보) 팝업
 		var combo: int = 0
 		if victim and victim.has_method("get_combo_count"):
@@ -197,18 +198,45 @@ func _play_hit_sound() -> void:
 		return
 	_SFX.play(self, hit_sound, hit_sound_volume_db, hit_sound_pitch)
 
-## 막은 지점에 "BLOCK" 팝업을 띄운다 (데미지 숫자와 같은 장면을 다른 모드로 쓴다)
-func _spawn_block_popup(pos: Vector2) -> void:
-	# 타이틀 뒤 구경 모드엔 숫자·HIT·BLOCK 팝업을 안 띄운다(2026-09-28 사용자 요청)
-	if GameState.game_mode == "attract":
-		return
+## 방어에 막힌 자리에서 `GuardImpact`(파란 초승달 고리 + 판 + 번개 + 속도선)를 터뜨린다.
+## 예전엔 "BLOCK" 글자 + 작은 파란 불꽃이었다(2026-10-10 사용자 레퍼런스로 교체).
+## 자리는 허트박스 중심이 아니라 **이 판정에 가장 가까운 허트박스 가장자리** — 막은 부위에서 터져야 한다.
+## push_dir은 공격이 밀고 들어가는 방향(가로 부호만 쓴다). 비었으면 때린 쪽 → 맞은 쪽으로 정한다
+func _spawn_guard_impact(hurtbox: Area2D, push_dir: Vector2 = Vector2.ZERO) -> void:
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return
-	var popup: Node2D = load("res://combat/DamagePopup.tscn").instantiate()
-	scene_root.add_child(popup)
-	popup.global_position = pos
-	popup.setup_block()
+	if absf(push_dir.x) < 0.01:
+		push_dir = Vector2(signf(hurtbox.global_position.x - global_position.x), 0.0)
+	var fx: Node2D = _GUARD_IMPACT.new()
+	scene_root.add_child(fx)
+	fx.global_position = _contact_point(hurtbox)
+	fx.setup(push_dir, float(damage) / SPARK_POWER_DAMAGE)
+
+## 막힌 자리: 가로는 허트박스의 **때린 쪽 가장자리**, 세로는 이 판정(모양 중심) 높이를 몸 안으로 자른 값.
+## 판정이 몸 안까지 파고들어 있어도 이펙트는 몸 앞면에서 터진다. 모양(네모·캡슐)을 못 읽으면 허트박스 중심
+func _contact_point(hurtbox: Area2D) -> Vector2:
+	var from: Vector2 = global_position
+	for c in get_children():
+		if c is CollisionShape2D:
+			from = c.global_position
+			break
+	for c in hurtbox.get_children():
+		if not (c is CollisionShape2D):
+			continue
+		var half := Vector2.ZERO
+		if c.shape is RectangleShape2D:
+			half = (c.shape as RectangleShape2D).size * 0.5
+		elif c.shape is CapsuleShape2D:
+			var cap := c.shape as CapsuleShape2D
+			half = Vector2(cap.radius, cap.height * 0.5)
+		else:
+			continue
+		half *= c.global_scale.abs()
+		var mid: Vector2 = c.global_position
+		var edge_x: float = mid.x + half.x * (1.0 if from.x > mid.x else -1.0)
+		return Vector2(edge_x, clampf(from.y, mid.y - half.y, mid.y + half.y))
+	return hurtbox.global_position
 
 ## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)
 func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:
@@ -273,7 +301,7 @@ func _spawn_spark(pos: Vector2, launch_dir: Vector2 = Vector2.ZERO, blocked: boo
 	if scene_root == null:
 		return
 	var spark: Node2D
-	if blunt_impact and not blocked:
+	if blunt_impact:
 		spark = BluntImpact.new()
 	else:
 		spark = load("res://combat/HitSpark.tscn").instantiate()
