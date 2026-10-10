@@ -19,6 +19,10 @@ var focal: float = 1500.0
 var dolly: float = 0.0
 ## 실제 시간(초) — 경광등 박자에만 쓴다
 var time: float = 0.0
+## 사이렌 소리에 맞출 때 장면이 매 프레임 넣는다: 1 = 높은음(빨강), -1 = 낮은음(파랑), 0 = 소리 없이 혼자 돈다(siren_cycle)
+var siren_tone: int = 0
+## 지금 음이 시작되고 흐른 초 — 음이 바뀌는 순간 첫 번쩍이 터진다
+var tone_time: float = 0.0
 
 @export_group("자리")
 ## 앞범퍼의 카메라 쪽 아래 모서리가 닿는 바닥 자리(월드 X, Z)
@@ -67,8 +71,10 @@ var time: float = 0.0
 @export var siren_blue: Color = Color(0.2, 0.5, 1.0)
 ## 경광등이 꺼졌을 때 밝기(켜진 색에 곱한다)
 @export_range(0.0, 1.0, 0.05) var siren_dim: float = 0.42
-## 빨강·파랑 한 바퀴(빨강 두 번 번쩍 → 파랑 두 번 번쩍)에 걸리는 시간(초)
+## 빨강·파랑 한 바퀴(빨강 두 번 번쩍 → 파랑 두 번 번쩍)에 걸리는 시간(초). 사이렌 소리에 맞출 땐(siren_tone) 안 쓴다
 @export var siren_cycle: float = 0.62
+## 사이렌에 맞출 때 한 음 안에서 두 번 번쩍이는 박자(초): 첫 번쩍 끝 / 둘째 시작 / 둘째 끝
+@export var tone_flash: Vector3 = Vector3(0.16, 0.22, 0.4)
 ## 켜진 쪽에서 뻗는 빛살 길이(캐릭터 키 기준)
 @export var ray_length: float = 0.62
 
@@ -307,9 +313,17 @@ func _siren_bar(u0: float, u1: float, w: float) -> void:
 	var v0: float = 0.14
 	var v1: float = w - 0.14
 	var mid: float = w * 0.5
-	var phase: float = fposmod(time / maxf(siren_cycle, 0.05), 1.0)
-	var red_on: bool = _flash_on(phase)
-	var blue_on: bool = _flash_on(fposmod(phase + 0.5, 1.0))
+	var red_on: bool
+	var blue_on: bool
+	if siren_tone != 0:
+		# 사이렌 높은음 = 빨강, 낮은음 = 파랑 — 음이 바뀌는 순간에 맞춰 두 번 번쩍
+		var flash: bool = _tone_flash_on(tone_time)
+		red_on = siren_tone > 0 and flash
+		blue_on = siren_tone < 0 and flash
+	else:
+		var phase: float = fposmod(time / maxf(siren_cycle, 0.05), 1.0)
+		red_on = _flash_on(phase)
+		blue_on = _flash_on(fposmod(phase + 0.5, 1.0))
 	var red_center: Vector3 = _w(u0, (v0 + mid) * 0.5, (y0 + y1) * 0.5)
 	var blue_center: Vector3 = _w(u0, (mid + v1) * 0.5, (y0 + y1) * 0.5)
 	# 켜진 쪽 빛살 — 막대보다 먼저 그려서 막대가 위에 온다
@@ -345,6 +359,10 @@ func _mirror(u: float, v0: float, v1: float) -> void:
 		return
 	_quad([_w(u, v0, y0), _w(u, v1, y0), _w(u, v1, y1), _w(u, v0, y1)], body_lit)
 	_quad([_w(u, v0, y0), _w(u, v1, y0), _w(u, v1, y0 + 0.035), _w(u, v0, y0 + 0.035)], stripe_color, false)
+
+## 한 음이 시작되고 t초 지났을 때 켜져 있는지 — 시작하자마자 번쩍, 잠깐 꺼졌다 한 번 더
+func _tone_flash_on(t: float) -> bool:
+	return (t >= 0.0 and t < tone_flash.x) or (t >= tone_flash.y and t < tone_flash.z)
 
 ## 빨강/파랑 각자 반 바퀴 안에서 두 번 번쩍 — "삐용삐용"보다 "번쩍번쩍"으로 보이게
 static func _flash_on(phase: float) -> bool:

@@ -273,7 +273,13 @@ func _process_trash_mode(delta: float) -> void:
 	if _round_time_left <= 0.0:
 		var a: int = _trash_of(_p1)
 		var b: int = _trash_of(_p2)
-		_end_round(a > b, a == b)
+		if a != b:
+			_end_round(a > b, false)
+			return
+		# **쓰레기가 같으면 덜 맞은 쪽이 이긴다**(2026-10-10). 쓰레기 모드는 동점이 흔한데
+		# — 쓰레기가 10초에 3~5개만 나와서 둘 다 0개인 라운드도 자주 난다 —
+		# 무승부는 양쪽 다 점수를 못 얻어서 그대로 두면 같은 라운드만 되풀이됐다
+		_end_round(_p1.current_hp > _p2.current_hp, _p1.current_hp == _p2.current_hp)
 
 func _trash_of(fighter: Fighter) -> int:
 	var skill = fighter.map_skill
@@ -443,11 +449,19 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 			GameState.p1_round_wins += 1
 		else:
 			GameState.p2_round_wins += 1
+	else:
+		# 무승부는 양쪽 다 점수가 없다 — 몇 번이나 그랬는지 세 둬야 판을 끝낼 수 있다
+		GameState.draw_rounds += 1
 	# 방금 딴 점수를 HUD에도 바로 반영한다 — _process가 라운드 종료로 멈춰서
 	# 그냥 두면 결과창이 떠 있는 내내 **이기기 직전 점수**가 남아 있는다
 	if _combat_hud:
 		_combat_hud.update_round_info(GameState.p1_round_wins, GameState.p2_round_wins, _round_time_left)
-	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win or GameState.p2_round_wins >= GameState.rounds_to_win
+	# ⚠️ **무승부 상한이 세 번째 조건이다.** 무승부만 이어지면 양쪽 점수가 0에 머물러
+	# 앞의 두 조건이 영영 참이 안 된다 — 띠 하나 지나가고 씬을 다시 불러오기만 반복해서
+	# 최종 결과 화면에 닿지를 못했다(2026-10-10 번화가 실측). 상한에 닿으면 무승부로 끝낸다
+	var match_decided: bool = GameState.p1_round_wins >= GameState.rounds_to_win \
+		or GameState.p2_round_wins >= GameState.rounds_to_win \
+		or GameState.draw_rounds >= GameState.draw_round_limit
 	if match_decided:
 		# 스토리 전투를 이겼으면 결과창 대신 라운드와 같은 "승리!" 띠를 띄우고 이야기로 넘어간다
 		if p1_won and not is_draw and GameState.game_mode == "story" and GameState.story_next_scene != "":
@@ -615,6 +629,8 @@ func _match_ending_info(p1_won: bool, is_draw: bool) -> Dictionary:
 		"winner_p2_color": same_pick and not winner_is_p1,
 		"loser_p2_color": same_pick and winner_is_p1,
 		"is_draw": is_draw,
+		# 연행 장면 뒤에 이 맵 건물(싸운 곳)을 세운다 — ArrestScene.map_backdrops
+		"map_path": scene_file_path,
 	}
 
 ## 선수 몸(`Visual`)이 어느 리그 씬인지. 못 읽으면 로스터의 리그 목록에서 이름으로 찾는다

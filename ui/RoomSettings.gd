@@ -269,8 +269,7 @@ func _on_next_pressed() -> void:
 	GameState.result_cutscene_enabled = _result_on
 	GameState.vs_ai = _vs_ai
 	GameState.game_mode = "pvp"
-	GameState.p1_round_wins = 0
-	GameState.p2_round_wins = 0
+	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/CharacterSelect.tscn")
 
 func _on_back_pressed() -> void:

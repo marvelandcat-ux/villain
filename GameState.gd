@@ -176,6 +176,12 @@ var rounds_to_win: int = 2
 var time_limit_seconds: int = 120
 var p1_round_wins: int = 0
 var p2_round_wins: int = 0
+## **무승부로 끝난 라운드 수.** 무승부는 양쪽 다 점수를 못 얻는다 — 그래서 이것만 되풀이되면
+## 어느 쪽도 `rounds_to_win`에 닿지 못해 **판이 영영 안 끝난다**(2026-10-10 번화가에서 발견).
+## 쓰레기 모으기 맵은 동점(특히 둘 다 0개)이 흔해서 실제로 같은 라운드만 무한 반복됐다
+var draw_rounds: int = 0
+## 무승부 라운드를 몇 번까지 다시 할지. 이 수에 닿으면 그 판을 **무승부로 끝낸다**
+var draw_round_limit: int = 3
 
 ## 모든 스킬 쿨타임에 곱하는 전역 배율(RoomSettings에서 설정). 1.0 = 원래 쿨타임, 0.5 = 절반, 2.0 = 두 배
 var cooldown_multiplier: float = 1.0
@@ -275,6 +281,7 @@ func _ready() -> void:
 func reset_round_wins() -> void:
 	p1_round_wins = 0
 	p2_round_wins = 0
+	draw_rounds = 0
 
 ## 스토리 에피소드 하나를 시작한다 — 모드·진행도를 맞추고 그 에피소드의 첫 장면으로 넘어간다.
 ## scene이 비어 있는(아직 안 만든) 에피소드면 아무 일도 안 하고 false를 돌려준다
