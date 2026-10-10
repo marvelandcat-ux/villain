@@ -59,6 +59,8 @@ const SPARK_POWER_DAMAGE: float = 7.0
 const _SFX := preload("res://combat/Sfx.gd")
 ## 방어에 막힌 이펙트(새 class_name이라 이름 대신 preload로 부른다)
 const _GUARD_IMPACT := preload("res://combat/GuardImpact.gd")
+## 카운터 히트 연출(멈춤·배경 흐림·"COUNTER" 글자). 씬에 하나만 두고 이름으로 찾아 쓴다
+const _COUNTER_HIT_FX := preload("res://combat/CounterHitFx.gd")
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -86,6 +88,8 @@ var hit_sound_pitch: float = 1.0
 var attacker_body: Node = null
 ## repeat_interval을 쓸 때, 겹쳐 있는 Hurtbox마다 다음 타격까지 남은 시간 {Hurtbox: float}
 var _repeat_cooldowns: Dictionary = {}
+## 지금 처리 중인 한 방이 카운터 히트인지 — 스파크·숫자 팝업을 흐림 판 위로 올릴 때 본다
+var _counter_now: bool = false
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
@@ -133,8 +137,11 @@ func _try_hit(area: Area2D) -> bool:
 	var kb: Vector2 = _compute_knockback(area)
 	# 이 한 방이 방어에 막히는지 먼저 판정해서 팝업·무기 깜빡임에 같이 쓴다
 	var blocked: bool = _is_blocked_by_guard(area)
+	# 카운터 히트인지 **맞히기 전에** 본다 — take_hit 안에서 맞은 쪽 공격이 끊기며 카운터 창이 닫힌다
+	var counter: bool = not blocked and _is_counter_hit(area)
 	if not area.take_hit(damage, kb, source_fighter, pop_override, get_attacker()):
 		return false
+	_counter_now = counter
 	if blocked:
 		_notify_blocked_by_guard()
 	_apply_hitstop()
@@ -154,7 +161,35 @@ func _try_hit(area: Area2D) -> bool:
 		_spawn_damage_number(area.global_position, damage, combo)
 		_play_hit_sound()
 	connected.emit(victim)
+	# **확정 경직(평타 콤보가 connected에서 거는 것)까지 다 걸린 뒤에** 더한다 — 먼저 더하면 큰 쪽만 남아 사라진다
+	if counter:
+		_apply_counter_hit(victim)
+	_counter_now = false
 	return true
+
+## 이 한 방이 카운터 히트인지 — 캐릭터의 공격이 **공격이 나오는 중**인 캐릭터를 때렸을 때만.
+## 맵 기믹(주인 없음)·겹쳐 있는 동안 계속 때리는 판정(담배 연기 등)·소환물 몸은 카운터가 안 난다
+func _is_counter_hit(hurtbox: Hurtbox) -> bool:
+	if not _has_source or repeat_interval > 0.0:
+		return false
+	var victim = hurtbox.fighter
+	return victim is Fighter and (victim as Fighter).is_counter_hittable()
+
+## 카운터 히트 — 경직을 더하고 연출을 띄운다(데미지는 그대로, 2026-10-10 사용자 결정)
+func _apply_counter_hit(victim: Node) -> void:
+	if not (victim is Fighter) or not is_instance_valid(victim):
+		return
+	var target: Fighter = victim
+	target.add_counter_stun()
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	var fx: Node = scene_root.get_node_or_null(_COUNTER_HIT_FX.NODE_NAME)
+	if fx == null:
+		fx = _COUNTER_HIT_FX.new()
+		scene_root.add_child(fx)
+	var hitter: Node = get_attacker()
+	fx.play(target, hitter as Node2D)
 
 ## 이 판정으로 실제로 때린 몸(캐릭터 또는 일진 패거리·고양이 같은 소환물). 순서:
 ## `attacker_body` → 부모를 거슬러 올라가 처음 만나는 **맞을 수 있는 몸**(take_damage가 있는 Node2D) → `source_fighter`.
@@ -250,6 +285,9 @@ func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:
 	scene_root.add_child(popup)
 	popup.global_position = pos
 	popup.setup(dmg, combo)
+	# 카운터면 흐림 판 위로 — 숫자까지 흐려지면 안 읽힌다
+	if _counter_now:
+		popup.z_index = _COUNTER_HIT_FX.FOCUS_Z + 1
 
 ## 명중 시 카메라를 데미지에 비례해 흔든다 (game_camera 그룹의 카메라를 찾아 trauma를 더한다)
 func _shake_camera() -> void:
@@ -310,6 +348,9 @@ func _spawn_spark(pos: Vector2, launch_dir: Vector2 = Vector2.ZERO, blocked: boo
 	# 맞은 방향으로 찢어지고, 데미지가 클수록 크게 튄다(데미지 7 = 세기 1)
 	if spark.has_method("setup"):
 		spark.setup(launch_dir, float(damage) / SPARK_POWER_DAMAGE, blocked)
+	# 카운터면 흐림 판 위로(맞은 자리 불꽃까지 흐려지면 밋밋하다)
+	if _counter_now:
+		spark.z_index = _COUNTER_HIT_FX.FOCUS_Z + 1
 
 ## 명중 지점에 debris_scene을 스폰한다 (주정뱅이 술방울 등). 튀고 사라지는 처리는 스폰된 노드가 맡는다.
 ## 때린 방향과 술 스택은 스폰한 쪽만 아는 값이라, _ready가 도는 add_child **전에** 미리 넣어준다

@@ -248,6 +248,9 @@ var custom_data: Dictionary = {}
 var _busy_time: float = 0.0
 ## 피격 경직(히트스턴) 남은 시간(초). 0보다 크면 조작(이동·점프·스킬)을 막고 넉백 속도가 실려 미끄러진다
 var _hitstun_time: float = 0.0
+## 카운터 히트 — **공격이 나오는 중**(준비동작~판정)이라 지금 맞으면 카운터가 되는 남은 시간(초).
+## 평타는 `ComboMeleeAttack`이 휘두를 때 열고 판정이 끝나면 닫는다. 스킬은 `Skill.counter_window`만큼 연다
+var _counter_window: float = 0.0
 ## 넉백을 받고 아직 착지하지 않았는지 — 이 동안엔 move()가 가로 속도를 덮어쓰지 않고 날아가던 힘을 유지한다
 var _launch_momentum: bool = false
 ## 남은 착지 경직(초) — 0보다 크면 이동·점프·대시·방어·공격·스킬이 전부 막힌다
@@ -395,6 +398,11 @@ const HITSTUN_FRICTION := 900.0
 ## 최소 경직(체공) 시간 — 넉백이 작아도 이만큼은 떠 있는다
 const HITSTUN_MIN := 0.3
 const HITSTUN_MAX := 0.5
+## **카운터 히트**로 맞으면 경직에 더하는 시간(초) — 길티기어 대형 카운터 +18F ≈ 0.3초.
+## 카운터는 한 종류뿐이고 데미지는 안 늘린다(2026-10-10 사용자 결정). 멈춤·표시·흐림은 `combat/CounterHitFx.gd`
+const COUNTER_HIT_EXTRA_STUN := 0.3
+## 카운터 창이 아무리 길어도 이 이상은 안 열린다(초) — 닫는 쪽이 빠뜨려도 영영 카운터 상태로 남지 않게
+const COUNTER_WINDOW_MAX := 1.0
 ## 맞고 날아가는 동안(착지 전) 방향키로 가로 속도를 바꿀 수 있는 가속도(px/s²). 작을수록 날아가는 힘을 못 거스른다
 const LAUNCH_AIR_CONTROL := 900.0
 ## 맞고 날아가는 동안 방향키를 안 누르면 가로 속도가 줄어드는 정도(px/s²). 0이면 착지할 때까지 그대로 날아간다
@@ -462,6 +470,8 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 		_combo_count += 1
 		_combo_timer = COMBO_WINDOW
 	elif knockback != Vector2.ZERO:
+		# 맞으면 하던 공격이 끊긴다 — 판정이 켜지기 전(준비동작)이던 평타는 안 나간다(카운터 히트의 전제)
+		_interrupt_attack()
 		# 수평 넉백을 키워 콤보처럼 넉백 방향으로 멀리 날린다 (수직은 팝업이 담당)
 		var kb_x: float = knockback.x * KNOCKBACK_MULTIPLIER
 		velocity.x += kb_x
@@ -1003,6 +1013,37 @@ func apply_hitstun(duration: float) -> void:
 func is_in_hitstun() -> bool:
 	return _hitstun_time > 0.0
 
+## --- 카운터 히트 (2026-10-10) ---
+## 상대 공격이 **나오는 중**(준비동작~판정)에 때리면 카운터 — 경직이 COUNTER_HIT_EXTRA_STUN만큼 늘고 멈춤·표시가 뜬다.
+## 후딜(판정이 끝난 뒤)에 때리는 건 그냥 딜캐라 카운터가 아니다. 판정은 `Hitbox._try_hit()` 한 곳에서 한다.
+## ⚠️ 지하철 아저씨 "단소 반격"(`counter_stance`/`try_counter`)과는 **다른 것**이다 — 이름을 섞지 말 것
+
+## 공격이 나오기 시작했다 — duration초 동안 맞으면 카운터 히트가 된다
+func open_counter_window(duration: float) -> void:
+	_counter_window = clampf(maxf(_counter_window, duration), 0.0, COUNTER_WINDOW_MAX)
+
+## 공격이 다 나왔다(맞혔거나 판정이 끝났다) — 이제부터 맞으면 보통 히트
+func close_counter_window() -> void:
+	_counter_window = 0.0
+
+## 지금 맞으면 카운터 히트인가 — 공격이 나오는 중이고, 막거나 버티거나 피하는 상태가 아닐 것
+func is_counter_hittable() -> bool:
+	return _counter_window > 0.0 and not is_guarding and not is_invincible and not has_super_armor() \
+			and counter_stance == null and not _finisher_flying and not is_grabbed
+
+## 카운터 히트 보너스 경직 — 이미 걸린 경직(평타 확정 경직 포함) **위에 더한다**.
+## 3타에 맞아 날아가는 중이면 날아가기가 경직을 쥐고 있으므로 건드리지 않는다
+func add_counter_stun(extra: float = COUNTER_HIT_EXTRA_STUN) -> void:
+	if has_super_armor() or _finisher_flying or extra <= 0.0:
+		return
+	_hitstun_time += extra
+
+## 맞아서 하던 공격이 끊긴다 — 카운터 창을 닫고, 판정이 켜지기 전이던 평타는 접는다(`ComboMeleeAttack.interrupt_by_hit`)
+func _interrupt_attack() -> void:
+	_counter_window = 0.0
+	if basic_attack != null and basic_attack.has_method("interrupt_by_hit"):
+		basic_attack.interrupt_by_hit()
+
 ## 슈퍼아머를 건다/푼다. **반드시 짝으로 부를 것** — 개수로 세기 때문에 한쪽만 부르면 아머가 안 풀린다
 func add_super_armor() -> void:
 	_super_armor += 1
@@ -1440,9 +1481,17 @@ func use_skill_1() -> void:
 		return
 	var manager: Node = _get_clash_manager() if skill_1.clashable() else null
 	if manager:
-		manager.request(self, "skill_1", func(): skill_1.use(self), func(): skill_1.cancel_use())
+		manager.request(self, "skill_1", _cast_if_free.bind(func(): skill_1.use(self)), func(): skill_1.cancel_use())
 	else:
 		skill_1.use(self)
+
+## 클래시 대기창(`SkillClashManager.match_window`)을 지나 **실제로 나가는 순간** 한 번 더 막힘을 본다.
+## 누를 땐 멀쩡했는데 기다리는 0.15초 사이에 맞아 경직·잡힘에 걸렸으면 버린다(쿨도 안 돈다).
+## 예전엔 이 검사가 없어서, 평타 콤보 틈에 누른 지하철 반격이 2타에 맞은 **경직 중에** 켜졌다(2026-10-10 QA)
+func _cast_if_free(action: Callable) -> void:
+	if is_feared or is_grabbed or is_guarding or is_busy():
+		return
+	action.call()
 
 ## 스킬2 자리에 다른 스킬을 끼우고 원래 스킬을 돌려준다 — 궁 동안만 스킬2가 바뀌는 캐릭터용(BarracksUltimate)
 func swap_skill_2(skill: Skill) -> Skill:
@@ -1456,7 +1505,7 @@ func use_skill_2() -> void:
 		return
 	var manager: Node = _get_clash_manager() if skill_2.clashable() else null
 	if manager:
-		manager.request(self, "skill_2", func(): skill_2.use(self), func(): skill_2.cancel_use())
+		manager.request(self, "skill_2", _cast_if_free.bind(func(): skill_2.use(self)), func(): skill_2.cancel_use())
 	else:
 		skill_2.use(self)
 
@@ -1468,7 +1517,7 @@ func use_ultimate() -> void:
 		return
 	var manager: Node = _get_clash_manager()
 	if manager:
-		manager.request(self, "ultimate", func(): _play_ultimate_cutin(), func(): skill_ultimate.cancel_use())
+		manager.request(self, "ultimate", _cast_if_free.bind(_play_ultimate_cutin), func(): skill_ultimate.cancel_use())
 	else:
 		_play_ultimate_cutin()
 
@@ -1628,6 +1677,8 @@ func apply_physics(delta: float) -> void:
 		return
 	if _busy_time > 0.0:
 		_busy_time = maxf(_busy_time - delta, 0.0)
+	if _counter_window > 0.0:
+		_counter_window = maxf(_counter_window - delta, 0.0)
 	if _finisher_window > 0.0:
 		_finisher_window = maxf(_finisher_window - delta, 0.0)
 	# 경직 중엔 넉백 속도가 마찰로 서서히 줄며 미끄러진다 (멈출 때쯤 경직도 끝나 조작이 돌아온다)

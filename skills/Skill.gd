@@ -29,6 +29,9 @@ extends Node
 ## **라운드 시작과 게임 시작이 따로 필요 없는 이유:** 라운드가 바뀔 때 `Stage`가
 ## `reload_current_scene()`으로 씬을 통째로 다시 만들어서 `_ready()`가 매 라운드 다시 돈다
 @export var start_on_cooldown: bool = false
+## 이 스킬을 쓴 직후 이 시간(초) 동안 맞으면 **카운터 히트**(경직 +0.3초, 멈춤·표시) — 기술을 내미는 순간의 빈틈.
+## 0이면 카운터가 안 난다. **궁극기와 평타는 이 값을 안 쓴다**(궁은 카운터 없음, 평타는 휘두르는 동안 `ComboMeleeAttack`이 직접 연다)
+@export var counter_window: float = 0.2
 
 var cooldown_left: float = 0.0
 ## 0보다 크면 cooldown 대신 이 값이 쓰인다 — 버프가 잠깐 쿨타임을 **고정값으로** 덮어쓸 때 쓴다
@@ -67,6 +70,9 @@ func use(fighter: Fighter) -> void:
 	# 모션이 긴 스킬은 그동안 다른 스킬을 못 쓰게 잠근다 (이동은 계속 가능)
 	if lock_duration > 0.0 and fighter:
 		fighter.start_busy(lock_duration)
+	# 기술을 내미는 순간은 카운터 히트를 맞는 빈틈이다 — 궁·평타는 빼고(위 counter_window 설명)
+	if counter_window > 0.0 and fighter and fighter.skill_ultimate != self and fighter.basic_attack != self:
+		fighter.open_counter_window(counter_window)
 	_execute(fighter)
 
 ## 스킬 클래시(연타 미니게임)에서 졌을 때 호출한다 — 실제 효과(_execute)는 내지 않고

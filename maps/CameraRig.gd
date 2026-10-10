@@ -67,6 +67,17 @@ var _focus_total: float = 0.0
 var _focus_blend: float = 0.12
 var _focus_zoom_mul: float = 1.0
 var _focus_base_zoom: float = 1.0
+## 다가가는 동안 기울일 각도(라디안) / 대상 쪽으로 옮겨 가는 실제 시간 속도(0 이하면 예전 방식)
+var _focus_tilt: float = 0.0
+var _focus_track: float = -1.0
+## 다가가기를 마지막으로 진행한 실제 시각(마이크로초)
+var _focus_last_us: int = 0
+## 다가가기 직전 화면 아랫변(월드 y) / 실제 시간 추적 모드에서 몸 가운데를 보려고 발에서 올리는 양(px)
+var _focus_view_bottom: float = 0.0
+const FOCUS_BODY_LIFT := -30.0
+## 실제 시간 추적 모드: 다가가기 전 카메라 자리 / 부드럽게 따라가는 대상 자리
+var _focus_start_pos: Vector2 = Vector2.ZERO
+var _focus_track_pos: Vector2 = Vector2.ZERO
 ## 씬에 저장돼 있던 원래 배율
 var _authored_zoom: float = 1.0
 
@@ -155,7 +166,11 @@ func snap_to_fighters() -> void:
 ## **잠깐 한 대상에게 바짝 다가간다.** 궁 마무리처럼 한 순간을 크게 보여줄 때 쓴다.
 ## `duration`은 **실제 시간**이다 — 같이 쓰는 슬로우모션(Engine.time_scale)에 끌려 늘어나면
 ## 연출이 하염없이 길어진다. 들어가고 나오는 건 `blend`초에 걸쳐 부드럽게 섞인다
-func focus_on(target: Node2D, zoom_mul: float = 1.6, duration: float = 0.45, blend: float = 0.12) -> void:
+## tilt_deg: 다가가는 동안 화면을 이만큼 **기울인다**(길티기어 카운터처럼 옆에서 보는 느낌, 0이면 안 기울임).
+## track_speed: 0보다 크면 대상 쪽으로 옮겨 가는 속도를 **실제 시간**으로 이 값으로 쓴다 — 고정 카메라 맵(follow_speed 0)이나
+## 화면이 멈춘 동안(카운터 히트)에도 대상에게 간다. 0 이하면 예전처럼 follow_speed x 2(게임 시간)
+func focus_on(target: Node2D, zoom_mul: float = 1.6, duration: float = 0.45, blend: float = 0.12,
+		tilt_deg: float = 0.0, track_speed: float = -1.0) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	_focus_target = target
@@ -164,15 +179,39 @@ func focus_on(target: Node2D, zoom_mul: float = 1.6, duration: float = 0.45, ble
 	_focus_left = _focus_total
 	_focus_blend = clampf(blend, 0.01, _focus_total * 0.5)
 	_focus_base_zoom = zoom.x
+	_focus_tilt = deg_to_rad(tilt_deg)
+	_focus_track = track_speed
+	_focus_last_us = Time.get_ticks_usec()
+	# 지금(다가가기 전) 화면 아랫변 — 다가가는 동안 이보다 아래는 안 비춘다
+	_focus_view_bottom = get_screen_center_position().y + get_viewport_rect().size.y * 0.5 / maxf(zoom.y, 0.01)
+	_focus_start_pos = global_position
+	_focus_track_pos = global_position
+	if not is_zero_approx(_focus_tilt):
+		ignore_rotation = false
+
+## 다가가기가 끝났다 — 기울인 화면을 바로 세운다
+func _end_focus_tilt() -> void:
+	if is_zero_approx(_focus_tilt) and ignore_rotation:
+		return
+	_focus_tilt = 0.0
+	rotation = 0.0
+	ignore_rotation = true
 
 ## 다가가기를 진행한다. 지금 다가가는 중이면 true(그 프레임은 평소 추적을 건너뛴다)
 func _update_focus(delta: float) -> bool:
 	if _focus_left <= 0.0:
+		_end_focus_tilt()
 		return false
-	# 실제 시간으로 센다 — 느려진 배속에 안 끌려간다
-	_focus_left -= delta / maxf(Engine.time_scale, 0.01)
+	# 실제 시간으로 센다 — 느려진 배속에 안 끌려간다. **delta를 배속으로 나누지 않고 시계를 직접 본다** —
+	# 화면을 멈추는(배속 0.0001) 바로 그 프레임엔 delta가 아직 안 줄어 있어서 나누면 "69초 흘렀다"가 되어
+	# 다가가기가 그 자리에서 끝났다(2026-10-10 카운터 히트 줌에서 실측)
+	var now_us: int = Time.get_ticks_usec()
+	var real_dt: float = clampf(float(now_us - _focus_last_us) / 1000000.0, 0.0, 0.1)
+	_focus_last_us = now_us
+	_focus_left -= real_dt
 	if not is_instance_valid(_focus_target):
 		_focus_left = 0.0
+		_end_focus_tilt()
 		return false
 	var elapsed: float = _focus_total - _focus_left
 	# 들어갈 때·나올 때만 섞고 가운데는 1.0으로 머문다
@@ -180,10 +219,29 @@ func _update_focus(delta: float) -> bool:
 	w = clampf(w, 0.0, 1.0)
 	w = w * w * (3.0 - 2.0 * w)
 	var aim: Vector2 = _focus_target.global_position
-	aim.y = clampf(aim.y, _highest_center_y(), _lowest_center_y())
-	global_position = global_position.lerp(aim, clampf(follow_speed * 2.0 * delta, 0.0, 1.0))
+	if _focus_track > 0.0:
+		# 실제 시간 추적 모드(카운터 히트 줌): 발이 아니라 **몸 가운데**를 보고, 평소 "가장 아래" 한계 대신
+		# **원래 화면의 아랫변 밖으로는 안 내려가게**만 막는다 — 다가가 커진 만큼 더 내려와도 원래 보이던 것만 보인다.
+		# 평소 한계(max_y)를 그대로 쓰면 고정 카메라 맵(헬스장 360)에서 발밑 591까지 못 내려와 캐릭터가 화면 아래 HUD에 깔렸다
+		aim.y += FOCUS_BODY_LIFT
+		var half_h: float = get_viewport_rect().size.y * 0.5
+		var lowest: float = maxf(_lowest_center_y(), _focus_view_bottom - half_h / maxf(zoom.y, 0.01))
+		aim.y = clampf(aim.y, _highest_center_y(), lowest)
+	else:
+		aim.y = clampf(aim.y, _highest_center_y(), _lowest_center_y())
+	if _focus_track > 0.0:
+		# 대상 자리를 부드럽게 따라가고, 카메라는 **처음 자리 ↔ 그 자리를 줌과 같은 곡선(w)으로** 오간다 —
+		# 끝나면 처음 자리로 돌아온다(고정 카메라 맵은 따라가기 속도가 0이라 안 돌려놓으면 그 자리에 남았다)
+		_focus_track_pos = _focus_track_pos.lerp(aim, clampf(_focus_track * real_dt, 0.0, 1.0))
+		global_position = _focus_start_pos.lerp(_focus_track_pos, w)
+	else:
+		global_position = global_position.lerp(aim, clampf(follow_speed * 2.0 * delta, 0.0, 1.0))
 	var want: float = lerpf(_focus_base_zoom, _focus_base_zoom * _focus_zoom_mul, w)
 	zoom = Vector2(want, want)
+	if not is_zero_approx(_focus_tilt):
+		rotation = _focus_tilt * w
+	if _focus_left <= 0.0:
+		_end_focus_tilt()
 	return _focus_left > 0.0
 
 ## 흐르기를 시작한다 — 지금 배율 그대로, 맵 왼쪽 끝에서 전체 거리의 end_ratio까지 duration초 동안.

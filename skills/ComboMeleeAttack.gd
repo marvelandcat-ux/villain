@@ -83,6 +83,18 @@ var _external_hit: bool = false
 ## 모션 중에 누른 건 **기억했다가(선입력)** 끝나는 순간 낸다 — 연타해도 입력이 씹히지 않는다.
 ## 그 대기만큼 상대 경직도 늘려서(`_apply_link_stun`) 확정 콤보는 그대로 이어진다
 @export var wait_for_swing_end: bool = true
+
+@export_group("공중 큰 휘두르기")
+## 켜면 **공중에서 누른 평타**가 1·2·3타 대신 앞쪽 반원을 크게 후려치는 한 방이 된다(2026-10-10, 주정뱅이만 켬).
+## 점프 한 번에 한 번(땅에 닿으면 다시 충전). 맞으면 **평타 1타와 똑같이** 처리돼서 착지 후 누르면 2타로 이어진다.
+## 모션은 리그 `play_air_swing()`(값은 리그의 `air_swing_*`)
+@export var air_swing_enabled: bool = false
+## 휘두르는 모션 전체 길이(초). 판정은 그 40%~62% 구간(후리는 동안) 켜진다
+@export var air_swing_duration: float = 0.36
+## 반원 판정 반지름(px)과 그 중심(캐릭터 원점 기준, x는 바라보는 쪽 자동 반전)
+@export var air_swing_radius: float = 85.0
+@export var air_swing_center: Vector2 = Vector2(0, -12)
+@export_group("")
 ## 헛발질(빗맞음)했을 때만 도는 쿨타임(초). 음수면 기본 cooldown을 그대로 쓴다.
 ## 3타 마무리 쿨은 cooldown이라, 이 값으로 "못 맞췄을 때만" 더 크게 벌칙을 줄 수 있다
 @export var miss_cooldown: float = -1.0
@@ -253,6 +265,10 @@ const DROPKICK_MAX_AIR := 1.5
 var _step: int = 0
 ## 지금 스윙이 진행 중인지 (발동~명중/헛발 판정까지). 이 동안 들어온 입력은 버린다(선입력 없음)
 var _swinging: bool = false
+## 판정이 켜지기 전(예비동작)을 기다리는 중 — 이때 맞으면 이번 타는 안 나간다(`interrupt_by_hit`, 카운터 히트)
+var _winding: bool = false
+## 휘두를 때마다 1씩 올린다 — 맞아서 끊긴 타의 기다림(await)이 끝났을 때 **그 뒤에 시작한 새 타**를 대신 내지 않게
+var _swing_id: int = 0
 ## 이번 스윙의 판정이 끝났는지 (명중/헛발을 두 번 처리하지 않도록)
 var _resolved: bool = false
 ## 지금 스윙이 몇 번째 타였는지
@@ -263,6 +279,11 @@ var _chain_left: float = 0.0
 var _anim_left: float = 0.0
 ## 모션 중에 눌러 둔 다음 타(선입력) — 모션이 끝나는 순간 낸다
 var _queued: bool = false
+## 이번 점프에서 공중 큰 휘두르기를 썼는지(땅에 닿으면 false) / 지금 타가 공중 큰 휘두르기인지
+var _air_used: bool = false
+var _air_now: bool = false
+## 공중 휘두르기 동안 갈아 끼운 반원 판정 — 끝나면 원래 판정(_air_saved_shape)으로 되돌린다
+var _air_saved_shape: Shape2D = null
 ## 이번 스윙이 건물만 맞혔는지 — 판정 창이 끝날 때 "건물 명중"으로 정리한다(그 사이 적이 맞으면 적이 우선)
 var _building_pending: bool = false
 ## 이어서 건물을 친 횟수 — BUILDING_HIT_LIMIT에 닿으면 마무리 쿨
@@ -594,6 +615,18 @@ func use(fighter: Fighter) -> void:
 		fighter.custom_data["keyboard_spin_charged"] = false
 		_start_spin_flurry(fighter)
 		return
+	# 공중이면 큰 휘두르기 한 방 — 점프 한 번에 한 번, 모션 중엔 안 받는다(선입력도 안 쌓는다)
+	if air_swing_enabled and not fighter.is_on_floor():
+		if _swinging or _anim_left > 0.0 or _air_used:
+			return
+		_air_used = true
+		_air_now = true
+		# 공중 휘두르기도 **콤보 순서를 따라간다**(이어치는 중이면 그 타, 아니면 1타) — 늘 1타로 치면
+		# 맞힐 때마다 다시 쓸 수 있어서(맞히면 초기화) 공중에서 무한히 이어졌다. 3번째 타면 3타처럼 날린다
+		if _chain_left <= 0.0:
+			_step = 0
+		_begin_swing(fighter, _step)
+		return
 	# 모션이 아직 도는 중이면 기억만 해 두고 끝나는 순간 낸다(선입력). 빗맞으면 _resolve가 지운다
 	if wait_for_swing_end and (_swinging or _anim_left > 0.0):
 		_queued = true
@@ -618,6 +651,9 @@ func handles_own_visual() -> bool:
 
 func _process(delta: float) -> void:
 	super._process(delta)  # 쿨타임 감소
+	# 공중 큰 휘두르기는 땅에 닿으면 다시 쓸 수 있다
+	if _air_used and is_instance_valid(_fighter) and _fighter.is_on_floor() and not _air_now:
+		_air_used = false
 	# 키보드 회전 난무가 도는 중이면 히트박스를 몸 중심에 붙여 따라다니게 하고, 시간이 다 되면 끝낸다.
 	# (도는 동안은 아래 일반 콤보 판정 로직을 건너뛴다)
 	if _spin_active:
@@ -651,6 +687,8 @@ func _process(delta: float) -> void:
 		# 판정만 켜진 자리에 남아서, 발이 닿아도 판정은 뒤에서 허공을 쳤다
 		if is_instance_valid(_fighter):
 			hitbox.global_position = _fighter.global_position + Vector2(range * _fighter.facing, 0.0)
+			if _air_now:
+				hitbox.global_position = _fighter.global_position + Vector2(air_swing_center.x * _fighter.facing, air_swing_center.y)
 		_active_left = maxf(_active_left - delta, 0.0)
 		if _active_left <= 0.0 and _swinging and not _resolved:
 			if _building_pending:
@@ -678,7 +716,14 @@ func _begin_swing(fighter: Fighter, step: int) -> void:
 	_chain_left = 0.0
 	_swing_step = step
 	_queued = false
-	_anim_left = _swing_len_for(step, fighter) if wait_for_swing_end else 0.0
+	# 마무리 타 뒤에는 이어질 타가 없으니 모션을 안 기다린다 — 다음 콤보는 예전처럼 쿨타임(cooldown)만 본다.
+	# 3타 모션 길이가 캐릭터마다 달라서(0.5~0.558초) 기다리면 다음 콤보 시작이 캐릭터마다 어긋났다(2026-10-10 사용자: "평타 데이터 똑같아야")
+	_anim_left = _swing_len_for(step, fighter) if wait_for_swing_end and not _is_final(step) else 0.0
+	if _air_now:
+		_anim_left = air_swing_duration
+	# 휘두르기 시작 ~ 판정이 끝날 때(_resolve)까지는 맞으면 카운터 히트다. 넉넉히 열어 두고 _resolve가 닫는다
+	fighter.open_counter_window(Fighter.COUNTER_WINDOW_MAX)
+	_swing_id += 1
 	_fire(fighter, step)
 
 ## 이 타의 휘두르는 모션 전체 길이(초) — AttackData → 평타 길이(swing_duration·마무리 역산) → 리그 기본 길이 순.
@@ -703,14 +748,21 @@ func _resolve(hit: bool) -> void:
 		return
 	_resolved = true
 	_swinging = false
+	_winding = false
 	_active_left = 0.0
 	_external_hit = false
+	# 공격이 다 나왔다 — 이제부터(후딜) 맞는 건 카운터가 아니라 그냥 딜캐다
+	if is_instance_valid(_fighter):
+		_fighter.close_counter_window()
+	_end_air_swing()
 	# 명중 시그널(area_entered) 콜백 안에서 호출될 수 있는데, 그때 monitoring을 바로 끄면
 	# Godot이 물리 연산 중이라 막아버려 히트박스가 켜진 채 남는다(그 자리를 지나가면 계속 맞는 버그).
 	# set_deferred로 물리 스텝이 끝난 뒤에 안전하게 끈다
 	hitbox.set_deferred("monitoring", false)
 	hitbox.set_deferred("monitorable", false)
 	if hit:
+		# 맞히면 공중 휘두르기도 다시 채운다 — 같은 점프 안에서 또 쓸 수 있다(땅 평타의 쿨 초기화와 같은 규칙)
+		_air_used = false
 		_building_hits = 0
 		# 경관봉 2타(올려치기)가 맞으면 상대가 떠 있다 — 바로 난무 받는 시간으로 넘어간다
 		if _armed_mode() and _swing_step == ARMED_LIFT_STEP:
@@ -721,10 +773,24 @@ func _resolve(hit: bool) -> void:
 			cooldown_left = 0.0
 			_chain_left = chain_window       # 맞은 뒤 다음 입력을 기다리는 창을 연다
 		else:
-			_reset(effective_cooldown())   # 3타까지 다 맞춤 → 마무리 회복 쿨
+			# 3타까지 다 맞춤 → **쿨 없이** 1타부터 다시(2026-10-10 사용자: "1번이라도 맞추면 무조건 초기화").
+			# 무한 콤보는 3타가 상대를 날려 보내서(_launch_finisher) 막는다 — 슈퍼아머 중엔 안 날아가지만 아머는 시간이 정해져 있다
+			_reset(0.0)
 	else:
 		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋
 		_reset(_effective_miss_cooldown())
+
+## 판정이 켜지기 전(예비동작)에 맞았다 — 이번 타는 안 나가고 헛친 것으로 정리한다(`Fighter._interrupt_attack`이 부른다).
+## 판정이 이미 켜졌으면 그대로 둔다 — 같은 순간 서로 때린 건 둘 다 맞는다(상쇄)
+func interrupt_by_hit() -> void:
+	if not _winding or not _swinging or _resolved:
+		return
+	_resolve(false)
+	# 휘두르던 팔도 거둔다 — 안 거두면 맞고 움찔하는 중에 주먹이 허공으로 나간다
+	if is_instance_valid(_fighter):
+		var visual: Node = _fighter.get_node_or_null("Visual")
+		if visual and visual.has_method("cancel_attack_swing"):
+			visual.cancel_attack_swing()
 
 ## 건물만 맞힌 스윙을 정리한다 — 몇 번째 타였든 **다음 타도 1타**. BUILDING_HIT_LIMIT번째면 마무리 쿨(2026-10-07 사용자 요청).
 ## 중간에 적(캐릭터·생물체)을 맞히면 _resolve(true)가 횟수를 지우고, 그 타가 다시 1타부터 센다
@@ -769,7 +835,11 @@ func _fire(fighter: Fighter, step: int) -> void:
 	_announce_swing(fighter, step)
 	var d: AttackData = _hit_data(step)
 	var visual := fighter.get_node_or_null("Visual")
-	if visual and visual.has_method("play_attack_swing"):
+	if visual and _air_now and visual.has_method("play_air_swing"):
+		visual.play_air_swing(air_swing_duration)
+		if visual.has_method("play_swing_trail"):
+			visual.play_swing_trail()
+	elif visual and visual.has_method("play_attack_swing"):
 		if d != null:
 			visual.play_attack_swing(d.anim_variant if d.anim_variant >= 0 else step, d.anim_duration, d.spin)
 		elif _armed_mode() and visual.has_method("play_weapon_slash"):
@@ -791,7 +861,9 @@ func _fire(fighter: Fighter, step: int) -> void:
 	if dropkick_finisher and is_final:
 		_start_dropkick(fighter)
 	var wind: float = _windup_for(step, fighter)
-	if not (dropkick_finisher and is_final):
+	if _air_now:
+		wind = air_swing_duration * 0.4
+	if not (dropkick_finisher and is_final) and not _air_now:
 		var lunge: float
 		var follows: bool
 		var lunge_time: float = wind
@@ -820,6 +892,9 @@ func _fire(fighter: Fighter, step: int) -> void:
 		if lunge > 0.0:
 			_start_lunge(fighter, lunge, lunge_time, lead)
 	# 두 물리 프레임(약 0.034초)보다 짧으면 타이머 대신 프레임을 기다린다 — 아래 설명과 같은 이유
+	# 기다리는 동안 맞으면 interrupt_by_hit이 이번 타를 접는다(아래 _resolved 검사에서 빠져나간다)
+	_winding = true
+	var my_swing: int = _swing_id
 	if wind > 0.04:
 		await get_tree().create_timer(wind).timeout
 	else:
@@ -829,8 +904,11 @@ func _fire(fighter: Fighter, step: int) -> void:
 		# 캣맘·층간소음(windup 0)만 2타를 헛쳤다(헤드리스 실측). 한 번만 기다리면 끄는 예약이 아직 안 돌아 부족하다
 		await get_tree().physics_frame
 		await get_tree().physics_frame
-	# 그 사이 스윙이 끝났거나(판정됨) 캐릭터가 사라졌으면 접는다
+	# 그 사이 스윙이 끝났거나(판정됨·맞아서 끊김) 다른 타가 새로 시작됐거나 캐릭터가 사라졌으면 접는다
 	# (드롭킥은 여기서 접어도 착지·일어나기는 after_physics가 끝까지 마무리한다)
+	if my_swing != _swing_id:
+		return
+	_winding = false
 	if not is_instance_valid(fighter) or not _swinging or _resolved:
 		return
 	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
@@ -872,11 +950,15 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.debris_enabled = (not debris_final_hit_only) or is_final
 	hitbox.source_fighter = fighter
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
+	if _air_now:
+		_start_air_shape(fighter)
 	# **부가 장치가 이 타를 가져갔으면 몸 판정은 안 켠다** — 날아간 물건이 대신 때린다
 	# (지하철 아저씨: 1타에 리코더를 던지고, 3타에 돌아오는 길이 판정이 된다).
 	# 피해·넉백·띄우기는 위에서 히트박스에 다 넣어 뒀고, 날아가는 물건이 그걸 그대로 베껴 간다
 	_external_hit = _offer_strike(fighter, step)
 	if _external_hit:
+		# 던진 물건이 날아가는 동안(최대 projectile_active_duration)은 몸이 공격 중이 아니다 — 카운터 창을 닫는다
+		fighter.close_counter_window()
 		_active_left = projectile_active_duration
 		return
 	# 이미 겹쳐 있는 상대도 이번 타에 다시 맞도록 잠깐 껐다 켜서 area_entered가 새로 발생하게 한다
@@ -886,6 +968,9 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.monitoring = true
 	hitbox.monitorable = true
 	_active_left = d.active_time if d != null else active_duration
+	if _air_now:
+		# 후리는 구간(40%~62%) 내내 켜 둔다 — 반원을 쓸고 지나가는 동안 닿으면 맞는다
+		_active_left = air_swing_duration * 0.22 + 0.03
 
 ## 자식으로 달린 **부가 장치**(예: 리코더 던지기)에게 이 타를 맡을지 물어본다.
 ## 하나라도 true를 돌려주면 몸 판정을 안 켜고 그쪽 결과를 기다린다
@@ -915,6 +1000,7 @@ func report_external_hit(victim: Node) -> void:
 	_on_hitbox_connected(victim)
 
 func _reset(cd: float) -> void:
+	_end_air_swing()
 	_step = 0
 	_queued = false
 	_building_hits = 0
@@ -1232,14 +1318,35 @@ func _slice_projectiles_in_range() -> void:
 		if rel.length() <= spin_flurry_radius and rel.x * _fighter.facing >= 0.0:
 			p.slice_in_half()
 
+## 공중 큰 휘두르기 판정 — 원래 판정 모양을 맡아 두고 바라보는 쪽 반원(air_swing_radius)을 끼운다.
+## 회전 난무와 같은 반원 모양이지만 반지름이 따로다
+func _start_air_shape(fighter: Fighter) -> void:
+	hitbox.global_position = fighter.global_position + Vector2(air_swing_center.x * fighter.facing, air_swing_center.y)
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node == null:
+		return
+	if _air_saved_shape == null:
+		_air_saved_shape = shape_node.shape
+	shape_node.shape = _make_front_half_circle(signf(fighter.facing) if fighter.facing != 0.0 else 1.0, air_swing_radius)
+
+## 공중 큰 휘두르기를 정리한다 — 판정 모양을 원래대로. 판정 중(명중 콜백)일 수 있어 모양은 set_deferred로 바꾼다
+func _end_air_swing() -> void:
+	_air_now = false
+	if _air_saved_shape == null:
+		return
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node:
+		shape_node.set_deferred("shape", _air_saved_shape)
+	_air_saved_shape = null
+
 ## 바라보는 쪽(dir = 1 오른쪽 / -1 왼쪽)으로 열린 반지름 spin_flurry_radius의 반원 판정을 만든다
-func _make_front_half_circle(dir: float) -> ConvexPolygonShape2D:
+func _make_front_half_circle(dir: float, radius: float = -1.0) -> ConvexPolygonShape2D:
 	var points := PackedVector2Array()
 	var steps: int = 16
 	for i in range(steps + 1):
 		# 12시(위) -> 앞 -> 6시(아래)
 		var a: float = -PI * 0.5 + PI * float(i) / float(steps)
-		points.append(Vector2(cos(a) * dir, sin(a)) * spin_flurry_radius)
+		points.append(Vector2(cos(a) * dir, sin(a)) * (radius if radius > 0.0 else spin_flurry_radius))
 	var shape := ConvexPolygonShape2D.new()
 	shape.points = points
 	return shape

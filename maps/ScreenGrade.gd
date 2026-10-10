@@ -62,6 +62,8 @@ func _process(_delta: float) -> void:
 		return
 	var half: Vector2 = get_viewport_rect().size / cam.zoom * (0.5 * OVERSIZE)
 	global_position = cam.get_screen_center_position()
+	# 카메라가 기울면(카운터 히트 줌) 같이 기운다 — 안 그러면 기운 화면 모서리가 덮이지 않는다
+	global_rotation = 0.0 if cam.ignore_rotation else cam.global_rotation
 	if half.distance_squared_to(_half) > 0.25:
 		_half = half
 		queue_redraw()

@@ -2314,6 +2314,40 @@ func _apply_slash_z(on: bool) -> void:
 func play_weapon_slash(index: int, duration: float = -1.0) -> void:
 	play_attack_swing(SLASH_VARIANT_BASE + (index % SLASHES.size()), duration)
 
+## --- 공중 큰 휘두르기 (주정뱅이 점프 평타, 2026-10-10) ---
+## **승룡권처럼** 발 아래 앞에서 병을 **앞쪽 반원을 그리며 머리 위까지** 크게 올려치고, 그동안 몸이 한 바퀴 돈다
+## (`spin_*` 회전 타격 장치를 그대로 탄다). 반대 손은 감을 때 앞으로 나갔다가 올려칠 때 뒤 아래로 당겨진다.
+## 베기와 같은 길(손 궤도·상체 넘어감·무기 z)을 타고, 값은 SLASHES 표 대신 아래 export에서 읽는다 —
+## 경관봉 난무가 표를 돌아가며 쓰므로 표에 칸을 더하면 난무 순서가 바뀐다
+const AIR_SWING_VARIANT := SLASH_VARIANT_BASE + 1000
+@export_group("공중 큰 휘두르기")
+## 감을 때 / 후릴 때 각도(도) — 부호 규칙은 SLASHES와 같다(음수 = 반시계 = 위로)
+@export var air_swing_raise_deg: float = -60.0
+@export var air_swing_swing_deg: float = -150.0
+## 감았을 때 / 다 후렸을 때 손 자리(제자리 기준, +x = 앞)
+@export var air_swing_raise_off: Vector2 = Vector2(-6, 30)
+@export var air_swing_slam_off: Vector2 = Vector2(14, -84)
+## 손이 지나는 길이 부푸는 정도(px). **아래→위로 올려치는 길에선 양수가 앞쪽**(위→아래면 반대) — 클수록 반원이 둥글다
+@export var air_swing_arc: float = 54.0
+## 올려칠 때 상체가 넘어가는 각도(도). 음수 = 뒤로 젖힌다(승룡권처럼 위로 솟는 느낌)
+@export var air_swing_lean_deg: float = -14.0
+## 휘두르는 동안 몸이 한 바퀴 도는지(회전 타격 `spin_end`·`spin_back_flip`을 그대로 쓴다)
+@export var air_swing_spin: bool = true
+## 반대 손(왼손)이 올려칠 때 가는 자리(제자리 기준, +x = 앞)와 각도(도) — 감을 땐 이 반대쪽으로 반쯤 나간다
+@export var air_swing_off_hand: Vector2 = Vector2(-14, 14)
+@export var air_swing_off_hand_deg: float = 40.0
+@export_group("")
+
+func play_air_swing(duration: float) -> void:
+	play_attack_swing(AIR_SWING_VARIANT, duration, air_swing_spin)
+
+## 지금 베기의 값 — 공중 큰 휘두르기면 위 export, 아니면 SLASHES 표
+func _slash_entry() -> Dictionary:
+	if _attack_variant == AIR_SWING_VARIANT:
+		return {"raise_deg": air_swing_raise_deg, "swing_deg": air_swing_swing_deg, "raise_off": air_swing_raise_off,
+			"slam_off": air_swing_slam_off, "arc": air_swing_arc, "slash_deg": 0.0, "lean_deg": air_swing_lean_deg}
+	return SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+
 ## 이번 베기의 참격 자국 기울기(라디안) — 자국을 뿌리는 쪽이 물어본다
 static func slash_angle(index: int) -> float:
 	return deg_to_rad(float(SLASHES[index % SLASHES.size()]["slash_deg"]))
@@ -2469,6 +2503,11 @@ func _pose_land_crouch() -> void:
 		_hand_r.position.y += down * 0.85
 	if _hand_l:
 		_hand_l.position.y += down * 0.85
+
+## 휘두르던 모션을 그 자리에서 끝낸다 — 준비동작 중에 맞아 공격이 끊겼을 때(`ComboMeleeAttack.interrupt_by_hit`, 카운터 히트).
+## 모션이 저절로 끝난 것과 같은 상태가 된다. 바로 움찔 자세가 덮어서 팔이 돌아가는 게 튀어 보이지 않는다
+func cancel_attack_swing() -> void:
+	_attack_time = 0.0
 
 ## 맞은 순간 움찔 자세를 시작한다. power(0~1)가 클수록 크게 숙인다 — Fighter가 데미지로 정해 넘긴다.
 ## 이미 움찔하는 중에 또 맞으면 처음부터 다시(연타를 맞을 때마다 다시 꺾인다)
@@ -2833,7 +2872,7 @@ func _end_swing_trail() -> void:
 func _attack_variant_params() -> Dictionary:
 	# 베기(경관봉 난무)는 제일 먼저 가로챈다 — 잽·어퍼컷 같은 맨손 규칙을 타면 안 된다
 	if _attack_variant >= SLASH_VARIANT_BASE:
-		var sl: Dictionary = SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+		var sl: Dictionary = _slash_entry()
 		return {
 			"raise_deg": sl["raise_deg"],
 			"swing_deg": sl["swing_deg"],
@@ -4221,7 +4260,7 @@ func _pose_eat() -> void:
 ## 베기 한 번 동안 상체·고개가 따라 넘어간다 — 감을 땐 뒤로 젖혔다가 후릴 때 확 넘어가고 천천히 돌아온다.
 ## 손 궤도(`_pose_attack_hand`)와 **같은 구간 비율**(40% / 62%)을 쓰므로 둘이 따로 놀지 않는다
 func _pose_slash_lean() -> void:
-	var sl: Dictionary = SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+	var sl: Dictionary = _slash_entry()
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var t: float
 	if progress < ATTACK_STRIKE_START:
@@ -4244,6 +4283,11 @@ func _pose_slash_lean() -> void:
 		_body.rotation += lean
 	if _head:
 		_head.rotation += lean * 0.6
+	# 공중 큰 휘두르기는 반대 손도 움직인다 — 감을 땐(t < 0) 앞으로 반쯤, 올려칠 땐 뒤 아래로 당긴다(균형 잡기).
+	# 로컬 좌표라 facing 부호는 안 곱한다
+	if _attack_variant == AIR_SWING_VARIANT and _hand_l:
+		_hand_l.position += air_swing_off_hand * t
+		_hand_l.rotation += deg_to_rad(air_swing_off_hand_deg) * t
 
 func _pose_uppercut_lean() -> void:
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)

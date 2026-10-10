@@ -16,8 +16,8 @@ extends Hitbox
 ## stack_body_rects에 그 영역을 적어둔다. 그 영역이 판정 사각형과 정확히 겹치게 배치된다 —
 ## 보이는 기둥 = 맞는 기둥. 영역 밖의 방울들은 장식이라 판정 밖으로 삐져나온다
 
-## 기둥이 다 뻗은 뒤 그대로 유지되는 시간(초)
-@export var active_duration: float = 0.3
+## 기둥이 다 뻗은 뒤 그대로 유지되는 시간(초). 판정도 이때까지만 켜져 있다 — 2026-10-10 사용자 "토가 금방 사라졌으면"으로 처음의 0.3배: 0.3 → 0.09(사라지는 시간도 0.15 → 0.045)
+@export var active_duration: float = 0.09
 ## 입에서 끝까지 뻗어 나가는 데 걸리는 시간(초). 판정도 같이 뻗는다(2026-10-10 — 예전엔 한 번에 다 생겼다)
 @export var extend_time: float = 0.12
 ## 뻗는 동안 시작 두께(제 두께 대비) — 가늘게 나와서 굵어진다
@@ -26,7 +26,7 @@ extends Hitbox
 @export var wobble: float = 0.08
 @export var wobble_speed: float = 42.0
 ## 사라지는 데 걸리는 시간(초). 이 동안 **가운데로 가늘어지며** 옅어진다
-@export var fade_duration: float = 0.15
+@export var fade_duration: float = 0.045
 ## 맞은 상대가 밀려나는 힘. x는 정면 방향으로 자동 반전되고, y는 음수가 위쪽
 @export var knockback_force: Vector2 = Vector2(200.0, -120.0)
 ## true면 벽에 막힌 지점에서 기둥이 끊긴다 (벽을 뚫고 그려지지 않게). 캐릭터는 그냥 통과한다
